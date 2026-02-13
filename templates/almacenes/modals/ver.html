@@ -1,0 +1,143 @@
+<!-- MODAL: VER ALMACÉN -->
+<div class="modal fade" id="modalVerAlmacen" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye"></i> Detalles del Almacén
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- COLUMNA IZQUIERDA -->
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3 border-bottom pb-2">
+                            <i class="fas fa-warehouse"></i> Información Básica
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Nombre:</strong></label>
+                            <p id="verNombre" class="mb-0 font-weight-bold"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Código:</strong></label>
+                            <p id="verCodigo" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Descripción:</strong></label>
+                            <p id="verDescripcion" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Estado:</strong></label>
+                            <p id="verEstado" class="mb-0 estado-almacen"></p>
+                        </div>
+                    </div>
+
+                    <!-- COLUMNA DERECHA -->
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3 border-bottom pb-2">
+                            <i class="fas fa-map-marker-alt"></i> Ubicación
+                        </h6>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Dirección:</strong></label>
+                            <p id="verDireccion" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Ciudad:</strong></label>
+                            <p id="verCiudad" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Departamento:</strong></label>
+                            <p id="verDepartamento" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>País:</strong></label>
+                            <p id="verPais" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Código Postal:</strong></label>
+                            <p id="verCodigoPostal" class="mb-0"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-phone"></i> Contacto
+                        </h6>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Teléfono:</strong></label>
+                            <p id="verTelefono" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Email:</strong></label>
+                            <p id="verEmail" class="mb-0"></p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-cube"></i> Capacidad
+                        </h6>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Capacidad m²:</strong></label>
+                            <p id="verCapacidadM2" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Capacidad Productos:</strong></label>
+                            <p id="verCapacidadProductos" class="mb-0"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-history"></i> Información de Auditoría
+                        </h6>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Creado Por:</strong></label>
+                            <p id="verCreadoPor" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Fecha de Creación:</strong></label>
+                            <p id="verFechaCreacion" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Última Actualización:</strong></label>
+                            <p id="verFechaActualizacion" class="mb-0"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

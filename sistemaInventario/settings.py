@@ -49,6 +49,9 @@ INSTALLED_APPS = [
     'apps.pedidos',
     'apps.notificaciones',
     'apps.reportes',
+    'apps.almacenes',
+    'apps.tiendas',
+    'apps.tiendas_virtuales',
 ]
 
 MIDDLEWARE = [

@@ -88,6 +88,36 @@
             </li>
             {% endif %}
 
+            <!-- Almacenes - Solo Administradores -->
+            {% if user.is_superuser %}
+            <li class="sidebar-item">
+                <a href="{% url 'almacenes:listar' %}" class="sidebar-link {% if 'almacenes' in request.resolver_match.url_name %}active{% endif %}" title="Almacenes">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Almacenes</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- Tiendas - Solo Administradores -->
+            {% if user.is_superuser %}
+            <li class="sidebar-item">
+                <a href="{% url 'tiendas:listar' %}" class="sidebar-link {% if 'tiendas' in request.resolver_match.url_name %}active{% endif %}" title="Tiendas">
+                    <i class="fas fa-store"></i>
+                    <span>Tiendas</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- Tiendas Virtuales - Solo Administradores -->
+            {% if user.is_superuser %}
+            <li class="sidebar-item">
+                <a href="{% url 'tiendas_virtuales:listar' %}" class="sidebar-link {% if 'tiendas_virtuales' in request.resolver_match.url_name %}active{% endif %}" title="Tiendas Virtuales">
+                    <i class="fas fa-globe"></i>
+                    <span>Tiendas Virtuales</span>
+                </a>
+            </li>
+            {% endif %}
+
             <!-- Reportes - Staff y Administradores -->
             <li class="sidebar-item">
                 <a href="#" class="sidebar-link" title="Reportes">
