@@ -1,0 +1,85 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Sistema de Inventario</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Estilos CSS -->
+    <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/inicio/modals/login.css' %}">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <i class="fas fa-boxes fa-3x"></i>
+                <h1>Sistema de Inventario</h1>
+                <p>Ingrese sus credenciales para acceder</p>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alerta alerta-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" action="{% url 'login' %}" class="login-form" id="loginForm">
+                {% csrf_token %}
+                
+                <div class="formulario-grupo">
+                    <label for="username" class="formulario-label">
+                        <i class="fas fa-user"></i> Usuario
+                    </label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        class="formulario-input" 
+                        placeholder="Ingrese su usuario"
+                        required
+                        autofocus
+                    >
+                </div>
+
+                <div class="formulario-grupo">
+                    <label for="password" class="formulario-label">
+                        <i class="fas fa-lock"></i> Contraseña
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="formulario-input" 
+                        placeholder="Ingrese su contraseña"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="boton boton-primario boton-login">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <p>&copy; 2026 Sistema de Inventario. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    
+    <!-- Script de Login -->
+    <script src="{% static 'js/inicio/modals/login.js' %}"></script>
+</body>
+</html>

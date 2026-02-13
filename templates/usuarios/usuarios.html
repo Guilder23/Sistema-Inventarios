@@ -1,0 +1,240 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Gestión de Usuarios{% endblock %}
+
+{% block estilos_extra %}
+    <link rel="stylesheet" href="{% static 'css/usuarios/usuarios.css' %}">
+    <link rel="stylesheet" href="{% static 'css/usuarios/modals/crea.css' %}">
+    <link rel="stylesheet" href="{% static 'css/usuarios/modals/ver.css' %}">
+    <link rel="stylesheet" href="{% static 'css/usuarios/modals/edita.css' %}">
+    <link rel="stylesheet" href="{% static 'css/usuarios/modals/elimina.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+                <!-- HEADER DE LA PÁGINA -->
+                <div class="page-header">
+                    <div class="page-header-content">
+                        <h1 class="page-title">
+                            <i class="fas fa-users"></i> Gestión de Usuarios
+                        </h1>
+                        <p class="page-subtitle">Administra los usuarios del sistema</p>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalCrearUsuario">
+                        <i class="fas fa-user-plus"></i> Nuevo Usuario
+                    </button>
+                </div>
+
+                <!-- FILTROS Y BÚSQUEDA -->
+                <div class="card card-filtros">
+                    <div class="card-body">
+                        <form class="form-filtros" id="formFiltros" method="get">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="buscar" class="form-label">Buscar Usuario</label>
+                                        <input 
+                                            type="text" 
+                                            class="form-control" 
+                                            id="buscar" 
+                                            name="buscar"
+                                            placeholder="Usuario, nombre o correo..."
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="estado" class="form-label">Estado</label>
+                                        <select class="form-control" id="estado" name="estado">
+                                            <option value="">Todos</option>
+                                            <option value="activo">Activos</option>
+                                            <option value="inactivo">Inactivos</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="tipo" class="form-label">Tipo</label>
+                                        <select class="form-control" id="tipo" name="tipo">
+                                            <option value="">Todos</option>
+                                            <option value="admin">Administrador</option>
+                                            <option value="usuario">Usuario Regular</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary btn-block">
+                                        <i class="fas fa-filter"></i> Filtrar
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- TABLA DE USUARIOS -->
+                <div class="card card-tabla">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            Total de Usuarios: <span class="badge badge-primary">{{ usuarios.count }}</span>
+                        </h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table tabla-usuarios">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Nombre</th>
+                                    <th>Correo</th>
+                                    <th>Tipo</th>
+                                    <th>Estado</th>
+                                    <th>Último Acceso</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usuario in usuarios %}
+                                <tr>
+                                    <td>
+                                        <span class="usuario-badge">{{ usuario.username }}</span>
+                                    </td>
+                                    <td>{{ usuario.get_full_name|default:"Sin nombre" }}</td>
+                                    <td>{{ usuario.email }}</td>
+                                    <td>
+                                        {% if usuario.is_staff %}
+                                            <span class="badge badge-danger">
+                                                <i class="fas fa-shield-alt"></i> Administrador
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-info">
+                                                <i class="fas fa-user"></i> Usuario
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if usuario.is_active %}
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-check-circle"></i> Activo
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-danger">
+                                                <i class="fas fa-times-circle"></i> Inactivo
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if usuario.last_login %}
+                                            {{ usuario.last_login|date:"d/m/Y H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">Nunca</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group-vertical btn-group-sm" role="group">
+                                            <button 
+                                                type="button" 
+                                                class="btn btn-info btn-sm btn-ver-usuario"
+                                                data-toggle="modal" 
+                                                data-target="#modalVerUsuario"
+                                                data-usuario-id="{{ usuario.id }}"
+                                                title="Ver detalles"
+                                            >
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+
+                                            <button 
+                                                type="button" 
+                                                class="btn btn-warning btn-sm btn-editar-usuario"
+                                                data-toggle="modal" 
+                                                data-target="#modalEditarUsuario"
+                                                data-usuario-id="{{ usuario.id }}"
+                                                title="Editar usuario"
+                                            >
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+
+                                            <button 
+                                                type="button" 
+                                                class="btn btn-danger btn-sm btn-eliminar-usuario"
+                                                data-toggle="modal" 
+                                                data-target="#modalEliminarUsuario"
+                                                data-usuario-id="{{ usuario.id }}"
+                                                data-usuario-nombre="{{ usuario.get_full_name }}"
+                                                title="Eliminar usuario"
+                                            >
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
+                                        <p class="text-muted">No hay usuarios registrados</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {% if is_paginated %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">Primera</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                <!-- INCLUIR MODALES -->
+                {% include 'usuarios/modals/crea.html' %}
+                {% include 'usuarios/modals/ver.html' %}
+                {% include 'usuarios/modals/edita.html' %}
+                {% include 'usuarios/modals/elimina.html' %}
+            </div>
+{% endblock %}
+
+{% block scripts_extra %}
+    <!-- Scripts de Usuarios -->
+    <script src="{% static 'js/usuarios/usuarios.js' %}"></script>
+    
+    <!-- Scripts de Modals -->
+    <script src="{% static 'js/usuarios/modals/crea.js' %}"></script>
+    <script src="{% static 'js/usuarios/modals/ver.js' %}"></script>
+    <script src="{% static 'js/usuarios/modals/edita.js' %}"></script>
+    <script src="{% static 'js/usuarios/modals/elimina.js' %}"></script>
+{% endblock %}

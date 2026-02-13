@@ -1,0 +1,93 @@
+<!-- MODAL: EDITAR USUARIO -->
+<div class="modal fade" id="modalEditarUsuario" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-edit"></i> Editar Usuario
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formEditarUsuario" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="editarUsuarioId" name="usuario_id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editUsername" class="form-label">Usuario</label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="editUsername" 
+                            name="username" 
+                            disabled
+                        >
+                        <small class="form-text text-muted">El usuario no puede ser modificado</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editEmail" class="form-label">Correo Electrónico</label>
+                        <input 
+                            type="email" 
+                            class="form-control" 
+                            id="editEmail" 
+                            name="email" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editFirstName" class="form-label">Nombre</label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="editFirstName" 
+                            name="first_name"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editLastName" class="form-label">Apellido</label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="editLastName" 
+                            name="last_name"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editPassword" class="form-label">Nueva Contraseña (dejar en blanco para no cambiar)</label>
+                        <input 
+                            type="password" 
+                            class="form-control" 
+                            id="editPassword" 
+                            name="password"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editIsActive" class="form-label">
+                            <input type="checkbox" id="editIsActive" name="is_active">
+                            Usuario Activo
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editIsStaff" class="form-label">
+                            <input type="checkbox" id="editIsStaff" name="is_staff">
+                            Es Personal Administrativo
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

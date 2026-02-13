@@ -1,0 +1,153 @@
+{% load static %}
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+    <!-- Botón de colapso del sidebar -->
+    <div class="sidebar-header">
+        <div class="sidebar-brand">
+            <i class="fas fa-store"></i>
+            <span class="sidebar-brand-text">SInventario</span>
+        </div>
+        <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Colapsar menú">
+            <i class="fas fa-angles-left"></i>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <ul class="sidebar-menu">
+            <!-- Dashboard - Todos los usuarios -->
+            <li class="sidebar-item">
+                <a href="{% url 'dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" title="Dashboard">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <!-- SECCIÓN: OPERACIONES -->
+            <li class="sidebar-section">
+                <span class="sidebar-section-title">OPERACIONES</span>
+            </li>
+
+            <!-- Productos - Todos los usuarios -->
+            <li class="sidebar-item">
+                <a href="{% url 'listar_productos' %}" class="sidebar-link {% if 'productos' in request.resolver_match.url_name %}active{% endif %}" title="Productos">
+                    <i class="fas fa-box"></i>
+                    <span>Productos</span>
+                </a>
+            </li>
+
+            <!-- Inventario - Todos los usuarios -->
+            <li class="sidebar-item">
+                <a href="{% url 'ver_inventario' %}" class="sidebar-link {% if 'inventario' in request.resolver_match.url_name %}active{% endif %}" title="Inventario">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Inventario</span>
+                </a>
+            </li>
+
+            <!-- Ventas - Vendedores y Administradores -->
+            {% if user.is_staff or user.groups.filter|length > 0 %}
+            <li class="sidebar-item">
+                <a href="#" class="sidebar-link" title="Ventas">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Ventas</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- Pedidos - Todos los usuarios -->
+            <li class="sidebar-item">
+                <a href="#" class="sidebar-link" title="Pedidos">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Pedidos</span>
+                </a>
+            </li>
+
+            <!-- Traspasos - Staff y Administradores -->
+            {% if user.is_staff %}
+            <li class="sidebar-item">
+                <a href="#" class="sidebar-link" title="Traspasos">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>Traspasos</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- SECCIÓN: ADMINISTRACIÓN - Solo staff y admin -->
+            {% if user.is_staff or user.is_superuser %}
+            <li class="sidebar-section">
+                <span class="sidebar-section-title">ADMINISTRACIÓN</span>
+            </li>
+
+            <!-- Usuarios - Solo Administradores -->
+            {% if user.is_superuser %}
+            <li class="sidebar-item">
+                <a href="{% url 'listar_usuarios' %}" class="sidebar-link {% if 'usuarios' in request.resolver_match.url_name %}active{% endif %}" title="Usuarios">
+                    <i class="fas fa-users"></i>
+                    <span>Usuarios</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- Reportes - Staff y Administradores -->
+            <li class="sidebar-item">
+                <a href="#" class="sidebar-link" title="Reportes">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reportes</span>
+                </a>
+            </li>
+
+            <!-- Configuración - Solo Administradores -->
+            {% if user.is_superuser %}
+            <li class="sidebar-item">
+                <a href="#" class="sidebar-link" title="Configuración">
+                    <i class="fas fa-cog"></i>
+                    <span>Configuración</span>
+                </a>
+            </li>
+            {% endif %}
+            {% endif %}
+
+            <!-- SECCIÓN: NOTIFICACIONES - Todos -->
+            <li class="sidebar-section">
+                <span class="sidebar-section-title">OTROS</span>
+            </li>
+
+            <li class="sidebar-item">
+                <a href="#" class="sidebar-link" title="Notificaciones">
+                    <i class="fas fa-bell"></i>
+                    <span>Notificaciones</span>
+                    <span class="sidebar-badge">3</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-user">
+            <div class="sidebar-user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="sidebar-user-info">
+                <strong>{{ user.username|title }}</strong>
+                <small>
+                    {% if user.is_superuser %}
+                        Administrador
+                    {% elif user.is_staff %}
+                        Staff
+                    {% else %}
+                        Usuario
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- OVERLAY para cuando está abierto el sidebar en mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+        </div>
+    </div>
+</aside>
+
+<!-- OVERLAY para cuando está abierto el sidebar en mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>

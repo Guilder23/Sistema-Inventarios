@@ -1,0 +1,128 @@
+{% load static %}
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-principal">
+    <div class="navbar-container">
+        <!-- IZQUIERDA: Toggle Sidebar y Logo -->
+        <div class="navbar-left">
+            <button class="sidebar-toggle-btn" id="sidebarToggle" title="Alternar menú">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <div class="navbar-logo">
+                <a href="{% url 'dashboard' %}">
+                    <i class="fas fa-store"></i>
+                    <span class="navbar-brand-text">Sistema Inventario</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- DERECHA: Notificaciones y Usuario -->
+        <div class="navbar-right">
+            <!-- Notificaciones -->
+            <div class="navbar-notificaciones">
+                <button class="navbar-icon-btn" id="notificacionesBtn" title="Notificaciones">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge">3</span>
+                </button>
+                <div class="navbar-dropdown notificaciones-dropdown" id="notificacionesDropdown">
+                    <div class="dropdown-header">
+                        <span>Notificaciones</span>
+                        <small class="text-muted">3 nuevas</small>
+                    </div>
+                    <div class="dropdown-items">
+                        <a href="#" class="dropdown-item">
+                            <div class="notification-icon bg-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="notification-content">
+                                <strong>Stock bajo</strong>
+                                <p>Producto X tiene solo 5 unidades</p>
+                                <small>Hace 10 min</small>
+                            </div>
+                        </a>
+                        <a href="#" class="dropdown-item">
+                            <div class="notification-icon bg-success">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="notification-content">
+                                <strong>Pedido completado</strong>
+                                <p>Pedido #1234 entregado</p>
+                                <small>Hace 1 hora</small>
+                            </div>
+                        </a>
+                        <a href="#" class="dropdown-item">
+                            <div class="notification-icon bg-info">
+                                <i class="fas fa-box"></i>
+                            </div>
+                            <div class="notification-content">
+                                <strong>Nuevo producto</strong>
+                                <p>Se agregó Producto Y al inventario</p>
+                                <small>Hace 2 horas</small>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="dropdown-footer">
+                        <a href="#">Ver todas las notificaciones</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usuario -->
+            <div class="navbar-usuario">
+                <button class="navbar-user-btn" id="usuarioBtn" title="Mi cuenta">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">{{ user.username|title }}</span>
+                        <span class="user-role">
+                            {% if user.is_superuser %}
+                                Administrador
+                            {% elif user.is_staff %}
+                                Staff
+                            {% else %}
+                                Usuario
+                            {% endif %}
+                        </span>
+                    </div>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="navbar-dropdown usuario-dropdown" id="usuarioDropdown">
+                    <div class="dropdown-user-header">
+                        <div class="user-avatar-large">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-header-text">
+                            <strong class="user-header-name">{{ user.username|title }}</strong>
+                            <p class="user-header-email">{{ user.email }}</p>
+                            <span class="user-header-role">
+                                {% if user.is_superuser %}
+                                    <i class="fas fa-shield-alt"></i> Administrador
+                                {% elif user.is_staff %}
+                                    <i class="fas fa-user-tie"></i> Staff
+                                {% else %}
+                                    <i class="fas fa-user"></i> Usuario
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item">
+                        <i class="fas fa-user-circle"></i> Mi Perfil
+                    </a>
+                    <a href="#" class="dropdown-item">
+                        <i class="fas fa-cog"></i> Configuración
+                    </a>
+                    <a href="#" class="dropdown-item">
+                        <i class="fas fa-question-circle"></i> Ayuda
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'logout' %}" class="dropdown-item dropdown-item-logout">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
