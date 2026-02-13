@@ -77,10 +77,20 @@
                     <div class="user-info">
                         <span class="user-name">{{ user.username|title }}</span>
                         <span class="user-role">
-                            {% if user.is_superuser %}
+                            {% if user.perfil %}
+                                {% if user.perfil.rol == 'administrador' %}
+                                    Administrador
+                                {% elif user.perfil.rol == 'almacen' %}
+                                    Almacén
+                                {% elif user.perfil.rol == 'tienda' %}
+                                    Tienda
+                                {% elif user.perfil.rol == 'tienda_online' %}
+                                    Tienda Virtual
+                                {% else %}
+                                    {{ user.perfil.rol }}
+                                {% endif %}
+                            {% elif user.is_superuser %}
                                 Administrador
-                            {% elif user.is_staff %}
-                                Staff
                             {% else %}
                                 Usuario
                             {% endif %}
@@ -96,15 +106,25 @@
                         <div class="user-header-text">
                             <strong class="user-header-name">{{ user.username|title }}</strong>
                             <p class="user-header-email">{{ user.email }}</p>
-                            <span class="user-header-role">
-                                {% if user.is_superuser %}
+                        <span class="user-header-role">
+                            {% if user.perfil %}
+                                {% if user.perfil.rol == 'administrador' %}
                                     <i class="fas fa-shield-alt"></i> Administrador
-                                {% elif user.is_staff %}
-                                    <i class="fas fa-user-tie"></i> Staff
+                                {% elif user.perfil.rol == 'almacen' %}
+                                    <i class="fas fa-warehouse"></i> Almacén
+                                {% elif user.perfil.rol == 'tienda' %}
+                                    <i class="fas fa-store"></i> Tienda
+                                {% elif user.perfil.rol == 'tienda_online' %}
+                                    <i class="fas fa-shopping-cart"></i> Tienda Virtual
                                 {% else %}
-                                    <i class="fas fa-user"></i> Usuario
+                                    {{ user.perfil.rol }}
                                 {% endif %}
-                            </span>
+                            {% elif user.is_superuser %}
+                                <i class="fas fa-shield-alt"></i> Administrador
+                            {% else %}
+                                <i class="fas fa-user"></i> Usuario
+                            {% endif %}
+                        </span>
                         </div>
                     </div>
                     <div class="dropdown-divider"></div>

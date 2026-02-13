@@ -206,9 +206,9 @@ def obtener_usuario(request, id):
         if perfil:
             rol_dict = {
                 'administrador': 'Administrador',
-                'almacen': 'Personal de Almacén',
-                'tienda': 'Personal de Tienda',
-                'tienda_online': 'Tienda Online',
+                'almacen': 'Almacén',
+                'tienda': 'Tienda',
+                'tienda_online': 'Tienda Virtual',
             }
             rol_display = rol_dict.get(perfil.rol, perfil.rol)
         
