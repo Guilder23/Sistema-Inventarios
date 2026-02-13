@@ -504,3 +504,30 @@
         padding: 0.25rem 0.5rem;
     }
 }
+
+/* ESTILOS PARA ESTADO */
+.estado-tienda {
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    display: inline-block;
+}
+
+.estado-tienda.estado-activo {
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+}
+
+.estado-tienda.estado-inactivo {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+}
+
+.estado-tienda.estado-mantenimiento {
+    color: #856404;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+}
