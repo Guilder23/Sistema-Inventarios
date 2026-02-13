@@ -1,6 +1,20 @@
-/* ============================================================================
-   FUNCIONALIDAD PARA MODAL VER USUARIO
-   ============================================================================ */
+// ==========================================
+// MODAL VER USUARIO
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    inicializarModalVer();
+});
+
+function inicializarModalVer() {
+    const botonesVer = document.querySelectorAll('.btn-ver-usuario');
+    botonesVer.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const usuarioId = this.getAttribute('data-usuario-id');
+            cargarDetallesUsuario(usuarioId);
+        });
+    });
+}
 
 async function cargarDetallesUsuario(usuarioId) {
     try {

@@ -1,17 +1,20 @@
-/* ============================================================================
-   FUNCIONALIDAD PARA MODAL CREAR USUARIO
-   ============================================================================ */
+// ==========================================
+// MODAL CREAR USUARIO
+// ==========================================
 
 document.addEventListener('DOMContentLoaded', function() {
+    inicializarModalCrear();
+});
+
+function inicializarModalCrear() {
     const formCrear = document.getElementById('formCrearUsuario');
     
     if (formCrear) {
         formCrear.addEventListener('submit', function(e) {
-            if (!validarFormularioCrearUsuario()) {
+            if (!validarFormularioCrear()) {
                 e.preventDefault();
                 return false;
             }
-            // Permitir que el formulario se envíe
             return true;
         });
 
@@ -25,8 +28,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const rolesConUbicacion = ['almacen', 'tienda', 'deposito', 'tienda_online'];
                 if (rolesConUbicacion.includes(this.value)) {
                     grupoUbicacion.style.display = 'block';
-                    // Ubicación es opcional por ahora
-                    // nombreUbicacion.required = true;
                 } else {
                     grupoUbicacion.style.display = 'none';
                     nombreUbicacion.required = false;
@@ -67,16 +68,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     this.classList.remove('is-invalid');
                 }
-                // Revalidar password2 si ya tiene contenido
                 if (password2.value) {
                     password2.dispatchEvent(new Event('input'));
                 }
             });
         }
     }
-});
+    
+    // Limpiar formulario cuando se cierre
+    jQuery('#modalCrearUsuario').on('hidden.bs.modal', function() {
+        const form = document.getElementById('formCrearUsuario');
+        if (form) {
+            form.reset();
+        }
+    });
+}
 
-function validarFormularioCrearUsuario() {
+function validarFormularioCrear() {
     const username = document.getElementById('username')?.value.trim();
     const email = document.getElementById('email')?.value.trim();
     const password = document.getElementById('password')?.value.trim();
@@ -107,16 +115,6 @@ function validarFormularioCrearUsuario() {
         alert('Las contraseñas no coinciden');
         return false;
     }
-
-    // Ubicación es opcional por ahora
-    // const rolesConUbicacion = ['almacen', 'tienda', 'deposito', 'tienda_online'];
-    // if (rolesConUbicacion.includes(rol)) {
-    //     const nombreUbicacion = document.getElementById('nombre_ubicacion')?.value.trim();
-    //     if (!nombreUbicacion) {
-    //         alert('Debe especificar el nombre de la ubicación para este rol');
-    //         return false;
-    //     }
-    // }
 
     return true;
 }

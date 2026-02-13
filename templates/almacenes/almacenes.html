@@ -210,12 +210,12 @@
 {% endblock %}
 
 {% block scripts_extra %}
-    <!-- Scripts de Almacenes -->
-    <script src="{% static 'js/almacenes/almacenes.js' %}"></script>
-    
-    <!-- Scripts de Modals -->
+    <!-- Scripts de Modals (deben cargar primero) -->
     <script src="{% static 'js/almacenes/modals/crea.js' %}"></script>
     <script src="{% static 'js/almacenes/modals/ver.js' %}"></script>
     <script src="{% static 'js/almacenes/modals/edita.js' %}"></script>
     <script src="{% static 'js/almacenes/modals/elimina.js' %}"></script>
+    
+    <!-- Script Principal de Almacenes -->
+    <script src="{% static 'js/almacenes/almacenes.js' %}"></script>
 {% endblock %}

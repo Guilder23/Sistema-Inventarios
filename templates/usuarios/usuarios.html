@@ -245,12 +245,12 @@
 {% endblock %}
 
 {% block scripts_extra %}
-    <!-- Scripts de Usuarios -->
-    <script src="{% static 'js/usuarios/usuarios.js' %}"></script>
-    
-    <!-- Scripts de Modals -->
+    <!-- Scripts de Modals (deben cargar primero) -->
     <script src="{% static 'js/usuarios/modals/crea.js' %}"></script>
     <script src="{% static 'js/usuarios/modals/ver.js' %}"></script>
     <script src="{% static 'js/usuarios/modals/edita.js' %}"></script>
     <script src="{% static 'js/usuarios/modals/elimina.js' %}"></script>
+    
+    <!-- Script Principal de Usuarios -->
+    <script src="{% static 'js/usuarios/usuarios.js' %}"></script>
 {% endblock %}

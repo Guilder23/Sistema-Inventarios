@@ -1,6 +1,37 @@
-/* ============================================================================
-   FUNCIONALIDAD PARA MODAL EDITAR USUARIO
-   ============================================================================ */
+// ==========================================
+// MODAL EDITAR USUARIO
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    inicializarModalEditar();
+});
+
+function inicializarModalEditar() {
+    const botonesEditar = document.querySelectorAll('.btn-editar-usuario');
+    botonesEditar.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const usuarioId = this.getAttribute('data-usuario-id');
+            cargarEdicionUsuario(usuarioId);
+        });
+    });
+    
+    const formEditar = document.getElementById('formEditarUsuario');
+    if (formEditar) {
+        formEditar.addEventListener('submit', function(e) {
+            if (!validarFormularioEditar()) {
+                e.preventDefault();
+            }
+        });
+    }
+    
+    // Limpiar formulario cuando se cierre
+    jQuery('#modalEditarUsuario').on('hidden.bs.modal', function() {
+        const form = document.getElementById('formEditarUsuario');
+        if (form) {
+            form.reset();
+        }
+    });
+}
 
 async function cargarEdicionUsuario(usuarioId) {
     try {
@@ -38,21 +69,22 @@ async function cargarEdicionUsuario(usuarioId) {
     }
 }
 
-function validarFormularioEditarUsuario() {
+function validarFormularioEditar() {
     const email = document.getElementById('editEmail')?.value.trim();
     const password = document.getElementById('editPassword')?.value.trim();
 
     if (!email) {
+        alert('El correo es requerido');
         return false;
     }
 
     if (!validarEmail(email)) {
-        console.log('Email inválido');
+        alert('Correo electrónico inválido');
         return false;
     }
 
     if (password && password.length < 8) {
-        console.log('Contraseña debe tener al menos 8 caracteres');
+        alert('La contraseña debe tener al menos 8 caracteres');
         return false;
     }
 
