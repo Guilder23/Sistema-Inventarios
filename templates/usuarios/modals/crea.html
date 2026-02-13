@@ -1,6 +1,6 @@
 <!-- MODAL: CREAR USUARIO -->
 <div class="modal fade" id="modalCrearUsuario" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
@@ -13,82 +13,129 @@
             <form id="formCrearUsuario" method="post" action="{% url 'crear_usuario' %}">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="username" class="form-label">Usuario</label>
-                        <input 
-                            type="text" 
-                            class="form-control" 
-                            id="username" 
-                            name="username" 
-                            required
-                            placeholder="Ingrese el nombre de usuario"
-                        >
-                        <small class="form-text text-muted">Solo letras, números y @/./+/-/_</small>
-                    </div>
+                    <div class="row">
+                        <!-- COLUMNA IZQUIERDA -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-user"></i> Información Personal
+                            </h6>
+                            
+                            <div class="form-group">
+                                <label for="username" class="form-label">Usuario <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="username" 
+                                    name="username" 
+                                    required
+                                    placeholder="Ingrese el nombre de usuario"
+                                >
+                                <small class="form-text text-muted">Solo letras, números y @/./+/-/_</small>
+                            </div>
 
-                    <div class="form-group">
-                        <label for="email" class="form-label">Correo Electrónico</label>
-                        <input 
-                            type="email" 
-                            class="form-control" 
-                            id="email" 
-                            name="email" 
-                            required
-                            placeholder="ejemplo@correo.com"
-                        >
-                    </div>
+                            <div class="form-group">
+                                <label for="email" class="form-label">Correo Electrónico <span class="text-danger">*</span></label>
+                                <input 
+                                    type="email" 
+                                    class="form-control" 
+                                    id="email" 
+                                    name="email" 
+                                    required
+                                    placeholder="ejemplo@correo.com"
+                                >
+                            </div>
 
-                    <div class="form-group">
-                        <label for="first_name" class="form-label">Nombre</label>
-                        <input 
-                            type="text" 
-                            class="form-control" 
-                            id="first_name" 
-                            name="first_name" 
-                            placeholder="Nombre del usuario"
-                        >
-                    </div>
+                            <div class="form-group">
+                                <label for="first_name" class="form-label">Nombre</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="first_name" 
+                                    name="first_name" 
+                                    placeholder="Nombre del usuario"
+                                >
+                            </div>
 
-                    <div class="form-group">
-                        <label for="last_name" class="form-label">Apellido</label>
-                        <input 
-                            type="text" 
-                            class="form-control" 
-                            id="last_name" 
-                            name="last_name" 
-                            placeholder="Apellido del usuario"
-                        >
-                    </div>
+                            <div class="form-group">
+                                <label for="last_name" class="form-label">Apellido</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="last_name" 
+                                    name="last_name" 
+                                    placeholder="Apellido del usuario"
+                                >
+                            </div>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="password" class="form-label">Contraseña</label>
-                        <input 
-                            type="password" 
-                            class="form-control" 
-                            id="password" 
-                            name="password" 
-                            required
-                            placeholder="Ingrese la contraseña"
-                        >
-                        <small class="form-text text-muted">Mínimo 8 caracteres</small>
-                    </div>
+                        <!-- COLUMNA DERECHA -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-lock"></i> Seguridad y Rol
+                            </h6>
 
-                    <div class="form-group">
-                        <label for="is_active" class="form-label">
-                            <input type="checkbox" id="is_active" name="is_active" checked>
-                            Usuario Activo
-                        </label>
-                    </div>
+                            <div class="form-group">
+                                <label for="password" class="form-label">Contraseña <span class="text-danger">*</span></label>
+                                <input 
+                                    type="password" 
+                                    class="form-control" 
+                                    id="password" 
+                                    name="password" 
+                                    required
+                                    placeholder="Ingrese la contraseña"
+                                >
+                                <small class="form-text text-muted">Mínimo 8 caracteres</small>
+                            </div>
 
-                    <div class="form-group">
-                        <label for="is_staff" class="form-label">
-                            <input type="checkbox" id="is_staff" name="is_staff">
-                            Es Personal Administrativo
-                        </label>
+                            <div class="form-group">
+                                <label for="password2" class="form-label">Repetir Contraseña <span class="text-danger">*</span></label>
+                                <input 
+                                    type="password" 
+                                    class="form-control" 
+                                    id="password2" 
+                                    name="password2" 
+                                    required
+                                    placeholder="Repita la contraseña"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="rol" class="form-label">Rol del Usuario <span class="text-danger">*</span></label>
+                                <select class="form-control" id="rol" name="rol" required>
+                                    <option value="">Seleccione un rol</option>
+                                    <option value="administrador">Administrador</option>
+                                    <option value="almacen">Personal de Almacén</option>
+                                    <option value="tienda">Personal de Tienda</option>
+                                    <option value="deposito">Personal de Depósito</option>
+                                    <option value="tienda_online">Personal de Tienda Online</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="grupoUbicacion" style="display: none;">
+                                <label for="nombre_ubicacion" class="form-label">Nombre de Ubicación</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="nombre_ubicacion" 
+                                    name="nombre_ubicacion" 
+                                    placeholder="Ej: Tienda Centro, Almacén Principal"
+                                >
+                                <small class="form-text text-muted">Opcional por ahora</small>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" checked>
+                                    <label class="custom-control-label" for="is_active">Usuario Activo</label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save"></i> Guardar Usuario
                     </button>

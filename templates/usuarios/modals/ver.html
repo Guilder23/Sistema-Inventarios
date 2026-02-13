@@ -1,53 +1,75 @@
 <!-- MODAL: VER USUARIO -->
 <div class="modal fade" id="modalVerUsuario" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-info text-white">
                 <h5 class="modal-title">
                     <i class="fas fa-eye"></i> Detalles del Usuario
                 </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label"><strong>Usuario:</strong></label>
-                    <p id="verUsername" class="form-control-plaintext"></p>
-                </div>
+                <div class="row">
+                    <!-- COLUMNA IZQUIERDA -->
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3 border-bottom pb-2">
+                            <i class="fas fa-user"></i> Información Personal
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Usuario:</strong></label>
+                            <p id="verUsername" class="mb-0 font-weight-bold"></p>
+                        </div>
 
-                <div class="form-group">
-                    <label class="form-label"><strong>Nombre Completo:</strong></label>
-                    <p id="verNombrecompleto" class="form-control-plaintext"></p>
-                </div>
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Nombre Completo:</strong></label>
+                            <p id="verNombrecompleto" class="mb-0"></p>
+                        </div>
 
-                <div class="form-group">
-                    <label class="form-label"><strong>Correo Electrónico:</strong></label>
-                    <p id="verEmail" class="form-control-plaintext"></p>
-                </div>
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Correo Electrónico:</strong></label>
+                            <p id="verEmail" class="mb-0 text-break"></p>
+                        </div>
 
-                <div class="form-group">
-                    <label class="form-label"><strong>Estado:</strong></label>
-                    <p id="verEstado" class="form-control-plaintext"></p>
-                </div>
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Tipo de Usuario:</strong></label>
+                            <p id="verTipo" class="mb-0"></p>
+                        </div>
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label"><strong>Tipo de Usuario:</strong></label>
-                    <p id="verTipo" class="form-control-plaintext"></p>
-                </div>
+                    <!-- COLUMNA DERECHA -->
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3 border-bottom pb-2">
+                            <i class="fas fa-info-circle"></i> Estado y Actividad
+                        </h6>
 
-                <div class="form-group">
-                    <label class="form-label"><strong>Fecha de Registro:</strong></label>
-                    <p id="verFecha" class="form-control-plaintext"></p>
-                </div>
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Estado:</strong></label>
+                            <p id="verEstado" class="mb-0"></p>
+                        </div>
 
-                <div class="form-group">
-                    <label class="form-label"><strong>Último Acceso:</strong></label>
-                    <p id="verUltimoAcceso" class="form-control-plaintext"></p>
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Fecha de Registro:</strong></label>
+                            <p id="verFecha" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Último Acceso:</strong></label>
+                            <p id="verUltimoAcceso" class="mb-0"></p>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
             </div>
         </div>
     </div>

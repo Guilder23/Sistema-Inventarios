@@ -1,12 +1,12 @@
 <!-- MODAL: EDITAR USUARIO -->
 <div class="modal fade" id="modalEditarUsuario" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-warning text-dark">
                 <h5 class="modal-title">
                     <i class="fas fa-user-edit"></i> Editar Usuario
                 </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -14,76 +14,103 @@
                 {% csrf_token %}
                 <input type="hidden" id="editarUsuarioId" name="usuario_id">
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="editUsername" class="form-label">Usuario</label>
-                        <input 
-                            type="text" 
-                            class="form-control" 
-                            id="editUsername" 
-                            name="username" 
-                            disabled
-                        >
-                        <small class="form-text text-muted">El usuario no puede ser modificado</small>
-                    </div>
+                    <div class="row">
+                        <!-- COLUMNA IZQUIERDA -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-user"></i> Información Personal
+                            </h6>
 
-                    <div class="form-group">
-                        <label for="editEmail" class="form-label">Correo Electrónico</label>
-                        <input 
-                            type="email" 
-                            class="form-control" 
-                            id="editEmail" 
-                            name="email" 
-                            required
-                        >
-                    </div>
+                            <div class="form-group">
+                                <label for="editUsername" class="form-label">Usuario</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="editUsername" 
+                                    name="username" 
+                                    disabled
+                                >
+                                <small class="form-text text-muted">El usuario no puede ser modificado</small>
+                            </div>
 
-                    <div class="form-group">
-                        <label for="editFirstName" class="form-label">Nombre</label>
-                        <input 
-                            type="text" 
-                            class="form-control" 
-                            id="editFirstName" 
-                            name="first_name"
-                        >
-                    </div>
+                            <div class="form-group">
+                                <label for="editEmail" class="form-label">Correo Electrónico <span class="text-danger">*</span></label>
+                                <input 
+                                    type="email" 
+                                    class="form-control" 
+                                    id="editEmail" 
+                                    name="email" 
+                                    required
+                                >
+                            </div>
 
-                    <div class="form-group">
-                        <label for="editLastName" class="form-label">Apellido</label>
-                        <input 
-                            type="text" 
-                            class="form-control" 
-                            id="editLastName" 
-                            name="last_name"
-                        >
-                    </div>
+                            <div class="form-group">
+                                <label for="editFirstName" class="form-label">Nombre</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="editFirstName" 
+                                    name="first_name"
+                                >
+                            </div>
 
-                    <div class="form-group">
-                        <label for="editPassword" class="form-label">Nueva Contraseña (dejar en blanco para no cambiar)</label>
-                        <input 
-                            type="password" 
-                            class="form-control" 
-                            id="editPassword" 
-                            name="password"
-                        >
-                    </div>
+                            <div class="form-group">
+                                <label for="editLastName" class="form-label">Apellido</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="editLastName" 
+                                    name="last_name"
+                                >
+                            </div>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="editIsActive" class="form-label">
-                            <input type="checkbox" id="editIsActive" name="is_active">
-                            Usuario Activo
-                        </label>
-                    </div>
+                        <!-- COLUMNA DERECHA -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-cog"></i> Configuración
+                            </h6>
 
-                    <div class="form-group">
-                        <label for="editIsStaff" class="form-label">
-                            <input type="checkbox" id="editIsStaff" name="is_staff">
-                            Es Personal Administrativo
-                        </label>
+                            <div class="form-group">
+                                <label for="editPassword" class="form-label">Nueva Contraseña</label>
+                                <input 
+                                    type="password" 
+                                    class="form-control" 
+                                    id="editPassword" 
+                                    name="password"
+                                    placeholder="Dejar en blanco para no cambiar"
+                                >
+                                <small class="form-text text-muted">Solo si desea cambiar la contraseña</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editRol" class="form-label">Rol del Usuario</label>
+                                <select class="form-control" id="editRol" name="rol">
+                                    <option value="administrador">Administrador</option>
+                                    <option value="almacen">Personal de Almacén</option>
+                                    <option value="tienda">Personal de Tienda</option>
+                                    <option value="deposito">Personal de Depósito</option>
+                                    <option value="tienda_online">Personal de Tienda Online</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="editIsActive" name="is_active">
+                                    <label class="custom-control-label" for="editIsActive">
+                                        <strong>Usuario Activo</strong>
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">Desmarcar para bloquear el usuario</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-warning">
                         <i class="fas fa-save"></i> Guardar Cambios
                     </button>
                 </div>
