@@ -72,11 +72,6 @@
 
                 <!-- TABLA DE USUARIOS -->
                 <div class="card card-tabla">
-                    <div class="card-header py-2">
-                        <h6 class="card-title mb-0">
-                            <i class="fas fa-users"></i> Total de Usuarios: <span class="badge badge-primary">{{ usuarios.count }}</span>
-                        </h6>
-                    </div>
                     <div class="table-responsive">
                         <table class="table table-sm tabla-usuarios mb-0">
                             <thead>
@@ -109,28 +104,28 @@
                                     <td>
                                         {% if usuario.perfil %}
                                             {% if usuario.perfil.rol == 'administrador' %}
-                                                <span class="badge-rol badge-rol-admin">
+                                                <span class="badge-rol badge-rol-admin" data-rol="administrador">
                                                     <i class="fas fa-user-shield"></i> Admin
                                                 </span>
                                             {% elif usuario.perfil.rol == 'almacen' %}
-                                                <span class="badge-rol badge-rol-almacen">
+                                                <span class="badge-rol badge-rol-almacen" data-rol="almacen">
                                                     <i class="fas fa-warehouse"></i> Almacén
                                                 </span>
                                             {% elif usuario.perfil.rol == 'tienda' %}
-                                                <span class="badge-rol badge-rol-tienda">
+                                                <span class="badge-rol badge-rol-tienda" data-rol="tienda">
                                                     <i class="fas fa-store"></i> Tienda
                                                 </span>
                                             {% elif usuario.perfil.rol == 'deposito' %}
-                                                <span class="badge-rol badge-rol-deposito">
+                                                <span class="badge-rol badge-rol-deposito" data-rol="deposito">
                                                     <i class="fas fa-box"></i> Depósito
                                                 </span>
                                             {% elif usuario.perfil.rol == 'tienda_online' %}
-                                                <span class="badge-rol badge-rol-online">
+                                                <span class="badge-rol badge-rol-online" data-rol="tienda_online">
                                                     <i class="fas fa-shopping-cart"></i> Online
                                                 </span>
                                             {% endif %}
                                         {% else %}
-                                            <span class="badge-rol badge-rol-sinrol">Sin rol</span>
+                                            <span class="badge-rol badge-rol-sinrol" data-rol="">Sin rol</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-center">

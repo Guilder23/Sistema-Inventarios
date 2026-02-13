@@ -39,6 +39,9 @@ def dashboard(request):
 @login_required
 def listar_usuarios(request):
     """Listar todos los usuarios con filtros"""
+    from apps.almacenes.models import Almacen
+    from apps.tiendas.models import Tienda
+    
     # Obtener parámetros de búsqueda
     buscar = request.GET.get('buscar', '')
     estado = request.GET.get('estado', '')
@@ -69,6 +72,8 @@ def listar_usuarios(request):
         'buscar': buscar,
         'estado': estado,
         'rol': rol,
+        'almacenes': Almacen.objects.filter(estado='activo'),
+        'tiendas': Tienda.objects.filter(estado='activo'),
     }
     
     return render(request, 'usuarios/usuarios.html', context)
@@ -90,7 +95,8 @@ def crear_usuario(request):
             
             # Datos del perfil
             rol = request.POST.get('rol')
-            nombre_ubicacion = request.POST.get('nombre_ubicacion', '')
+            almacen_id = request.POST.get('almacen', '')
+            tienda_id = request.POST.get('tienda', '')
             
             # Validar contraseñas
             if password != password2:
@@ -116,11 +122,15 @@ def crear_usuario(request):
                 messages.error(request, 'Debe seleccionar un rol')
                 return redirect('listar_usuarios')
             
-            # La ubicación es opcional por ahora (hasta crear gestión de almacenes/tiendas)
-            # rolesConUbicacion = ['almacen', 'tienda', 'deposito', 'tienda_online']
-            # if rol in rolesConUbicacion and not nombre_ubicacion:
-            #     messages.error(request, 'Debe especificar el nombre de la ubicación para este rol')
-            #     return redirect('listar_usuarios')
+            # Validar que almacén sea requerido para Personal de Almacén
+            if rol == 'almacen' and not almacen_id:
+                messages.error(request, 'Debe seleccionar un almacén para este rol')
+                return redirect('listar_usuarios')
+            
+            # Validar que tienda sea requerida para Personal de Tienda
+            if rol == 'tienda' and not tienda_id:
+                messages.error(request, 'Debe seleccionar una tienda para este rol')
+                return redirect('listar_usuarios')
             
             # Crear usuario
             usuario = User.objects.create_user(
@@ -130,16 +140,37 @@ def crear_usuario(request):
                 first_name=first_name,
                 last_name=last_name,
                 is_active=is_active,
-                is_staff=(rol == 'administrador'),  # Solo administradores son staff
-                is_superuser=(rol == 'administrador')  # Solo administradores son superuser
+                is_staff=(rol == 'administrador'),
+                is_superuser=(rol == 'administrador')
             )
             
+            # Obtener almacén y tienda si aplica
+            almacen = None
+            tienda = None
+            
+            if almacen_id:
+                from apps.almacenes.models import Almacen
+                almacen = Almacen.objects.filter(id=almacen_id).first()
+            
+            if tienda_id:
+                from apps.tiendas.models import Tienda
+                tienda = Tienda.objects.filter(id=tienda_id).first()
+            
             # Crear perfil de usuario
+            nombre_ubicacion = ''
+            if almacen:
+                nombre_ubicacion = almacen.nombre
+            elif tienda:
+                nombre_ubicacion = tienda.nombre
+            
             PerfilUsuario.objects.create(
                 usuario=usuario,
                 rol=rol,
-                nombre_ubicacion=nombre_ubicacion if nombre_ubicacion else f'{rol.title()} - {username}',
-                activo=is_active
+                nombre_ubicacion=nombre_ubicacion,
+                almacen=almacen,
+                tienda=tienda,
+                activo=is_active,
+                creado_por=request.user
             )
             
             messages.success(request, f'Usuario "{username}" creado exitosamente con rol de {dict(PerfilUsuario.ROLES)[rol]}')
@@ -150,6 +181,60 @@ def crear_usuario(request):
             return redirect('listar_usuarios')
     
     return redirect('listar_usuarios')
+
+@login_required
+def obtener_usuario(request, id):
+    """Obtener datos de un usuario en formato JSON"""
+    try:
+        usuario = get_object_or_404(User, id=id)
+        perfil = usuario.perfil if hasattr(usuario, 'perfil') else None
+        
+        # Obtener creador
+        creado_por_str = ''
+        if perfil and perfil.creado_por:
+            creado_por_str = f"{perfil.creado_por.first_name} {perfil.creado_por.last_name}".strip()
+            if not creado_por_str:
+                creado_por_str = perfil.creado_por.username
+        
+        # Obtener nombre completo
+        nombre_completo = f"{usuario.first_name} {usuario.last_name}".strip()
+        if not nombre_completo:
+            nombre_completo = usuario.username
+        
+        # Obtener rol display
+        rol_display = ''
+        if perfil:
+            rol_dict = {
+                'administrador': 'Administrador',
+                'almacen': 'Personal de Almacén',
+                'tienda': 'Personal de Tienda',
+                'tienda_online': 'Tienda Online',
+            }
+            rol_display = rol_dict.get(perfil.rol, perfil.rol)
+        
+        data = {
+            'id': usuario.id,
+            'username': usuario.username,
+            'email': usuario.email,
+            'first_name': usuario.first_name,
+            'last_name': usuario.last_name,
+            'nombre_completo': nombre_completo,
+            'is_active': usuario.is_active,
+            'is_staff': usuario.is_staff,
+            'rol': perfil.rol if perfil else '',
+            'rol_display': rol_display,
+            'almacen_id': perfil.almacen_id if perfil and perfil.almacen_id else '',
+            'tienda_id': perfil.tienda_id if perfil and perfil.tienda_id else '',
+            'almacen_nombre': perfil.almacen.nombre if perfil and perfil.almacen else '',
+            'tienda_nombre': perfil.tienda.nombre if perfil and perfil.tienda else '',
+            'creado_por': creado_por_str,
+            'last_login': usuario.last_login.strftime('%d/%m/%Y %H:%M') if usuario.last_login else 'Nunca',
+            'date_joined': usuario.date_joined.strftime('%d/%m/%Y %H:%M'),
+        }
+        return JsonResponse(data)
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=404)
 
 @login_required
 @require_http_methods(["GET", "POST"])
@@ -168,7 +253,19 @@ def editar_usuario(request, id):
             
             # Actualizar rol
             nuevo_rol = request.POST.get('rol')
+            almacen_id = request.POST.get('almacen', '')
+            tienda_id = request.POST.get('tienda', '')
+            
             if nuevo_rol:
+                # Validar que almacén/tienda sean requeridos según el rol
+                if nuevo_rol == 'almacen' and not almacen_id:
+                    messages.error(request, 'Debe seleccionar un almacén para este rol')
+                    return redirect('listar_usuarios')
+                
+                if nuevo_rol == 'tienda' and not tienda_id:
+                    messages.error(request, 'Debe seleccionar una tienda para este rol')
+                    return redirect('listar_usuarios')
+                
                 # Actualizar permisos según rol
                 usuario.is_staff = (nuevo_rol == 'administrador')
                 usuario.is_superuser = (nuevo_rol == 'administrador')
@@ -176,13 +273,35 @@ def editar_usuario(request, id):
                 # Actualizar perfil si existe, sino crear
                 if hasattr(usuario, 'perfil'):
                     usuario.perfil.rol = nuevo_rol
+                    
+                    # Actualizar almacén/tienda
+                    if almacen_id:
+                        usuario.perfil.almacen_id = almacen_id
+                        usuario.perfil.tienda_id = None  # Limpiar tienda si es almacén
+                    elif tienda_id:
+                        usuario.perfil.tienda_id = tienda_id
+                        usuario.perfil.almacen_id = None  # Limpiar almacén si es tienda
+                    else:
+                        usuario.perfil.almacen_id = None
+                        usuario.perfil.tienda_id = None
+                    
                     usuario.perfil.save()
                 else:
+                    # Obtener las instancias de Almacén y Tienda
+                    from apps.almacenes.models import Almacen
+                    from apps.tiendas.models import Tienda
+                    
+                    almacen = Almacen.objects.filter(id=almacen_id).first() if almacen_id else None
+                    tienda = Tienda.objects.filter(id=tienda_id).first() if tienda_id else None
+                    
                     PerfilUsuario.objects.create(
                         usuario=usuario,
                         rol=nuevo_rol,
-                        nombre_ubicacion=f'{nuevo_rol.title()} - {usuario.username}',
-                        activo=usuario.is_active
+                        nombre_ubicacion=almacen.nombre or tienda.nombre or '',
+                        almacen=almacen,
+                        tienda=tienda,
+                        activo=usuario.is_active,
+                        creado_por=request.user
                     )
             
             # Actualizar contraseña solo si se proporciona
@@ -201,6 +320,14 @@ def editar_usuario(request, id):
     
     # Si es GET, retornar datos del usuario en JSON
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        perfil = usuario.perfil if hasattr(usuario, 'perfil') else None
+        
+        creado_por_str = ''
+        if perfil and perfil.creado_por:
+            creado_por_str = f"{perfil.creado_por.first_name} {perfil.creado_por.last_name}".strip()
+            if not creado_por_str:
+                creado_por_str = perfil.creado_por.username
+        
         data = {
             'id': usuario.id,
             'username': usuario.username,
@@ -209,7 +336,12 @@ def editar_usuario(request, id):
             'last_name': usuario.last_name,
             'is_active': usuario.is_active,
             'is_staff': usuario.is_staff,
-            'rol': usuario.perfil.rol if hasattr(usuario, 'perfil') else '',
+            'rol': perfil.rol if perfil else '',
+            'almacen_id': perfil.almacen_id if perfil and perfil.almacen_id else '',
+            'tienda_id': perfil.tienda_id if perfil and perfil.tienda_id else '',
+            'almacen_nombre': perfil.almacen.nombre if perfil and perfil.almacen else '',
+            'tienda_nombre': perfil.tienda.nombre if perfil and perfil.tienda else '',
+            'creado_por': creado_por_str,
             'last_login': usuario.last_login.strftime('%d/%m/%Y %H:%M') if usuario.last_login else 'Nunca',
             'date_joined': usuario.date_joined.strftime('%d/%m/%Y %H:%M'),
         }

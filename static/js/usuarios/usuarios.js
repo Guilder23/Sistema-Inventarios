@@ -71,8 +71,8 @@ function aplicarFiltrosFrontend() {
         }
         
         const textoFila = fila.textContent.toLowerCase();
-        const estadoFila = fila.querySelector('.badge-success, .badge-danger');
-        const rolBadge = fila.querySelector('.badge');
+        const estadoFila = fila.querySelector('.badge-estado-activo, .badge-estado-inactivo');
+        const rolBadge = fila.querySelector('.badge-rol');
         
         let mostrar = true;
         
@@ -81,17 +81,17 @@ function aplicarFiltrosFrontend() {
         }
         
         if (estado && estadoFila) {
-            if (estado === 'activo' && !estadoFila.classList.contains('badge-success')) {
+            if (estado === 'activo' && !estadoFila.classList.contains('badge-estado-activo')) {
                 mostrar = false;
             }
-            if (estado === 'inactivo' && !estadoFila.classList.contains('badge-danger')) {
+            if (estado === 'inactivo' && !estadoFila.classList.contains('badge-estado-inactivo')) {
                 mostrar = false;
             }
         }
         
         if (rol && rolBadge) {
-            const rolTexto = rolBadge.textContent.toLowerCase();
-            if (!rolTexto.includes(rol.toLowerCase())) {
+            const rolEnBadge = rolBadge.getAttribute('data-rol') || '';
+            if (rolEnBadge !== rol) {
                 mostrar = false;
             }
         }
@@ -101,7 +101,6 @@ function aplicarFiltrosFrontend() {
     });
     
     mostrarMensajeSinResultados(contadorVisible, buscar, estado, rol);
-    actualizarContador(contadorVisible);
 }
 
 /**

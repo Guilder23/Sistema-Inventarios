@@ -89,8 +89,29 @@
                                     <option value="administrador">Administrador</option>
                                     <option value="almacen">Personal de Almacén</option>
                                     <option value="tienda">Personal de Tienda</option>
-                                    <option value="deposito">Personal de Depósito</option>
-                                    <option value="tienda_online">Personal de Tienda Online</option>
+                                    <option value="tienda_online">Tienda Online</option>
+                                </select>
+                            </div>
+
+                            <!-- Selector de Almacén (Solo para Personal de Almacén) -->
+                            <div class="form-group" id="editGrupoAlmacen" style="display: none;">
+                                <label for="editAlmacen" class="form-label">Almacén</label>
+                                <select class="form-control" id="editAlmacen" name="almacen">
+                                    <option value="">Seleccione un almacén</option>
+                                    {% for almacen in almacenes %}
+                                        <option value="{{ almacen.id }}">{{ almacen.nombre }} - {{ almacen.ciudad }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Selector de Tienda (Solo para Personal de Tienda) -->
+                            <div class="form-group" id="editGrupoTienda" style="display: none;">
+                                <label for="editTienda" class="form-label">Tienda</label>
+                                <select class="form-control" id="editTienda" name="tienda">
+                                    <option value="">Seleccione una tienda</option>
+                                    {% for tienda in tiendas %}
+                                        <option value="{{ tienda.id }}">{{ tienda.nombre }} - {{ tienda.ciudad }}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
 

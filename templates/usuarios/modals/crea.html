@@ -106,21 +106,30 @@
                                     <option value="administrador">Administrador</option>
                                     <option value="almacen">Personal de Almacén</option>
                                     <option value="tienda">Personal de Tienda</option>
-                                    <option value="deposito">Personal de Depósito</option>
-                                    <option value="tienda_online">Personal de Tienda Online</option>
+                                    <option value="tienda_online">Tienda Online</option>
                                 </select>
                             </div>
 
-                            <div class="form-group" id="grupoUbicacion" style="display: none;">
-                                <label for="nombre_ubicacion" class="form-label">Nombre de Ubicación</label>
-                                <input 
-                                    type="text" 
-                                    class="form-control" 
-                                    id="nombre_ubicacion" 
-                                    name="nombre_ubicacion" 
-                                    placeholder="Ej: Tienda Centro, Almacén Principal"
-                                >
-                                <small class="form-text text-muted">Opcional por ahora</small>
+                            <!-- Selector de Almacén (Solo para Personal de Almacén) -->
+                            <div class="form-group" id="grupoAlmacen" style="display: none;">
+                                <label for="almacen" class="form-label">Almacén <span class="text-danger">*</span></label>
+                                <select class="form-control" id="almacen" name="almacen">
+                                    <option value="">Seleccione un almacén</option>
+                                    {% for almacen in almacenes %}
+                                        <option value="{{ almacen.id }}">{{ almacen.nombre }} - {{ almacen.ciudad }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Selector de Tienda (Solo para Personal de Tienda) -->
+                            <div class="form-group" id="grupoTienda" style="display: none;">
+                                <label for="tienda" class="form-label">Tienda <span class="text-danger">*</span></label>
+                                <select class="form-control" id="tienda" name="tienda">
+                                    <option value="">Seleccione una tienda</option>
+                                    {% for tienda in tiendas %}
+                                        <option value="{{ tienda.id }}">{{ tienda.nombre }} - {{ tienda.ciudad }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
 
                             <div class="form-group">
