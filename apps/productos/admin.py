@@ -3,7 +3,7 @@ from .models import Producto, HistorialProducto, ProductoDanado
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ['codigo', 'nombre', 'precio_caja', 'precio_unidad', 'activo', 'fecha_creacion']
+    list_display = ['codigo', 'nombre', 'stock', 'precio_unidad', 'activo', 'fecha_creacion']
     list_filter = ['activo', 'fecha_creacion']
     search_fields = ['codigo', 'nombre', 'descripcion']
     list_per_page = 20

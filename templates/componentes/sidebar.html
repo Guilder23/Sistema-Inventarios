@@ -28,13 +28,15 @@
                 <span class="sidebar-section-title">OPERACIONES</span>
             </li>
 
-            <!-- Productos - Todos los usuarios -->
+            <!-- Productos - Almacén y Administradores -->
+            {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
             <li class="sidebar-item">
                 <a href="{% url 'listar_productos' %}" class="sidebar-link {% if 'productos' in request.resolver_match.url_name %}active{% endif %}" title="Productos">
                     <i class="fas fa-box"></i>
                     <span>Productos</span>
                 </a>
             </li>
+            {% endif %}
 
             <!-- Inventario - Todos los usuarios -->
             <li class="sidebar-item">

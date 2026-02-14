@@ -1,0 +1,106 @@
+<!-- MODAL: VER PRODUCTO -->
+<div class="modal fade" id="modalVerProducto" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye"></i> Detalles del Producto
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- COLUMNA IZQUIERDA: Imagen -->
+                    <div class="col-md-5 text-center">
+                        <div id="previewProductoFoto" class="mb-3">
+                            <!-- Foto aparecerá aquí -->
+                        </div>
+                        <div id="verEstadoBtn" class="mb-3">
+                            <!-- Estado badge aquí -->
+                        </div>
+                    </div>
+
+                    <!-- COLUMNA DERECHA: Información -->
+                    <div class="col-md-7">
+                        <!-- INFORMACIÓN GENERAL -->
+                        <h6 class="text-muted mb-3 border-bottom pb-2">
+                            <i class="fas fa-box"></i> Información General
+                        </h6>
+
+                        <div class="form-group mb-2">
+                            <label class="form-label small text-muted"><strong>Código:</strong></label>
+                            <p id="verCodigo" class="mb-0 font-weight-bold"></p>
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="form-label small text-muted"><strong>Nombre:</strong></label>
+                            <p id="verNombre" class="mb-0"></p>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label small text-muted"><strong>Descripción:</strong></label>
+                            <p id="verDescripcion" class="mb-0"></p>
+                        </div>
+
+                        <!-- STOCK -->
+                        <h6 class="text-muted mb-3 border-bottom pb-2">
+                            <i class="fas fa-boxes"></i> Stock
+                        </h6>
+
+                        <div class="form-group mb-2">
+                            <label class="form-label small text-muted"><strong>Cantidad:</strong></label>
+                            <p id="verStock" class="mb-0"></p>
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="form-label small text-muted"><strong>Unidades x Caja:</strong></label>
+                            <p id="verUnidadesPorCaja" class="mb-0"></p>
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="form-label small text-muted"><strong>Stock Crítico:</strong></label>
+                            <p id="verStockCritico" class="mb-0"></p>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label small text-muted"><strong>Stock Bajo:</strong></label>
+                            <p id="verStockBajo" class="mb-0"></p>
+                        </div>
+
+                        <!-- PRECIOS -->
+                        <h6 class="text-muted mb-3 border-bottom pb-2">
+                            <i class="fas fa-dollar-sign"></i> Precios (Bs.)
+                        </h6>
+
+                        <div class="form-group mb-2">
+                            <label class="form-label small text-muted"><strong>Precio Unitario:</strong></label>
+                            <p id="verPrecioUnidad" class="mb-0"></p>
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="form-label small text-muted"><strong>Precio Compra:</strong></label>
+                            <p id="verPrecioCompra" class="mb-0"></p>
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="form-label small text-muted"><strong>Precio Caja:</strong></label>
+                            <p id="verPrecioCaja" class="mb-0"></p>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label small text-muted"><strong>Precio Mayor:</strong></label>
+                            <p id="verPrecioMayor" class="mb-0"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

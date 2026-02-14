@@ -1,0 +1,69 @@
+<!-- MODAL: EDITAR PRECIO (ADMINISTRADOR) -->
+<div class="modal fade" id="modalEditarPrecio" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-dollar-sign"></i> Editar Precio del Producto
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formEditarPrecio" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Como administrador, solo puedes editar el precio unitario del producto.
+                    </div>
+
+                    <div class="form-group">
+                        <label for="precio_producto" class="form-label">Producto</label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="precio_producto" 
+                            disabled
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="precio_actual" class="form-label">Precio Actual (Bs.)</label>
+                        <input 
+                            type="number" 
+                            class="form-control" 
+                            id="precio_actual" 
+                            disabled
+                            step="0.01"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="precio_nuevo" class="form-label">Nuevo Precio (Bs.) <span class="text-danger">*</span></label>
+                        <input 
+                            type="number" 
+                            class="form-control" 
+                            id="precio_nuevo" 
+                            name="precio_unidad"
+                            required
+                            step="0.01"
+                            min="0"
+                        >
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-history"></i> Este cambio será registrado en el historial del producto.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar Precio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
