@@ -1,5 +1,5 @@
 // ================================================================
-// MODAL EDITAR PRECIO (ADMINISTRADOR)
+// MODAL EDITAR PRECIO (ADMINISTRADOR) - CON NOTIFICACIONES
 // ================================================================
 
 (function() {
@@ -41,8 +41,7 @@
                 $('#modalEditarPrecio').modal('show');
             },
             error: function(xhr) {
-                alert('Error al cargar los datos del producto');
-                console.error(xhr);
+                mostrarNotificacion('Error al cargar los datos del producto', 'danger');
             }
         });
     }
@@ -58,24 +57,25 @@
     
     function guardarPrecio(productoId) {
         const precioNuevo = $('#precio_nuevo').val();
+        const precioActual = $('#precio_actual').val();
         
         if (!precioNuevo || parseFloat(precioNuevo) < 0) {
-            alert('El precio debe ser un número válido');
+            mostrarNotificacion('El precio debe ser un número válido', 'warning');
             $('#precio_nuevo').focus();
             return;
         }
         
-        const url = `/productos/${productoId}/editar/`;
         const formData = new FormData();
         formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
         formData.append('precio_unidad', precioNuevo);
         
         // Desactivar botón mientras se procesa
-        const $btn = $(this).find('button[type="submit"]');
-        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+        const btnSubmit = $('#formEditarPrecio button[type="submit"]');
+        const textoOriginal = btnSubmit.html();
+        btnSubmit.prop('disabled', true).html('<span class="spinner-border spinner-border-sm mr-2"></span>Guardando...');
         
         $.ajax({
-            url: url,
+            url: `/productos/${productoId}/editar-precio/`,
             type: 'POST',
             data: formData,
             processData: false,
@@ -84,26 +84,34 @@
                 'X-Requested-With': 'XMLHttpRequest'
             },
             success: function(response) {
+                btnSubmit.prop('disabled', false).html(textoOriginal);
+                
                 // Cerrar modal
                 $('#modalEditarPrecio').modal('hide');
                 
-                // Mostrar mensaje de éxito
-                alert('Precio actualizado correctamente');
+                // Mostrar notificación
+                mostrarNotificacion(
+                    `Precio actualizado: $${precioActual} → $${precioNuevo}`,
+                    'success',
+                    4000
+                );
                 
-                // Recargar la página
-                location.reload();
+                // Recargar tabla
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
             },
             error: function(xhr) {
-                // Reactivar botón
-                $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar Precio');
+                btnSubmit.prop('disabled', false).html(textoOriginal);
                 
-                // Mostrar error
-                console.error('Error:', xhr);
+                let mensaje = 'Error al actualizar el precio';
                 if (xhr.status === 403) {
-                    alert('No tienes permisos para editar precios');
-                } else {
-                    alert('Error al actualizar el precio');
+                    mensaje = 'No tienes permisos para editar precios';
+                } else if (xhr.responseJSON && xhr.responseJSON.error) {
+                    mensaje = xhr.responseJSON.error;
                 }
+                
+                mostrarNotificacion(mensaje, 'danger');
             }
         });
     }

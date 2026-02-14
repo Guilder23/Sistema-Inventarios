@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
 from .models import Producto, HistorialProducto
+from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
 
 def verificar_permiso_productos(request):
     """Verifica si el usuario tiene permiso para gestionar productos"""
@@ -126,6 +127,14 @@ def crear_producto(request):
                 detalles=f'Producto creado: {nombre}'
             )
             
+            # Notificar a administrador
+            notificar_administrador_producto(
+                tipo='producto_creado',
+                titulo='Nuevo Producto',
+                mensaje=f'{request.user.username} creó el producto "{nombre}" (código: {codigo})',
+                url=f'/productos/'
+            )
+            
             messages.success(request, f'Producto "{nombre}" creado exitosamente')
             return redirect('listar_productos')
             
@@ -233,6 +242,15 @@ def editar_producto(request, id):
                 detalles=detalles
             )
             
+            # Notificar a administrador de cambios importantes del almacén
+            if es_almacen(request):
+                notificar_administrador_producto(
+                    tipo='producto_editado',
+                    titulo='Producto Editado',
+                    mensaje=f'{request.user.username} editó el producto "{producto.nombre}" (código: {producto.codigo})',
+                    url=f'/productos/'
+                )
+            
             messages.success(request, f'Producto "{producto.nombre}" actualizado exitosamente')
             return redirect('listar_productos')
             
@@ -259,6 +277,7 @@ def eliminar_producto(request, id):
     
     try:
         nombre_producto = producto.nombre
+        codigo_producto = producto.codigo
         
         # Registrar en historial antes de eliminar
         HistorialProducto.objects.create(
@@ -271,6 +290,14 @@ def eliminar_producto(request, id):
         # Desactivar en lugar de eliminar (soft delete)
         producto.activo = False
         producto.save()
+        
+        # Notificar a administrador
+        notificar_administrador_producto(
+            tipo='producto_eliminado',
+            titulo='Producto Eliminado',
+            mensaje=f'{request.user.username} eliminó el producto "{nombre_producto}" (código: {codigo_producto})',
+            url=f'/productos/'
+        )
         
         messages.success(request, f'Producto "{nombre_producto}" eliminado correctamente')
         
@@ -304,4 +331,53 @@ def listar_danados(request):
 @login_required
 def registrar_danado(request):
     return render(request, 'productos/registrar_danado.html')
+
+@login_required
+@require_http_methods(["POST"])
+def editar_precio_producto(request, id):
+    """Editar precio de un producto - Solo administrador"""
+    # Verificar permisos
+    if not es_administrador(request):
+        return JsonResponse({'error': 'No tiene permisos para editar precios'}, status=403)
+    
+    try:
+        producto = get_object_or_404(Producto, id=id)
+        
+        precio_anterior = float(producto.precio_unidad)
+        nuevo_precio = float(request.POST.get('precio_unidad', 0))
+        
+        if nuevo_precio <= 0:
+            return JsonResponse({'error': 'El precio debe ser mayor a 0'}, status=400)
+        
+        if nuevo_precio == precio_anterior:
+            return JsonResponse({'mensaje': 'El precio no cambió'}, status=200)
+        
+        # Actualizar precio
+        producto.precio_unidad = nuevo_precio
+        producto.save()
+        
+        # Registrar en historial
+        HistorialProducto.objects.create(
+            producto=producto,
+            accion='edicion',
+            usuario=request.user,
+            detalles=f'Precio actualizado de {precio_anterior} a {nuevo_precio}'
+        )
+        
+        # Notificar al almacén del cambio de precio
+        notificar_almacen_precio(
+            titulo='Precio Modificado',
+            mensaje=f'Administrador cambió el precio del producto "{producto.nombre}" (código: {producto.codigo}) de ${precio_anterior:.2f} a ${nuevo_precio:.2f}',
+            url=f'/productos/'
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'mensaje': 'Precio actualizado correctamente',
+            'precio_anterior': precio_anterior,
+            'precio_nuevo': nuevo_precio
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 

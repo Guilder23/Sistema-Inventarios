@@ -481,3 +481,260 @@
         padding: 0 0.75rem;
     }
 }
+
+/* ============================================================================
+   ESTILOS PARA NOTIFICACIONES EN NAVBAR
+   ============================================================================ */
+
+/* Notificaciones Badge */
+.navbar-notificaciones {
+    position: relative;
+    margin-right: 1.5rem;
+}
+
+.navbar-notificaciones .badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #dc2626;
+    color: white;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    border: 2px solid white;
+    display: none;
+}
+
+.navbar-notificaciones .badge:not(:empty) {
+    display: flex;
+}
+
+/* Dropdown de Notificaciones */
+.notificaciones-dropdown {
+    position: absolute;
+    top: 50px;
+    right: 0;
+    width: 350px;
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    max-height: 400px;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease-in-out;
+}
+
+.notificaciones-dropdown.mostrar,
+.notificaciones-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Header del Dropdown */
+.dropdown-header {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.dropdown-header span {
+    font-weight: 600;
+    color: #111827;
+    font-size: 0.9rem;
+}
+
+.dropdown-header small {
+    font-size: 0.7rem;
+    color: #6b7280;
+}
+
+/* Items del Dropdown */
+.dropdown-items {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 240px;
+}
+
+.dropdown-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color 0.2s;
+    cursor: pointer;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-item.notificacion-nueva {
+    background-color: #f0f9ff;
+}
+
+.dropdown-item.notificacion-nueva:hover {
+    background-color: #e0f2fe;
+}
+
+/* Icono de Notificación */
+.notification-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: white;
+    font-size: 0.875rem;
+}
+
+.notification-icon.bg-success {
+    background-color: #10b981;
+}
+
+.notification-icon.bg-danger {
+    background-color: #ef4444;
+}
+
+.notification-icon.bg-warning {
+    background-color: #f59e0b;
+}
+
+.notification-icon.bg-info {
+    background-color: #3b82f6;
+}
+
+.notification-icon.bg-secondary {
+    background-color: #6b7280;
+}
+
+.notification-icon.bg-primary {
+    background-color: #1e3a8a;
+}
+
+.notification-icon.bg-muted {
+    background-color: #9ca3af;
+}
+
+/* Contenido de Notificación */
+.notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-content strong {
+    display: block;
+    color: #111827;
+    font-size: 0.8rem;
+    margin-bottom: 0.125rem;
+    word-break: break-word;
+}
+
+.notification-content p {
+    display: block;
+    color: #6b7280;
+    font-size: 0.75rem;
+    margin: 0 0 0.125rem 0;
+    line-height: 1.2;
+    word-break: break-word;
+    white-space: normal;
+}
+
+.notification-content small {
+    display: block;
+    color: #9ca3af;
+    font-size: 0.7rem;
+}
+
+/* Sin Notificaciones */
+.no-notificaciones {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: #9ca3af;
+}
+
+.no-notificaciones p {
+    margin: 0;
+}
+
+/* Footer del Dropdown */
+.dropdown-footer {
+    padding: 0.5rem 0.75rem;
+    border-top: 1px solid #e5e7eb;
+    background: #f8f9fa;
+    border-radius: 0 0 0.5rem 0.5rem;
+    text-align: center;
+}
+
+/* Botón Marcar Todas Leídas */
+.btn-marcar-todas,
+#marcarTodasBtn {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    background-color: #1e3a8a;
+    color: white;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: none;
+    width: 100%;
+}
+
+.btn-marcar-todas:hover,
+#marcarTodasBtn:hover {
+    background-color: #1e40af;
+}
+
+/* Scroll personalizado - INVISIBLE */
+.dropdown-items::-webkit-scrollbar {
+    width: 0px;
+}
+
+.dropdown-items::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dropdown-items::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 3px;
+}
+
+.dropdown-items::-webkit-scrollbar-thumb:hover {
+    background-color: transparent;
+}
+
+/* Para Firefox */
+.dropdown-items {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+/* Responsive para notificaciones */
+@media (max-width: 768px) {
+    .notificaciones-dropdown {
+        width: 280px;
+        right: -50px;
+    }
+}

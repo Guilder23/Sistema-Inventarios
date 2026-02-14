@@ -1,5 +1,5 @@
 // ================================================================
-// MODAL CREAR PRODUCTO - VERSIÓN SIMPLIFICADA Y ROBUSTA
+// MODAL CREAR PRODUCTO - VERSIÓN CON NOTIFICACIONES INTEGRADAS
 // ================================================================
 
 (function() {
@@ -11,12 +11,15 @@
             limpiarFormulario();
         });
         
-        // Manejar submit del formulario
+        // Manejar submit con AJAX
         $(document).on('submit', '#formCrearProducto', function(e) {
+            e.preventDefault();
+            
             if (!validarFormulario()) {
-                e.preventDefault();
                 return false;
             }
+            
+            crearProductoAJAX();
         });
         
         // Mostrar nombre del archivo seleccionado
@@ -37,6 +40,53 @@
         console.log('✓ Modal Crear Producto inicializado');
     };
     
+    function crearProductoAJAX() {
+        const form = $('#formCrearProducto')[0];
+        const formData = new FormData(form);
+        const nombreProducto = $('#nombre').val();
+        
+        // Deshabilitar botón submit
+        const btnSubmit = $('#formCrearProducto button[type="submit"]');
+        const textoOriginal = btnSubmit.html();
+        btnSubmit.prop('disabled', true).html('<span class="spinner-border spinner-border-sm mr-2"></span>Guardando...');
+        
+        $.ajax({
+            url: $('#formCrearProducto').attr('action'),
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function(response) {
+                btnSubmit.prop('disabled', false).html(textoOriginal);
+                
+                // Cerrar modal
+                $('#modalCrearProducto').modal('hide');
+                
+                // Mostrar notificación
+                mostrarNotificacion(
+                    `Producto "${nombreProducto}" creado exitosamente`,
+                    'success',
+                    4000
+                );
+                
+                // Recargar tabla
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
+            },
+            error: function(xhr) {
+                btnSubmit.prop('disabled', false).html(textoOriginal);
+                
+                let mensaje = 'Error al crear producto';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    mensaje = xhr.responseJSON.error;
+                }
+                
+                mostrarNotificacion(mensaje, 'danger');
+            }
+        });
+    }
+    
     function validarFormulario() {
         const codigo = $('#codigo').val().trim();
         const nombre = $('#nombre').val().trim();
@@ -45,31 +95,31 @@
         const precio_unidad = $('#precio_unidad').val();
         
         if (!codigo) {
-            alert('El código del producto es requerido');
+            mostrarNotificacion('El código del producto es requerido', 'warning');
             $('#codigo').focus();
             return false;
         }
         
         if (!nombre) {
-            alert('El nombre del producto es requerido');
+            mostrarNotificacion('El nombre del producto es requerido', 'warning');
             $('#nombre').focus();
             return false;
         }
         
         if (!stock || parseInt(stock) < 0) {
-            alert('El stock debe ser un número válido');
+            mostrarNotificacion('El stock debe ser un número válido', 'warning');
             $('#stock').focus();
             return false;
         }
         
         if (!unidades_por_caja || parseInt(unidades_por_caja) < 1) {
-            alert('Las unidades por caja deben ser al menos 1');
+            mostrarNotificacion('Las unidades por caja deben ser al menos 1', 'warning');
             $('#unidades_por_caja').focus();
             return false;
         }
         
         if (!precio_unidad || parseFloat(precio_unidad) < 0) {
-            alert('El precio unitario debe ser un número válido');
+            mostrarNotificacion('El precio unitario debe ser un número válido', 'warning');
             $('#precio_unidad').focus();
             return false;
         }
@@ -80,5 +130,6 @@
     function limpiarFormulario() {
         $('#formCrearProducto')[0].reset();
         $('#foto').next('.custom-file-label').text('Seleccionar archivo');
+        $('#previewFoto').html('');
     }
 })();

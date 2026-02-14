@@ -1,11 +1,12 @@
 // ================================================================
-// MODAL ELIMINAR PRODUCTO
+// MODAL ELIMINAR PRODUCTO - CON NOTIFICACIONES
 // ================================================================
 
 (function() {
     'use strict';
     
     let productoIdAEliminar = null;
+    let nombreProductoEliminar = null;
     
     window.inicializarModalEliminar = function() {
         // Manejar clic en botón eliminar
@@ -25,6 +26,7 @@
         // Limpiar al cerrar modal
         $('#modalEliminarProducto').on('hidden.bs.modal', function() {
             productoIdAEliminar = null;
+            nombreProductoEliminar = null;
         });
         
         console.log('✓ Modal Eliminar Producto inicializado');
@@ -32,6 +34,7 @@
     
     function mostrarModalEliminar(productoId, productoNombre) {
         productoIdAEliminar = productoId;
+        nombreProductoEliminar = productoNombre;
         $('#nombreProductoEliminar').text(productoNombre);
         $('#modalEliminarProducto').modal('show');
     }
@@ -40,7 +43,8 @@
         const url = `/productos/${productoId}/eliminar/`;
         
         // Desactivar botón mientras se procesa
-        $('#btnConfirmarEliminar').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Eliminando...');
+        const btnConfirmar = $('#btnConfirmarEliminar');
+        btnConfirmar.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Eliminando...');
         
         $.ajax({
             url: url,
@@ -53,23 +57,28 @@
                 // Cerrar modal
                 $('#modalEliminarProducto').modal('hide');
                 
-                // Mostrar mensaje de éxito
-                alert('Producto eliminado correctamente');
+                // Mostrar notificación
+                mostrarNotificacion(
+                    `Producto "${nombreProductoEliminar}" eliminado correctamente`,
+                    'success',
+                    4000
+                );
                 
-                // Recargar la página
-                location.reload();
+                // Recargar tabla
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
             },
             error: function(xhr) {
                 // Reactivar botón
-                $('#btnConfirmarEliminar').prop('disabled', false).html('<i class="fas fa-trash"></i> Sí, Eliminar');
+                btnConfirmar.prop('disabled', false).html('<i class="fas fa-trash"></i> Sí, Eliminar');
                 
-                // Mostrar error
-                console.error('Error:', xhr);
+                let mensaje = 'Error al eliminar el producto';
                 if (xhr.status === 403) {
-                    alert('No tienes permisos para eliminar este producto');
-                } else {
-                    alert('Error al eliminar el producto');
+                    mensaje = 'No tienes permisos para eliminar este producto';
                 }
+                
+                mostrarNotificacion(mensaje, 'danger');
             }
         });
     }

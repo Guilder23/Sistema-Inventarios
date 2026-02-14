@@ -1,5 +1,5 @@
 // ================================================================
-// MODAL EDITAR PRODUCTO
+// MODAL EDITAR PRODUCTO - CON NOTIFICACIONES INTEGRADAS
 // ================================================================
 
 (function() {
@@ -12,14 +12,16 @@
             cargarProductoParaEditar(productoId);
         });
         
-        // Manejar submit del formulario
+        // Manejar submit con AJAX
         $(document).on('submit', '#formEditarProducto', function(e) {
+            e.preventDefault();
+            
             if (!validarFormularioEditar()) {
-                e.preventDefault();
                 return false;
             }
+            
             const productoId = $(this).data('producto-id');
-            this.action = `/productos/${productoId}/editar/`;
+            editarProductoAJAX(productoId);
         });
         
         // Mostrar nombre del archivo seleccionado
@@ -56,8 +58,7 @@
                 llenarFormularioEditar(data, productoId);
             },
             error: function(xhr) {
-                alert('Error al cargar los datos del producto');
-                console.error(xhr);
+                mostrarNotificacion('Error al cargar los datos del producto', 'danger');
             }
         });
     }
@@ -85,6 +86,56 @@
         
         // Guardar ID en el formulario
         $('#formEditarProducto').data('producto-id', productoId);
+        
+        // Mostrar modal
+        $('#modalEditarProducto').modal('show');
+    }
+    
+    function editarProductoAJAX(productoId) {
+        const form = $('#formEditarProducto')[0];
+        const formData = new FormData(form);
+        const nombreProducto = $('#edit_nombre').val();
+        
+        // Deshabilitar botón submit
+        const btnSubmit = $('#formEditarProducto button[type="submit"]');
+        const textoOriginal = btnSubmit.html();
+        btnSubmit.prop('disabled', true).html('<span class="spinner-border spinner-border-sm mr-2"></span>Guardando...');
+        
+        $.ajax({
+            url: `/productos/${productoId}/editar/`,
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function(response) {
+                btnSubmit.prop('disabled', false).html(textoOriginal);
+                
+                // Cerrar modal
+                $('#modalEditarProducto').modal('hide');
+                
+                // Mostrar notificación
+                mostrarNotificacion(
+                    `Producto "${nombreProducto}" actualizado exitosamente`,
+                    'success',
+                    4000
+                );
+                
+                // Recargar tabla
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
+            },
+            error: function(xhr) {
+                btnSubmit.prop('disabled', false).html(textoOriginal);
+                
+                let mensaje = 'Error al actualizar producto';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    mensaje = xhr.responseJSON.error;
+                }
+                
+                mostrarNotificacion(mensaje, 'danger');
+            }
+        });
     }
     
     function validarFormularioEditar() {
@@ -95,31 +146,31 @@
         const precio_unidad = $('#edit_precio_unidad').val();
         
         if (!codigo) {
-            alert('El código del producto es requerido');
+            mostrarNotificacion('El código del producto es requerido', 'warning');
             $('#edit_codigo').focus();
             return false;
         }
         
         if (!nombre) {
-            alert('El nombre del producto es requerido');
+            mostrarNotificacion('El nombre del producto es requerido', 'warning');
             $('#edit_nombre').focus();
             return false;
         }
         
         if (!stock || parseInt(stock) < 0) {
-            alert('El stock debe ser un número válido');
+            mostrarNotificacion('El stock debe ser un número válido', 'warning');
             $('#edit_stock').focus();
             return false;
         }
         
         if (!unidades_por_caja || parseInt(unidades_por_caja) < 1) {
-            alert('Las unidades por caja deben ser al menos 1');
+            mostrarNotificacion('Las unidades por caja deben ser al menos 1', 'warning');
             $('#edit_unidades_por_caja').focus();
             return false;
         }
         
         if (!precio_unidad || parseFloat(precio_unidad) < 0) {
-            alert('El precio unitario debe ser un número válido');
+            mostrarNotificacion('El precio unitario debe ser un número válido', 'warning');
             $('#edit_precio_unidad').focus();
             return false;
         }

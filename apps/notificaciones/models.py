@@ -9,6 +9,10 @@ class Notificacion(models.Model):
         ('stock_critico', 'Stock Crítico'),
         ('stock_bajo', 'Stock Bajo'),
         ('venta', 'Venta Recibida'),
+        ('producto_creado', 'Producto Creado'),
+        ('producto_editado', 'Producto Editado'),
+        ('producto_eliminado', 'Producto Eliminado'),
+        ('precio_modificado', 'Precio Modificado'),
         ('general', 'General'),
     )
     
