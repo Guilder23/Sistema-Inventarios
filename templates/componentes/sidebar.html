@@ -145,10 +145,10 @@
             </li>
 
             <li class="sidebar-item">
-                <a href="#" class="sidebar-link" title="Notificaciones">
+                <a href="{% url 'listar_notificaciones' %}" class="sidebar-link {% if 'listar_notificaciones' in request.resolver_match.url_name %}active{% endif %}" title="Notificaciones">
                     <i class="fas fa-bell"></i>
                     <span>Notificaciones</span>
-                    <span class="sidebar-badge">3</span>
+                    <span class="sidebar-badge" id="notificacion-badge">0</span>
                 </a>
             </li>
         </ul>

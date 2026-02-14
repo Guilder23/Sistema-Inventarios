@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
 from .models import Notificacion
 from django.utils import timezone
 
@@ -8,7 +9,16 @@ from django.utils import timezone
 def listar_notificaciones(request):
     """Listar todas las notificaciones del usuario"""
     notificaciones = Notificacion.objects.filter(usuario=request.user).order_by('-fecha_creacion')
-    return render(request, 'notificaciones/listar.html', {'notificaciones': notificaciones})
+    
+    # Obtener contexto adicional
+    no_leidas = notificaciones.filter(leida=False).count()
+    
+    context = {
+        'notificaciones': notificaciones,
+        'no_leidas': no_leidas,
+    }
+    
+    return render(request, 'notificaciones/notificaciones.html', context)
 
 @login_required
 def obtener_notificaciones(request):
@@ -87,13 +97,21 @@ def marcar_leida(request, id):
         return JsonResponse({'error': str(e)}, status=404)
 
 @login_required
+@require_http_methods(["POST"])
 def marcar_todas_leidas(request):
     """Marcar todas las notificaciones como leídas"""
     try:
         notificaciones = Notificacion.objects.filter(usuario=request.user, leida=False)
         for notif in notificaciones:
             notif.marcar_como_leida()
-        return JsonResponse({'success': True})
+        
+        no_leidas = Notificacion.objects.filter(usuario=request.user, leida=False).count()
+        
+        return JsonResponse({
+            'success': True,
+            'no_leidas': no_leidas,
+            'mensaje': f'Se marcaron {notificaciones.count()} notificación(es) como leída(s)'
+        })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
