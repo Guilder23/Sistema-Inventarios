@@ -30,7 +30,7 @@
             // Mostrar preview
             const reader = new FileReader();
             reader.onload = function(e) {
-                $('#previewFoto').html(`<img src="${e.target.result}" alt="preview" class="img-fluid" style="max-width: 100%; max-height: 250px; object-fit: cover; border: 2px solid #e5e7eb; border-radius: 4px;">`);
+                $('#previewFotoEditar').html(`<img src="${e.target.result}" alt="preview" class="img-fluid" style="max-width: 100%; max-height: 250px; object-fit: cover; border: 2px solid #e5e7eb; border-radius: 4px;">`);
             };
             reader.readAsDataURL(this.files[0]);
         });
@@ -75,9 +75,9 @@
         
         // Mostrar preview de foto
         if (data.foto) {
-            $('#previewFoto').html(`<img src="${data.foto}" alt="producto" class="img-fluid" style="max-width: 100%; max-height: 250px; object-fit: cover; border: 2px solid #e5e7eb; border-radius: 4px;">`);
+            $('#previewFotoEditar').html(`<img src="${data.foto}" alt="producto" class="img-fluid" style="max-width: 100%; max-height: 250px; object-fit: cover; border: 2px solid #e5e7eb; border-radius: 4px;">`);
         } else {
-            $('#previewFoto').html('');
+            $('#previewFotoEditar').html('');
         }
         
         // Resetear etiqueta de archivo
@@ -130,6 +130,6 @@
     function limpiarFormularioEditar() {
         $('#formEditarProducto')[0].reset();
         $('#edit_foto').next('.custom-file-label').text('Seleccionar archivo');
-        $('#previewFoto').html('');
+        $('#previewFotoEditar').html('');
     }
 })();

@@ -90,11 +90,19 @@
     color: #6b7280;
 }
 
-#previewFoto img {
-    max-width: 200px;
-    border-radius: 4px;
-    border: 1px solid #e0e0e0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+#modalCrearProducto #previewFoto {
+    min-height: 60px;
+}
+
+#modalCrearProducto #previewFoto img {
+    max-width: 100%;
+    max-height: 250px;
+    object-fit: cover;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.375rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: block;
+    margin: 0 auto;
 }
 
 /* RESPONSIVE */

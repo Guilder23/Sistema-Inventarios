@@ -158,6 +158,8 @@ def obtener_producto(request, id):
             'precio_compra': float(producto.precio_compra),
             'precio_caja': float(producto.precio_caja),
             'precio_mayor': float(producto.precio_mayor),
+            'poliza': float(producto.poliza) if producto.poliza else 0,
+            'gastos': float(producto.gastos) if producto.gastos else 0,
             'stock_critico': producto.stock_critico,
             'stock_bajo': producto.stock_bajo,
             'foto': producto.foto.url if producto.foto else '',

@@ -35,12 +35,14 @@
     }
     
     function mostrarProducto(data) {
-        // Asignar valores a los campos
-        $('#verCodigo').text(data.codigo);
+        // Código en badge
+        $('#verCodigoDisplay').html(`<span class="codigo-producto-badge">${data.codigo}</span>`);
+        
+        // Información General
         $('#verNombre').text(data.nombre);
         $('#verDescripcion').text(data.descripcion || 'Sin descripción');
         
-        // Stock
+        // Control de Stock
         $('#verStock').text(data.stock + ' unidades');
         $('#verUnidadesPorCaja').text(data.unidades_por_caja);
         $('#verStockCritico').text(data.stock_critico);
@@ -51,6 +53,13 @@
         $('#verPrecioCompra').text('Bs. ' + parseFloat(data.precio_compra).toFixed(2));
         $('#verPrecioCaja').text('Bs. ' + parseFloat(data.precio_caja).toFixed(2));
         $('#verPrecioMayor').text('Bs. ' + parseFloat(data.precio_mayor).toFixed(2));
+        $('#verPoliza').text('Bs. ' + parseFloat(data.poliza || 0).toFixed(2));
+        $('#verGastos').text('Bs. ' + parseFloat(data.gastos || 0).toFixed(2));
+        
+        // Auditoría
+        $('#verCreadoPor').text(data.creado_por || 'No disponible');
+        $('#verFechaCreacion').text(data.fecha_creacion || 'No disponible');
+        $('#verFechaActualizacion').text(data.fecha_actualizacion || 'No disponible');
         
         // Imagen y estado
         mostrarImagen(data);
@@ -76,9 +85,9 @@
         let html = '';
         
         if (data.activo) {
-            html += '<span class="badge badge-success pl-3 pr-3 py-2" style="font-size: 0.875rem;"><i class="fas fa-check-circle"></i> ACTIVO</span>';
+            html += '<span class="estado-producto-activo"><i class="fas fa-check-circle"></i> ACTIVO</span>';
         } else {
-            html += '<span class="badge badge-danger pl-3 pr-3 py-2" style="font-size: 0.875rem;"><i class="fas fa-times-circle"></i> INACTIVO</span>';
+            html += '<span class="estado-producto-inactivo"><i class="fas fa-times-circle"></i> INACTIVO</span>';
         }
         
         $('#verEstadoBtn').html(html);
