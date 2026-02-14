@@ -335,7 +335,7 @@ def registrar_danado(request):
 @login_required
 @require_http_methods(["POST"])
 def editar_precio_producto(request, id):
-    """Editar precio de un producto - Solo administrador"""
+    """Editar precios de un producto - Solo administrador"""
     # Verificar permisos
     if not es_administrador(request):
         return JsonResponse({'error': 'No tiene permisos para editar precios'}, status=403)
@@ -343,39 +343,93 @@ def editar_precio_producto(request, id):
     try:
         producto = get_object_or_404(Producto, id=id)
         
-        precio_anterior = float(producto.precio_unidad)
-        nuevo_precio = float(request.POST.get('precio_unidad', 0))
+        # Obtener precios anteriores
+        precios_anteriores = {
+            'precio_unidad': float(producto.precio_unidad),
+            'precio_compra': float(producto.precio_compra),
+            'precio_caja': float(producto.precio_caja),
+            'precio_mayor': float(producto.precio_mayor),
+            'poliza': float(producto.poliza) if producto.poliza else 0,
+            'gastos': float(producto.gastos) if producto.gastos else 0,
+        }
         
-        if nuevo_precio <= 0:
-            return JsonResponse({'error': 'El precio debe ser mayor a 0'}, status=400)
+        # Obtener nuevos precios del formulario
+        nuevo_precio_unidad = float(request.POST.get('precio_unidad', producto.precio_unidad))
+        nuevo_precio_compra = float(request.POST.get('precio_compra', producto.precio_compra))
+        nuevo_precio_caja = float(request.POST.get('precio_caja', producto.precio_caja))
+        nuevo_precio_mayor = float(request.POST.get('precio_mayor', producto.precio_mayor))
+        nueva_poliza = float(request.POST.get('poliza', producto.poliza or 0))
+        nuevos_gastos = float(request.POST.get('gastos', producto.gastos or 0))
         
-        if nuevo_precio == precio_anterior:
-            return JsonResponse({'mensaje': 'El precio no cambió'}, status=200)
+        # Validar que al menos un precio sea mayor a 0
+        if nuevo_precio_unidad <= 0:
+            return JsonResponse({'error': 'El precio unitario debe ser mayor a 0'}, status=400)
         
-        # Actualizar precio
-        producto.precio_unidad = nuevo_precio
+        # Registrar cambios
+        cambios_realizados = []
+        
+        if nuevo_precio_unidad != precios_anteriores['precio_unidad']:
+            cambios_realizados.append(f"P. Unitario: {precios_anteriores['precio_unidad']} → {nuevo_precio_unidad}")
+            producto.precio_unidad = nuevo_precio_unidad
+        
+        if nuevo_precio_compra != precios_anteriores['precio_compra']:
+            cambios_realizados.append(f"P. Compra: {precios_anteriores['precio_compra']} → {nuevo_precio_compra}")
+            producto.precio_compra = nuevo_precio_compra
+        
+        if nuevo_precio_caja != precios_anteriores['precio_caja']:
+            cambios_realizados.append(f"P. Caja: {precios_anteriores['precio_caja']} → {nuevo_precio_caja}")
+            producto.precio_caja = nuevo_precio_caja
+        
+        if nuevo_precio_mayor != precios_anteriores['precio_mayor']:
+            cambios_realizados.append(f"P. Mayor: {precios_anteriores['precio_mayor']} → {nuevo_precio_mayor}")
+            producto.precio_mayor = nuevo_precio_mayor
+        
+        if nueva_poliza != precios_anteriores['poliza']:
+            cambios_realizados.append(f"Póliza: {precios_anteriores['poliza']} → {nueva_poliza}")
+            producto.poliza = nueva_poliza
+        
+        if nuevos_gastos != precios_anteriores['gastos']:
+            cambios_realizados.append(f"Gastos: {precios_anteriores['gastos']} → {nuevos_gastos}")
+            producto.gastos = nuevos_gastos
+        
+        # Si no hay cambios, retornar mensaje
+        if not cambios_realizados:
+            return JsonResponse({'mensaje': 'No se realizaron cambios en los precios'}, status=200)
+        
+        # Guardar cambios
         producto.save()
         
         # Registrar en historial
+        detalles_cambios = " | ".join(cambios_realizados)
         HistorialProducto.objects.create(
             producto=producto,
             accion='edicion',
             usuario=request.user,
-            detalles=f'Precio actualizado de {precio_anterior} a {nuevo_precio}'
+            detalles=f'Precios actualizados: {detalles_cambios}'
         )
         
-        # Notificar al almacén del cambio de precio
+        # Notificar a almacén del cambio de precios
         notificar_almacen_precio(
-            titulo='Precio Modificado',
-            mensaje=f'Administrador cambió el precio del producto "{producto.nombre}" (código: {producto.codigo}) de ${precio_anterior:.2f} a ${nuevo_precio:.2f}',
+            titulo='Precios Modificados',
+            mensaje=f'Administrador actualizó precios del producto "{producto.nombre}" (código: {producto.codigo})',
             url=f'/productos/'
+        )
+        
+        # Crear notificación en sistema
+        from apps.notificaciones.models import Notificacion
+        Notificacion.objects.create(
+            usuario=request.user,
+            tipo='precio_modificado',
+            titulo='Precios Actualizados',
+            mensaje=f'Se actualizaron los precios del producto "{producto.nombre}"',
+            url=f'/productos/{id}/'
         )
         
         return JsonResponse({
             'success': True,
-            'mensaje': 'Precio actualizado correctamente',
-            'precio_anterior': precio_anterior,
-            'precio_nuevo': nuevo_precio
+            'mensaje': 'Precios actualizados correctamente',
+            'cambios': len(cambios_realizados),
+            'detalles': cambios_realizados
         })
         
     except Exception as e:

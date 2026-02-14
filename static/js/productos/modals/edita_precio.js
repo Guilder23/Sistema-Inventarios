@@ -48,26 +48,41 @@
     
     function llenarFormularioPrecio(data, productoId) {
         $('#precio_producto').val(`${data.codigo} - ${data.nombre}`);
-        $('#precio_actual').val(parseFloat(data.precio_unidad).toFixed(2));
-        $('#precio_nuevo').val(parseFloat(data.precio_unidad).toFixed(2));
+        
+        // Llenar todos los campos de precios
+        $('#precio_unitario').val(parseFloat(data.precio_unidad).toFixed(2));
+        $('#precio_compra').val(parseFloat(data.precio_compra).toFixed(2));
+        $('#precio_caja').val(parseFloat(data.precio_caja).toFixed(2));
+        $('#precio_mayor').val(parseFloat(data.precio_mayor).toFixed(2));
+        $('#poliza').val(parseFloat(data.poliza).toFixed(2));
+        $('#gastos').val(parseFloat(data.gastos).toFixed(2));
         
         // Guardar ID en el formulario
         $('#formEditarPrecio').data('producto-id', productoId);
     }
     
     function guardarPrecio(productoId) {
-        const precioNuevo = $('#precio_nuevo').val();
-        const precioActual = $('#precio_actual').val();
+        const precioUnitario = $('#precio_unitario').val();
+        const precioCompra = $('#precio_compra').val();
+        const precioCaja = $('#precio_caja').val();
+        const precioMayor = $('#precio_mayor').val();
+        const poliza = $('#poliza').val();
+        const gastos = $('#gastos').val();
         
-        if (!precioNuevo || parseFloat(precioNuevo) < 0) {
-            mostrarNotificacion('El precio debe ser un número válido', 'warning');
-            $('#precio_nuevo').focus();
+        if (!precioUnitario || parseFloat(precioUnitario) < 0) {
+            mostrarNotificacion('El precio unitario debe ser un número válido', 'warning');
+            $('#precio_unitario').focus();
             return;
         }
         
         const formData = new FormData();
         formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
-        formData.append('precio_unidad', precioNuevo);
+        formData.append('precio_unidad', precioUnitario);
+        formData.append('precio_compra', precioCompra || 0);
+        formData.append('precio_caja', precioCaja || 0);
+        formData.append('precio_mayor', precioMayor || 0);
+        formData.append('poliza', poliza || 0);
+        formData.append('gastos', gastos || 0);
         
         // Desactivar botón mientras se procesa
         const btnSubmit = $('#formEditarPrecio button[type="submit"]');
@@ -91,7 +106,7 @@
                 
                 // Mostrar notificación
                 mostrarNotificacion(
-                    `Precio actualizado: $${precioActual} → $${precioNuevo}`,
+                    'Precios actualizados correctamente',
                     'success',
                     4000
                 );
@@ -104,7 +119,7 @@
             error: function(xhr) {
                 btnSubmit.prop('disabled', false).html(textoOriginal);
                 
-                let mensaje = 'Error al actualizar el precio';
+                let mensaje = 'Error al actualizar los precios';
                 if (xhr.status === 403) {
                     mensaje = 'No tienes permisos para editar precios';
                 } else if (xhr.responseJSON && xhr.responseJSON.error) {
@@ -119,7 +134,11 @@
     function limpiarFormularioPrecio() {
         $('#formEditarPrecio')[0].reset();
         $('#precio_producto').val('');
-        $('#precio_actual').val('');
-        $('#precio_nuevo').val('');
+        $('#precio_unitario').val('');
+        $('#precio_compra').val('');
+        $('#precio_caja').val('');
+        $('#precio_mayor').val('');
+        $('#poliza').val('');
+        $('#gastos').val('');
     }
 })();
