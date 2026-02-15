@@ -1,0 +1,56 @@
+/* Estilos para Modal Nuevo Traspaso Fase 2 */
+
+/* Resumen de productos */
+#resumenProductos {
+    min-height: 100px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#resumenProductos .producto-resumen {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+#resumenProductos .producto-resumen:last-child {
+    border-bottom: none;
+}
+
+#resumenProductos .producto-resumen strong {
+    color: #333;
+}
+
+/* Campos de formulario */
+#formFase2Traspaso .form-control:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+#formFase2Traspaso select.form-control {
+    cursor: pointer;
+}
+
+#formFase2Traspaso textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Responsive para modal fase 2 */
+@media (max-width: 768px) {
+    #resumenProductos .producto-resumen {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    #formFase2Traspaso .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    #formFase2Traspaso .col-md-6 {
+        padding-left: 0;
+        padding-right: 0;
+    }
+}

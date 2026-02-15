@@ -1,0 +1,141 @@
+/* Estilos para Modal Nuevo Traspaso Fase 1 */
+
+/* Tabla de productos en modal */
+.tabla-productos {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.tabla-productos .producto-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+.tabla-productos .producto-item:hover {
+    background-color: #e8f4f8;
+}
+
+.tabla-productos .producto-item:last-child {
+    border-bottom: none;
+}
+
+.producto-item-info {
+    flex: 1;
+}
+
+.producto-item-info .codigo {
+    font-size: 12px;
+    color: #999;
+}
+
+.producto-item-info .nombre {
+    font-weight: bold;
+    color: #333;
+    margin: 3px 0;
+}
+
+.producto-item-info .stock {
+    font-size: 12px;
+    color: #666;
+}
+
+.producto-item-acciones {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.producto-item-cantidad {
+    width: 70px;
+}
+
+/* Productos seleccionados */
+.tabla-productos-seleccionados {
+    background-color: #f0f8f0;
+    border: 1px solid #90ee90;
+    border-radius: 6px;
+    padding: 10px;
+    min-height: 100px;
+}
+
+.tabla-productos-seleccionados .producto-seleccionado {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: white;
+    border: 1px solid #90ee90;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+}
+
+.tabla-productos-seleccionados .producto-seleccionado:hover {
+    background-color: #f0f8f0;
+}
+
+.tabla-productos-seleccionados .producto-seleccionado:last-child {
+    margin-bottom: 0;
+}
+
+.producto-seleccionado-info {
+    flex: 1;
+}
+
+.producto-seleccionado-info .nombre {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 3px;
+}
+
+.producto-seleccionado-info .cantidad {
+    font-size: 14px;
+    color: #666;
+}
+
+.producto-seleccionado-acciones {
+    display: flex;
+    gap: 8px;
+}
+
+.producto-seleccionado-acciones .btn-remove {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* Búsqueda de productos */
+#buscarProducto {
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    transition: border-color 0.3s;
+}
+
+#buscarProducto:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Responsive para modal fase 1 */
+@media (max-width: 768px) {
+    .tabla-productos-seleccionados .producto-seleccionado {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .producto-seleccionado-acciones {
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    .producto-seleccionado-acciones .btn {
+        flex: 1;
+    }
+}

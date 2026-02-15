@@ -349,6 +349,24 @@ def editar_usuario(request, id):
     
     return redirect('listar_usuarios')
 
+
+@login_required
+def obtener_ubicacion_usuario(request):
+    """API endpoint que devuelve la ubicación (almacén o tienda) del usuario actual"""
+    try:
+        if hasattr(request.user, 'perfil'):
+            perfil = request.user.perfil
+            data = {
+                'id': perfil.id,
+                'nombre': perfil.nombre,
+                'rol': perfil.rol,
+            }
+            return JsonResponse(data)
+        else:
+            return JsonResponse({'error': 'Usuario sin perfil'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
 @login_required
 @require_http_methods(["POST"])
 def bloquear_usuario(request, id):

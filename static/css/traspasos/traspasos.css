@@ -1,0 +1,159 @@
+/* Estilos principales para traspasos */
+
+/* Lista de traspasos */
+.traspaso-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Cards de traspasos */
+.traspaso-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #ffffff;
+    transition: all 0.3s ease;
+    animation: slideIn 0.3s ease;
+}
+
+.traspaso-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.traspaso-card.devolucion-card {
+    border-left: 4px solid #ff9800;
+    background-color: #fff8f0;
+}
+
+.traspaso-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.traspaso-header strong {
+    font-size: 16px;
+    color: #333;
+}
+
+.traspaso-header .badge {
+    font-size: 12px;
+    padding: 6px 12px;
+}
+
+.traspaso-body {
+    margin-bottom: 12px;
+}
+
+.traspaso-body p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.traspaso-body strong {
+    color: #333;
+}
+
+.traspaso-footer {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.traspaso-footer .btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    white-space: nowrap;
+}
+
+/* Badges de estado */
+.badge-pendiente {
+    background-color: #ffc107;
+    color: #000 !important;
+}
+
+.badge-transito {
+    background-color: #17a2b8;
+    color: #fff !important;
+}
+
+.badge-recibido {
+    background-color: #28a745;
+    color: #fff !important;
+}
+
+.badge-rechazado {
+    background-color: #dc3545;
+    color: #fff !important;
+}
+
+.badge-cancelado {
+    background-color: #6c757d;
+    color: #fff !important;
+}
+
+/* Card styles para estados */
+.card-warning {
+    border-left: 4px solid #ffc107;
+}
+
+.card-warning .card-header {
+    background-color: #fff3cd !important;
+    border-bottom: 2px solid #ffc107;
+}
+
+.card-success {
+    border-left: 4px solid #28a745;
+}
+
+.card-success .card-header {
+    background-color: #d4edda !important;
+    border-bottom: 2px solid #28a745;
+}
+
+.card-info {
+    border-left: 4px solid #17a2b8;
+}
+
+.card-info .card-header {
+    background-color: #d1ecf1 !important;
+    border-bottom: 2px solid #17a2b8;
+}
+
+.card-danger {
+    border-left: 4px solid #dc3545;
+}
+
+.card-danger .card-header {
+    background-color: #f8d7da !important;
+    border-bottom: 2px solid #dc3545;
+}
+
+/* Animaciones */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .traspaso-footer {
+        flex-direction: column;
+    }
+
+    .traspaso-footer .btn {
+        width: 100%;
+    }
+}

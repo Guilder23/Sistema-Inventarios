@@ -64,10 +64,10 @@
                 </a>
             </li>
 
-            <!-- Traspasos - Staff y Administradores -->
-            {% if user.is_staff %}
+            <!-- Traspasos - Almacén, Tienda y Administradores -->
+            {% if user.is_superuser or user.perfil.rol == 'almacen' or user.perfil.rol == 'tienda' %}
             <li class="sidebar-item">
-                <a href="#" class="sidebar-link" title="Traspasos">
+                <a href="{% url 'listar_traspasos' %}" class="sidebar-link {% if 'traspasos' in request.resolver_match.url_name %}active{% endif %}" title="Traspasos">
                     <i class="fas fa-exchange-alt"></i>
                     <span>Traspasos</span>
                 </a>

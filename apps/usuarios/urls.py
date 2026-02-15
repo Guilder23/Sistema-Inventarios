@@ -20,4 +20,7 @@ urlpatterns = [
     path('usuarios/<int:id>/editar/', views.editar_usuario, name='editar_usuario'),
     path('usuarios/<int:id>/eliminar/', views.bloquear_usuario, name='eliminar_usuario'),
     path('usuarios/<int:id>/bloquear/', views.bloquear_usuario, name='bloquear_usuario'),
+    
+    # API Endpoints
+    path('api/ubicacion/', views.obtener_ubicacion_usuario, name='obtener_ubicacion_usuario'),
 ]
