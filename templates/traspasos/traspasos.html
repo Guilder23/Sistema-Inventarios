@@ -18,17 +18,19 @@
 </div>
 {% endif %}
 
-<div class="container mt-4">
+<div class="container-fluid">
     {% csrf_token %}
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1><i class="fas fa-exchange-alt"></i> Traspasos</h1>
+    <!-- HEADER DE LA PÁGINA -->
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="fas fa-exchange-alt"></i> Traspasos
+            </h1>
+            <p class="page-subtitle">Administra las transferencias entre ubicaciones</p>
         </div>
-        <div class="col-md-4 text-right">
-            <button class="btn btn-success" data-toggle="modal" data-target="#modalNuevoTraspaso">
-                <i class="fas fa-plus"></i> Nuevo Traspaso
-            </button>
-        </div>
+        <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalNuevoTraspaso">
+            <i class="fas fa-plus"></i> Nuevo Traspaso
+        </button>
     </div>
 
     <ul class="nav nav-tabs" id="traspasosTabs" role="tablist">
@@ -55,7 +57,7 @@
                         <div class="traspaso-card">
                             <div class="traspaso-header">
                                 <strong>{{ traspaso.codigo }}</strong>
-                                <span class="badge badge-{{ traspaso.estado|default:'secondary' }}">
+                                <span class="traspaso-estado traspaso-estado-{{ traspaso.estado|default:'secondary' }}">
                                     {{ traspaso.get_estado_display }}
                                 </span>
                             </div>
@@ -93,7 +95,7 @@
                         <div class="traspaso-card devolucion-card">
                             <div class="traspaso-header">
                                 <strong>{{ traspaso.codigo }}</strong>
-                                <span class="badge badge-{{ traspaso.estado|default:'secondary' }}">
+                                <span class="traspaso-estado traspaso-estado-{{ traspaso.estado|default:'secondary' }}">
                                     {{ traspaso.get_estado_display }}
                                 </span>
                             </div>
@@ -136,7 +138,7 @@
                         <div class="traspaso-card">
                             <div class="traspaso-header">
                                 <strong>{{ traspaso.codigo }}</strong>
-                                <span class="badge badge-{{ traspaso.estado|default:'secondary' }}">
+                                <span class="traspaso-estado traspaso-estado-{{ traspaso.estado|default:'secondary' }}">
                                     {{ traspaso.get_estado_display }}
                                 </span>
                             </div>
@@ -174,7 +176,7 @@
                         <div class="traspaso-card devolucion-card">
                             <div class="traspaso-header">
                                 <strong>{{ traspaso.codigo }}</strong>
-                                <span class="badge badge-{{ traspaso.estado|default:'secondary' }}">
+                                <span class="traspaso-estado traspaso-estado-{{ traspaso.estado|default:'secondary' }}">
                                     {{ traspaso.get_estado_display }}
                                 </span>
                             </div>

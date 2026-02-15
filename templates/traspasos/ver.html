@@ -37,16 +37,16 @@
                         <label class="font-weight-bold">Tipo:</label>
                         <p>
                             {% if traspaso.tipo == 'normal' %}
-                                <span class="badge badge-primary">Transferencia Normal</span>
+                                <span class="traspaso-tipo traspaso-tipo-normal">Transferencia Normal</span>
                             {% else %}
-                                <span class="badge badge-warning">Devolución</span>
+                                <span class="traspaso-tipo traspaso-tipo-devolucion">Devolución</span>
                             {% endif %}
                         </p>
                     </div>
                     <div class="info-group">
                         <label class="font-weight-bold">Estado:</label>
                         <p>
-                            <span class="badge badge-{{ traspaso.estado }}">
+                            <span class="traspaso-estado traspaso-estado-{{ traspaso.estado }}">
                                 {{ traspaso.get_estado_display }}
                             </span>
                         </p>
