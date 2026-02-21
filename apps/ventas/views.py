@@ -1,24 +1,390 @@
-from django.shortcuts import render, redirect
+import json
+from decimal import Decimal
+
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
+from django.http import JsonResponse
+from django.db import transaction
+from django.db.models import Q, Sum
+from django.utils import timezone
 from django.http import HttpResponse
 
+from apps.ventas.models import Venta, DetalleVenta, AmortizacionCredito
+from apps.productos.models import Producto
+
+def generar_codigo_venta():
+    """Genera un código único para la venta: VTA-0001, VTA-0002, etc."""
+    ultima = Venta.objects.order_by('-id').first()
+    if ultima and ultima.codigo:
+        try:
+            numero = int(ultima.codigo.split('-')[1]) + 1
+        except (IndexError, ValueError):
+            numero = Venta.objects.count() + 1
+    else:
+        numero = 1
+    return f"VTA-{numero:04d}"
+
+def es_almacen(request):
+    """Verifica si el usuario tiene rol de almacén."""
+    return hasattr(request.user, 'perfil') and request.user.perfil.rol == 'almacen'
+
+def es_administrador(request):
+    """Verifica si el usuario es administrador."""
+    return request.user.is_superuser or request.user.is_staff
+
+def verificar_permiso_ventas(request):
+    """Verifica que el usuario tenga permiso para ver/gestionar ventas."""
+    if not request.user.is_authenticated:
+        return False
+    if es_administrador(request):
+        return True
+    if es_almacen(request):
+        return True
+    return False
+
+
+#Listado de ventas (Tabs: CONTADO - CRÉDITO)
 @login_required
 def listar_ventas(request):
-    return render(request, 'ventas/listar.html')
+    if not verificar_permiso_ventas(request):
+        return redirect('dashboard')
+
+    perfil = request.user.perfil
+
+#se filtran ventas por la ubicación/almacén del usuario
+    ventas = Venta.objects.filter(
+        ubicacion=perfil
+    ).select_related('ubicacion', 'vendedor').order_by('-fecha_elaboracion')
+
+#por tipo de pago
+    ventas_contado = ventas.filter(tipo_pago='contado')
+    ventas_credito = ventas.filter(tipo_pago='credito')
+
+#Stats rápidas
+    total_ventas = ventas.count()
+    total_contado = ventas_contado.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+    total_credito = ventas_credito.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+    total_general = total_contado + total_credito
+
+#Ventas de crédito pendientes
+    creditos_pendientes = ventas_credito.filter(estado='pendiente').count()
+
+    context = {
+        'ventas_contado': ventas_contado,
+        'ventas_credito': ventas_credito,
+        'total_ventas': total_ventas,
+        'total_contado': total_contado,
+        'total_credito': total_credito,
+        'total_general': total_general,
+        'creditos_pendientes': creditos_pendientes,
+        'perfil': perfil,
+        'es_almacen': es_almacen(request),
+        'es_administrador': es_administrador(request),
+    }
+    return render(request, 'ventas/ventas_almacen.html', context)
 
 @login_required
 def crear_venta(request):
-    return render(request, 'ventas/crear.html')
+    """
+    GET: Renderiza la página de nueva venta con el carrito.
+    URL: /ventas/crear/
+    """
+    if not verificar_permiso_ventas(request):
+        return redirect('dashboard')
+    perfil = request.user.perfil
+    codigo_sugerido = generar_codigo_venta()
+    context = {
+        'codigo_sugerido': codigo_sugerido,
+        'perfil': perfil,
+    }
+    return render(request, 'ventas/nueva_venta.html', context)
+
+
+#Guardar venta (Post AJAX, es decir; recibe el JSON del carrito y crea la Venta + DetalleVenta.
+#descuenta stock de los productos
+#URL: /ventas/guardar/)
+
+@login_required
+def guardar_venta(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    if not verificar_permiso_ventas(request):
+        return JsonResponse({'success': False, 'error': 'Sin permisos.'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'JSON inválido.'}, status=400)
+
+    cliente = data.get('cliente', '').strip()
+    telefono = data.get('telefono', '').strip()
+    razon_social = data.get('razon_social', '').strip()
+    direccion = data.get('direccion', '').strip()
+    tipo_pago = data.get('tipo_pago', 'contado')
+    items = data.get('items', [])
+
+#Validaciones
+    if not cliente:
+        return JsonResponse({'success': False, 'error': 'El nombre del cliente es obligatorio.'})
+    if tipo_pago not in ['contado', 'credito']:
+        return JsonResponse({'success': False, 'error': 'Tipo de pago inválido.'})
+    if not items:
+        return JsonResponse({'success': False, 'error': 'Debe agregar al menos un producto.'})
+
+    perfil = request.user.perfil
+
+    try:
+        with transaction.atomic():
+            venta = Venta.objects.create(
+                codigo=generar_codigo_venta(),
+                ubicacion=perfil,
+                cliente=cliente,
+                telefono=telefono if telefono else None,
+                razon_social=razon_social if razon_social else None,
+                direccion=direccion if direccion else None,
+                tipo_pago=tipo_pago,
+                estado='completada' if tipo_pago == 'contado' else 'pendiente',
+                vendedor=request.user,
+                subtotal=Decimal('0.00'),
+                total=Decimal('0.00'),
+            )
+
+            total_venta = Decimal('0.00')
+
+            for item in items:
+                producto_id = item.get('producto_id')
+                cantidad = int(item.get('cantidad', 0))
+                precio_unitario = Decimal(str(item.get('precio_unitario', '0')))
+                if cantidad <= 0:
+                    raise ValueError(f'Cantidad inválida para el producto ID {producto_id}.')
+                producto = Producto.objects.select_for_update().get(id=producto_id)
+                if producto.stock < cantidad:
+                    raise ValueError(
+                        f'Stock insuficiente para "{producto.nombre}". '
+                        f'Disponible: {producto.stock}, Solicitado: {cantidad}.'
+                    )
+
+                subtotal_item = precio_unitario * cantidad
+
+                DetalleVenta.objects.create(
+                    venta=venta,
+                    producto=producto,
+                    cantidad=cantidad,
+                    precio_unitario=precio_unitario,
+                    subtotal=subtotal_item,
+                )
+                producto.stock -= cantidad
+                producto.save()
+
+                total_venta += subtotal_item
+
+# Actualizar totales de la venta
+            venta.subtotal = total_venta
+            venta.total = total_venta
+            venta.save()
+
+        return JsonResponse({
+            'success': True,
+            'venta_id': venta.id,
+            'codigo': venta.codigo,
+            'total': str(venta.total),
+            'message': f'Venta {venta.codigo} registrada exitosamente.',
+        })
+
+    except Producto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Producto no encontrado.'})
+    except ValueError as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error al guardar: {str(e)}'})
+
+
+# API para buscar productos (con AJAX autocompletado).-
+#Busca productos por nombre o código.
+#URL: /ventas/api/buscar-productos/?q=texto
+#Retorna JSON con lista de productos que tengan stock > 0 y estén activos
+@login_required
+def buscar_productos(request):
+    query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({'productos': []})
+
+    productos = Producto.objects.filter(
+        Q(nombre__icontains=query) | Q(codigo__icontains=query),
+        stock__gt=0,
+        activo=True,
+    )[:10]
+
+    resultado = []
+    for p in productos:
+        resultado.append({
+            'id': p.id,
+            'codigo': p.codigo,
+            'nombre': p.nombre,
+            'stock': p.stock,
+            'precio_unidad': str(p.precio_unidad),
+            'precio_mayor': str(p.precio_mayor),
+            'precio_caja': str(p.precio_caja),
+        })
+
+    return JsonResponse({'productos': resultado})
+
 
 @login_required
 def ver_venta(request, id):
-    return render(request, 'ventas/ver.html')
+    venta = get_object_or_404(Venta, id=id)
+    detalles = DetalleVenta.objects.filter(venta=venta).select_related('producto')
+    items = []
+    for d in detalles:
+        items.append({
+            'producto_nombre': d.producto.nombre,
+            'producto_codigo': d.producto.codigo,
+            'cantidad': d.cantidad,
+            'precio_unitario': str(d.precio_unitario),
+            'subtotal': str(d.subtotal),
+        })
 
+# Amortizaciones (si es con crédito)
+    amortizaciones = []
+    total_amortizado = Decimal('0.00')
+    saldo_pendiente = Decimal('0.00')
+
+    if venta.tipo_pago == 'credito':
+# OJITO: AmortizacionCredito usa 'fecha' (auto_now_add) y 'observaciones'
+        amorts = AmortizacionCredito.objects.filter(venta=venta).order_by('-fecha')
+        for a in amorts:
+            amortizaciones.append({
+                'id': a.id,
+                'monto': str(a.monto),
+                'fecha': a.fecha.strftime('%d/%m/%Y %H:%M') if a.fecha else '',
+                'observaciones': a.observaciones or '',
+            })
+            total_amortizado += a.monto
+        saldo_pendiente = venta.total - total_amortizado
+
+    data = {
+        'venta': {
+            'id': venta.id,
+            'codigo': venta.codigo,
+            'cliente': venta.cliente,
+            'telefono': venta.telefono or '',
+            'razon_social': venta.razon_social or '',
+            'direccion': venta.direccion or '',
+            'tipo_pago': venta.get_tipo_pago_display(),
+            'tipo_pago_raw': venta.tipo_pago,
+            'estado': venta.get_estado_display(),
+            'estado_raw': venta.estado,
+            'total': str(venta.total),
+            'subtotal': str(venta.subtotal),
+            'fecha': venta.fecha_elaboracion.strftime('%d/%m/%Y %H:%M') if venta.fecha_elaboracion else '',
+            'vendedor': str(venta.vendedor.get_full_name() or venta.vendedor.username) if venta.vendedor else '',
+            'ubicacion': str(venta.ubicacion),
+        },
+        'items': items,
+        'amortizaciones': amortizaciones,
+        'total_amortizado': str(total_amortizado),
+        'saldo_pendiente': str(saldo_pendiente),
+    }
+
+    return JsonResponse(data)
 @login_required
 def generar_pdf_venta(request, id):
     return HttpResponse('PDF de venta')
 
+
 @login_required
 def registrar_amortizacion(request, venta_id):
-    return render(request, 'ventas/amortizacion.html')
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    venta = get_object_or_404(Venta, id=venta_id)
+
+    if venta.tipo_pago != 'credito':
+        return JsonResponse({'success': False, 'error': 'Esta venta no es a crédito.'})
+
+    if venta.estado == 'cancelada':
+        return JsonResponse({'success': False, 'error': 'No se puede abonar a una venta cancelada.'})
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'JSON inválido.'}, status=400)
+
+    monto = Decimal(str(data.get('monto', '0')))
+    observaciones = data.get('observaciones', '').strip()
+
+    if monto <= 0:
+        return JsonResponse({'success': False, 'error': 'El monto debe ser mayor a 0.'})
+
+#calculamos saldo pendiente
+    total_amortizado = AmortizacionCredito.objects.filter(
+        venta=venta
+    ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+
+    saldo_pendiente = venta.total - total_amortizado
+
+    if monto > saldo_pendiente:
+        return JsonResponse({
+            'success': False,
+            'error': f'El monto (Bs. {monto}) excede el saldo pendiente (Bs. {saldo_pendiente}).'
+        })
+
+    try:
+        with transaction.atomic():
+#OJO: AmortizacionCredito.fecha es auto_now_add=True, no se pasa manualmente
+            AmortizacionCredito.objects.create(
+                venta=venta,
+                monto=monto,
+                observaciones=observaciones,
+                registrado_por=request.user,
+            )
+
+            nuevo_total_amortizado = total_amortizado + monto
+            if nuevo_total_amortizado >= venta.total:
+                venta.estado = 'completada'
+                venta.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Amortización registrada exitosamente.',
+            'nuevo_saldo': str(venta.total - nuevo_total_amortizado),
+            'venta_completada': nuevo_total_amortizado >= venta.total,
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error: {str(e)}'})
+
+
+@login_required
+def anular_venta(request, id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    if not verificar_permiso_ventas(request):
+        return JsonResponse({'success': False, 'error': 'Sin permisos.'}, status=403)
+
+    venta = get_object_or_404(Venta, id=id)
+
+    if venta.estado == 'cancelada':
+        return JsonResponse({'success': False, 'error': 'La venta ya está cancelada.'})
+
+    try:
+        with transaction.atomic():
+# Devolver stock
+            detalles = DetalleVenta.objects.filter(venta=venta).select_related('producto')
+            for detalle in detalles:
+                producto = Producto.objects.select_for_update().get(id=detalle.producto.id)
+                producto.stock += detalle.cantidad
+                producto.save()
+
+            venta.estado = 'cancelada'
+            venta.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Venta {venta.codigo} anulada. Stock devuelto.',
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error: {str(e)}'})
