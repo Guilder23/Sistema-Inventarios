@@ -46,10 +46,10 @@
                 </a>
             </li>
 
-            <!-- Ventas - Vendedores y Administradores -->
-            {% if user.is_staff or user.groups.filter|length > 0 %}
+            <!-- VENTAS - Almacen y Administradores -->
+            {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
             <li class="sidebar-item">
-                <a href="#" class="sidebar-link" title="Ventas">
+                <a href="{% url 'ventas:listar_ventas' %}" class="sidebar-link {% if 'ventas' in request.path %}active{% endif %}" title="Ventas">
                     <i class="fas fa-shopping-cart"></i>
                     <span>Ventas</span>
                 </a>
