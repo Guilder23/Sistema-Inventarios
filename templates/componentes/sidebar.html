@@ -38,7 +38,7 @@
             </li>
             {% endif %}
 
-            <!-- Inventario - Todos los usuarios -->
+            <!-- Inventario - Todos los usuarios incluyendo Tienda Online -->
             <li class="sidebar-item">
                 <a href="{% url 'ver_inventario' %}" class="sidebar-link {% if 'inventario' in request.resolver_match.url_name %}active{% endif %}" title="Inventario">
                     <i class="fas fa-warehouse"></i>
@@ -46,25 +46,29 @@
                 </a>
             </li>
 
-            <!-- Ventas - Vendedores y Administradores -->
+            <!-- Ventas - Vendedores y Administradores (Oculto para Tienda Online) -->
             {% if user.is_staff or user.groups.filter|length > 0 %}
-            <li class="sidebar-item">
-                <a href="#" class="sidebar-link" title="Ventas">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span>Ventas</span>
-                </a>
-            </li>
+                {% if not user.perfil or user.perfil.rol != 'tienda_online' %}
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link" title="Ventas">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Ventas</span>
+                    </a>
+                </li>
+                {% endif %}
             {% endif %}
 
-            <!-- Pedidos - Todos los usuarios -->
+            <!-- Pedidos - Oculto para Tienda Online -->
+            {% if not user.perfil or user.perfil.rol != 'tienda_online' %}
             <li class="sidebar-item">
                 <a href="#" class="sidebar-link" title="Pedidos">
                     <i class="fas fa-clipboard-list"></i>
                     <span>Pedidos</span>
                 </a>
             </li>
+            {% endif %}
 
-            <!-- Traspasos - Almacén, Tienda y Administradores -->
+            <!-- Traspasos - Almacén, Tienda y Administradores (Oculto para Tienda Online) -->
             {% if user.is_superuser or user.perfil.rol == 'almacen' or user.perfil.rol == 'tienda' %}
             <li class="sidebar-item">
                 <a href="{% url 'listar_traspasos' %}" class="sidebar-link {% if 'traspasos' in request.resolver_match.url_name %}active{% endif %}" title="Traspasos">
@@ -184,12 +188,5 @@
         </div>
     </div>
 </aside>
-
-<!-- OVERLAY para cuando está abierto el sidebar en mobile -->
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
-        </div>
-    </div>
-</aside>
-
 <!-- OVERLAY para cuando está abierto el sidebar en mobile -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
