@@ -110,6 +110,16 @@
             </li>
             {% endif %}
 
+            <!-- Depósitos - Solo Administradores -->
+            {% if user.is_superuser %}
+            <li class="sidebar-item">
+                <a href="{% url 'depositos:listar' %}" class="sidebar-link {% if 'depositos' in request.resolver_match.url_name %}active{% endif %}" title="Depósitos">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Depósitos</span>
+                </a>
+            </li>
+            {% endif %}
+
             <!-- Tiendas Virtuales - Solo Administradores -->
             {% if user.is_superuser %}
             <li class="sidebar-item">
