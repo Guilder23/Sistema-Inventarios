@@ -1,30 +1,30 @@
-<!-- MODAL: ELIMINAR USUARIO -->
+<!-- MODAL: BLOQUEAR/ACTIVAR USUARIO -->
 <div class="modal fade" id="modalEliminarUsuario" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content border-danger">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title">
-                    <i class="fas fa-trash-alt"></i> Eliminar Usuario
+                    <i class="fas fa-lock"></i> Bloquear/Activar Usuario
                 </h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <div class="alert alert-warning" role="alert">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <strong>¡Advertencia!</strong> Esta acción no se puede deshacer.
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Información:</strong> Esta acción cambiará el estado del usuario.
                 </div>
-                <p>¿Está seguro de que desea eliminar al usuario <strong id="eliminarUsuarioNombre"></strong>?</p>
-                <p class="text-muted small">Se eliminarán todos los datos asociados a este usuario.</p>
+                <p>¿Está seguro de que desea cambiar el estado del usuario <strong id="eliminarUsuarioNombre"></strong>?</p>
+                <p class="text-muted small">El usuario será bloqueado o activado según su estado actual.</p>
             </div>
             <form id="formEliminarUsuario" method="post">
                 {% csrf_token %}
                 <input type="hidden" id="eliminarUsuarioId" name="usuario_id">
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash-alt"></i> Eliminar Usuario
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="fas fa-lock"></i> Cambiar Estado
                     </button>
                 </div>
             </form>

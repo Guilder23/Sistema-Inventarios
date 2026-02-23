@@ -7,17 +7,23 @@ class PerfilUsuario(models.Model):
         ('administrador', 'Administrador'),
         ('almacen', 'Almacén'),
         ('tienda', 'Tienda'),
-        ('deposito', 'Depósito'),
+        # ('deposito', 'Depósito'),
         ('tienda_online', 'Tienda Online'),
     )
     
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
     rol = models.CharField(max_length=20, choices=ROLES)
-    nombre_ubicacion = models.CharField(max_length=200, help_text='Nombre de la tienda/almacén/depósito')
+    nombre_ubicacion = models.CharField(max_length=200, blank=True, null=True, help_text='Nombre de la tienda/almacén/depósito')
+    
+    # Relaciones a almacenes y tiendas
+    almacen = models.ForeignKey('almacenes.Almacen', on_delete=models.SET_NULL, null=True, blank=True, related_name='usuarios')
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.SET_NULL, null=True, blank=True, related_name='usuarios')
+    
     encargado = models.CharField(max_length=200, blank=True, null=True)
     telefono = models.CharField(max_length=20, blank=True, null=True)
     direccion = models.TextField(blank=True, null=True)
     activo = models.BooleanField(default=True)
+    creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='usuarios_creados')
     ubicacion_relacionada = models.ForeignKey(
         'self', 
         on_delete=models.SET_NULL, 
@@ -34,4 +40,4 @@ class PerfilUsuario(models.Model):
         ordering = ['nombre_ubicacion']
     
     def __str__(self):
-        return f"{self.nombre_ubicacion} - {self.get_rol_display()}"
+        return f"{self.usuario.username} - {self.get_rol_display()}"

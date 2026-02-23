@@ -1,0 +1,113 @@
+/* ============================================================================
+   ESTILOS PARA MODAL EDITAR USUARIO
+   ============================================================================ */
+
+#modalEditarUsuario .modal-header {
+    background: #1e3a8a;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-bottom: 3px solid #065f46;
+}
+
+#modalEditarUsuario .modal-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+#modalEditarUsuario .modal-body {
+    padding: 1.25rem 1.5rem;
+}
+
+#modalEditarUsuario .form-group {
+    margin-bottom: 0.875rem;
+}
+
+#modalEditarUsuario .form-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.25rem;
+}
+
+#modalEditarUsuario .form-control {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+}
+
+#modalEditarUsuario .form-control:focus {
+    border-color: #1e3a8a;
+    box-shadow: 0 0 0 0.15rem rgba(30, 58, 138, 0.15);
+}
+
+#modalEditarUsuario h6 {
+    font-size: 0.938rem;
+    font-weight: 600;
+    color: #1e3a8a;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 2px solid #dbeafe;
+}
+
+#modalEditarUsuario .modal-footer {
+    padding: 0.875rem 1.5rem;
+    background-color: #f8f9fa;
+    border-top: 1px solid #d1d5db;
+}
+
+#modalEditarUsuario .btn {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+}
+
+#modalEditarUsuario .btn-warning {
+    background-color: #1e3a8a;
+    border-color: #1e3a8a;
+    color: white;
+}
+
+#modalEditarUsuario .btn-warning:hover {
+    background-color: #1e40af;
+    border-color: #1e40af;
+    transform: translateY(-1px);
+}
+
+#modalEditarUsuario .btn-secondary {
+    background: #6b7280;
+    border-color: #6b7280;
+    color: #fff;
+}
+
+#modalEditarUsuario .btn-secondary:hover {
+    background: #4b5563;
+    border-color: #4b5563;
+}
+
+#modalEditarUsuario .modal-content {
+    border: none;
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#modalEditarUsuario .form-control:disabled {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+/* RESPONSIVE */
+@media (max-width: 576px) {
+    #modalEditarUsuario .modal-body {
+        padding: 1.5rem;
+    }
+
+    #modalEditarUsuario .modal-footer {
+        flex-direction: column;
+    }
+
+    #modalEditarUsuario .modal-footer .btn {
+        width: 100%;
+    }
+}

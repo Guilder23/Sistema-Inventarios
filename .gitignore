@@ -27,7 +27,7 @@ db.sqlite3
 db.sqlite3-journal
 /media
 /staticfiles
-/static
+
 
 # Variables de entorno
 .env

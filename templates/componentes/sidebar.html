@@ -28,13 +28,15 @@
                 <span class="sidebar-section-title">OPERACIONES</span>
             </li>
 
-            <!-- Productos - Todos los usuarios -->
+            <!-- Productos - Almacén y Administradores -->
+            {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
             <li class="sidebar-item">
                 <a href="{% url 'listar_productos' %}" class="sidebar-link {% if 'productos' in request.resolver_match.url_name %}active{% endif %}" title="Productos">
                     <i class="fas fa-box"></i>
                     <span>Productos</span>
                 </a>
             </li>
+            {% endif %}
 
             <!-- Inventario - Todos los usuarios -->
             <li class="sidebar-item">
@@ -62,10 +64,10 @@
                 </a>
             </li>
 
-            <!-- Traspasos - Staff y Administradores -->
-            {% if user.is_staff %}
+            <!-- Traspasos - Almacén, Tienda y Administradores -->
+            {% if user.is_superuser or user.perfil.rol == 'almacen' or user.perfil.rol == 'tienda' %}
             <li class="sidebar-item">
-                <a href="#" class="sidebar-link" title="Traspasos">
+                <a href="{% url 'listar_traspasos' %}" class="sidebar-link {% if 'traspasos' in request.resolver_match.url_name %}active{% endif %}" title="Traspasos">
                     <i class="fas fa-exchange-alt"></i>
                     <span>Traspasos</span>
                 </a>
@@ -84,6 +86,36 @@
                 <a href="{% url 'listar_usuarios' %}" class="sidebar-link {% if 'usuarios' in request.resolver_match.url_name %}active{% endif %}" title="Usuarios">
                     <i class="fas fa-users"></i>
                     <span>Usuarios</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- Almacenes - Solo Administradores -->
+            {% if user.is_superuser %}
+            <li class="sidebar-item">
+                <a href="{% url 'almacenes:listar' %}" class="sidebar-link {% if 'almacenes' in request.resolver_match.url_name %}active{% endif %}" title="Almacenes">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Almacenes</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- Tiendas - Solo Administradores -->
+            {% if user.is_superuser %}
+            <li class="sidebar-item">
+                <a href="{% url 'tiendas:listar' %}" class="sidebar-link {% if 'tiendas' in request.resolver_match.url_name %}active{% endif %}" title="Tiendas">
+                    <i class="fas fa-store"></i>
+                    <span>Tiendas</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- Tiendas Virtuales - Solo Administradores -->
+            {% if user.is_superuser %}
+            <li class="sidebar-item">
+                <a href="{% url 'tiendas_virtuales:listar' %}" class="sidebar-link {% if 'tiendas_virtuales' in request.resolver_match.url_name %}active{% endif %}" title="Tiendas Virtuales">
+                    <i class="fas fa-globe"></i>
+                    <span>Tiendas Virtuales</span>
                 </a>
             </li>
             {% endif %}
@@ -113,10 +145,10 @@
             </li>
 
             <li class="sidebar-item">
-                <a href="#" class="sidebar-link" title="Notificaciones">
+                <a href="{% url 'listar_notificaciones' %}" class="sidebar-link {% if 'listar_notificaciones' in request.resolver_match.url_name %}active{% endif %}" title="Notificaciones">
                     <i class="fas fa-bell"></i>
                     <span>Notificaciones</span>
-                    <span class="sidebar-badge">3</span>
+                    <span class="sidebar-badge" id="notificacion-badge">0</span>
                 </a>
             </li>
         </ul>

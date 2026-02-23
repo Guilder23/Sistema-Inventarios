@@ -1,0 +1,221 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Gestión de Almacenes{% endblock %}
+
+{% block estilos_extra %}
+    <link rel="stylesheet" href="{% static 'css/almacenes/almacenes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/almacenes/modals/crea.css' %}">
+    <link rel="stylesheet" href="{% static 'css/almacenes/modals/ver.css' %}">
+    <link rel="stylesheet" href="{% static 'css/almacenes/modals/edita.css' %}">
+    <link rel="stylesheet" href="{% static 'css/almacenes/modals/elimina.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+                <!-- HEADER DE LA PÁGINA -->
+                <div class="page-header">
+                    <div class="page-header-content">
+                        <h1 class="page-title">
+                            <i class="fas fa-warehouse"></i> Gestión de Almacenes
+                        </h1>
+                        <p class="page-subtitle">Administra los almacenes del sistema</p>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalCrearAlmacen">
+                        <i class="fas fa-plus-circle"></i> Nuevo Almacén
+                    </button>
+                </div>
+
+                <!-- FILTROS Y BÚSQUEDA -->
+                <div class="card card-filtros">
+                    <div class="card-body py-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-white border-right-0">
+                                            <i class="fas fa-search text-muted"></i>
+                                        </span>
+                                    </div>
+                                    <input 
+                                        type="text" 
+                                        class="form-control form-control-sm border-left-0" 
+                                        id="buscar" 
+                                        name="buscar"
+                                        placeholder="Buscar por nombre, código o ciudad..."
+                                        value="{{ buscar }}"
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <select class="form-control form-control-sm" id="estado" name="estado">
+                                    <option value="">Todos los estados</option>
+                                    <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
+                                    <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                                    <option value="mantenimiento" {% if estado == 'mantenimiento' %}selected{% endif %}>En Mantenimiento</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABLA DE ALMACENES -->
+                <div class="card card-tabla">
+                    <div class="card-header py-2">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-warehouse"></i> Listado de Almacenes
+                        </h6>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm tabla-almacenes mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">Código</th>
+                                    <th style="width: 20%;">Nombre</th>
+                                    <th style="width: 15%;">Ciudad</th>
+                                    <th style="width: 20%;">Dirección</th>
+                                    <th style="width: 10%;">Estado</th>
+                                    <th class="text-center" style="width: 15%;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for almacen in almacenes %}
+                                <tr>
+                                    <td>
+                                        <span class="usuario-badge">{{ almacen.codigo }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 180px;" title="{{ almacen.nombre }}">
+                                            {{ almacen.nombre }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            {{ almacen.ciudad }}
+                                            {% if almacen.departamento %}
+                                                <small class="text-muted d-block">{{ almacen.departamento }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 200px;" title="{{ almacen.direccion }}">
+                                            {{ almacen.direccion }}
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if almacen.estado == 'activo' %}
+                                            <span class="badge-estado badge-estado-activo">
+                                                <i class="fas fa-check-circle"></i> Activo
+                                            </span>
+                                        {% elif almacen.estado == 'inactivo' %}
+                                            <span class="badge-estado badge-estado-inactivo">
+                                                <i class="fas fa-times-circle"></i> Inactivo
+                                            </span>
+                                        {% elif almacen.estado == 'mantenimiento' %}
+                                            <span class="badge-estado badge-estado-mantenimiento">
+                                                <i class="fas fa-tools"></i> Mantenimiento
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-info btn-sm btn-ver-almacen"
+                                            data-toggle="modal" 
+                                            data-target="#modalVerAlmacen"
+                                            data-almacen-id="{{ almacen.id }}"
+                                            title="Ver detalles"
+                                        >
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-warning btn-sm btn-editar-almacen"
+                                            data-toggle="modal" 
+                                            data-target="#modalEditarAlmacen"
+                                            data-almacen-id="{{ almacen.id }}"
+                                            title="Editar almacén"
+                                        >
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-danger btn-sm btn-eliminar-almacen"
+                                            data-toggle="modal" 
+                                            data-target="#modalEliminarAlmacen"
+                                            data-almacen-id="{{ almacen.id }}"
+                                            data-almacen-nombre="{{ almacen.nombre }}"
+                                            title="Cambiar Estado"
+                                        >
+                                            <i class="fas fa-power-off"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
+                                        <p class="text-muted">No hay almacenes registrados</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {% if is_paginated %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">Primera</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                <!-- INCLUIR MODALES -->
+                {% include 'almacenes/modals/crea.html' %}
+                {% include 'almacenes/modals/ver.html' %}
+                {% include 'almacenes/modals/edita.html' %}
+                {% include 'almacenes/modals/elimina.html' %}
+            </div>
+{% endblock %}
+
+{% block scripts_extra %}
+    <!-- Scripts de Modals (deben cargar primero) -->
+    <script src="{% static 'js/almacenes/modals/crea.js' %}"></script>
+    <script src="{% static 'js/almacenes/modals/ver.js' %}"></script>
+    <script src="{% static 'js/almacenes/modals/edita.js' %}"></script>
+    <script src="{% static 'js/almacenes/modals/elimina.js' %}"></script>
+    
+    <!-- Script Principal de Almacenes -->
+    <script src="{% static 'js/almacenes/almacenes.js' %}"></script>
+{% endblock %}

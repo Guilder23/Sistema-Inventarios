@@ -1,0 +1,314 @@
+/* ============================================================================
+   ESTILOS LOGIN - MODERNO Y PROFESIONAL
+   ============================================================================ */
+
+:root {
+    --color-primario: #1e3a8a;
+    --color-primario-hover: #1e40af;
+    --color-secundario: #3b82f6;
+    --color-exito: #10b981;
+    --color-error: #ef4444;
+    --color-info: #0ea5e9;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.login-body {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    padding: 20px;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 420px;
+}
+
+.login-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(30, 58, 138, 0.15);
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== HEADER ===== */
+.login-header {
+    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
+    padding: 32px 24px;
+    text-align: center;
+    color: white;
+}
+
+.login-logo {
+    font-size: 48px;
+    margin-bottom: 12px;
+    display: inline-block;
+}
+
+.login-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.5px;
+}
+
+.login-subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+    margin: 0;
+    font-weight: 400;
+}
+
+/* ===== ALERTAS ===== */
+.login-alerts {
+    padding: 16px 24px 0;
+    min-height: auto;
+}
+
+.login-alerts:empty {
+    padding: 0;
+}
+
+.alert {
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.alert i {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.alert-error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.alert-success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.alert-info {
+    background-color: #cffafe;
+    color: #164e63;
+    border: 1px solid #a5f3fc;
+}
+
+.alert .close {
+    position: absolute;
+    right: 12px;
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: 18px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.alert .close:hover {
+    opacity: 1;
+}
+
+/* ===== FORMULARIO ===== */
+.login-form {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group-login {
+    margin-bottom: 0;
+}
+
+.input-group-login {
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    background-color: #f9fafb;
+    overflow: hidden;
+}
+
+.input-group-login:focus-within {
+    border-color: var(--color-primario);
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+}
+
+.input-group-text {
+    background: transparent;
+    border: none;
+    color: var(--color-primario);
+    padding: 12px 14px;
+    font-size: 16px;
+}
+
+.form-control-login {
+    border: none;
+    background: transparent;
+    padding: 12px 0 12px 8px;
+    font-size: 15px;
+    color: #111827;
+    transition: all 0.2s ease;
+}
+
+.form-control-login::placeholder {
+    color: #9ca3af;
+}
+
+.form-control-login:focus {
+    outline: none;
+    box-shadow: none;
+    color: #111827;
+}
+
+.form-control-login:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: #111827 !important;
+}
+
+/* Toggle Password Button */
+.btn-login-toggle {
+    background: transparent;
+    border: none;
+    color: var(--color-primario);
+    padding: 12px 14px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-login-toggle:hover {
+    color: var(--color-primario-hover);
+}
+
+.btn-login-toggle:focus {
+    outline: none;
+}
+
+/* ===== BOTÓN SUBMIT ===== */
+.btn-login {
+    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(30, 58, 138, 0.3);
+    color: white;
+}
+
+.btn-login:hover i {
+    color: white;
+}
+
+.btn-login:active {
+    transform: translateY(0);
+}
+
+.btn-login:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ===== FOOTER ===== */
+.login-footer {
+    background-color: #f9fafb;
+    padding: 16px 24px;
+    text-align: center;
+    border-top: 1px solid #e5e7eb;
+}
+
+.login-footer p {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 480px) {
+    .login-header {
+        padding: 24px 20px;
+    }
+
+    .login-title {
+        font-size: 20px;
+    }
+
+    .login-subtitle {
+        font-size: 13px;
+    }
+
+    .login-form {
+        padding: 20px;
+    }
+
+    .login-logo {
+        font-size: 40px;
+    }
+
+    .btn-login {
+        font-size: 14px;
+    }
+}

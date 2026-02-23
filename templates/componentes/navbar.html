@@ -23,47 +23,20 @@
             <div class="navbar-notificaciones">
                 <button class="navbar-icon-btn" id="notificacionesBtn" title="Notificaciones">
                     <i class="fas fa-bell"></i>
-                    <span class="badge">3</span>
+                    <span class="badge" id="notificacionesBadge">0</span>
                 </button>
                 <div class="navbar-dropdown notificaciones-dropdown" id="notificacionesDropdown">
                     <div class="dropdown-header">
                         <span>Notificaciones</span>
-                        <small class="text-muted">3 nuevas</small>
+                        <small class="text-muted" id="notificacionesContador">0 nuevas</small>
                     </div>
-                    <div class="dropdown-items">
-                        <a href="#" class="dropdown-item">
-                            <div class="notification-icon bg-warning">
-                                <i class="fas fa-exclamation-triangle"></i>
-                            </div>
-                            <div class="notification-content">
-                                <strong>Stock bajo</strong>
-                                <p>Producto X tiene solo 5 unidades</p>
-                                <small>Hace 10 min</small>
-                            </div>
-                        </a>
-                        <a href="#" class="dropdown-item">
-                            <div class="notification-icon bg-success">
-                                <i class="fas fa-check"></i>
-                            </div>
-                            <div class="notification-content">
-                                <strong>Pedido completado</strong>
-                                <p>Pedido #1234 entregado</p>
-                                <small>Hace 1 hora</small>
-                            </div>
-                        </a>
-                        <a href="#" class="dropdown-item">
-                            <div class="notification-icon bg-info">
-                                <i class="fas fa-box"></i>
-                            </div>
-                            <div class="notification-content">
-                                <strong>Nuevo producto</strong>
-                                <p>Se agregó Producto Y al inventario</p>
-                                <small>Hace 2 horas</small>
-                            </div>
-                        </a>
+                    <div class="dropdown-items" id="notificacionesLista">
+                        <div class="text-center py-3 text-muted">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando...
+                        </div>
                     </div>
                     <div class="dropdown-footer">
-                        <a href="#">Ver todas las notificaciones</a>
+                        <button id="marcarTodasBtn" type="button" class="btn-marcar-todas">Marcar todas como leídas</button>
                     </div>
                 </div>
             </div>
@@ -77,10 +50,20 @@
                     <div class="user-info">
                         <span class="user-name">{{ user.username|title }}</span>
                         <span class="user-role">
-                            {% if user.is_superuser %}
+                            {% if user.perfil %}
+                                {% if user.perfil.rol == 'administrador' %}
+                                    Administrador
+                                {% elif user.perfil.rol == 'almacen' %}
+                                    Almacén
+                                {% elif user.perfil.rol == 'tienda' %}
+                                    Tienda
+                                {% elif user.perfil.rol == 'tienda_online' %}
+                                    Tienda Virtual
+                                {% else %}
+                                    {{ user.perfil.rol }}
+                                {% endif %}
+                            {% elif user.is_superuser %}
                                 Administrador
-                            {% elif user.is_staff %}
-                                Staff
                             {% else %}
                                 Usuario
                             {% endif %}
@@ -96,15 +79,25 @@
                         <div class="user-header-text">
                             <strong class="user-header-name">{{ user.username|title }}</strong>
                             <p class="user-header-email">{{ user.email }}</p>
-                            <span class="user-header-role">
-                                {% if user.is_superuser %}
+                        <span class="user-header-role">
+                            {% if user.perfil %}
+                                {% if user.perfil.rol == 'administrador' %}
                                     <i class="fas fa-shield-alt"></i> Administrador
-                                {% elif user.is_staff %}
-                                    <i class="fas fa-user-tie"></i> Staff
+                                {% elif user.perfil.rol == 'almacen' %}
+                                    <i class="fas fa-warehouse"></i> Almacén
+                                {% elif user.perfil.rol == 'tienda' %}
+                                    <i class="fas fa-store"></i> Tienda
+                                {% elif user.perfil.rol == 'tienda_online' %}
+                                    <i class="fas fa-shopping-cart"></i> Tienda Virtual
                                 {% else %}
-                                    <i class="fas fa-user"></i> Usuario
+                                    {{ user.perfil.rol }}
                                 {% endif %}
-                            </span>
+                            {% elif user.is_superuser %}
+                                <i class="fas fa-shield-alt"></i> Administrador
+                            {% else %}
+                                <i class="fas fa-user"></i> Usuario
+                            {% endif %}
+                        </span>
                         </div>
                     </div>
                     <div class="dropdown-divider"></div>

@@ -18,6 +18,7 @@ class Producto(models.Model):
     gastos = models.DecimalField(max_digits=10, decimal_places=2, default=0, blank=True, null=True)
     
     # Control de stock
+    stock = models.IntegerField(default=0, help_text='Cantidad actual en stock')
     stock_critico = models.IntegerField(default=10)
     stock_bajo = models.IntegerField(default=30)
     

@@ -1,0 +1,105 @@
+/* ============================================================================
+   SIDEBAR - Funcionalidad de colapso y navegación
+   ============================================================================ */
+
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarCollapseBtn = document.getElementById('sidebarCollapseBtn');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const body = document.body;
+
+    // Cargar estado guardado del sidebar
+    const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (sidebarCollapsed && window.innerWidth > 992) {
+        sidebar.classList.add('collapsed');
+        body.classList.add('sidebar-collapsed');
+    }
+
+    // Toggle collapse del sidebar (botón dentro del sidebar)
+    if (sidebarCollapseBtn) {
+        sidebarCollapseBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleSidebarCollapse();
+        });
+    }
+
+    // Toggle sidebar en mobile (botón en navbar)
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleSidebarMobile();
+        });
+    }
+
+    // Cerrar sidebar al hacer click en el overlay
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', function() {
+            closeSidebarMobile();
+        });
+    }
+
+    // Función para colapsar/expandir el sidebar
+    function toggleSidebarCollapse() {
+        sidebar.classList.toggle('collapsed');
+        body.classList.toggle('sidebar-collapsed');
+        
+        // Guardar estado en localStorage
+        const isCollapsed = sidebar.classList.contains('collapsed');
+        localStorage.setItem('sidebarCollapsed', isCollapsed);
+    }
+
+    // Función para abrir/cerrar sidebar en mobile
+    function toggleSidebarMobile() {
+        sidebar.classList.toggle('active');
+        sidebarOverlay.classList.toggle('active');
+        body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+    }
+
+    // Función para cerrar sidebar en mobile
+    function closeSidebarMobile() {
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+        body.style.overflow = '';
+    }
+
+    // Cerrar sidebar mobile al hacer click en un enlace
+    const sidebarLinks = sidebar.querySelectorAll('.sidebar-link');
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            if (window.innerWidth <= 992) {
+                closeSidebarMobile();
+            }
+        });
+    });
+
+    // Ajustar comportamiento según el tamaño de pantalla
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            if (window.innerWidth > 992) {
+                // En desktop, cerrar mobile view
+                closeSidebarMobile();
+            } else {
+                // En mobile, remover estado colapsado
+                sidebar.classList.remove('collapsed');
+                body.classList.remove('sidebar-collapsed');
+            }
+        }, 250);
+    });
+
+    // Mostrar título completo en tooltip cuando el sidebar está colapsado
+    sidebarLinks.forEach(link => {
+        link.addEventListener('mouseenter', function() {
+            if (sidebar.classList.contains('collapsed')) {
+                const titleAttr = this.getAttribute('title');
+                if (titleAttr) {
+                    // Mantener el título original
+                    return;
+                }
+            }
+        });
+    });
+});
+
