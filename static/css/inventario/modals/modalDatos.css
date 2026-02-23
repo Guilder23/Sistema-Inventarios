@@ -1,0 +1,236 @@
+/* Modal contenedor principal */
+.modal-verDatosInventario {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Contenido del modal */
+.modal-contenido-verDatosInventario {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    width: 90%;
+    max-width: 1200px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.3s;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Encabezado del modal */
+.modal-encabezado-verDatosInventario {
+    padding: 20px 25px;
+    background-color: #4CAF50;
+    color: white;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-encabezado-verDatosInventario h2 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.boton-cerrar-verDatosInventario {
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.boton-cerrar-verDatosInventario:hover {
+    color: #ddd;
+}
+
+/* Cuerpo del modal - 3 columnas */
+.modal-cuerpo-verDatosInventario {
+    display: flex;
+    padding: 25px;
+    gap: 25px;
+    min-height: 400px;
+}
+
+/* Estilos base columnas */
+.columna-verDatosInventario {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Columna 1 - Foto y botones */
+.columna-foto-verDatosInventario {
+    align-items: center;
+}
+
+.contenedor-foto-verDatosInventario {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.foto-perfil-verDatosInventario {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #4CAF50;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.contenedor-botones-verDatosInventario {
+    display: inline-block;
+    padding: 0.5rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    font-family: 'Courier New', monospace;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+    transition: all 0.2s ease;
+    float: left; /* Mueve el elemento a la izquierda */
+}
+
+.boton-estado-verDatosInventario {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+    flex: 1;
+    max-width: 120px;
+}
+
+.boton-estado-verDatosInventario.activo {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.boton-estado-verDatosInventario.activo:hover {
+    background-color: #45a049;
+}
+
+.boton-estado-verDatosInventario.inactivo {
+    background-color: #f44336;
+    color: white;
+}
+
+.boton-estado-verDatosInventario.inactivo:hover {
+    background-color: #da190b;
+}
+
+/* Tarjetas de datos */
+.tarjeta-datos-verDatosInventario {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s;
+}
+
+.tarjeta-datos-verDatosInventario:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tarjeta-datos-verDatosInventario h3 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 16px;
+    border-bottom: 2px solid #4CAF50;
+    padding-bottom: 8px;
+}
+
+/* Filas de datos */
+.fila-dato-verDatosInventario {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: baseline;
+}
+
+.etiqueta-dato-verDatosInventario {
+    font-weight: bold;
+    color: #666;
+    min-width: 90px;
+    font-size: 14px;
+}
+
+.valor-dato-verDatosInventario {
+    color: #333;
+    font-size: 14px;
+    flex: 1;
+}
+
+/* Pie del modal */
+.modal-pie-verDatosInventario {
+    padding: 20px 25px;
+    background-color: #f9f9f9;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    text-align: right;
+    border-top: 1px solid #e0e0e0;
+}
+
+.boton-aceptar-verDatosInventario {
+    padding: 12px 30px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.boton-aceptar-verDatosInventario:hover {
+    background-color: #45a049;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .modal-cuerpo-verDatosInventario {
+        flex-direction: column;
+    }
+    
+    .modal-contenido-verDatosInventario {
+        width: 95%;
+        margin: 2% auto;
+    }
+    
+    .fila-dato-verDatosInventario {
+        flex-direction: column;
+    }
+    
+    .etiqueta-dato-verDatosInventario {
+        min-width: auto;
+        margin-bottom: 3px;
+    }
+}
