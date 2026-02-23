@@ -12,11 +12,18 @@
     position: fixed;
     left: 0;
     top: 56px;
-    transition: all 0.2s ease;
+    transition: transform 0.3s ease;
     z-index: 1020;
     box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
+}
+
+/* En móvil, el sidebar comienza oculto por defecto */
+@media (max-width: 992px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
 }
 
 /* Scrollbar personalizada */
@@ -250,6 +257,7 @@
 /* ===== ESTADO COLAPSADO ===== */
 .sidebar.collapsed {
     width: 60px;
+    transition: width 0.2s ease, transform 0.3s ease;
 }
 
 /* Header colapsado */
@@ -335,45 +343,83 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.5);
     z-index: 1015;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
 }
 
 .sidebar-overlay.active {
-    display: block;
-    opacity: 1;
+    display: block !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 992px) {
     .sidebar {
-        transform: translateX(-100%);
-        width: 240px;
+        transform: translateX(-100%) !important;
+        width: 260px !important;
+        box-shadow: none;
+        transition: transform 0.3s ease !important;
+        position: fixed !important;
+        left: 0 !important;
+        top: 56px !important;
+        z-index: 1020 !important;
     }
 
     .sidebar.active {
-        transform: translateX(0);
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.15);
+        transform: translateX(0) !important;
+        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2) !important;
     }
 
+    /* Ocultar botón de colapso en móvil */
+    .sidebar-collapse-btn {
+        display: none !important;
+    }
+
+    /* En móvil, ignorar el estado collapsed cuando está activo */
     .sidebar.collapsed {
-        transform: translateX(-100%);
+        transform: translateX(-100%) !important;
+        width: 260px !important;
     }
 
     .sidebar.collapsed.active {
-        transform: translateX(0);
-        width: 60px;
+        transform: translateX(0) !important;
+        width: 260px !important;
+    }
+    
+    /* En móvil, el sidebar siempre está expandido cuando está visible */
+    .sidebar.active.collapsed .sidebar-brand-text,
+    .sidebar.active.collapsed .sidebar-link span,
+    .sidebar.active.collapsed .sidebar-section-title,
+    .sidebar.active.collapsed .sidebar-user-info {
+        opacity: 1 !important;
+        width: auto !important;
+        overflow: visible !important;
+    }
+    
+    .sidebar.active.collapsed .sidebar-badge {
+        position: static !important;
+        width: auto !important;
+        height: auto !important;
+        padding: 0.125rem 0.375rem !important;
+        min-width: 18px !important;
+        font-size: 0.65rem !important;
     }
 }
 
 @media (max-width: 576px) {
+    .sidebar,
     .sidebar.active {
-        width: 100%;
+        width: 280px !important;
+        max-width: 85vw !important;
     }
-
+    
+    .sidebar.collapsed,
     .sidebar.collapsed.active {
-        width: 60px;
+        width: 280px !important;
+        max-width: 85vw !important;
     }
 }
