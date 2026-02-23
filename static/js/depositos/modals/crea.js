@@ -15,14 +15,13 @@ function inicializarModalCrear() {
             
             // Validar campos requeridos
             const nombre = document.getElementById('crearNombre').value.trim();
-            const codigo = document.getElementById('crearCodigo').value.trim();
             const tipo = document.getElementById('crearTipo').value;
             const tienda = document.getElementById('crearTienda').value;
             const direccion = document.getElementById('crearDireccion').value.trim();
             const ciudad = document.getElementById('crearCiudad').value.trim();
             const departamento = document.getElementById('crearDepartamento').value.trim();
             
-            if (!nombre || !codigo || !tipo || !tienda || !direccion || !ciudad || !departamento) {
+            if (!nombre || !tipo || !tienda || !direccion || !ciudad || !departamento) {
                 alert('Por favor, complete todos los campos requeridos');
                 return;
             }

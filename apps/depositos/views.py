@@ -22,7 +22,6 @@ def listar_depositos(request):
     if buscar:
         depositos = depositos.filter(
             Q(nombre__icontains=buscar) |
-            Q(codigo__icontains=buscar) |
             Q(ciudad__icontains=buscar) |
             Q(tienda__nombre__icontains=buscar)
         )
@@ -53,23 +52,14 @@ def crear_deposito(request):
     try:
         deposito = Deposito.objects.create(
             nombre=request.POST.get('nombre'),
-            codigo=request.POST.get('codigo'),
             descripcion=request.POST.get('descripcion', ''),
             tipo=request.POST.get('tipo', 'principal'),
             tienda_id=request.POST.get('tienda'),
             direccion=request.POST.get('direccion'),
             ciudad=request.POST.get('ciudad'),
             departamento=request.POST.get('departamento'),
-            pais=request.POST.get('pais', 'Colombia'),
-            codigo_postal=request.POST.get('codigo_postal', ''),
             coordenadas=request.POST.get('coordenadas', ''),
-            telefono=request.POST.get('telefono', ''),
-            email=request.POST.get('email', ''),
-            area_m2=request.POST.get('area_m2') or None,
-            horario_apertura=request.POST.get('horario_apertura') or None,
-            horario_cierre=request.POST.get('horario_cierre') or None,
             estado=request.POST.get('estado', 'activo'),
-            fecha_apertura=request.POST.get('fecha_apertura') or None,
             creado_por=request.user
         )
         messages.success(request, f'Depósito {deposito.nombre} creado exitosamente')
@@ -86,23 +76,14 @@ def editar_deposito(request, pk):
     
     try:
         deposito.nombre = request.POST.get('nombre')
-        deposito.codigo = request.POST.get('codigo')
         deposito.descripcion = request.POST.get('descripcion', '')
         deposito.tipo = request.POST.get('tipo')
         deposito.tienda_id = request.POST.get('tienda')
         deposito.direccion = request.POST.get('direccion')
         deposito.ciudad = request.POST.get('ciudad')
         deposito.departamento = request.POST.get('departamento')
-        deposito.pais = request.POST.get('pais', 'Colombia')
-        deposito.codigo_postal = request.POST.get('codigo_postal', '')
         deposito.coordenadas = request.POST.get('coordenadas', '')
-        deposito.telefono = request.POST.get('telefono', '')
-        deposito.email = request.POST.get('email', '')
-        deposito.area_m2 = request.POST.get('area_m2') or None
-        deposito.horario_apertura = request.POST.get('horario_apertura') or None
-        deposito.horario_cierre = request.POST.get('horario_cierre') or None
         deposito.estado = request.POST.get('estado')
-        deposito.fecha_apertura = request.POST.get('fecha_apertura') or None
         deposito.save()
         
         messages.success(request, f'Depósito {deposito.nombre} actualizado exitosamente')
@@ -137,7 +118,6 @@ def obtener_deposito(request, pk):
         data = {
             'id': deposito.id,
             'nombre': deposito.nombre,
-            'codigo': deposito.codigo,
             'descripcion': deposito.descripcion or '',
             'tipo': deposito.tipo,
             'tipo_display': deposito.get_tipo_display(),
@@ -147,17 +127,9 @@ def obtener_deposito(request, pk):
             'direccion': deposito.direccion,
             'ciudad': deposito.ciudad,
             'departamento': deposito.departamento,
-            'pais': deposito.pais,
-            'codigo_postal': deposito.codigo_postal or '',
             'coordenadas': deposito.coordenadas or '',
-            'telefono': deposito.telefono or '',
-            'email': deposito.email or '',
-            'area_m2': str(deposito.area_m2) if deposito.area_m2 else '',
-            'horario_apertura': deposito.horario_apertura.strftime('%H:%M') if deposito.horario_apertura else '',
-            'horario_cierre': deposito.horario_cierre.strftime('%H:%M') if deposito.horario_cierre else '',
             'estado': deposito.estado,
             'estado_display': deposito.get_estado_display(),
-            'fecha_apertura': deposito.fecha_apertura.strftime('%Y-%m-%d') if deposito.fecha_apertura else '',
             'creado_por': deposito.creado_por.get_full_name() if deposito.creado_por else 'Sistema',
             'fecha_creacion': deposito.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
             'fecha_actualizacion': deposito.fecha_actualizacion.strftime('%d/%m/%Y %H:%M'),

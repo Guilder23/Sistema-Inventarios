@@ -3,23 +3,17 @@ from .models import Deposito
 
 @admin.register(Deposito)
 class DepositoAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'nombre', 'tipo', 'tienda', 'ciudad', 'estado', 'fecha_creacion')
+    list_display = ('nombre', 'tipo', 'tienda', 'ciudad', 'estado', 'fecha_creacion')
     list_filter = ('estado', 'tipo', 'tienda', 'ciudad', 'fecha_creacion')
-    search_fields = ('nombre', 'codigo', 'ciudad', 'direccion', 'tienda__nombre')
+    search_fields = ('nombre', 'ciudad', 'direccion', 'tienda__nombre')
     readonly_fields = ('creado_por', 'fecha_creacion', 'fecha_actualizacion')
     
     fieldsets = (
         ('Información Básica', {
-            'fields': ('nombre', 'codigo', 'descripcion', 'tipo', 'tienda', 'estado')
+            'fields': ('nombre', 'descripcion', 'tipo', 'tienda', 'estado')
         }),
         ('Ubicación', {
-            'fields': ('direccion', 'ciudad', 'departamento', 'pais', 'codigo_postal', 'coordenadas')
-        }),
-        ('Contacto', {
-            'fields': ('telefono', 'email')
-        }),
-        ('Detalles Operativos', {
-            'fields': ('area_m2', 'horario_apertura', 'horario_cierre', 'fecha_apertura')
+            'fields': ('direccion', 'ciudad', 'departamento', 'coordenadas')
         }),
         ('Auditoría', {
             'fields': ('creado_por', 'fecha_creacion', 'fecha_actualizacion'),
