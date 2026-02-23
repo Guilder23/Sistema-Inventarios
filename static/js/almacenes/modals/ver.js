@@ -21,17 +21,12 @@ function cargarDetallesAlmacen(almacenId) {
         .then(response => response.json())
         .then(data => {
             document.getElementById('verNombre').textContent = data.nombre;
-            document.getElementById('verCodigo').textContent = data.codigo;
             document.getElementById('verDescripcion').textContent = data.descripcion || '-';
             document.getElementById('verDireccion').textContent = data.direccion;
             document.getElementById('verCiudad').textContent = data.ciudad;
             document.getElementById('verDepartamento').textContent = data.departamento;
-            document.getElementById('verPais').textContent = data.pais;
-            document.getElementById('verCodigoPostal').textContent = data.codigo_postal || '-';
             document.getElementById('verTelefono').textContent = data.telefono || '-';
             document.getElementById('verEmail').textContent = data.email || '-';
-            document.getElementById('verCapacidadM2').textContent = data.capacidad_m2 || '-';
-            document.getElementById('verCapacidadProductos').textContent = data.capacidad_productos || '-';
             document.getElementById('verCreadoPor').textContent = data.creado_por || '-';
             document.getElementById('verFechaCreacion').textContent = data.fecha_creacion || '-';
             document.getElementById('verFechaActualizacion').textContent = data.fecha_actualizacion || '-';

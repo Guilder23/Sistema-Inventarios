@@ -43,17 +43,12 @@ def crear_almacen(request):
     try:
         almacen = Almacen.objects.create(
             nombre=request.POST.get('nombre'),
-            codigo=request.POST.get('codigo'),
             descripcion=request.POST.get('descripcion', ''),
             direccion=request.POST.get('direccion'),
             ciudad=request.POST.get('ciudad'),
             departamento=request.POST.get('departamento'),
-            pais=request.POST.get('pais', 'Colombia'),
-            codigo_postal=request.POST.get('codigo_postal', ''),
             telefono=request.POST.get('telefono', ''),
             email=request.POST.get('email', ''),
-            capacidad_m2=request.POST.get('capacidad_m2') or None,
-            capacidad_productos=request.POST.get('capacidad_productos') or None,
             estado=request.POST.get('estado', 'activo'),
             creado_por=request.user
         )
@@ -71,17 +66,12 @@ def editar_almacen(request, pk):
     
     try:
         almacen.nombre = request.POST.get('nombre')
-        almacen.codigo = request.POST.get('codigo')
         almacen.descripcion = request.POST.get('descripcion', '')
         almacen.direccion = request.POST.get('direccion')
         almacen.ciudad = request.POST.get('ciudad')
         almacen.departamento = request.POST.get('departamento')
-        almacen.pais = request.POST.get('pais', 'Colombia')
-        almacen.codigo_postal = request.POST.get('codigo_postal', '')
         almacen.telefono = request.POST.get('telefono', '')
         almacen.email = request.POST.get('email', '')
-        almacen.capacidad_m2 = request.POST.get('capacidad_m2') or None
-        almacen.capacidad_productos = request.POST.get('capacidad_productos') or None
         almacen.estado = request.POST.get('estado')
         almacen.save()
         
@@ -116,17 +106,12 @@ def obtener_almacen(request, pk):
     data = {
         'id': almacen.id,
         'nombre': almacen.nombre,
-        'codigo': almacen.codigo,
         'descripcion': almacen.descripcion or '',
         'direccion': almacen.direccion,
         'ciudad': almacen.ciudad,
         'departamento': almacen.departamento,
-        'pais': almacen.pais,
-        'codigo_postal': almacen.codigo_postal or '',
         'telefono': almacen.telefono or '',
         'email': almacen.email or '',
-        'capacidad_m2': str(almacen.capacidad_m2) if almacen.capacidad_m2 else '',
-        'capacidad_productos': almacen.capacidad_productos or '',
         'estado': almacen.estado,
         'estado_display': almacen.get_estado_display(),
         'creado_por': almacen.creado_por.get_full_name() if almacen.creado_por else 'Sistema',

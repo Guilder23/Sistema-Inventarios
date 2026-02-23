@@ -40,17 +40,12 @@ function cargarEdicionAlmacen(almacenId) {
         .then(data => {
             document.getElementById('editarId').value = data.id;
             document.getElementById('editarNombre').value = data.nombre;
-            document.getElementById('editarCodigo').value = data.codigo;
             document.getElementById('editarDescripcion').value = data.descripcion || '';
             document.getElementById('editarDireccion').value = data.direccion;
             document.getElementById('editarCiudad').value = data.ciudad;
             document.getElementById('editarDepartamento').value = data.departamento;
-            document.getElementById('editarPais').value = data.pais;
-            document.getElementById('editarCodigoPostal').value = data.codigo_postal || '';
             document.getElementById('editarTelefono').value = data.telefono || '';
             document.getElementById('editarEmail').value = data.email || '';
-            document.getElementById('editarCapacidadM2').value = data.capacidad_m2 || '';
-            document.getElementById('editarCapacidadProductos').value = data.capacidad_productos || '';
             document.getElementById('editarEstado').value = data.estado;
         })
         .catch(error => {
@@ -61,12 +56,11 @@ function cargarEdicionAlmacen(almacenId) {
 
 function validarFormularioEditar() {
     const nombre = document.getElementById('editarNombre')?.value.trim();
-    const codigo = document.getElementById('editarCodigo')?.value.trim();
     const direccion = document.getElementById('editarDireccion')?.value.trim();
     const ciudad = document.getElementById('editarCiudad')?.value.trim();
     const departamento = document.getElementById('editarDepartamento')?.value.trim();
 
-    if (!nombre || !codigo || !direccion || !ciudad || !departamento) {
+    if (!nombre || !direccion || !ciudad || !departamento) {
         alert('Todos los campos requeridos deben estar completos');
         return false;
     }

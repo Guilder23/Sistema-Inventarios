@@ -12,25 +12,16 @@ class Almacen(models.Model):
     ]
     
     nombre = models.CharField(max_length=200, unique=True, verbose_name='Nombre del Almacén')
-    codigo = models.CharField(max_length=50, unique=True, verbose_name='Código')
     descripcion = models.TextField(blank=True, null=True, verbose_name='Descripción')
     
     # Ubicación
     direccion = models.CharField(max_length=300, verbose_name='Dirección')
     ciudad = models.CharField(max_length=100, verbose_name='Ciudad')
     departamento = models.CharField(max_length=100, verbose_name='Departamento/Estado')
-    pais = models.CharField(max_length=100, default='Colombia', verbose_name='País')
-    codigo_postal = models.CharField(max_length=20, blank=True, null=True, verbose_name='Código Postal')
     
     # Contacto
     telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name='Teléfono')
     email = models.EmailField(blank=True, null=True, verbose_name='Email')
-    
-    # Capacidad
-    capacidad_m2 = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, 
-                                       verbose_name='Capacidad (m²)')
-    capacidad_productos = models.IntegerField(blank=True, null=True, 
-                                              verbose_name='Capacidad de Productos')
     
     # Estado y seguimiento
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='activo', 
@@ -49,7 +40,7 @@ class Almacen(models.Model):
         db_table = 'almacenes'
     
     def __str__(self):
-        return f"{self.codigo} - {self.nombre}"
+        return f"{self.nombre}"
     
     @property
     def esta_activo(self):

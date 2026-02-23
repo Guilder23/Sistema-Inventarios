@@ -3,24 +3,24 @@ from .models import Almacen
 
 @admin.register(Almacen)
 class AlmacenAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'nombre', 'ciudad', 'departamento', 'estado', 'total_tiendas', 'fecha_creacion')
+    list_display = ('nombre', 'ciudad', 'departamento', 'estado', 'total_tiendas', 'fecha_creacion')  # Quitado 'codigo' - No se usa por ahora
     list_filter = ('estado', 'ciudad', 'departamento', 'fecha_creacion')
-    search_fields = ('nombre', 'codigo', 'ciudad', 'direccion')
+    search_fields = ('nombre', 'ciudad', 'direccion')  # Quitado 'codigo' de busca - No se usa por ahora
     readonly_fields = ('creado_por', 'fecha_creacion', 'fecha_actualizacion')
     
     fieldsets = (
         ('Información Básica', {
-            'fields': ('nombre', 'codigo', 'descripcion', 'estado')
+            'fields': ('nombre', 'descripcion', 'estado')  # Quitado 'codigo' - No se usa por ahora
         }),
         ('Ubicación', {
-            'fields': ('direccion', 'ciudad', 'departamento', 'pais', 'codigo_postal')
+            'fields': ('direccion', 'ciudad', 'departamento')  # Quitado 'pais', 'codigo_postal' - No se usa por ahora
         }),
         ('Contacto', {
             'fields': ('telefono', 'email')
         }),
-        ('Capacidad', {
-            'fields': ('capacidad_m2', 'capacidad_productos')
-        }),
+        # ('Capacidad', {  # Comentado - No se usa por ahora
+        #     'fields': ('capacidad_m2', 'capacidad_productos')
+        # }),
         ('Auditoría', {
             'fields': ('creado_por', 'fecha_creacion', 'fecha_actualizacion'),
             'classes': ('collapse',)
