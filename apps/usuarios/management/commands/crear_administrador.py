@@ -3,16 +3,17 @@ from django.contrib.auth.models import User
 
 
 class Command(BaseCommand):
-    help = 'Crea un usuario administrador por defecto para el sistema'
+    help = 'Crea el usuario administrador principal para el sistema'
 
     def handle(self, *args, **kwargs):
+        # Datos del administrador
         username = 'admin'
-        email = 'admin@sistema-inventario.com'
-        password = 'admin123'
-
+        email = 'admin@gmail.com'
+        password = 'admin12345'
+        
         if User.objects.filter(username=username).exists():
             self.stdout.write(
-                self.style.WARNING(f'El usuario "{username}" ya existe en el sistema')
+                self.style.WARNING(f'✗ El usuario "{username}" ya existe en el sistema')
             )
             return
 
@@ -22,17 +23,19 @@ class Command(BaseCommand):
             email=email,
             password=password,
             first_name='Administrador',
-            last_name='Sistema'
+            last_name='Principal'
         )
 
-        self.stdout.write(
-            self.style.SUCCESS('Usuario administrador creado exitosamente')
-        )
         self.stdout.write('')
-        self.stdout.write(self.style.SUCCESS('Credenciales de acceso:'))
-        self.stdout.write(f'  Usuario: {username}')
+        self.stdout.write(self.style.SUCCESS('=' * 60))
+        self.stdout.write(self.style.SUCCESS('  ✓ USUARIO ADMINISTRADOR CREADO EXITOSAMENTE'))
+        self.stdout.write(self.style.SUCCESS('=' * 60))
+        self.stdout.write('')
+        self.stdout.write(self.style.SUCCESS('CREDENCIALES DE ACCESO:'))
+        self.stdout.write(self.style.SUCCESS('-' * 60))
+        self.stdout.write(f'  Usuario:    {username}')
         self.stdout.write(f'  Contraseña: {password}')
+        self.stdout.write(f'  Email:      {email}')
         self.stdout.write('')
-        self.stdout.write(
-            self.style.WARNING('IMPORTANTE: Cambie la contraseña despues del primer inicio de sesion')
-        )
+        self.stdout.write(self.style.WARNING('⚠ IMPORTANTE: Cambia la contraseña después del primer inicio de sesión'))
+        self.stdout.write('')
