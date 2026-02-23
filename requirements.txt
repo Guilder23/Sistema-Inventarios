@@ -4,6 +4,13 @@ python-decouple==3.8
 
 # Base de datos PostgreSQL
 psycopg2-binary==2.9.9
+dj-database-url==2.1.0
+
+# Servidor para producción
+gunicorn==21.2.0
+
+# Archivos estáticos en producción
+whitenoise==6.6.0
 
 # Manejo de imágenes (fotos de productos)
 Pillow==10.2.0
