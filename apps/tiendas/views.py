@@ -22,7 +22,6 @@ def listar_tiendas(request):
     if buscar:
         tiendas = tiendas.filter(
             Q(nombre__icontains=buscar) |
-            Q(codigo__icontains=buscar) |
             Q(ciudad__icontains=buscar) |
             Q(almacen__nombre__icontains=buscar)
         )
@@ -53,23 +52,14 @@ def crear_tienda(request):
     try:
         tienda = Tienda.objects.create(
             nombre=request.POST.get('nombre'),
-            codigo=request.POST.get('codigo'),
             descripcion=request.POST.get('descripcion', ''),
             tipo=request.POST.get('tipo', 'sucursal'),
             almacen_id=request.POST.get('almacen'),
             direccion=request.POST.get('direccion'),
             ciudad=request.POST.get('ciudad'),
             departamento=request.POST.get('departamento'),
-            pais=request.POST.get('pais', 'Colombia'),
-            codigo_postal=request.POST.get('codigo_postal', ''),
             coordenadas=request.POST.get('coordenadas', ''),
-            telefono=request.POST.get('telefono', ''),
-            email=request.POST.get('email', ''),
-            area_m2=request.POST.get('area_m2') or None,
-            horario_apertura=request.POST.get('horario_apertura') or None,
-            horario_cierre=request.POST.get('horario_cierre') or None,
             estado=request.POST.get('estado', 'activo'),
-            fecha_apertura=request.POST.get('fecha_apertura') or None,
             creado_por=request.user
         )
         messages.success(request, f'Tienda {tienda.nombre} creada exitosamente')
@@ -86,23 +76,14 @@ def editar_tienda(request, pk):
     
     try:
         tienda.nombre = request.POST.get('nombre')
-        tienda.codigo = request.POST.get('codigo')
         tienda.descripcion = request.POST.get('descripcion', '')
         tienda.tipo = request.POST.get('tipo')
         tienda.almacen_id = request.POST.get('almacen')
         tienda.direccion = request.POST.get('direccion')
         tienda.ciudad = request.POST.get('ciudad')
         tienda.departamento = request.POST.get('departamento')
-        tienda.pais = request.POST.get('pais', 'Colombia')
-        tienda.codigo_postal = request.POST.get('codigo_postal', '')
         tienda.coordenadas = request.POST.get('coordenadas', '')
-        tienda.telefono = request.POST.get('telefono', '')
-        tienda.email = request.POST.get('email', '')
-        tienda.area_m2 = request.POST.get('area_m2') or None
-        tienda.horario_apertura = request.POST.get('horario_apertura') or None
-        tienda.horario_cierre = request.POST.get('horario_cierre') or None
         tienda.estado = request.POST.get('estado')
-        tienda.fecha_apertura = request.POST.get('fecha_apertura') or None
         tienda.save()
         
         messages.success(request, f'Tienda {tienda.nombre} actualizada exitosamente')
@@ -136,7 +117,6 @@ def obtener_tienda(request, pk):
     data = {
         'id': tienda.id,
         'nombre': tienda.nombre,
-        'codigo': tienda.codigo,
         'descripcion': tienda.descripcion or '',
         'tipo': tienda.tipo,
         'tipo_display': tienda.get_tipo_display(),
@@ -145,17 +125,9 @@ def obtener_tienda(request, pk):
         'direccion': tienda.direccion,
         'ciudad': tienda.ciudad,
         'departamento': tienda.departamento,
-        'pais': tienda.pais,
-        'codigo_postal': tienda.codigo_postal or '',
         'coordenadas': tienda.coordenadas or '',
-        'telefono': tienda.telefono or '',
-        'email': tienda.email or '',
-        'area_m2': str(tienda.area_m2) if tienda.area_m2 else '',
-        'horario_apertura': tienda.horario_apertura.strftime('%H:%M') if tienda.horario_apertura else '',
-        'horario_cierre': tienda.horario_cierre.strftime('%H:%M') if tienda.horario_cierre else '',
         'estado': tienda.estado,
         'estado_display': tienda.get_estado_display(),
-        'fecha_apertura': tienda.fecha_apertura.strftime('%Y-%m-%d') if tienda.fecha_apertura else '',
         'creado_por': tienda.creado_por.get_full_name() if tienda.creado_por else 'Sistema',
         'fecha_creacion': tienda.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
         'fecha_actualizacion': tienda.fecha_actualizacion.strftime('%d/%m/%Y %H:%M'),

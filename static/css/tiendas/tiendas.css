@@ -531,3 +531,49 @@
     background-color: #fff3cd;
     border: 1px solid #ffeeba;
 }
+
+/* ============================================================================
+   ESTILOS PARA TIPO DE TIENDA (Estilo similar a estados)
+   ============================================================================ */
+
+.tienda-tipo-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.tienda-tipo-badge i {
+    font-size: 0.75rem;
+}
+
+/* Principal - Dorado */
+.tipo-principal {
+    color: #856404;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+}
+
+/* Sucursal - Azul */
+.tipo-sucursal {
+    color: #004085;
+    background-color: #cce5ff;
+    border: 1px solid #b8daff;
+}
+
+/* Punto de Venta - Verde */
+.tipo-punto-venta {
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+}
+
+/* Sin definir - Gris */
+.tipo-sin-definir {
+    color: #383d41;
+    background-color: #e2e3e5;
+    border: 1px solid #d6d8db;
+}
