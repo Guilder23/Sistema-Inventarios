@@ -3,17 +3,17 @@ Django==5.1.1
 python-decouple==3.8
 
 # Base de datos PostgreSQL
-psycopg2-binary==2.9.9
-dj-database-url==2.1.0
+psycopg2-binary==2.9.10
+dj-database-url==2.2.0
 
 # Servidor para producción
-gunicorn==21.2.0
+gunicorn==23.0.0
 
 # Archivos estáticos en producción
-whitenoise==6.6.0
+whitenoise==6.8.2
 
 # Manejo de imágenes (fotos de productos)
-Pillow==10.4.0
+Pillow==11.0.0
 
 # Generación de PDFs (solo cuando lo necesites, descomenta)
 # reportlab==4.0.9

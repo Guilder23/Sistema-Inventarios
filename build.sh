@@ -2,12 +2,16 @@
 # exit on error
 set -o errexit
 
-# Instalar dependencias
+echo "==== Actualizando pip ===="
 pip install --upgrade pip
+
+echo "==== Instalando dependencias ===="
 pip install -r requirements.txt
 
-# Recolectar archivos estáticos
+echo "==== Recolectando archivos estáticos ===="
 python manage.py collectstatic --no-input
 
-# Ejecutar migraciones
+echo "==== Ejecutando migraciones ===="
 python manage.py migrate
+
+echo "==== Build completado exitosamente ===="

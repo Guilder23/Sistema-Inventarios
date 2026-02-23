@@ -90,7 +90,6 @@ Tu proyecto ya está preparado para el deploy en Render con los siguientes archi
    DEBUG = False
    ALLOWED_HOSTS = tu-app.onrender.com
    DATABASE_URL = [PEGA AQUÍ LA URL QUE COPIASTE EN PARTE 1, PASO 5]
-   PYTHON_VERSION = 3.12.0
    ```
    
    **IMPORTANTE sobre SECRET_KEY:**
