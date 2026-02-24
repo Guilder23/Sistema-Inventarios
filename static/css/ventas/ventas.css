@@ -28,11 +28,17 @@
     padding: 0.5rem 1.25rem;
     border-radius: 6px;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+    background-color: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(30, 58, 138, 0.2);
 }
 .btn-nueva-venta:hover {
+    background-color: #1e40af !important;
+    border-color: #1e40af !important;
+    color: white !important;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 4px 8px rgba(30, 58, 138, 0.3);
 }
 
 /*TARJETAS DE RESUMEN (Stats)*/
@@ -121,6 +127,11 @@
     background: var(--ventas-bg-light);
     border-bottom: 1px solid var(--ventas-border);
 }
+.filtro-bar .col-md-6 {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
 
 /*TABLA DE VENTAS*/
 .tabla-productos thead th {
@@ -131,18 +142,28 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     border-bottom: 2px solid var(--ventas-border);
-    padding: 0.75rem 0.5rem;
+    padding: 1.25rem 1rem;
     white-space: nowrap;
 }
 .tabla-productos tbody td {
     vertical-align: middle;
     font-size: 0.88rem;
     color: var(--ventas-text-dark);
-    padding: 0.65rem 0.5rem;
+    padding: 1.25rem 1rem;
     border-bottom: 1px solid #f0f0f0;
+    min-height: 65px;
 }
 .tabla-productos tbody tr:hover {
     background-color: rgba(44, 111, 187, 0.04);
+}
+
+/* Celda de Estado - con padding simétrico */
+.tabla-productos tbody td:nth-child(5) {
+    padding: 1.25rem 1.5rem !important;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /*Código de venta*/
@@ -158,23 +179,30 @@
 
 /*Badges de Estado*/
 .badge-estado {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.35em 0.75em;
-    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    padding: 0.6rem 0.85rem !important;
+    border-radius: 12px !important;
     letter-spacing: 0.3px;
+    white-space: nowrap;
+    line-height: 1.2 !important;
+    vertical-align: middle !important;
 }
 .badge-completada {
-    background-color: rgba(40, 167, 69, 0.12);
-    color: #1e7e34;
+    background-color: #d4edda !important;
+    color: #1e7e34 !important;
 }
 .badge-pendiente {
-    background-color: rgba(240, 173, 78, 0.15);
-    color: #c77c11;
+    background-color: #fff3cd !important;
+    color: #c77c11 !important;
 }
 .badge-cancelada {
-    background-color: rgba(220, 53, 69, 0.12);
-    color: #bd2130;
+    background-color: #f8d7da !important;
+    color: #bd2130 !important;
 }
 
 /*Botones de acción*/
@@ -182,6 +210,31 @@
     padding: 0.25rem 0.5rem;
     font-size: 0.8rem;
     border-radius: 4px;
+}
+
+/*Botón Generar PDF*/
+.btn-generar-pdf {
+    font-weight: 600;
+    padding: 0.375rem 0.875rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    background-color: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+    color: white !important;
+    font-size: 0.875rem;
+}
+.btn-generar-pdf:hover {
+    background-color: #1e40af !important;
+    border-color: #1e40af !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(30, 58, 138, 0.3);
+    color: white !important;
+}
+.btn-generar-pdf:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    background-color: var(--ventas-text-muted) !important;
+    border-color: var(--ventas-text-muted) !important;
 }
 
 /*MODAL DETALLE VENTA*/
@@ -271,6 +324,27 @@
     border-radius: 8px;
     padding: 0.75rem 1rem;
     border: 1px solid var(--ventas-border);
+}
+
+/*Botón Generar PDF*/
+.btn-generar-pdf {
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    background-color: var(--ventas-primary);
+    border-color: var(--ventas-primary);
+    color: white;
+}
+.btn-generar-pdf:hover {
+    background-color: #1e4d8a;
+    border-color: #1e4d8a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(44, 111, 187, 0.3);
+}
+.btn-generar-pdf:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 /*
