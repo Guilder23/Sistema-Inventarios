@@ -38,6 +38,16 @@
             </li>
             {% endif %}
 
+            <!-- Devoluciones - Solo Almacén -->
+            {% if user.perfil.rol == 'almacen' %}
+            <li class="sidebar-item">
+                <a href="{% url 'listar_danados' %}" class="sidebar-link {% if request.resolver_match.url_name == 'listar_danados' %}active{% endif %}" title="Devoluciones">
+                    <i class="fas fa-rotate-left"></i>
+                    <span>Devoluciones</span>
+                </a>
+            </li>
+            {% endif %}
+
             <!-- Inventario - Todos los usuarios incluyendo Tienda Online -->
             <li class="sidebar-item">
                 <a href="{% url 'ver_inventario' %}" class="sidebar-link {% if 'inventario' in request.resolver_match.url_name %}active{% endif %}" title="Inventario">

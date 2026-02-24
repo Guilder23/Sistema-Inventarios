@@ -3,10 +3,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
-from .models import Producto, HistorialProducto
+from .models import Producto, HistorialProducto, ProductoDanado
+from apps.inventario.models import MovimientoInventario
 from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
 
 def verificar_permiso_productos(request):
@@ -324,14 +326,246 @@ def historial_producto(request, id):
     
     return render(request, 'productos/historial.html', context)
 
+# GESTION DE PRODUCTOS DAÑADOS
 @login_required
+@require_http_methods(["GET", "POST"])
 def listar_danados(request):
-    return render(request, 'productos/danados.html')
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil or perfil.rol != 'almacen':
+        messages.error(request, 'Solo el personal de almacén puede gestionar devoluciones')
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        try:
+            producto_id = request.POST.get('producto')
+            cantidad = int(request.POST.get('cantidad', 0))
+            comentario = request.POST.get('comentario', '').strip()
+            foto = request.FILES.get('foto')
+
+            if not producto_id:
+                messages.error(request, 'Debe seleccionar un producto')
+                return redirect('listar_danados')
+
+            if cantidad <= 0:
+                messages.error(request, 'La cantidad dañada debe ser mayor a 0')
+                return redirect('listar_danados')
+
+            producto = get_object_or_404(Producto, id=producto_id, activo=True)
+
+            if producto.stock < cantidad:
+                messages.error(request, f'No hay stock suficiente para registrar daño. Stock actual: {producto.stock}')
+                return redirect('listar_danados')
+
+            with transaction.atomic():
+                producto.stock -= cantidad
+                producto.save(update_fields=['stock', 'fecha_actualizacion'])
+
+                danado = ProductoDanado.objects.create(
+                    producto=producto,
+                    ubicacion=perfil,
+                    cantidad=cantidad,
+                    comentario=comentario,
+                    foto=foto,
+                    registrado_por=request.user,
+                )
+
+                HistorialProducto.objects.create(
+                    producto=producto,
+                    accion='edicion',
+                    usuario=request.user,
+                    detalles=f'Registro de dañado #{danado.id}: -{cantidad} unidades. Comentario: {comentario or "Sin comentario"}'
+                )
+
+                MovimientoInventario.objects.create(
+                    producto=producto,
+                    ubicacion=perfil,
+                    tipo='danado',
+                    cantidad=cantidad,
+                    referencia=f'DAN-{danado.id}',
+                    comentario=comentario or 'Registro de producto dañado'
+                )
+
+            messages.success(request, f'Se registró daño para {producto.nombre}: {cantidad} unidades')
+        except ValueError:
+            messages.error(request, 'Cantidad inválida')
+        except Exception as e:
+            messages.error(request, f'Error al registrar producto dañado: {str(e)}')
+
+        return redirect('listar_danados')
+
+    buscar = request.GET.get('buscar', '').strip()
+    estado = request.GET.get('estado', '').strip()
+
+    danados = ProductoDanado.objects.select_related('producto', 'registrado_por', 'ubicacion').filter(ubicacion=perfil)
+
+    if buscar:
+        danados = danados.filter(
+            Q(producto__codigo__icontains=buscar) |
+            Q(producto__nombre__icontains=buscar) |
+            Q(comentario__icontains=buscar)
+        )
+
+    if estado in ['pendiente', 'parcial', 'cerrado']:
+        danados = danados.filter(estado=estado)
+
+    danados = danados.order_by('-fecha_registro')
+
+    total_registros = danados.count()
+    total_pendientes = sum(item.cantidad_pendiente for item in danados)
+
+    context = {
+        'danados': danados,
+        'productos': Producto.objects.filter(activo=True).order_by('nombre'),
+        'buscar': buscar,
+        'estado': estado,
+        'total_registros': total_registros,
+        'total_pendientes': total_pendientes,
+    }
+    return render(request, 'productos/devoluciones/devoluciones.html', context)
 
 @login_required
 def registrar_danado(request):
-    return render(request, 'productos/registrar_danado.html')
+    return redirect('listar_danados')
 
+
+def _actualizar_estado_danado(danado):
+    if danado.cantidad_pendiente == 0:
+        danado.estado = 'cerrado'
+    elif danado.cantidad_recuperada > 0 or danado.cantidad_repuesta > 0:
+        danado.estado = 'parcial'
+    else:
+        danado.estado = 'pendiente'
+
+
+def _procesar_devolucion(request, danado_id, tipo_accion):
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil or perfil.rol != 'almacen':
+        messages.error(request, 'No tiene permisos para esta acción')
+        return redirect('listar_danados')
+
+    danado = get_object_or_404(ProductoDanado.objects.select_related('producto'), id=danado_id, ubicacion=perfil)
+
+    try:
+        cantidad = int(request.POST.get('cantidad', 0))
+    except ValueError:
+        messages.error(request, 'Cantidad inválida')
+        return redirect('listar_danados')
+
+    if cantidad <= 0:
+        messages.error(request, 'La cantidad debe ser mayor a 0')
+        return redirect('listar_danados')
+
+    if cantidad > danado.cantidad_pendiente:
+        messages.error(request, f'La cantidad excede lo pendiente ({danado.cantidad_pendiente})')
+        return redirect('listar_danados')
+
+    comentario_accion = request.POST.get('comentario', '').strip()
+
+    with transaction.atomic():
+        if tipo_accion == 'agregar':
+            danado.cantidad_recuperada += cantidad
+            tipo_movimiento = 'devolucion'
+            detalle = f'Devolución por recuperación de dañado #{danado.id}: +{cantidad} unidades'
+        else:
+            danado.cantidad_repuesta += cantidad
+            tipo_movimiento = 'entrada'
+            detalle = f'Reposición por dañado #{danado.id}: +{cantidad} unidades'
+
+        _actualizar_estado_danado(danado)
+        danado.save(update_fields=['cantidad_recuperada', 'cantidad_repuesta', 'estado'])
+
+        danado.producto.stock += cantidad
+        danado.producto.save(update_fields=['stock', 'fecha_actualizacion'])
+
+        HistorialProducto.objects.create(
+            producto=danado.producto,
+            accion='edicion',
+            usuario=request.user,
+            detalles=f'{detalle}. Estado dañado: {danado.get_estado_display()}'
+        )
+
+        MovimientoInventario.objects.create(
+            producto=danado.producto,
+            ubicacion=perfil,
+            tipo=tipo_movimiento,
+            cantidad=cantidad,
+            referencia=f'DAN-{danado.id}',
+            comentario=comentario_accion or detalle
+        )
+
+    accion = 'agregado' if tipo_accion == 'agregar' else 'repuesto'
+    messages.success(request, f'Stock {accion} correctamente para {danado.producto.nombre} (+{cantidad})')
+    return redirect('listar_danados')
+
+
+@login_required
+@require_http_methods(["POST"])
+def agregar_mas_danado(request, id):
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil or perfil.rol != 'almacen':
+        messages.error(request, 'No tiene permisos para esta acción')
+        return redirect('listar_danados')
+
+    danado = get_object_or_404(ProductoDanado.objects.select_related('producto'), id=id, ubicacion=perfil)
+
+    try:
+        cantidad = int(request.POST.get('cantidad', 0))
+    except ValueError:
+        messages.error(request, 'Cantidad inválida')
+        return redirect('listar_danados')
+
+    if cantidad <= 0:
+        messages.error(request, 'La cantidad debe ser mayor a 0')
+        return redirect('listar_danados')
+
+    if danado.producto.stock < cantidad:
+        messages.error(request, f'No hay stock suficiente para registrar más dañados. Stock actual: {danado.producto.stock}')
+        return redirect('listar_danados')
+
+    comentario_accion = request.POST.get('comentario', '').strip()
+
+    with transaction.atomic():
+        danado.cantidad += cantidad
+        _actualizar_estado_danado(danado)
+        danado.save(update_fields=['cantidad', 'estado'])
+
+        danado.producto.stock -= cantidad
+        danado.producto.save(update_fields=['stock', 'fecha_actualizacion'])
+
+        detalle = f'Se agregaron {cantidad} unidades dañadas al registro #{danado.id}'
+
+        HistorialProducto.objects.create(
+            producto=danado.producto,
+            accion='edicion',
+            usuario=request.user,
+            detalles=f'{detalle}. Pendiente actual: {danado.cantidad_pendiente}'
+        )
+
+        MovimientoInventario.objects.create(
+            producto=danado.producto,
+            ubicacion=perfil,
+            tipo='danado',
+            cantidad=cantidad,
+            referencia=f'DAN-{danado.id}',
+            comentario=comentario_accion or detalle
+        )
+
+    messages.success(request, f'Se agregaron {cantidad} unidades dañadas para {danado.producto.nombre}')
+    return redirect('listar_danados')
+
+
+@login_required
+@require_http_methods(["POST"])
+def agregar_stock_danado(request, id):
+    return _procesar_devolucion(request, id, 'agregar')
+
+
+@login_required
+@require_http_methods(["POST"])
+def reponer_stock_danado(request, id):
+    return _procesar_devolucion(request, id, 'reponer')
+
+# AGREGAR PRECIOS A PRODUCTOS DESDE EL PANEL DE ADMINISTRADOR
 @login_required
 @require_http_methods(["POST"])
 def editar_precio_producto(request, id):

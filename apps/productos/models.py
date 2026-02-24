@@ -62,11 +62,20 @@ class HistorialProducto(models.Model):
 
 class ProductoDanado(models.Model):
     """Registro de productos dañados"""
+    ESTADOS = (
+        ('pendiente', 'Pendiente'),
+        ('parcial', 'Parcial'),
+        ('cerrado', 'Cerrado'),
+    )
+
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     ubicacion = models.ForeignKey('usuarios.PerfilUsuario', on_delete=models.CASCADE)
     cantidad = models.IntegerField()
-    comentario = models.TextField()
+    comentario = models.TextField(blank=True, null=True)
     foto = models.ImageField(upload_to='danados/', blank=True, null=True)
+    cantidad_recuperada = models.IntegerField(default=0)
+    cantidad_repuesta = models.IntegerField(default=0)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
     registrado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     fecha_registro = models.DateTimeField(auto_now_add=True)
     
@@ -77,3 +86,8 @@ class ProductoDanado(models.Model):
     
     def __str__(self):
         return f"{self.producto.nombre} - {self.cantidad} unidades"
+
+    @property
+    def cantidad_pendiente(self):
+        pendiente = self.cantidad - self.cantidad_recuperada - self.cantidad_repuesta
+        return max(0, pendiente)

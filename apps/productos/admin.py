@@ -45,7 +45,7 @@ class HistorialProductoAdmin(admin.ModelAdmin):
 
 @admin.register(ProductoDanado)
 class ProductoDanadoAdmin(admin.ModelAdmin):
-    list_display = ['producto', 'ubicacion', 'cantidad', 'registrado_por', 'fecha_registro']
-    list_filter = ['fecha_registro', 'ubicacion']
+    list_display = ['producto', 'ubicacion', 'cantidad', 'cantidad_recuperada', 'cantidad_repuesta', 'estado', 'registrado_por', 'fecha_registro']
+    list_filter = ['fecha_registro', 'ubicacion', 'estado']
     search_fields = ['producto__nombre', 'comentario']
     list_per_page = 20
