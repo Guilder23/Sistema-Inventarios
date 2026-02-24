@@ -23,7 +23,7 @@
                 Gestión de ventas &mdash; {{ perfil }}
             </p>
         </div>
-        <a href="{% url 'ventas:crear_venta' %}" class="btn btn-success btn-nueva-venta">
+        <a href="{% url 'ventas:crear_venta' %}" class="btn btn-primary btn-nueva-venta">
             <i class="fas fa-plus-circle mr-1"></i> Nueva Venta
         </a>
     </div>
@@ -118,10 +118,10 @@
 {#TAB: AL CONTADO#}
                 <div class="tab-pane fade show active" id="tabContado" role="tabpanel" aria-labelledby="contado-tab">
 
-                    {# Filtro rápido #}
-                    <div class="filtro-bar px-3 pt-3 pb-2">
+                    {# Filtro rápido + Botón PDF #}
+                    <div class="filtro-bar px-4 py-4">
                         <div class="row align-items-center">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="input-group input-group-sm">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><i class="fas fa-search"></i></span>
@@ -137,6 +137,11 @@
                                     <option value="completada">Completada</option>
                                     <option value="cancelada">Cancelada</option>
                                 </select>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <button type="button" class="btn btn-generar-pdf btn-sm" onclick="generarPDFContado()" {% if not ventas_contado %}disabled{% endif %}>
+                                    <i class="fas fa-file-pdf mr-1"></i> Descargar PDF
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -213,10 +218,10 @@
 {# TAB: A CRÉDITO#}
                 <div class="tab-pane fade" id="tabCredito" role="tabpanel" aria-labelledby="credito-tab">
 
-                    {# Filtro rápido #}
-                    <div class="filtro-bar px-3 pt-3 pb-2">
+                    {# Filtro rápido + Botón PDF #}
+                    <div class="filtro-bar px-4 py-4">
                         <div class="row align-items-center">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="input-group input-group-sm">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><i class="fas fa-search"></i></span>
@@ -233,6 +238,11 @@
                                     <option value="completada">Completada</option>
                                     <option value="cancelada">Cancelada</option>
                                 </select>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <button type="button" class="btn btn-generar-pdf btn-sm" onclick="generarPDFCredito()" {% if not ventas_credito %}disabled{% endif %}>
+                                    <i class="fas fa-file-pdf mr-1"></i> Descargar PDF
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -425,4 +435,15 @@
 
 {% block scripts_extra %}
 <script src="{% static 'js/ventas/ventas.js' %}"></script>
+<script>
+function generarPDFContado() {
+    const perfil = '{{ perfil.id }}';
+    window.location.href = "{% url 'ventas:listar_ventas' %}?tipo_pago=contado&pdf=1";
+}
+
+function generarPDFCredito() {
+    const perfil = '{{ perfil.id }}';
+    window.location.href = "{% url 'ventas:listar_ventas' %}?tipo_pago=credito&pdf=1";
+}
+</script>
 {% endblock %}
