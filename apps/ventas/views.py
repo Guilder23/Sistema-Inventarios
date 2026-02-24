@@ -1,13 +1,17 @@
 import json
 from decimal import Decimal
+from io import BytesIO
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
-from django.http import HttpResponse
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.lib.units import inch
 
 from apps.ventas.models import Venta, DetalleVenta, AmortizacionCredito
 from apps.productos.models import Producto
@@ -59,6 +63,16 @@ def listar_ventas(request):
 #por tipo de pago
     ventas_contado = ventas.filter(tipo_pago='contado')
     ventas_credito = ventas.filter(tipo_pago='credito')
+
+# Verificar si se solicita PDF
+    pdf = request.GET.get('pdf')
+    if pdf:
+        tipo_pago = request.GET.get('tipo_pago', 'contado')
+        if tipo_pago == 'contado':
+            ventas_filtradas = ventas_contado
+        else:
+            ventas_filtradas = ventas_credito
+        return generar_pdf_lista(ventas_filtradas, tipo_pago)
 
 #Stats rápidas
     total_ventas = ventas.count()
@@ -292,6 +306,168 @@ def ver_venta(request, id):
 def generar_pdf_venta(request, id):
     return HttpResponse('PDF de venta')
 
+def generar_pdf_lista(ventas, tipo_pago='contado'):
+    """Genera PDF detallado con información completa de cada venta."""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.75*inch, bottomMargin=0.75*inch)
+    styles = getSampleStyleSheet()
+    elements = []
+    
+    # Estilo personalizado para títulos
+    titulo_style = ParagraphStyle(
+        'TituloVenta',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor='#1e3a8a',
+        spaceAfter=12,
+        borderColor='#1e3a8a',
+        borderWidth=2,
+        borderPadding=10,
+    )
+    
+    info_style = ParagraphStyle(
+        'Info',
+        parent=styles['Normal'],
+        fontSize=9,
+        spaceAfter=4,
+    )
+    
+    # Título principal
+    tipo_display = "AL CONTADO" if tipo_pago == 'contado' else "A CRÉDITO"
+    title = Paragraph(f"<b>LISTADO DE VENTAS - {tipo_display}</b>", styles['Title'])
+    elements.append(title)
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # Procesar cada venta
+    for idx, venta in enumerate(ventas):
+        if idx > 0:
+            elements.append(PageBreak())
+        
+        # Encabezado de la venta
+        encabezado = Paragraph(f"<b>Venta: {venta.codigo}</b>", titulo_style)
+        elements.append(encabezado)
+        elements.append(Spacer(1, 0.1*inch))
+        
+        # Información de la venta en 2 columnas
+        info_data = [
+            ['Cliente', venta.cliente, 'Tipo de Pago', venta.get_tipo_pago_display()],
+            ['Teléfono', venta.telefono or '-', 'Fecha', venta.fecha_elaboracion.strftime('%d/%m/%Y %H:%M')],
+            ['Razón Social', venta.razon_social or '-', 'Estado', venta.get_estado_display()],
+            ['Dirección', venta.direccion or '-', 'Vendedor', venta.vendedor.get_full_name() if venta.vendedor else '-'],
+        ]
+        
+        info_table = Table(info_data, colWidths=[1.2*inch, 2*inch, 1.2*inch, 2*inch])
+        info_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ]))
+        elements.append(info_table)
+        elements.append(Spacer(1, 0.15*inch))
+        
+        # Tabla de productos
+        productos_titulo = Paragraph("<b>Productos Vendidos</b>", styles['Heading3'])
+        elements.append(productos_titulo)
+        elements.append(Spacer(1, 0.08*inch))
+        
+        productos_data = [['Producto', 'Cant.', 'P. Unit.', 'Subtotal']]
+        total_items = Decimal('0.00')
+        
+        for detalle in venta.detalles.all():
+            productos_data.append([
+                detalle.producto.nombre,
+                str(detalle.cantidad),
+                f"Bs. {detalle.precio_unitario:.2f}",
+                f"Bs. {detalle.subtotal:.2f}"
+            ])
+            total_items += detalle.subtotal
+        
+        productos_data.append(['', '', 'TOTAL:', f"Bs. {total_items:.2f}"])
+        
+        productos_table = Table(productos_data, colWidths=[2.5*inch, 0.8*inch, 1*inch, 1.2*inch])
+        productos_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), '#1e3a8a'),
+            ('TEXTCOLOR', (0, 0), (-1, 0), 'white'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+            ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('BACKGROUND', (0, -1), (-1, -1), '#e9ecef'),
+            ('GRID', (0, 0), (-1, -1), 1, '#d1d5db'),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -2), ['#ffffff', '#f8f9fc']),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(productos_table)
+        elements.append(Spacer(1, 0.15*inch))
+        
+        # Si es crédito, mostrar amortizaciones
+        if tipo_pago == 'credito':
+            amortizaciones = venta.amortizaciones.all().order_by('-fecha')
+            
+            amort_titulo = Paragraph("<b>Amortizaciones</b>", styles['Heading3'])
+            elements.append(amort_titulo)
+            elements.append(Spacer(1, 0.08*inch))
+            
+            if amortizaciones.exists():
+                amort_data = [['Fecha', 'Monto', 'Observaciones']]
+                total_amortizado = Decimal('0.00')
+                
+                for amort in amortizaciones:
+                    amort_data.append([
+                        amort.fecha.strftime('%d/%m/%Y %H:%M'),
+                        f"Bs. {amort.monto:.2f}",
+                        amort.observaciones or '-'
+                    ])
+                    total_amortizado += amort.monto
+                
+                saldo_pendiente = venta.total - total_amortizado
+                
+                amort_table = Table(amort_data, colWidths=[1.5*inch, 1.2*inch, 3.3*inch])
+                amort_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), '#1e3a8a'),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), 'white'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 9),
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+                    ('GRID', (0, 0), (-1, -1), 1, '#d1d5db'),
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), ['#ffffff', '#f8f9fc']),
+                    ('TOPPADDING', (0, 0), (-1, -1), 6),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ]))
+                elements.append(amort_table)
+                elements.append(Spacer(1, 0.1*inch))
+                
+                # Resumen de crédito
+                resumen_data = [
+                    ['Total amortizado:', f"Bs. {total_amortizado:.2f}"],
+                    ['Saldo pendiente:', f"Bs. {saldo_pendiente:.2f}"],
+                ]
+                resumen_table = Table(resumen_data, colWidths=[2.5*inch, 1.5*inch])
+                resumen_table.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 10),
+                    ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+                    ('TOPPADDING', (0, 0), (-1, -1), 6),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ]))
+                elements.append(resumen_table)
+            else:
+                elements.append(Paragraph("<i>Sin amortizaciones registradas</i>", info_style))
+    
+    doc.build(elements)
+    
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="ventas_{tipo_pago}.pdf"'
+    
+    return response
 
 @login_required
 def registrar_amortizacion(request, venta_id):
@@ -385,6 +561,7 @@ def anular_venta(request, id):
             'success': True,
             'message': f'Venta {venta.codigo} anulada. Stock devuelto.',
         })
+
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': f'Error: {str(e)}'})
