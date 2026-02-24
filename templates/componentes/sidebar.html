@@ -46,7 +46,7 @@
                 </a>
             </li>
 
-            <!-- VENTAS - Almacen y Administradores -->
+            <!-- Ventas - Almacén y Administradores (Oculto para Tienda Online) -->
             {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
             <li class="sidebar-item">
                 <a href="{% url 'ventas:listar_ventas' %}" class="sidebar-link {% if 'ventas' in request.path %}active{% endif %}" title="Ventas">
@@ -55,6 +55,7 @@
                 </a>
             </li>
             {% endif %}
+
 
             <!-- Pedidos - Todos los usuarios -->
             <li class="sidebar-item">
