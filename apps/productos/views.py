@@ -7,7 +7,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
-from .models import Categoria, Producto, HistorialProducto, ProductoDanado
+from .models import Categoria, Contenedor, Producto, HistorialProducto, ProductoDanado
 from apps.inventario.models import MovimientoInventario
 from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
 
@@ -181,6 +181,175 @@ def eliminar_categoria(request, id):
     estado = 'activada' if categoria.activo else 'desactivada'
     messages.success(request, f'Categoría "{categoria.nombre}" {estado} correctamente')
     return redirect('listar_categorias')
+
+
+@login_required
+def listar_contenedores(request):
+    """Listar contenedores con filtros"""
+    if not es_almacen(request):
+        messages.error(request, 'Solo el personal de almacén puede gestionar contenedores')
+        return redirect('dashboard')
+
+    buscar = request.GET.get('buscar', '')
+    estado = request.GET.get('estado', '')
+
+    contenedores = Contenedor.objects.all().order_by('-fecha_creacion')
+
+    if buscar:
+        contenedores = contenedores.filter(
+            Q(nombre__icontains=buscar) |
+            Q(proveedor__icontains=buscar)
+        )
+
+    if estado == 'activo':
+        contenedores = contenedores.filter(activo=True)
+    elif estado == 'inactivo':
+        contenedores = contenedores.filter(activo=False)
+
+    context = {
+        'contenedores': contenedores,
+        'buscar': buscar,
+        'estado': estado,
+    }
+    return render(request, 'contenedores/contenedores.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def crear_contenedor(request):
+    """Crear nuevo contenedor"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para crear contenedores')
+        return redirect('dashboard')
+
+    try:
+        nombre = request.POST.get('nombre', '').strip()
+        proveedor = request.POST.get('proveedor', '').strip()
+        stock = request.POST.get('stock', '0').strip()
+        activo = request.POST.get('activo') == 'on'
+
+        if not nombre or not proveedor:
+            messages.error(request, 'Nombre y proveedor son requeridos')
+            return redirect('listar_contenedores')
+
+        if Contenedor.objects.filter(nombre__iexact=nombre).exists():
+            messages.error(request, f'El contenedor "{nombre}" ya existe')
+            return redirect('listar_contenedores')
+
+        try:
+            stock_valor = int(stock)
+            if stock_valor < 0:
+                raise ValueError('Stock inválido')
+        except Exception:
+            messages.error(request, 'El stock debe ser un número entero válido')
+            return redirect('listar_contenedores')
+
+        Contenedor.objects.create(
+            nombre=nombre,
+            proveedor=proveedor,
+            stock=stock_valor,
+            activo=activo,
+            creado_por=request.user
+        )
+
+        messages.success(request, f'Contenedor "{nombre}" creado exitosamente')
+    except Exception as e:
+        messages.error(request, f'Error al crear contenedor: {str(e)}')
+
+    return redirect('listar_contenedores')
+
+
+@login_required
+def obtener_contenedor(request, id):
+    """Obtener datos de un contenedor en JSON"""
+    if not es_almacen(request):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    try:
+        contenedor = get_object_or_404(Contenedor, id=id)
+
+        creado_por_str = ''
+        if contenedor.creado_por:
+            creado_por_str = f"{contenedor.creado_por.first_name} {contenedor.creado_por.last_name}".strip()
+            if not creado_por_str:
+                creado_por_str = contenedor.creado_por.username
+
+        data = {
+            'id': contenedor.id,
+            'nombre': contenedor.nombre,
+            'proveedor': contenedor.proveedor,
+            'stock': contenedor.stock,
+            'activo': contenedor.activo,
+            'creado_por': creado_por_str,
+            'fecha_creacion': contenedor.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+            'fecha_actualizacion': contenedor.fecha_actualizacion.strftime('%d/%m/%Y %H:%M'),
+        }
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=404)
+
+
+@login_required
+@require_http_methods(["POST"])
+def editar_contenedor(request, id):
+    """Editar contenedor existente"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para editar contenedores')
+        return redirect('dashboard')
+
+    contenedor = get_object_or_404(Contenedor, id=id)
+
+    try:
+        nombre = request.POST.get('nombre', '').strip()
+        proveedor = request.POST.get('proveedor', '').strip()
+        stock = request.POST.get('stock', str(contenedor.stock)).strip()
+        activo = request.POST.get('activo') == 'on'
+
+        if not nombre or not proveedor:
+            messages.error(request, 'Nombre y proveedor son requeridos')
+            return redirect('listar_contenedores')
+
+        existe = Contenedor.objects.filter(nombre__iexact=nombre).exclude(id=contenedor.id).exists()
+        if existe:
+            messages.error(request, f'El contenedor "{nombre}" ya existe')
+            return redirect('listar_contenedores')
+
+        try:
+            stock_valor = int(stock)
+            if stock_valor < 0:
+                raise ValueError('Stock inválido')
+        except Exception:
+            messages.error(request, 'El stock debe ser un número entero válido')
+            return redirect('listar_contenedores')
+
+        contenedor.nombre = nombre
+        contenedor.proveedor = proveedor
+        contenedor.stock = stock_valor
+        contenedor.activo = activo
+        contenedor.save()
+
+        messages.success(request, f'Contenedor "{contenedor.nombre}" actualizado exitosamente')
+    except Exception as e:
+        messages.error(request, f'Error al actualizar contenedor: {str(e)}')
+
+    return redirect('listar_contenedores')
+
+
+@login_required
+@require_http_methods(["POST"])
+def eliminar_contenedor(request, id):
+    """Cambiar estado activo/inactivo de contenedor"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para cambiar estado de contenedores')
+        return redirect('dashboard')
+
+    contenedor = get_object_or_404(Contenedor, id=id)
+    contenedor.activo = not contenedor.activo
+    contenedor.save(update_fields=['activo', 'fecha_actualizacion'])
+
+    estado = 'activado' if contenedor.activo else 'desactivado'
+    messages.success(request, f'Contenedor "{contenedor.nombre}" {estado} correctamente')
+    return redirect('listar_contenedores')
 
 @login_required
 def listar_productos(request):

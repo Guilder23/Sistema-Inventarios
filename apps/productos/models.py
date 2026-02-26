@@ -19,6 +19,25 @@ class Categoria(models.Model):
     def __str__(self):
         return self.nombre
 
+
+class Contenedor(models.Model):
+    """Modelo de Contenedor de productos"""
+    nombre = models.CharField(max_length=120, unique=True)
+    proveedor = models.CharField(max_length=150)
+    stock = models.IntegerField(default=0)
+    creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='contenedores_creados')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Contenedor'
+        verbose_name_plural = 'Contenedores'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return f"{self.nombre} - {self.proveedor}"
+
 class Producto(models.Model):
     """Modelo de Producto"""
     codigo = models.CharField(max_length=100, unique=True)

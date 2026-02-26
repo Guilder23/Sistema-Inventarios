@@ -48,6 +48,16 @@
             </li>
             {% endif %}
 
+            <!-- Contenedores - Solo Almacén -->
+            {% if user.perfil.rol == 'almacen' %}
+            <li class="sidebar-item">
+                <a href="{% url 'listar_contenedores' %}" class="sidebar-link {% if 'contenedores' in request.resolver_match.url_name %}active{% endif %}" title="Contenedores">
+                    <i class="fas fa-boxes-stacked"></i>
+                    <span>Contenedores</span>
+                </a>
+            </li>
+            {% endif %}
+
             <!-- Devoluciones - Solo Almacén -->
             {% if user.perfil.rol == 'almacen' %}
             <li class="sidebar-item">

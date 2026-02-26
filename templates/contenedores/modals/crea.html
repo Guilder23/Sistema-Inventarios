@@ -1,0 +1,48 @@
+<div class="modal fade" id="modalCrearContenedor" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-boxes-stacked"></i> Crear Nuevo Contenedor
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formCrearContenedor" method="post" action="{% url 'crear_contenedor' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required maxlength="120" placeholder="Nombre del contenedor">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="proveedor" class="form-label">Proveedor <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="proveedor" name="proveedor" required maxlength="150" placeholder="Proveedor principal">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="stock" class="form-label">Stock <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="stock" name="stock" required value="0" min="0" step="1">
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="activo" name="activo" checked>
+                            <label class="custom-control-label" for="activo">Contenedor Activo</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar Contenedor
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
