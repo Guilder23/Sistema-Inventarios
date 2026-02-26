@@ -85,11 +85,9 @@ def ver_inventario_deposito(request):
     tiene_depositos_vinculados = depositos.exists()
     nombres_depositos = list(depositos.values_list('nombre', flat=True))
 
-    ubicaciones_deposito = PerfilUsuario.objects.filter(rol='deposito').filter(
-        Q(tienda_id=perfil.tienda_id)
-        |
-        Q(ubicacion_relacionada=perfil)
-        | Q(nombre_ubicacion__in=nombres_depositos)
+    ubicaciones_deposito = PerfilUsuario.objects.filter(
+        rol='deposito',
+        tienda_id=perfil.tienda_id,
     )
 
     inventarios = Inventario.objects.select_related(

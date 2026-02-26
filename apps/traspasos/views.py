@@ -707,6 +707,8 @@ def obtener_destinos_traspaso(request):
                     return f"tienda:{destino_obj.tienda_id}"
                 return f"tienda_nombre:{nombre_resuelto.lower()}"
             if destino_obj.rol == 'deposito':
+                if destino_obj.tienda_id:
+                    return f"deposito:{destino_obj.tienda_id}:{nombre_resuelto.lower()}"
                 return f"deposito_nombre:{nombre_resuelto.lower()}"
             if destino_obj.rol == 'almacen':
                 if destino_obj.almacen_id:
