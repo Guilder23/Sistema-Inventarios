@@ -11,7 +11,7 @@ class PerfilUsuario(models.Model):
         ('tienda_online', 'Tienda Online'),
     )
     
-    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
+    usuario = models.OneToOneField(User, on_delete=models.SET_NULL, related_name='perfil', null=True, blank=True)
     rol = models.CharField(max_length=20, choices=ROLES)
     nombre_ubicacion = models.CharField(max_length=200, blank=True, null=True, help_text='Nombre de la tienda/almacén/depósito')
     
@@ -40,4 +40,5 @@ class PerfilUsuario(models.Model):
         ordering = ['nombre_ubicacion']
     
     def __str__(self):
-        return f"{self.usuario.username} - {self.get_rol_display()}"
+        nombre_usuario = self.usuario.username if self.usuario else (self.nombre_ubicacion or 'Sin usuario')
+        return f"{nombre_usuario} - {self.get_rol_display()}"

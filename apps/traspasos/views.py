@@ -4,7 +4,6 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
-from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q
 from .models import Traspaso, DetalleTraspaso
@@ -22,7 +21,7 @@ def es_almacen_o_tienda(user):
 
 
 def _asegurar_perfiles_deposito(almacen_id=None, tienda_id=None):
-    """Crea/actualiza perfiles de depósito para depósitos existentes que no tengan perfil."""
+    """Crea/actualiza perfiles técnicos de depósito sin crear usuarios."""
     depositos = Deposito.objects.select_related('tienda', 'tienda__almacen')
 
     if almacen_id:
@@ -32,11 +31,16 @@ def _asegurar_perfiles_deposito(almacen_id=None, tienda_id=None):
 
     for deposito in depositos:
         perfil_existente = PerfilUsuario.objects.filter(
-            rol='deposito'
-        ).filter(
-            Q(nombre_ubicacion=deposito.nombre)
-            | Q(tienda_id=deposito.tienda_id)
-        ).first()
+            rol='deposito',
+            tienda_id=deposito.tienda_id,
+            nombre_ubicacion=deposito.nombre,
+        ).order_by('id').first()
+
+        if not perfil_existente:
+            perfil_existente = PerfilUsuario.objects.filter(
+                rol='deposito',
+                usuario__username=f'deposito_auto_{deposito.id}'
+            ).order_by('id').first()
 
         if perfil_existente:
             cambios = []
@@ -46,34 +50,28 @@ def _asegurar_perfiles_deposito(almacen_id=None, tienda_id=None):
             if perfil_existente.nombre_ubicacion != deposito.nombre:
                 perfil_existente.nombre_ubicacion = deposito.nombre
                 cambios.append('nombre_ubicacion')
+            if perfil_existente.usuario_id:
+                perfil_existente.usuario = None
+                cambios.append('usuario')
+
+            perfil_tienda = PerfilUsuario.objects.filter(rol='tienda', tienda_id=deposito.tienda_id).first()
+            if perfil_existente.ubicacion_relacionada_id != (perfil_tienda.id if perfil_tienda else None):
+                perfil_existente.ubicacion_relacionada = perfil_tienda
+                cambios.append('ubicacion_relacionada')
+
             if cambios:
                 perfil_existente.save(update_fields=cambios + ['fecha_actualizacion'])
             continue
 
-        username = f"deposito_auto_{deposito.id}"
-        user_deposito, creado = User.objects.get_or_create(
-            username=username,
-            defaults={
-                'first_name': 'Depósito',
-                'last_name': deposito.nombre,
-                'is_active': False,
-            },
-        )
-        if creado:
-            user_deposito.set_unusable_password()
-            user_deposito.save(update_fields=['password'])
-
         perfil_tienda = PerfilUsuario.objects.filter(rol='tienda', tienda_id=deposito.tienda_id).first()
 
-        PerfilUsuario.objects.get_or_create(
-            usuario=user_deposito,
-            defaults={
-                'rol': 'deposito',
-                'nombre_ubicacion': deposito.nombre,
-                'tienda_id': deposito.tienda_id,
-                'ubicacion_relacionada': perfil_tienda,
-                'activo': True,
-            }
+        PerfilUsuario.objects.create(
+            usuario=None,
+            rol='deposito',
+            nombre_ubicacion=deposito.nombre,
+            tienda_id=deposito.tienda_id,
+            ubicacion_relacionada=perfil_tienda,
+            activo=True,
         )
 
 
