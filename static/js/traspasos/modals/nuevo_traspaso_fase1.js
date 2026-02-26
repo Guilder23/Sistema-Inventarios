@@ -222,12 +222,17 @@ function validarYContinuarFase2() {
         return;
     }
     
-    // Cerrar modal fase 1
-    $('#modalNuevoTraspaso').modal('hide');
-    
-    // Abrir modal fase 2
-    setTimeout(() => {
-        $('#modalTraspasoFase2').modal('show');
+    const modalFase1 = $('#modalNuevoTraspaso');
+    const modalFase2 = $('#modalTraspasoFase2');
+
+    if (document.activeElement) {
+        document.activeElement.blur();
+    }
+
+    modalFase1.one('hidden.bs.modal', function() {
+        modalFase2.modal('show');
         inicializarFase2();
-    }, 300);
+    });
+
+    modalFase1.modal('hide');
 }

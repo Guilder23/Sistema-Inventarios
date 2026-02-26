@@ -7,7 +7,7 @@ class PerfilUsuario(models.Model):
         ('administrador', 'Administrador'),
         ('almacen', 'Almacén'),
         ('tienda', 'Tienda'),
-        # ('deposito', 'Depósito'),
+        ('deposito', 'Depósito'),
         ('tienda_online', 'Tienda Online'),
     )
     

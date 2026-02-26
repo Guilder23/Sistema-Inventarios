@@ -127,8 +127,8 @@ def crear_usuario(request):
                 messages.error(request, 'Debe seleccionar un almacén para este rol')
                 return redirect('listar_usuarios')
             
-            # Validar que tienda sea requerida para Personal de Tienda
-            if rol == 'tienda' and not tienda_id:
+            # Validar que tienda sea requerida para Personal de Tienda/Depósito
+            if rol in ['tienda', 'deposito'] and not tienda_id:
                 messages.error(request, 'Debe seleccionar una tienda para este rol')
                 return redirect('listar_usuarios')
             
@@ -208,6 +208,7 @@ def obtener_usuario(request, id):
                 'administrador': 'Administrador',
                 'almacen': 'Almacén',
                 'tienda': 'Tienda',
+                'deposito': 'Depósito',
                 'tienda_online': 'Tienda Virtual',
             }
             rol_display = rol_dict.get(perfil.rol, perfil.rol)
@@ -262,7 +263,7 @@ def editar_usuario(request, id):
                     messages.error(request, 'Debe seleccionar un almacén para este rol')
                     return redirect('listar_usuarios')
                 
-                if nuevo_rol == 'tienda' and not tienda_id:
+                if nuevo_rol in ['tienda', 'deposito'] and not tienda_id:
                     messages.error(request, 'Debe seleccionar una tienda para este rol')
                     return redirect('listar_usuarios')
                 

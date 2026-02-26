@@ -129,7 +129,7 @@
             {% endif %}
 
             <!-- Traspasos - Almacén, Tienda y Administradores (Oculto para Tienda Online) -->
-            {% if user.is_superuser or user.perfil.rol == 'almacen' or user.perfil.rol == 'tienda' %}
+            {% if user.is_superuser or user.perfil.rol == 'almacen' or user.perfil.rol == 'tienda' or user.perfil.rol == 'deposito' %}
             <li class="sidebar-item">
                 <a href="{% url 'listar_traspasos' %}" class="sidebar-link {% if 'traspasos' in request.resolver_match.url_name %}active{% endif %}" title="Traspasos">
                     <i class="fas fa-exchange-alt"></i>

@@ -141,6 +141,7 @@ function mostrarMensajeSinResultados(cantidad, buscar, estado, rol) {
             'administrador': 'Administrador',
             'almacen': 'Almacén',
             'tienda': 'Tienda',
+            'deposito': 'Depósito',
             'tienda_online': 'Tienda Virtual'
         };
         filtros.push(`con rol "${rolesMap[rol] || rol}"`);
