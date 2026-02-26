@@ -63,7 +63,7 @@ def listar_categorias(request):
         'buscar': buscar,
         'estado': estado,
     }
-    return render(request, 'categorias/categorias.html', context)
+    return render(request, 'productos/categorias/categorias.html', context)
 
 
 @login_required
@@ -211,7 +211,7 @@ def listar_contenedores(request):
         'buscar': buscar,
         'estado': estado,
     }
-    return render(request, 'contenedores/contenedores.html', context)
+    return render(request, 'productos/contenedores/contenedores.html', context)
 
 
 @login_required

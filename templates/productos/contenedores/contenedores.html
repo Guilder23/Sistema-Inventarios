@@ -4,11 +4,11 @@
 {% block titulo %}Gestión de Contenedores{% endblock %}
 
 {% block estilos_extra %}
-    <link rel="stylesheet" href="{% static 'css/contenedores/contenedores.css' %}">
-    <link rel="stylesheet" href="{% static 'css/contenedores/modals/crea.css' %}">
-    <link rel="stylesheet" href="{% static 'css/contenedores/modals/ver.css' %}">
-    <link rel="stylesheet" href="{% static 'css/contenedores/modals/edita.css' %}">
-    <link rel="stylesheet" href="{% static 'css/contenedores/modals/elimina.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/contenedores/contenedores.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/contenedores/modals/crea.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/contenedores/modals/ver.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/contenedores/modals/edita.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/contenedores/modals/elimina.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -139,17 +139,17 @@
         </div>
     </div>
 
-    {% include 'contenedores/modals/crea.html' %}
-    {% include 'contenedores/modals/ver.html' %}
-    {% include 'contenedores/modals/edita.html' %}
-    {% include 'contenedores/modals/elimina.html' %}
+    {% include 'productos/contenedores/modals/crea.html' %}
+    {% include 'productos/contenedores/modals/ver.html' %}
+    {% include 'productos/contenedores/modals/edita.html' %}
+    {% include 'productos/contenedores/modals/elimina.html' %}
 </div>
 {% endblock %}
 
 {% block scripts_extra %}
-    <script src="{% static 'js/contenedores/modals/crea.js' %}"></script>
-    <script src="{% static 'js/contenedores/modals/ver.js' %}"></script>
-    <script src="{% static 'js/contenedores/modals/edita.js' %}"></script>
-    <script src="{% static 'js/contenedores/modals/elimina.js' %}"></script>
-    <script src="{% static 'js/contenedores/contenedores.js' %}"></script>
+    <script src="{% static 'js/productos/contenedores/modals/crea.js' %}"></script>
+    <script src="{% static 'js/productos/contenedores/modals/ver.js' %}"></script>
+    <script src="{% static 'js/productos/contenedores/modals/edita.js' %}"></script>
+    <script src="{% static 'js/productos/contenedores/modals/elimina.js' %}"></script>
+    <script src="{% static 'js/productos/contenedores/contenedores.js' %}"></script>
 {% endblock %}

@@ -4,11 +4,11 @@
 {% block titulo %}Gestión de Categorías{% endblock %}
 
 {% block estilos_extra %}
-    <link rel="stylesheet" href="{% static 'css/categorias/categorias.css' %}">
-    <link rel="stylesheet" href="{% static 'css/categorias/modals/crea.css' %}">
-    <link rel="stylesheet" href="{% static 'css/categorias/modals/ver.css' %}">
-    <link rel="stylesheet" href="{% static 'css/categorias/modals/edita.css' %}">
-    <link rel="stylesheet" href="{% static 'css/categorias/modals/elimina.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/categorias/categorias.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/categorias/modals/crea.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/categorias/modals/ver.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/categorias/modals/edita.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/categorias/modals/elimina.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -135,17 +135,17 @@
         </div>
     </div>
 
-    {% include 'categorias/modals/crea.html' %}
-    {% include 'categorias/modals/ver.html' %}
-    {% include 'categorias/modals/edita.html' %}
-    {% include 'categorias/modals/elimina.html' %}
+    {% include 'productos/categorias/modals/crea.html' %}
+    {% include 'productos/categorias/modals/ver.html' %}
+    {% include 'productos/categorias/modals/edita.html' %}
+    {% include 'productos/categorias/modals/elimina.html' %}
 </div>
 {% endblock %}
 
 {% block scripts_extra %}
-    <script src="{% static 'js/categorias/modals/crea.js' %}"></script>
-    <script src="{% static 'js/categorias/modals/ver.js' %}"></script>
-    <script src="{% static 'js/categorias/modals/edita.js' %}"></script>
-    <script src="{% static 'js/categorias/modals/elimina.js' %}"></script>
-    <script src="{% static 'js/categorias/categorias.js' %}"></script>
+    <script src="{% static 'js/productos/categorias/modals/crea.js' %}"></script>
+    <script src="{% static 'js/productos/categorias/modals/ver.js' %}"></script>
+    <script src="{% static 'js/productos/categorias/modals/edita.js' %}"></script>
+    <script src="{% static 'js/productos/categorias/modals/elimina.js' %}"></script>
+    <script src="{% static 'js/productos/categorias/categorias.js' %}"></script>
 {% endblock %}
