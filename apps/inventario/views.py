@@ -18,12 +18,21 @@ def ver_inventario(request):
     buscar = request.GET.get('buscar', '').strip()
     estado = request.GET.get('estado', '').strip()
 
+    ubicaciones_inventario = [perfil]
+    nombre_ubicacion = perfil.nombre_ubicacion or perfil.usuario.username
+
+    if perfil.rol == 'tienda' and perfil.tienda_id:
+        ubicaciones_inventario = list(
+            PerfilUsuario.objects.filter(rol='tienda', tienda_id=perfil.tienda_id)
+        )
+        nombre_ubicacion = perfil.tienda.nombre if perfil.tienda else nombre_ubicacion
+
     inventarios = Inventario.objects.select_related(
         'producto',
         'producto__categoria',
         'producto__contenedor',
         'ubicacion'
-    ).filter(ubicacion=perfil, producto__activo=True)
+    ).filter(ubicacion__in=ubicaciones_inventario, producto__activo=True)
 
     if buscar:
         inventarios = inventarios.filter(
@@ -46,7 +55,7 @@ def ver_inventario(request):
         'buscar': buscar,
         'estado': estado,
         'ubicacion_actual': perfil,
-        'nombre_ubicacion': perfil.nombre_ubicacion or perfil.usuario.username,
+        'nombre_ubicacion': nombre_ubicacion,
         'tipo_inventario': 'tienda' if perfil.rol == 'tienda' else 'ubicacion',
         'titulo_inventario': 'Inventario de Tienda' if perfil.rol == 'tienda' else 'Inventario',
         'label_stock': 'Stock Tienda' if perfil.rol == 'tienda' else 'Stock',
