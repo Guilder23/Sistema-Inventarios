@@ -23,6 +23,7 @@ class Producto(models.Model):
     """Modelo de Producto"""
     codigo = models.CharField(max_length=100, unique=True)
     nombre = models.CharField(max_length=200)
+    categoria = models.ForeignKey('Categoria', on_delete=models.SET_NULL, null=True, blank=True, related_name='productos')
     descripcion = models.TextField(blank=True, null=True)
     foto = models.ImageField(upload_to='productos/', blank=True, null=True)
     unidades_por_caja = models.IntegerField(default=1)

@@ -45,6 +45,16 @@
                             </div>
 
                             <div class="form-group">
+                                <label for="edit_categoria" class="form-label">Categoría <span class="text-danger">*</span></label>
+                                <select class="form-control" id="edit_categoria" name="categoria" required>
+                                    <option value="">Seleccione una categoría</option>
+                                    {% for categoria in categorias %}
+                                        <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
                                 <label for="edit_descripcion" class="form-label">Detalle/Descripción</label>
                                 <textarea 
                                     class="form-control" 

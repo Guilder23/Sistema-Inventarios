@@ -11,14 +11,14 @@ class CategoriaAdmin(admin.ModelAdmin):
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ['codigo', 'nombre', 'stock', 'precio_unitario_display', 'activo', 'fecha_creacion']
+    list_display = ['codigo', 'nombre', 'categoria', 'stock', 'precio_unitario_display', 'activo', 'fecha_creacion']
     list_filter = ['activo', 'fecha_creacion']
     search_fields = ['codigo', 'nombre', 'descripcion']
     list_per_page = 20
     
     fieldsets = (
         ('Información Básica', {
-            'fields': ('codigo', 'nombre', 'descripcion', 'foto', 'activo')
+            'fields': ('codigo', 'nombre', 'categoria', 'descripcion', 'foto', 'activo')
         }),
         ('Precios (Configurables por Administrador)', {
             'fields': ('precio_compra', 'precio_caja', 'precio_mayor', 'precio_unidad', 'poliza', 'gastos'),

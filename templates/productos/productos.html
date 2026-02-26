@@ -70,7 +70,8 @@
                     <tr>
                         <th style="width: 6%;">Foto</th>
                         <th style="width: 10%;">Código</th>
-                        <th style="width: 20%;">Nombre</th>
+                        <th style="width: 17%;">Nombre</th>
+                        <th style="width: 13%;">Categoría</th>
                         <th style="width: 12%;">Stock</th>
                         <th style="width: 10%;">Unid/Caja</th>
                         <th style="width: 10%;">Precio Unitario</th>
@@ -99,6 +100,11 @@
                             </div>
                         </td>
                         <td>
+                            <div class="text-truncate" style="max-width: 170px;" title="{{ producto.categoria.nombre|default:'Sin categoría' }}">
+                                {{ producto.categoria.nombre|default:'Sin categoría' }}
+                            </div>
+                        </td>
+                        <td>
                             {% if producto.stock <= producto.stock_critico %}
                                 <span class="badge-stock badge-stock-critico">{{ producto.stock }} unidades</span>
                             {% elif producto.stock <= producto.stock_bajo %}
@@ -124,7 +130,7 @@
                                 </span>
                             {% endif %}
                         </td>
-                        <td class="text-center">
+                        <td class="text-center acciones-col">
                             <button 
                                 type="button" 
                                 class="btn btn-info btn-sm btn-ver-producto"
@@ -173,7 +179,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center py-4">
+                        <td colspan="9" class="text-center py-4">
                             <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
                             <p class="text-muted">No hay productos registrados</p>
                         </td>

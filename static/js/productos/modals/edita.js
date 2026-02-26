@@ -66,6 +66,7 @@
     function llenarFormularioEditar(data, productoId) {
         $('#edit_codigo').val(data.codigo);
         $('#edit_nombre').val(data.nombre);
+        $('#edit_categoria').val(data.categoria_id || '');
         $('#edit_descripcion').val(data.descripcion);
         $('#edit_stock').val(data.stock);
         $('#edit_unidades_por_caja').val(data.unidades_por_caja);
@@ -141,6 +142,7 @@
     function validarFormularioEditar() {
         const codigo = $('#edit_codigo').val().trim();
         const nombre = $('#edit_nombre').val().trim();
+        const categoria = $('#edit_categoria').val();
         const stock = $('#edit_stock').val();
         const unidades_por_caja = $('#edit_unidades_por_caja').val();
         const precio_unidad = $('#edit_precio_unidad').val();
@@ -154,6 +156,12 @@
         if (!nombre) {
             mostrarNotificacion('El nombre del producto es requerido', 'warning');
             $('#edit_nombre').focus();
+            return false;
+        }
+
+        if (!categoria) {
+            mostrarNotificacion('Debe seleccionar una categoría', 'warning');
+            $('#edit_categoria').focus();
             return false;
         }
         
