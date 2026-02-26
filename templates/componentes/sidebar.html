@@ -30,32 +30,47 @@
 
             <!-- Productos - Almacén y Administradores -->
             {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
+            {% with url_actual=request.resolver_match.url_name %}
+            {% if user.perfil.rol == 'almacen' %}
+            <li class="sidebar-item sidebar-item-with-submenu">
+                <a
+                    href="{% url 'listar_productos' %}"
+                    class="sidebar-link sidebar-link-toggle {% if 'productos' in url_actual or 'categorias' in url_actual or 'contenedores' in url_actual %}active{% endif %}"
+                    title="Productos"
+                    data-submenu-toggle="submenuProductos"
+                    aria-expanded="{% if 'productos' in url_actual or 'categorias' in url_actual or 'contenedores' in url_actual %}true{% else %}false{% endif %}"
+                >
+                    <i class="fas fa-box"></i>
+                    <span>Productos</span>
+                    <i class="fas fa-chevron-down submenu-chevron"></i>
+                </a>
+                <ul id="submenuProductos" class="sidebar-submenu {% if 'productos' in url_actual or 'categorias' in url_actual or 'contenedores' in url_actual %}open{% endif %}">
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'listar_productos' %}" class="sidebar-submenu-link {% if 'productos' in url_actual %}active{% endif %}">
+                            Gestión de Productos
+                        </a>
+                    </li>
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'listar_categorias' %}" class="sidebar-submenu-link {% if 'categorias' in url_actual %}active{% endif %}">
+                            Categorías
+                        </a>
+                    </li>
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'listar_contenedores' %}" class="sidebar-submenu-link {% if 'contenedores' in url_actual %}active{% endif %}">
+                            Contenedores
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            {% else %}
             <li class="sidebar-item">
-                <a href="{% url 'listar_productos' %}" class="sidebar-link {% if 'productos' in request.resolver_match.url_name %}active{% endif %}" title="Productos">
+                <a href="{% url 'listar_productos' %}" class="sidebar-link {% if 'productos' in url_actual %}active{% endif %}" title="Productos">
                     <i class="fas fa-box"></i>
                     <span>Productos</span>
                 </a>
             </li>
             {% endif %}
-
-            <!-- Categorías - Solo Almacén -->
-            {% if user.perfil.rol == 'almacen' %}
-            <li class="sidebar-item">
-                <a href="{% url 'listar_categorias' %}" class="sidebar-link {% if 'categorias' in request.resolver_match.url_name %}active{% endif %}" title="Categorías">
-                    <i class="fas fa-tags"></i>
-                    <span>Categorías</span>
-                </a>
-            </li>
-            {% endif %}
-
-            <!-- Contenedores - Solo Almacén -->
-            {% if user.perfil.rol == 'almacen' %}
-            <li class="sidebar-item">
-                <a href="{% url 'listar_contenedores' %}" class="sidebar-link {% if 'contenedores' in request.resolver_match.url_name %}active{% endif %}" title="Contenedores">
-                    <i class="fas fa-boxes-stacked"></i>
-                    <span>Contenedores</span>
-                </a>
-            </li>
+            {% endwith %}
             {% endif %}
 
             <!-- Devoluciones - Solo Almacén -->
