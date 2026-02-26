@@ -87,7 +87,7 @@
             <li class="sidebar-item">
                 <a href="{% url 'ver_inventario' %}" class="sidebar-link {% if 'inventario' in request.resolver_match.url_name %}active{% endif %}" title="Inventario">
                     <i class="fas fa-warehouse"></i>
-                    <span>Inventario</span>
+                    <span>{% if user.perfil.rol == 'tienda' %}Inventario Tienda{% else %}Inventario{% endif %}</span>
                 </a>
             </li>
 

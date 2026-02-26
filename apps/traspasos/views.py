@@ -4,10 +4,12 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.db import transaction
 from django.db.models import Q
 from .models import Traspaso, DetalleTraspaso
 from apps.productos.models import Producto
 from apps.usuarios.models import PerfilUsuario
+from apps.inventario.models import Inventario, MovimientoInventario
 
 
 def es_almacen_o_tienda(user):
@@ -15,6 +17,48 @@ def es_almacen_o_tienda(user):
     if hasattr(user, 'perfil'):
         return user.perfil.rol in ['almacen', 'tienda']
     return False
+
+
+def _stock_disponible_en_ubicacion(producto, ubicacion):
+    """Obtiene stock disponible de un producto en una ubicación."""
+    inventario = Inventario.objects.filter(producto=producto, ubicacion=ubicacion).first()
+    if inventario:
+        return inventario.cantidad
+
+    if ubicacion and ubicacion.rol == 'almacen':
+        return producto.stock
+
+    return 0
+
+
+def _ajustar_stock_ubicacion(*, producto, ubicacion, delta, tipo_movimiento, referencia, comentario=''):
+    """Ajusta stock por ubicación y registra movimiento."""
+    stock_inicial = producto.stock if ubicacion and ubicacion.rol == 'almacen' else 0
+    inventario, _ = Inventario.objects.get_or_create(
+        producto=producto,
+        ubicacion=ubicacion,
+        defaults={'cantidad': stock_inicial}
+    )
+
+    nueva_cantidad = inventario.cantidad + delta
+    if nueva_cantidad < 0:
+        raise ValueError(f'Stock insuficiente para {producto.nombre}. Disponible: {inventario.cantidad}')
+
+    inventario.cantidad = nueva_cantidad
+    inventario.save(update_fields=['cantidad', 'fecha_actualizacion'])
+
+    MovimientoInventario.objects.create(
+        producto=producto,
+        ubicacion=ubicacion,
+        tipo=tipo_movimiento,
+        cantidad=abs(delta),
+        referencia=referencia,
+        comentario=comentario or referencia,
+    )
+
+    if ubicacion and ubicacion.rol == 'almacen':
+        producto.stock = nueva_cantidad
+        producto.save(update_fields=['stock', 'fecha_actualizacion'])
 
 
 @login_required
@@ -76,40 +120,39 @@ def crear_traspaso(request):
             
             destino = get_object_or_404(PerfilUsuario, id=destino_id)
             
-            codigo = Traspaso.generar_codigo()
-            traspaso = Traspaso.objects.create(
-                codigo=codigo,
-                tipo=tipo,
-                origen=ubicacion_actual,
-                destino=destino,
-                estado='pendiente',
-                comentario=comentario,
-                creado_por=request.user,
-            )
-            
-            for producto_id, cantidad in zip(productos_ids, productos_cantidades):
-                try:
-                    producto = Producto.objects.get(id=producto_id)
-                    cantidad = int(cantidad)
-                    if cantidad > 0:
-                        # Validar que hay stock suficiente
-                        if producto.stock < cantidad:
-                            traspaso.delete()
-                            return JsonResponse({
-                                'error': f'Stock insuficiente para {producto.nombre}. Disponible: {producto.stock}'
-                            }, status=400)
-                        
-                        DetalleTraspaso.objects.create(
-                            traspaso=traspaso,
-                            producto=producto,
-                            cantidad=cantidad
-                        )
-                except (Producto.DoesNotExist, ValueError):
-                    continue
-            
-            if not traspaso.detalles.exists():
-                traspaso.delete()
-                return JsonResponse({'error': 'Debe agregar al menos un producto'}, status=400)
+            with transaction.atomic():
+                codigo = Traspaso.generar_codigo()
+                traspaso = Traspaso.objects.create(
+                    codigo=codigo,
+                    tipo=tipo,
+                    origen=ubicacion_actual,
+                    destino=destino,
+                    estado='pendiente',
+                    comentario=comentario,
+                    creado_por=request.user,
+                )
+
+                for producto_id, cantidad in zip(productos_ids, productos_cantidades):
+                    try:
+                        producto = Producto.objects.get(id=producto_id)
+                        cantidad = int(cantidad)
+                        if cantidad > 0:
+                            stock_disponible = _stock_disponible_en_ubicacion(producto, ubicacion_actual)
+                            if stock_disponible < cantidad:
+                                raise ValueError(
+                                    f'Stock insuficiente para {producto.nombre}. Disponible en ubicación: {stock_disponible}'
+                                )
+
+                            DetalleTraspaso.objects.create(
+                                traspaso=traspaso,
+                                producto=producto,
+                                cantidad=cantidad
+                            )
+                    except Producto.DoesNotExist:
+                        continue
+
+                if not traspaso.detalles.exists():
+                    raise ValueError('Debe agregar al menos un producto')
             
             from apps.notificaciones.models import Notificacion
             Notificacion.objects.create(
@@ -123,6 +166,8 @@ def crear_traspaso(request):
             messages.success(request, f'Traspaso {codigo} creado exitosamente')
             return JsonResponse({'success': True, 'traspaso_id': traspaso.id})
             
+        except ValueError as e:
+            return JsonResponse({'error': str(e)}, status=400)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     
@@ -170,18 +215,27 @@ def cambiar_estado_traspaso(request, id):
         if nuevo_estado == 'transito':
             if traspaso.origen != ubicacion_actual:
                 return JsonResponse({'error': 'Solo el origen puede cambiar a tránsito'}, status=403)
+
+            if traspaso.estado != 'pendiente':
+                return JsonResponse({'error': 'Solo se pueden enviar traspasos pendientes'}, status=400)
             
-            # Validar stock antes de enviar
-            for detalle in traspaso.detalles.all():
-                if detalle.producto.stock < detalle.cantidad:
-                    return JsonResponse({
-                        'error': f'Stock insuficiente para {detalle.producto.nombre}. Disponible: {detalle.producto.stock}'
-                    }, status=400)
-            
-            # Reducir stock del origen al enviar
-            for detalle in traspaso.detalles.all():
-                detalle.producto.stock -= detalle.cantidad
-                detalle.producto.save()
+            with transaction.atomic():
+                for detalle in traspaso.detalles.all():
+                    stock_disponible = _stock_disponible_en_ubicacion(detalle.producto, traspaso.origen)
+                    if stock_disponible < detalle.cantidad:
+                        return JsonResponse({
+                            'error': f'Stock insuficiente para {detalle.producto.nombre}. Disponible en origen: {stock_disponible}'
+                        }, status=400)
+
+                for detalle in traspaso.detalles.all():
+                    _ajustar_stock_ubicacion(
+                        producto=detalle.producto,
+                        ubicacion=traspaso.origen,
+                        delta=-detalle.cantidad,
+                        tipo_movimiento='traspaso_enviado',
+                        referencia=traspaso.codigo,
+                        comentario=f'Traspaso enviado hacia {traspaso.destino.nombre_ubicacion or traspaso.destino.usuario.username}'
+                    )
             
             traspaso.estado = 'transito'
             traspaso.fecha_envio = timezone.now()
@@ -189,11 +243,20 @@ def cambiar_estado_traspaso(request, id):
         elif nuevo_estado == 'recibido':
             if traspaso.destino != ubicacion_actual:
                 return JsonResponse({'error': 'Solo el destino puede cambiar a recibido'}, status=403)
+
+            if traspaso.estado != 'transito':
+                return JsonResponse({'error': 'Solo se pueden recibir traspasos en tránsito'}, status=400)
             
-            # Aumentar stock del destino al recibir
-            for detalle in traspaso.detalles.all():
-                detalle.producto.stock += detalle.cantidad
-                detalle.producto.save()
+            with transaction.atomic():
+                for detalle in traspaso.detalles.all():
+                    _ajustar_stock_ubicacion(
+                        producto=detalle.producto,
+                        ubicacion=traspaso.destino,
+                        delta=detalle.cantidad,
+                        tipo_movimiento='traspaso_recibido',
+                        referencia=traspaso.codigo,
+                        comentario=f'Traspaso recibido desde {traspaso.origen.nombre_ubicacion or traspaso.origen.usuario.username}'
+                    )
             
             traspaso.estado = 'recibido'
             traspaso.fecha_recepcion = timezone.now()
@@ -202,12 +265,21 @@ def cambiar_estado_traspaso(request, id):
         elif nuevo_estado == 'rechazado':
             if traspaso.destino != ubicacion_actual:
                 return JsonResponse({'error': 'Solo el destino puede rechazar'}, status=403)
+
+            if traspaso.estado != 'transito':
+                return JsonResponse({'error': 'Solo se pueden rechazar traspasos en tránsito'}, status=400)
             
             # Si se rechaza, devolver el stock al origen
             if traspaso.estado == 'transito':
                 for detalle in traspaso.detalles.all():
-                    detalle.producto.stock += detalle.cantidad
-                    detalle.producto.save()
+                    _ajustar_stock_ubicacion(
+                        producto=detalle.producto,
+                        ubicacion=traspaso.origen,
+                        delta=detalle.cantidad,
+                        tipo_movimiento='traspaso_recibido',
+                        referencia=traspaso.codigo,
+                        comentario='Reverso por rechazo de traspaso'
+                    )
             
             traspaso.estado = 'rechazado'
             traspaso.fecha_recepcion = timezone.now()
@@ -302,8 +374,33 @@ def generar_pdf_traspaso(request, id):
 def obtener_productos_traspaso(request):
     """Obtener productos disponibles"""
     try:
-        productos = Producto.objects.filter(activo=True).values('id', 'codigo', 'nombre', 'stock', 'precio_unidad')
-        return JsonResponse(list(productos), safe=False)
+        ubicacion_actual = request.user.perfil if hasattr(request.user, 'perfil') else None
+        if not ubicacion_actual:
+            return JsonResponse([], safe=False)
+
+        if ubicacion_actual.rol == 'almacen':
+            productos = Producto.objects.filter(activo=True, stock__gt=0).values(
+                'id', 'codigo', 'nombre', 'stock', 'precio_unidad'
+            )
+            return JsonResponse(list(productos), safe=False)
+
+        inventarios = Inventario.objects.select_related('producto').filter(
+            ubicacion=ubicacion_actual,
+            cantidad__gt=0,
+            producto__activo=True,
+        )
+
+        productos = [
+            {
+                'id': inv.producto.id,
+                'codigo': inv.producto.codigo,
+                'nombre': inv.producto.nombre,
+                'stock': inv.cantidad,
+                'precio_unidad': float(inv.producto.precio_unidad),
+            }
+            for inv in inventarios
+        ]
+        return JsonResponse(productos, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
