@@ -77,6 +77,35 @@ def _asegurar_perfiles_deposito(almacen_id=None, tienda_id=None):
         )
 
 
+def _origenes_validos_para_usuario(perfil_actual):
+    """Retorna queryset de orígenes permitidos para el usuario logueado."""
+    if not perfil_actual:
+        return PerfilUsuario.objects.none()
+
+    if perfil_actual.rol == 'tienda':
+        _asegurar_perfiles_deposito(tienda_id=perfil_actual.tienda_id)
+
+        origen_tienda = PerfilUsuario.objects.filter(
+            rol='tienda',
+            tienda_id=perfil_actual.tienda_id
+        ).order_by('id').first() or perfil_actual
+
+        ids_origen = [origen_tienda.id]
+
+        depositos = PerfilUsuario.objects.filter(
+            rol='deposito',
+            tienda_id=perfil_actual.tienda_id
+        ).order_by('nombre_ubicacion', 'id')
+
+        for deposito in depositos:
+            if deposito.id not in ids_origen:
+                ids_origen.append(deposito.id)
+
+        return PerfilUsuario.objects.filter(id__in=ids_origen)
+
+    return PerfilUsuario.objects.filter(id=perfil_actual.id)
+
+
 def _misma_ubicacion_logica(perfil_actual, perfil_objetivo):
     """Evalúa si dos perfiles representan la misma ubicación lógica."""
     if not perfil_actual or not perfil_objetivo:
@@ -315,6 +344,7 @@ def crear_traspaso(request):
     if request.method == 'POST':
         try:
             tipo = request.POST.get('tipo', 'normal')
+            origen_id = request.POST.get('origen')
             destino_id = request.POST.get('destino')
             comentario = request.POST.get('comentario', '')
             productos_ids = request.POST.getlist('producto_id')
@@ -325,8 +355,14 @@ def crear_traspaso(request):
             
             if not productos_ids:
                 return JsonResponse({'error': 'Debe agregar al menos un producto'}, status=400)
+
+            origenes_validos = _origenes_validos_para_usuario(ubicacion_actual)
+            if origen_id:
+                origen = get_object_or_404(origenes_validos, id=origen_id)
+            else:
+                origen = ubicacion_actual
             
-            destinos_validos = _destinos_validos_para_origen(ubicacion_actual)
+            destinos_validos = _destinos_validos_para_origen(origen)
             destino = get_object_or_404(destinos_validos, id=destino_id)
             
             with transaction.atomic():
@@ -334,7 +370,7 @@ def crear_traspaso(request):
                 traspaso = Traspaso.objects.create(
                     codigo=codigo,
                     tipo=tipo,
-                    origen=ubicacion_actual,
+                    origen=origen,
                     destino=destino,
                     estado='pendiente',
                     comentario=comentario,
@@ -346,7 +382,7 @@ def crear_traspaso(request):
                         producto = Producto.objects.get(id=producto_id)
                         cantidad = int(cantidad)
                         if cantidad > 0:
-                            stock_disponible = _stock_disponible_en_ubicacion(producto, ubicacion_actual)
+                            stock_disponible = _stock_disponible_en_ubicacion(producto, origen)
                             if stock_disponible < cantidad:
                                 raise ValueError(
                                     f'Stock insuficiente para {producto.nombre}. Disponible en ubicación: {stock_disponible}'
@@ -587,14 +623,22 @@ def obtener_productos_traspaso(request):
         if not ubicacion_actual:
             return JsonResponse([], safe=False)
 
-        if ubicacion_actual.rol == 'almacen':
+        origen_id = request.GET.get('origen_id')
+        origenes_validos = _origenes_validos_para_usuario(ubicacion_actual)
+        if origen_id:
+            origen = get_object_or_404(origenes_validos, id=origen_id)
+        else:
+            origen = ubicacion_actual
+
+        if origen.rol == 'almacen':
             productos = Producto.objects.filter(activo=True, stock__gt=0).values(
                 'id', 'codigo', 'nombre', 'stock', 'precio_unidad'
             )
             return JsonResponse(list(productos), safe=False)
 
+        origen_stock = _perfil_stock_objetivo(origen)
         inventarios = Inventario.objects.select_related('producto').filter(
-            ubicacion=ubicacion_actual,
+            ubicacion=origen_stock,
             cantidad__gt=0,
             producto__activo=True,
         )
@@ -615,11 +659,46 @@ def obtener_productos_traspaso(request):
 
 
 @login_required
+def obtener_origenes_traspaso(request):
+    """Obtener orígenes disponibles para el usuario actual."""
+    try:
+        ubicacion_actual = request.user.perfil if hasattr(request.user, 'perfil') else None
+        origenes = _origenes_validos_para_usuario(ubicacion_actual).select_related('tienda', 'almacen', 'usuario')
+
+        data = []
+        for origen in origenes:
+            nombre = origen.nombre_ubicacion
+            if not nombre and origen.tienda:
+                nombre = origen.tienda.nombre
+            if not nombre and origen.almacen:
+                nombre = origen.almacen.nombre
+            if not nombre and origen.usuario:
+                nombre = origen.usuario.username
+
+            data.append({
+                'id': origen.id,
+                'rol': origen.rol,
+                'nombre_ubicacion': nombre or 'Sin nombre',
+            })
+
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
 def obtener_destinos_traspaso(request):
     """Obtener destinos disponibles"""
     try:
         ubicacion_actual = request.user.perfil if hasattr(request.user, 'perfil') else None
-        destinos = _destinos_validos_para_origen(ubicacion_actual).select_related('tienda', 'almacen', 'usuario')
+        origen_id = request.GET.get('origen_id')
+        origenes_validos = _origenes_validos_para_usuario(ubicacion_actual)
+        if origen_id:
+            origen = get_object_or_404(origenes_validos, id=origen_id)
+        else:
+            origen = ubicacion_actual
+
+        destinos = _destinos_validos_para_origen(origen).select_related('tienda', 'almacen', 'usuario')
 
         data = []
         destinos_unicos = {}

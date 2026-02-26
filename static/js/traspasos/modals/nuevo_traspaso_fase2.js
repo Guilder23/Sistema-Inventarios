@@ -44,8 +44,14 @@ function cargarInformacionAutomatica() {
     };
     document.getElementById('fechaCreacion').value = ahora.toLocaleDateString('es-CO', opciones);
     
-    //Obtener origen (ubicación actual del usuario desde variable global)
-    if (window.ubicacionActualId && window.ubicacionActualNombre) {
+    // Obtener origen (seleccionado en fase 1 o fallback ubicación actual)
+    if (window.origenTraspasoSeleccionado && window.origenTraspasoSeleccionado.id) {
+        ubicacionActual = {
+            id: window.origenTraspasoSeleccionado.id,
+            nombre: window.origenTraspasoSeleccionado.nombre_ubicacion || window.ubicacionActualNombre
+        };
+        document.getElementById('origen').value = ubicacionActual.nombre;
+    } else if (window.ubicacionActualId && window.ubicacionActualNombre) {
         ubicacionActual = {
             id: window.ubicacionActualId,
             nombre: window.ubicacionActualNombre
@@ -61,7 +67,7 @@ function cargarDestinos() {
     const selectDestino = document.getElementById('destino');
     
     if (ubicacionActual) {
-        fetch(`/traspasos/api/destinos/?ubicacion_id=${ubicacionActual.id}`)
+        fetch(`/traspasos/api/destinos/?origen_id=${ubicacionActual.id}`)
             .then(response => response.json())
             .then(data => {
                 destinosDisponibles = data;
@@ -206,6 +212,9 @@ function crearTraspaso() {
     const tipo = document.getElementById('tipoTraspaso').value || 'normal';
     
     formData.append('tipo', tipo);
+    if (ubicacionActual && ubicacionActual.id) {
+        formData.append('origen', ubicacionActual.id);
+    }
     formData.append('destino', destino);
     formData.append('comentario', document.getElementById('comentario').value);
     

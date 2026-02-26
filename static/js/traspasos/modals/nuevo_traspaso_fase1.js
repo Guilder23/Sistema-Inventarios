@@ -1,6 +1,7 @@
 // Script para Fase 1: Seleccionar Productos
 
 let fase1Inicializada = false;
+let origenesDisponibles = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Cargado - Inicializando modal fase 1');
@@ -27,10 +28,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function inicializarFase1() {
-    cargarProductos();
+    cargarOrigenes();
     
     const btnContinuar = document.getElementById('btnContinuarFase2');
     const buscarProducto = document.getElementById('buscarProducto');
+    const selectOrigen = document.getElementById('origenTraspaso');
     
     if (btnContinuar) {
         btnContinuar.addEventListener('click', validarYContinuarFase2);
@@ -39,12 +41,90 @@ function inicializarFase1() {
     if (buscarProducto) {
         buscarProducto.addEventListener('keyup', filtrarProductos);
     }
+
+    if (selectOrigen) {
+        selectOrigen.addEventListener('change', function() {
+            window.origenTraspasoSeleccionado = obtenerOrigenSeleccionado();
+            productosSeleccionados = [];
+            actualizarListaSeleccionados();
+            cargarProductos();
+        });
+    }
+}
+
+function cargarOrigenes() {
+    const selectOrigen = document.getElementById('origenTraspaso');
+    if (!selectOrigen) return;
+
+    fetch('/traspasos/api/origenes/')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al cargar orígenes');
+            }
+            return response.json();
+        })
+        .then(data => {
+            origenesDisponibles = data;
+            selectOrigen.innerHTML = '<option value="">Seleccionar origen...</option>';
+
+            data.forEach(origen => {
+                const option = document.createElement('option');
+                option.value = origen.id;
+                option.textContent = formatearOrigen(origen);
+                selectOrigen.appendChild(option);
+            });
+
+            if (data.length === 1) {
+                selectOrigen.value = data[0].id;
+            }
+
+            window.origenTraspasoSeleccionado = obtenerOrigenSeleccionado();
+            cargarProductos();
+        })
+        .catch(error => {
+            console.error('Error al cargar orígenes:', error);
+            selectOrigen.innerHTML = '<option value="">Error al cargar orígenes</option>';
+        });
+}
+
+function obtenerOrigenSeleccionado() {
+    const selectOrigen = document.getElementById('origenTraspaso');
+    if (!selectOrigen || !selectOrigen.value) {
+        return null;
+    }
+
+    const origenId = parseInt(selectOrigen.value, 10);
+    return origenesDisponibles.find(item => item.id === origenId) || null;
+}
+
+function formatearOrigen(origen) {
+    const nombre = origen.nombre_ubicacion || 'Sin nombre';
+    if (origen.rol === 'tienda') {
+        return `Mi tienda - ${nombre}`;
+    }
+    if (origen.rol === 'deposito') {
+        return `Mi depósito - ${nombre}`;
+    }
+    if (origen.rol === 'almacen') {
+        return `Mi almacén - ${nombre}`;
+    }
+    return nombre;
 }
 
 function cargarProductos() {
     console.log('Cargando productos desde API...');
+
+    const origenSeleccionado = obtenerOrigenSeleccionado();
+    if (!origenSeleccionado) {
+        const listaProductos = document.getElementById('listaProductos');
+        listaProductos.innerHTML = '<div class="alert alert-info">Seleccione un origen para cargar productos</div>';
+        productosDisponibles = [];
+        return;
+    }
+
+    const params = new URLSearchParams({ origen_id: String(origenSeleccionado.id) });
     
-    fetch('/traspasos/api/productos/')
+    fetch(`/traspasos/api/productos/?${params.toString()}`)
         .then(response => {
             console.log('Respuesta recibida:', response.status);
             if (!response.ok) {
@@ -211,6 +291,14 @@ function removerProducto(index) {
 }
 
 function validarYContinuarFase2() {
+    const origenSeleccionado = obtenerOrigenSeleccionado();
+    if (!origenSeleccionado) {
+        Swal.fire('Advertencia', 'Debe seleccionar un origen', 'warning');
+        return;
+    }
+
+    window.origenTraspasoSeleccionado = origenSeleccionado;
+
     if (productosSeleccionados.length === 0) {
         Swal.fire('Advertencia', 'Debe seleccionar al menos un producto', 'warning');
         return;
