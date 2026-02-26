@@ -38,6 +38,16 @@
             </li>
             {% endif %}
 
+            <!-- Categorías - Solo Almacén -->
+            {% if user.perfil.rol == 'almacen' %}
+            <li class="sidebar-item">
+                <a href="{% url 'listar_categorias' %}" class="sidebar-link {% if 'categorias' in request.resolver_match.url_name %}active{% endif %}" title="Categorías">
+                    <i class="fas fa-tags"></i>
+                    <span>Categorías</span>
+                </a>
+            </li>
+            {% endif %}
+
             <!-- Devoluciones - Solo Almacén -->
             {% if user.perfil.rol == 'almacen' %}
             <li class="sidebar-item">

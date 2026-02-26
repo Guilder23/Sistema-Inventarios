@@ -7,7 +7,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
-from .models import Producto, HistorialProducto, ProductoDanado
+from .models import Categoria, Producto, HistorialProducto, ProductoDanado
 from apps.inventario.models import MovimientoInventario
 from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
 
@@ -33,6 +33,154 @@ def es_administrador(request):
 def es_almacen(request):
     """Verifica si el usuario es del almacén"""
     return hasattr(request.user, 'perfil') and request.user.perfil.rol == 'almacen'
+
+
+@login_required
+def listar_categorias(request):
+    """Listar categorías con filtros"""
+    if not es_almacen(request):
+        messages.error(request, 'Solo el personal de almacén puede gestionar categorías')
+        return redirect('dashboard')
+
+    buscar = request.GET.get('buscar', '')
+    estado = request.GET.get('estado', '')
+
+    categorias = Categoria.objects.all().order_by('-fecha_creacion')
+
+    if buscar:
+        categorias = categorias.filter(
+            Q(nombre__icontains=buscar) |
+            Q(descripcion__icontains=buscar)
+        )
+
+    if estado == 'activo':
+        categorias = categorias.filter(activo=True)
+    elif estado == 'inactivo':
+        categorias = categorias.filter(activo=False)
+
+    context = {
+        'categorias': categorias,
+        'buscar': buscar,
+        'estado': estado,
+    }
+    return render(request, 'categorias/categorias.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def crear_categoria(request):
+    """Crear nueva categoría"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para crear categorías')
+        return redirect('dashboard')
+
+    try:
+        nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
+        activo = request.POST.get('activo') == 'on'
+
+        if not nombre:
+            messages.error(request, 'El nombre de la categoría es requerido')
+            return redirect('listar_categorias')
+
+        if Categoria.objects.filter(nombre__iexact=nombre).exists():
+            messages.error(request, f'La categoría "{nombre}" ya existe')
+            return redirect('listar_categorias')
+
+        Categoria.objects.create(
+            nombre=nombre,
+            descripcion=descripcion,
+            activo=activo,
+            creado_por=request.user
+        )
+
+        messages.success(request, f'Categoría "{nombre}" creada exitosamente')
+    except Exception as e:
+        messages.error(request, f'Error al crear categoría: {str(e)}')
+
+    return redirect('listar_categorias')
+
+
+@login_required
+def obtener_categoria(request, id):
+    """Obtener datos de una categoría en JSON"""
+    if not es_almacen(request):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    try:
+        categoria = get_object_or_404(Categoria, id=id)
+
+        creado_por_str = ''
+        if categoria.creado_por:
+            creado_por_str = f"{categoria.creado_por.first_name} {categoria.creado_por.last_name}".strip()
+            if not creado_por_str:
+                creado_por_str = categoria.creado_por.username
+
+        data = {
+            'id': categoria.id,
+            'nombre': categoria.nombre,
+            'descripcion': categoria.descripcion or '',
+            'activo': categoria.activo,
+            'creado_por': creado_por_str,
+            'fecha_creacion': categoria.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+            'fecha_actualizacion': categoria.fecha_actualizacion.strftime('%d/%m/%Y %H:%M'),
+        }
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=404)
+
+
+@login_required
+@require_http_methods(["POST"])
+def editar_categoria(request, id):
+    """Editar categoría existente"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para editar categorías')
+        return redirect('dashboard')
+
+    categoria = get_object_or_404(Categoria, id=id)
+
+    try:
+        nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
+        activo = request.POST.get('activo') == 'on'
+
+        if not nombre:
+            messages.error(request, 'El nombre de la categoría es requerido')
+            return redirect('listar_categorias')
+
+        existe = Categoria.objects.filter(nombre__iexact=nombre).exclude(id=categoria.id).exists()
+        if existe:
+            messages.error(request, f'La categoría "{nombre}" ya existe')
+            return redirect('listar_categorias')
+
+        categoria.nombre = nombre
+        categoria.descripcion = descripcion
+        categoria.activo = activo
+        categoria.save()
+
+        messages.success(request, f'Categoría "{categoria.nombre}" actualizada exitosamente')
+    except Exception as e:
+        messages.error(request, f'Error al actualizar categoría: {str(e)}')
+
+    return redirect('listar_categorias')
+
+
+@login_required
+@require_http_methods(["POST"])
+def eliminar_categoria(request, id):
+    """Cambiar estado activo/inactivo de categoría"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para cambiar estado de categorías')
+        return redirect('dashboard')
+
+    categoria = get_object_or_404(Categoria, id=id)
+    categoria.activo = not categoria.activo
+    categoria.save(update_fields=['activo', 'fecha_actualizacion'])
+
+    estado = 'activada' if categoria.activo else 'desactivada'
+    messages.success(request, f'Categoría "{categoria.nombre}" {estado} correctamente')
+    return redirect('listar_categorias')
 
 @login_required
 def listar_productos(request):

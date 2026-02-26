@@ -1,0 +1,30 @@
+/* ============================================================================
+   ESTILOS PARA MODAL ELIMINAR/ACTIVAR CATEGORÍA
+   ============================================================================ */
+
+#modalEliminarCategoria .modal-header {
+    background: #dc2626;
+    color: white;
+    padding: 1rem 1.5rem;
+}
+
+#modalEliminarCategoria .modal-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+#modalEliminarCategoria .modal-body {
+    padding: 1.5rem;
+}
+
+#modalEliminarCategoria .alert {
+    font-size: 0.875rem;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+#modalEliminarCategoria .modal-footer {
+    padding: 0.875rem 1.5rem;
+    background-color: #fee2e2;
+    border-top: 1px solid #fecaca;
+}

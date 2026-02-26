@@ -1,6 +1,24 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+
+class Categoria(models.Model):
+    """Modelo de Categoría de productos"""
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True, null=True)
+    creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='categorias_creadas')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Categoría'
+        verbose_name_plural = 'Categorías'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
 class Producto(models.Model):
     """Modelo de Producto"""
     codigo = models.CharField(max_length=100, unique=True)

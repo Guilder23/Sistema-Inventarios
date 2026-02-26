@@ -1,5 +1,13 @@
 from django.contrib import admin
-from .models import Producto, HistorialProducto, ProductoDanado
+from .models import Categoria, Producto, HistorialProducto, ProductoDanado
+
+
+@admin.register(Categoria)
+class CategoriaAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'activo', 'creado_por', 'fecha_creacion']
+    list_filter = ['activo', 'fecha_creacion']
+    search_fields = ['nombre', 'descripcion']
+    list_per_page = 20
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
