@@ -83,13 +83,28 @@
             </li>
             {% endif %}
 
-            <!-- Inventario - Todos los usuarios incluyendo Tienda Online -->
+            <!-- Inventario -->
+            {% if user.perfil.rol == 'tienda' %}
+            <li class="sidebar-item">
+                <a href="{% url 'ver_inventario' %}" class="sidebar-link {% if request.resolver_match.url_name == 'ver_inventario' %}active{% endif %}" title="Inventario Tienda">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Inventario Tienda</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'ver_inventario_deposito' %}" class="sidebar-link {% if request.resolver_match.url_name == 'ver_inventario_deposito' %}active{% endif %}" title="Inventario Depósito">
+                    <i class="fas fa-boxes-stacked"></i>
+                    <span>Inventario Depósito</span>
+                </a>
+            </li>
+            {% else %}
             <li class="sidebar-item">
                 <a href="{% url 'ver_inventario' %}" class="sidebar-link {% if 'inventario' in request.resolver_match.url_name %}active{% endif %}" title="Inventario">
                     <i class="fas fa-warehouse"></i>
-                    <span>{% if user.perfil.rol == 'tienda' %}Inventario Tienda{% else %}Inventario{% endif %}</span>
+                    <span>Inventario</span>
                 </a>
             </li>
+            {% endif %}
 
             <!-- Ventas - Vendedores y Administradores (Oculto para Tienda Online) -->
             {% if user.is_staff or user.groups.filter|length > 0 %}

@@ -14,11 +14,16 @@
         <div class="page-header-content">
             <h1 class="page-title">
                 <i class="fas fa-warehouse"></i>
-                {% if es_tienda %}Inventario de Tienda{% else %}Inventario{% endif %}
+                {{ titulo_inventario|default:'Inventario' }}
             </h1>
             <p class="page-subtitle">
-                Ubicación: {{ ubicacion_actual.nombre_ubicacion|default:ubicacion_actual.usuario.username }}
+                Ubicación: {{ nombre_ubicacion|default:ubicacion_actual.nombre_ubicacion|default:ubicacion_actual.usuario.username }}
             </p>
+            {% if sin_depositos_vinculados %}
+            <small class="text-warning">
+                No hay depósitos vinculados aún para esta tienda. Contacte al administrador.
+            </small>
+            {% endif %}
         </div>
     </div>
 
@@ -80,7 +85,7 @@
                         <th style="width: 22%;">Producto</th>
                         <th style="width: 14%;">Categoría</th>
                         <th style="width: 16%;">Contenedor</th>
-                        <th style="width: 12%;">Stock Tienda</th>
+                        <th style="width: 12%;">{{ label_stock|default:'Stock' }}</th>
                         <th style="width: 10%;">Estado</th>
                         <th style="width: 14%;">Actualizado</th>
                     </tr>
