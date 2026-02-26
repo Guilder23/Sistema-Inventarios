@@ -364,7 +364,7 @@ def listar_productos(request):
     estado = request.GET.get('estado', '')
     
     # Query base
-    productos = Producto.objects.select_related('categoria').all().order_by('-fecha_creacion')
+    productos = Producto.objects.select_related('categoria', 'contenedor').all().order_by('-fecha_creacion')
     
     # Aplicar filtros
     if buscar:
@@ -372,7 +372,9 @@ def listar_productos(request):
             Q(codigo__icontains=buscar) |
             Q(nombre__icontains=buscar) |
             Q(descripcion__icontains=buscar) |
-            Q(categoria__nombre__icontains=buscar)
+            Q(categoria__nombre__icontains=buscar) |
+            Q(contenedor__nombre__icontains=buscar) |
+            Q(contenedor__proveedor__icontains=buscar)
         )
     
     if estado == 'activo':
@@ -383,6 +385,7 @@ def listar_productos(request):
     context = {
         'productos': productos,
         'categorias': Categoria.objects.filter(activo=True).order_by('nombre'),
+        'contenedores': Contenedor.objects.filter(activo=True).order_by('nombre'),
         'buscar': buscar,
         'estado': estado,
         'es_administrador': es_administrador(request),
@@ -405,6 +408,7 @@ def crear_producto(request):
             codigo = request.POST.get('codigo', '').strip()
             nombre = request.POST.get('nombre', '').strip()
             categoria_id = request.POST.get('categoria', '').strip()
+            contenedor_id = request.POST.get('contenedor', '').strip()
             descripcion = request.POST.get('descripcion', '')
             stock = request.POST.get('stock', 0)
             unidades_por_caja = request.POST.get('unidades_por_caja', 1)
@@ -422,9 +426,18 @@ def crear_producto(request):
                 messages.error(request, 'Debe seleccionar una categoría')
                 return redirect('listar_productos')
 
+            if not contenedor_id:
+                messages.error(request, 'Debe seleccionar un contenedor')
+                return redirect('listar_productos')
+
             categoria = Categoria.objects.filter(id=categoria_id, activo=True).first()
             if not categoria:
                 messages.error(request, 'La categoría seleccionada no es válida')
+                return redirect('listar_productos')
+
+            contenedor = Contenedor.objects.filter(id=contenedor_id, activo=True).first()
+            if not contenedor:
+                messages.error(request, 'El contenedor seleccionado no es válido')
                 return redirect('listar_productos')
             
             # Verificar código único
@@ -437,6 +450,7 @@ def crear_producto(request):
                 codigo=codigo,
                 nombre=nombre,
                 categoria=categoria,
+                contenedor=contenedor,
                 descripcion=descripcion,
                 stock=int(stock),
                 unidades_por_caja=int(unidades_por_caja),
@@ -456,7 +470,7 @@ def crear_producto(request):
                 producto=producto,
                 accion='creacion',
                 usuario=request.user,
-                detalles=f'Producto creado: {nombre} - Categoría: {categoria.nombre}'
+                detalles=f'Producto creado: {nombre} - Categoría: {categoria.nombre} - Contenedor: {contenedor.nombre}'
             )
             
             # Notificar a administrador
@@ -494,6 +508,8 @@ def obtener_producto(request, id):
             'nombre': producto.nombre,
             'categoria_id': producto.categoria_id if producto.categoria_id else '',
             'categoria_nombre': producto.categoria.nombre if producto.categoria else 'Sin categoría',
+            'contenedor_id': producto.contenedor_id if producto.contenedor_id else '',
+            'contenedor_nombre': producto.contenedor.nombre if producto.contenedor else 'Sin contenedor',
             'descripcion': producto.descripcion or '',
             'stock': producto.stock,
             'unidades_por_caja': producto.unidades_por_caja,
@@ -531,6 +547,7 @@ def editar_producto(request, id):
                 producto.codigo = request.POST.get('codigo', producto.codigo)
                 producto.nombre = request.POST.get('nombre', producto.nombre)
                 categoria_id = request.POST.get('categoria', '').strip()
+                contenedor_id = request.POST.get('contenedor', '').strip()
                 producto.descripcion = request.POST.get('descripcion', '')
                 producto.stock = int(request.POST.get('stock', producto.stock))
                 producto.unidades_por_caja = int(request.POST.get('unidades_por_caja', producto.unidades_por_caja))
@@ -551,7 +568,17 @@ def editar_producto(request, id):
                     messages.error(request, 'La categoría seleccionada no es válida')
                     return redirect('listar_productos')
 
+                if not contenedor_id:
+                    messages.error(request, 'Debe seleccionar un contenedor')
+                    return redirect('listar_productos')
+
+                contenedor = Contenedor.objects.filter(id=contenedor_id, activo=True).first()
+                if not contenedor:
+                    messages.error(request, 'El contenedor seleccionado no es válido')
+                    return redirect('listar_productos')
+
                 producto.categoria = categoria
+                producto.contenedor = contenedor
                 
                 # Actualizar foto si se proporciona
                 if request.FILES.get('foto'):
@@ -562,7 +589,11 @@ def editar_producto(request, id):
                 if producto.precio_unidad != float(request.POST.get('precio_unidad', producto.precio_unidad)):
                     cambios.append(f"Precio: {producto.precio_unidad}")
                 
-                detalles = f"Producto actualizado: {producto.nombre} - Categoría: {producto.categoria.nombre if producto.categoria else 'Sin categoría'}"
+                detalles = (
+                    f"Producto actualizado: {producto.nombre} - "
+                    f"Categoría: {producto.categoria.nombre if producto.categoria else 'Sin categoría'} - "
+                    f"Contenedor: {producto.contenedor.nombre if producto.contenedor else 'Sin contenedor'}"
+                )
                 if cambios:
                     detalles += f" - Cambios: {', '.join(cambios)}"
                 

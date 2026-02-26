@@ -91,6 +91,7 @@
         const codigo = $('#codigo').val().trim();
         const nombre = $('#nombre').val().trim();
         const categoria = $('#categoria').val();
+        const contenedor = $('#contenedor').val();
         const stock = $('#stock').val();
         const unidades_por_caja = $('#unidades_por_caja').val();
         const precio_unidad = $('#precio_unidad').val();
@@ -110,6 +111,12 @@
         if (!categoria) {
             mostrarNotificacion('Debe seleccionar una categoría', 'warning');
             $('#categoria').focus();
+            return false;
+        }
+
+        if (!contenedor) {
+            mostrarNotificacion('Debe seleccionar un contenedor', 'warning');
+            $('#contenedor').focus();
             return false;
         }
         

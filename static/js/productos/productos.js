@@ -93,7 +93,7 @@ function aplicarFiltrosFrontend() {
     if (contadorVisible === 0) {
         let tabla = document.querySelector('.tabla-productos tbody');
         if (!tabla.querySelector('.sin-resultados')) {
-            tabla.innerHTML = '<tr class="sin-resultados"><td colspan="9" class="text-center py-4"><i class="fas fa-search fa-3x text-muted mb-2"></i><p class="text-muted">No hay productos que coincidan con tu búsqueda</p></td></tr>';
+            tabla.innerHTML = '<tr class="sin-resultados"><td colspan="10" class="text-center py-4"><i class="fas fa-search fa-3x text-muted mb-2"></i><p class="text-muted">No hay productos que coincidan con tu búsqueda</p></td></tr>';
         }
     }
 }

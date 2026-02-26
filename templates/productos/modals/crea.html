@@ -55,6 +55,16 @@
                             </div>
 
                             <div class="form-group">
+                                <label for="contenedor" class="form-label">Contenedor <span class="text-danger">*</span></label>
+                                <select class="form-control" id="contenedor" name="contenedor" required>
+                                    <option value="">Seleccione un contenedor</option>
+                                    {% for contenedor in contenedores %}
+                                        <option value="{{ contenedor.id }}">{{ contenedor.nombre }} - {{ contenedor.proveedor }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
                                 <label for="descripcion" class="form-label">Detalle/Descripción</label>
                                 <textarea 
                                     class="form-control" 

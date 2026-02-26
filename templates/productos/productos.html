@@ -45,7 +45,7 @@
                             class="form-control form-control-sm border-left-0" 
                             id="buscar" 
                             name="buscar"
-                            placeholder="Buscar por código, nombre o descripción..."
+                            placeholder="Buscar por código, nombre, categoría o contenedor..."
                             value="{{ buscar }}"
                         >
                     </div>
@@ -69,14 +69,15 @@
                 <thead>
                     <tr>
                         <th style="width: 6%;">Foto</th>
-                        <th style="width: 10%;">Código</th>
-                        <th style="width: 17%;">Nombre</th>
-                        <th style="width: 13%;">Categoría</th>
-                        <th style="width: 12%;">Stock</th>
-                        <th style="width: 10%;">Unid/Caja</th>
+                        <th style="width: 9%;">Código</th>
+                        <th style="width: 14%;">Nombre</th>
+                        <th style="width: 12%;">Categoría</th>
+                        <th style="width: 12%;">Contenedor</th>
+                        <th style="width: 10%;">Stock</th>
+                        <th style="width: 9%;">Unid/Caja</th>
                         <th style="width: 10%;">Precio Unitario</th>
-                        <th style="width: 10%;">Estado</th>
-                        <th class="text-center" style="width: 12%;">Acciones</th>
+                        <th style="width: 8%;">Estado</th>
+                        <th class="text-center" style="width: 10%;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -102,6 +103,11 @@
                         <td>
                             <div class="text-truncate" style="max-width: 170px;" title="{{ producto.categoria.nombre|default:'Sin categoría' }}">
                                 {{ producto.categoria.nombre|default:'Sin categoría' }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 170px;" title="{{ producto.contenedor.nombre|default:'Sin contenedor' }}">
+                                {{ producto.contenedor.nombre|default:'Sin contenedor' }}
                             </div>
                         </td>
                         <td>
@@ -179,7 +185,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="text-center py-4">
+                        <td colspan="10" class="text-center py-4">
                             <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
                             <p class="text-muted">No hay productos registrados</p>
                         </td>
