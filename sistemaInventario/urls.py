@@ -37,6 +37,7 @@ urlpatterns = [
     path('reportes/', include('apps.reportes.urls')),
     path('almacenes/', include('apps.almacenes.urls')),
     path('tiendas/', include('apps.tiendas.urls')),
+    path('depositos/', include('apps.depositos.urls')),
     path('tiendas-virtuales/', include('apps.tiendas_virtuales.urls')),
 ]
 

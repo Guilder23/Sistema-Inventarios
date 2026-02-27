@@ -1,0 +1,112 @@
+<!-- MODAL: VER DEPÓSITO -->
+<div class="modal fade" id="modalVerDeposito" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye"></i> Detalles del Depósito
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- COLUMNA IZQUIERDA -->
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3 border-bottom pb-2">
+                            <i class="fas fa-warehouse"></i> Información Básica
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Nombre:</strong></label>
+                            <p id="verNombre" class="mb-0 font-weight-bold"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Descripción:</strong></label>
+                            <p id="verDescripcion" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Tipo:</strong></label>
+                            <p id="verTipo" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Tienda:</strong></label>
+                            <p id="verTienda" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Almacén (de la tienda):</strong></label>
+                            <p id="verAlmacen" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Estado:</strong></label>
+                            <p id="verEstado" class="mb-0 estado-deposito"></p>
+                        </div>
+                    </div>
+
+                    <!-- COLUMNA DERECHA -->
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3 border-bottom pb-2">
+                            <i class="fas fa-map-marker-alt"></i> Ubicación
+                        </h6>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Dirección:</strong></label>
+                            <p id="verDireccion" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Ciudad:</strong></label>
+                            <p id="verCiudad" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Departamento:</strong></label>
+                            <p id="verDepartamento" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Coordenadas GPS:</strong></label>
+                            <p id="verCoordenadas" class="mb-0"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-history"></i> Información de Auditoría
+                        </h6>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Creado Por:</strong></label>
+                            <p id="verCreadoPor" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Fecha de Creación:</strong></label>
+                            <p id="verFechaCreacion" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Última Actualización:</strong></label>
+                            <p id="verFechaActualizacion" class="mb-0"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

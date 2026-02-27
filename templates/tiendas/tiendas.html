@@ -42,7 +42,7 @@
                                         class="form-control form-control-sm border-left-0" 
                                         id="buscarTienda" 
                                         name="buscar"
-                                        placeholder="Buscar por nombre, código, ciudad o almacén..."
+                                        placeholder="Buscar por nombre, ciudad o almacén..."
                                         value="{{ buscar }}"
                                     >
                                 </div>
@@ -82,38 +82,38 @@
                         <table class="table table-sm tabla-tiendas mb-0" id="tablaTiendas">
                             <thead>
                                 <tr>
-                                    <th style="width: 10%;">Código</th>
-                                    <th style="width: 18%;">Nombre</th>
-                                    <th style="width: 12%;">Tipo</th>
-                                    <th style="width: 15%;">Almacén</th>
-                                    <th style="width: 12%;">Ciudad</th>
-                                    <th style="width: 10%;">Estado</th>
-                                    <th class="text-center" style="width: 13%;">Acciones</th>
+                                    <th style="width: 22%;">Nombre</th>
+                                    <th style="width: 15%;">Tipo</th>
+                                    <th style="width: 18%;">Almacén</th>
+                                    <th style="width: 15%;">Ciudad</th>
+                                    <th style="width: 12%;">Estado</th>
+                                    <th class="text-center" style="width: 18%;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for tienda in tiendas %}
                                 <tr>
                                     <td>
-                                        <span class="usuario-badge">{{ tienda.codigo }}</span>
-                                    </td>
-                                    <td>
-                                        <div class="text-truncate" style="max-width: 180px;" title="{{ tienda.nombre }}">
+                                        <div class="text-truncate" style="max-width: 200px;" title="{{ tienda.nombre }}">
                                             {{ tienda.nombre }}
                                         </div>
                                     </td>
                                     <td>
-                                        {% if tienda.tipo_tienda == 'principal' %}
-                                            <span class="badge badge-primary">
-                                                <i class="fas fa-building"></i> Principal
+                                        {% if tienda.tipo == 'principal' %}
+                                            <span class="tienda-tipo-badge tipo-principal">
+                                                <i class="fas fa-crown"></i> Principal
                                             </span>
-                                        {% elif tienda.tipo_tienda == 'sucursal' %}
-                                            <span class="badge badge-success">
-                                                <i class="fas fa-store-alt"></i> Sucursal
+                                        {% elif tienda.tipo == 'sucursal' %}
+                                            <span class="tienda-tipo-badge tipo-sucursal">
+                                                <i class="fas fa-store"></i> Sucursal
                                             </span>
-                                        {% elif tienda.tipo_tienda == 'punto_venta' %}
-                                            <span class="badge badge-info">
-                                                <i class="fas fa-shopping-cart"></i> Punto Venta
+                                        {% elif tienda.tipo == 'punto_venta' %}
+                                            <span class="tienda-tipo-badge tipo-punto-venta">
+                                                <i class="fas fa-cash-register"></i> PDV
+                                            </span>
+                                        {% else %}
+                                            <span class="tienda-tipo-badge tipo-sin-definir">
+                                                <i class="fas fa-question"></i> Sin definir
                                             </span>
                                         {% endif %}
                                     </td>

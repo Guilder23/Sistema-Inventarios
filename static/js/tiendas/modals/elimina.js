@@ -49,25 +49,37 @@ function cargarEliminacionTienda(tiendaId, tiendaNombre) {
             return response.json();
         })
         .then(data => {
-            document.getElementById('eliminarTiendaId').value = data.id;
-            document.getElementById('eliminarTiendaNombre').textContent = tiendaNombre;
+            // Actualizar elementos del modal
+            const eliminarIdElement = document.getElementById('eliminarTiendaId');
+            const eliminarNombreElement = document.getElementById('eliminarTiendaNombre');
+            const eliminarEstadoElement = document.getElementById('eliminarTiendaEstado');
+            
+            if (eliminarIdElement) eliminarIdElement.value = data.id || tiendaId;
+            if (eliminarNombreElement) eliminarNombreElement.textContent = tiendaNombre;
             
             // Determinar nuevo estado (toggle)
-            const estadoActual = data.estado;
+            const estadoActual = data.estado || 'activo';
             const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
             const textoEstado = estadoActual === 'activo' ? 'será desactivada' : 'será activada';
             
             // Actualizar campo oculto con nuevo estado
-            document.getElementById('eliminarTiendaEstado').value = nuevoEstado;
+            if (eliminarEstadoElement) eliminarEstadoElement.value = nuevoEstado;
             
-            // Actualizar texto del modal
-            const bodyText = document.querySelector('#modalEliminarTienda .modal-body p:nth-of-type(1)');
-            if (bodyText) {
-                bodyText.innerHTML = `¿Está seguro de que desea cambiar el estado de la tienda <strong>${tiendaNombre}</strong>?<br><small class="text-muted">La tienda ${textoEstado}.</small>`;
+            // Actualizar texto descriptivo en el segundo párrafo
+            const textoMutedElement = document.querySelector('#modalEliminarTienda .modal-body p.text-muted');
+            if (textoMutedElement) {
+                textoMutedElement.textContent = `La tienda ${textoEstado}.`;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al cargar los datos');
+            // En caso de error, usar valores por defecto
+            const eliminarNombreElement = document.getElementById('eliminarTiendaNombre');
+            const eliminarIdElement = document.getElementById('eliminarTiendaId');
+            
+            if (eliminarNombreElement) eliminarNombreElement.textContent = tiendaNombre;
+            if (eliminarIdElement) eliminarIdElement.value = tiendaId;
+            
+            // alert('Error al cargar los datos'); // Comentado para evitar alerta innecesaria
         });
 }

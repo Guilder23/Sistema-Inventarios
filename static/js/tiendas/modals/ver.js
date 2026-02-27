@@ -24,7 +24,6 @@ function cargarDetallesTienda(tiendaId) {
         .then(data => {
             // Información Básica
             document.getElementById('verNombre').textContent = data.nombre || '';
-            document.getElementById('verCodigo').textContent = data.codigo || '';
             document.getElementById('verDescripcion').textContent = data.descripcion || 'No especificado';
             document.getElementById('verTipo').textContent = data.tipo_display || '';
             document.getElementById('verAlmacen').textContent = data.almacen_nombre || '';
@@ -33,18 +32,7 @@ function cargarDetallesTienda(tiendaId) {
             document.getElementById('verDireccion').textContent = data.direccion || '';
             document.getElementById('verCiudad').textContent = data.ciudad || '';
             document.getElementById('verDepartamento').textContent = data.departamento || '';
-            document.getElementById('verPais').textContent = data.pais || '';
-            document.getElementById('verCodigoPostal').textContent = data.codigo_postal || 'No especificado';
-            
-            // Contacto
-            document.getElementById('verTelefono').textContent = data.telefono || 'No especificado';
-            document.getElementById('verEmail').textContent = data.email || 'No especificado';
-            
-            // Horarios y Área
-            document.getElementById('verAreaM2').textContent = data.area_m2 ? data.area_m2 + ' m²' : 'No especificado';
-            document.getElementById('verHorarioApertura').textContent = data.horario_apertura || 'No especificado';
-            document.getElementById('verHorarioCierre').textContent = data.horario_cierre || 'No especificado';
-            document.getElementById('verFechaApertura').textContent = data.fecha_apertura || 'No especificado';
+            document.getElementById('verCoordenadas').textContent = data.coordenadas || 'No especificado';
             
             // Estado
             const estadoElement = document.getElementById('verEstado');
