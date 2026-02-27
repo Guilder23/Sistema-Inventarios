@@ -12,6 +12,26 @@ urlpatterns = [
     path('<int:id>/historial/', views.historial_producto, name='historial_producto'),
     
     # Productos dañados
-    path('danados/', views.listar_danados, name='listar_danados'),
-    path('danados/registrar/', views.registrar_danado, name='registrar_danado'),
+    path('devoluciones/', views.listar_danados, name='listar_danados'),
+    path('devoluciones/registrar/', views.registrar_danado, name='registrar_danado'),
+    path('devoluciones/<int:id>/agregar-danado/', views.agregar_mas_danado, name='agregar_mas_danado'),
+    path('devoluciones/<int:id>/agregar-stock/', views.agregar_stock_danado, name='agregar_stock_danado'),
+    path('devoluciones/<int:id>/reponer-stock/', views.reponer_stock_danado, name='reponer_stock_danado'),
+
+    # Gestion de categorias
+    path('categorias/', views.listar_categorias, name='listar_categorias'),
+    path('categorias/crear/', views.crear_categoria, name='crear_categoria'),
+    path('categorias/<int:id>/obtener/', views.obtener_categoria, name='obtener_categoria'),
+    path('categorias/<int:id>/editar/', views.editar_categoria, name='editar_categoria'),
+    path('categorias/<int:id>/eliminar/', views.eliminar_categoria, name='eliminar_categoria'),
+    # Gestion de contenedores
+    path('contenedores/', views.listar_contenedores, name='listar_contenedores'),
+    path('contenedores/crear/', views.crear_contenedor, name='crear_contenedor'),
+    path('contenedores/<int:id>/obtener/', views.obtener_contenedor, name='obtener_contenedor'),
+    path('contenedores/<int:id>/editar/', views.editar_contenedor, name='editar_contenedor'),
+    path('contenedores/<int:id>/eliminar/', views.eliminar_contenedor, name='eliminar_contenedor'),
+
+    # Compatibilidad rutas previas
+    path('danados/', views.listar_danados),
+    path('danados/registrar/', views.registrar_danado),
 ]

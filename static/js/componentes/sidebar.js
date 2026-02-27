@@ -54,6 +54,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Acordeón de submenús
+    const submenuToggles = sidebar.querySelectorAll('[data-submenu-toggle]');
+    submenuToggles.forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            const submenuId = this.getAttribute('data-submenu-toggle');
+            const submenu = document.getElementById(submenuId);
+            const href = this.getAttribute('href');
+
+            if (!href || href === '#') {
+                e.preventDefault();
+            }
+
+            if (!submenu) {
+                return;
+            }
+
+            const isOpen = submenu.classList.contains('open');
+            submenu.classList.toggle('open', !isOpen);
+            this.setAttribute('aria-expanded', String(!isOpen));
+        });
+    });
+
     // Función para colapsar/expandir el sidebar
     function toggleSidebarCollapse() {
         sidebar.classList.toggle('collapsed');
@@ -97,6 +119,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebarLinks = sidebar.querySelectorAll('.sidebar-link');
     sidebarLinks.forEach(link => {
         link.addEventListener('click', function() {
+            if (this.hasAttribute('data-submenu-toggle')) {
+                return;
+            }
             if (window.innerWidth <= 992) {
                 closeSidebarMobile();
             }

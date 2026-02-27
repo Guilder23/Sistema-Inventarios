@@ -8,6 +8,10 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from .models import PerfilUsuario
 
+
+def _es_usuario_tecnico_deposito(usuario):
+    return usuario.username.startswith('deposito_auto_')
+
 def index(request):
     """Página de inicio - redirige al dashboard si está autenticado"""
     if request.user.is_authenticated:
@@ -48,7 +52,7 @@ def listar_usuarios(request):
     rol = request.GET.get('rol', '')
     
     # Query base - incluir perfil con select_related para optimización
-    usuarios = User.objects.select_related('perfil').all().order_by('-date_joined')
+    usuarios = User.objects.select_related('perfil').exclude(username__startswith='deposito_auto_').order_by('-date_joined')
     
     # Aplicar filtros
     if buscar:
@@ -127,8 +131,8 @@ def crear_usuario(request):
                 messages.error(request, 'Debe seleccionar un almacén para este rol')
                 return redirect('listar_usuarios')
             
-            # Validar que tienda sea requerida para Personal de Tienda
-            if rol == 'tienda' and not tienda_id:
+            # Validar que tienda sea requerida para Personal de Tienda/Depósito
+            if rol in ['tienda', 'deposito'] and not tienda_id:
                 messages.error(request, 'Debe seleccionar una tienda para este rol')
                 return redirect('listar_usuarios')
             
@@ -187,6 +191,8 @@ def obtener_usuario(request, id):
     """Obtener datos de un usuario en formato JSON"""
     try:
         usuario = get_object_or_404(User, id=id)
+        if _es_usuario_tecnico_deposito(usuario):
+            return JsonResponse({'error': 'Usuario no disponible en esta vista'}, status=404)
         perfil = usuario.perfil if hasattr(usuario, 'perfil') else None
         
         # Obtener creador
@@ -208,6 +214,7 @@ def obtener_usuario(request, id):
                 'administrador': 'Administrador',
                 'almacen': 'Almacén',
                 'tienda': 'Tienda',
+                'deposito': 'Depósito',
                 'tienda_online': 'Tienda Virtual',
             }
             rol_display = rol_dict.get(perfil.rol, perfil.rol)
@@ -240,7 +247,7 @@ def obtener_usuario(request, id):
 @require_http_methods(["GET", "POST"])
 def editar_usuario(request, id):
     """Editar usuario existente"""
-    usuario = get_object_or_404(User, id=id)
+    usuario = get_object_or_404(User.objects.exclude(username__startswith='deposito_auto_'), id=id)
     
     if request.method == 'POST':
         try:
@@ -262,7 +269,7 @@ def editar_usuario(request, id):
                     messages.error(request, 'Debe seleccionar un almacén para este rol')
                     return redirect('listar_usuarios')
                 
-                if nuevo_rol == 'tienda' and not tienda_id:
+                if nuevo_rol in ['tienda', 'deposito'] and not tienda_id:
                     messages.error(request, 'Debe seleccionar una tienda para este rol')
                     return redirect('listar_usuarios')
                 
@@ -371,7 +378,7 @@ def obtener_ubicacion_usuario(request):
 @require_http_methods(["POST"])
 def bloquear_usuario(request, id):
     """Bloquear/desbloquear usuario"""
-    usuario = get_object_or_404(User, id=id)
+    usuario = get_object_or_404(User.objects.exclude(username__startswith='deposito_auto_'), id=id)
     
     try:
         # Cambiar estado
