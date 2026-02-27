@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'apps.tiendas',
     'apps.depositos',
     'apps.tiendas_virtuales',
+    'storages',  # Para almacenamiento en S3 (Blackblaze B2)
 ]
 
 MIDDLEWARE = [
@@ -183,3 +184,26 @@ EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+
+# Configuración de Blackblaze B2
+AWS_ACCESS_KEY_ID = config('B2_APPLICATION_KEY_ID')
+AWS_SECRET_ACCESS_KEY = config('B2_APPLICATION_KEY')
+AWS_STORAGE_BUCKET_NAME = config('B2_BUCKET_NAME')
+AWS_S3_REGION_NAME = config('B2_REGION')
+AWS_S3_ENDPOINT_URL = f'https://s3.{AWS_S3_REGION_NAME}.backblazeb2.com'
+
+AWS_QUERYSTRING_AUTH = True  # Para generar URLs públicas con firma de acceso temporal
+
+AWS_S3_URL_EXPIRATION = 3600  # Tiempo en segundos para que las URLs expiren (1 hora)
+
+AWS_S3_SIGNATURE_VERSION = 's3v4'  # Versión de firma para compatibilidad con B2
+# Configuración de caché para objetos en S3 (opcional)
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',  # Cachear objetos por 1 día
+}
+# Configuración de almacenamiento de archivos estáticos y media en S3
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+# URL base para acceder a los archivos en S3 (puede ser personalizada según la configuración de B2)
+MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.{AWS_S3_REGION_NAME}.backblazeb2.com/'
+
