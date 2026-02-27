@@ -121,7 +121,7 @@
             <!-- Pedidos - Oculto para Tienda Online -->
             {% if not user.perfil or user.perfil.rol != 'tienda_online' %}
             <li class="sidebar-item">
-                <a href="#" class="sidebar-link" title="Pedidos">
+                <a href="{% url 'listar_pedidos' %}" class="sidebar-link {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}" title="Pedidos">
                     <i class="fas fa-clipboard-list"></i>
                     <span>Pedidos</span>
                 </a>
