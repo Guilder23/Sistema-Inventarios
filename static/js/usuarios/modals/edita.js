@@ -115,7 +115,7 @@
             console.log('  ✓ Mostrando selector de ALMACÉN');
             $grupoAlmacen.show();
             $selectAlmacen.attr('required', 'required');
-        } else if (rol === 'tienda') {
+        } else if (rol === 'tienda' || rol === 'deposito') {
             console.log('  ✓ Mostrando selector de TIENDA');
             $grupoTienda.show();
             $selectTienda.attr('required', 'required');
@@ -152,7 +152,7 @@
         }
         
         // Validar tienda si el rol lo requiere
-        if (rol === 'tienda') {
+        if (rol === 'tienda' || rol === 'deposito') {
             const tienda = $('#editTienda').val();
             if (!tienda) {
                 alert('Debe seleccionar una tienda para este rol');

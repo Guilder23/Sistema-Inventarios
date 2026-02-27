@@ -1,16 +1,32 @@
 from django.contrib import admin
-from .models import Producto, HistorialProducto, ProductoDanado
+from .models import Categoria, Contenedor, Producto, HistorialProducto, ProductoDanado
+
+
+@admin.register(Categoria)
+class CategoriaAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'activo', 'creado_por', 'fecha_creacion']
+    list_filter = ['activo', 'fecha_creacion']
+    search_fields = ['nombre', 'descripcion']
+    list_per_page = 20
+
+
+@admin.register(Contenedor)
+class ContenedorAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'proveedor', 'stock', 'activo', 'creado_por', 'fecha_creacion']
+    list_filter = ['activo', 'fecha_creacion']
+    search_fields = ['nombre', 'proveedor']
+    list_per_page = 20
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ['codigo', 'nombre', 'stock', 'precio_unitario_display', 'activo', 'fecha_creacion']
+    list_display = ['codigo', 'nombre', 'categoria', 'contenedor', 'stock', 'precio_unitario_display', 'activo', 'fecha_creacion']
     list_filter = ['activo', 'fecha_creacion']
     search_fields = ['codigo', 'nombre', 'descripcion']
     list_per_page = 20
     
     fieldsets = (
         ('Información Básica', {
-            'fields': ('codigo', 'nombre', 'descripcion', 'foto', 'activo')
+            'fields': ('codigo', 'nombre', 'categoria', 'contenedor', 'descripcion', 'foto', 'activo')
         }),
         ('Precios (Configurables por Administrador)', {
             'fields': ('precio_compra', 'precio_caja', 'precio_mayor', 'precio_unidad', 'poliza', 'gastos'),
@@ -45,7 +61,7 @@ class HistorialProductoAdmin(admin.ModelAdmin):
 
 @admin.register(ProductoDanado)
 class ProductoDanadoAdmin(admin.ModelAdmin):
-    list_display = ['producto', 'ubicacion', 'cantidad', 'registrado_por', 'fecha_registro']
-    list_filter = ['fecha_registro', 'ubicacion']
+    list_display = ['producto', 'ubicacion', 'cantidad', 'cantidad_recuperada', 'cantidad_repuesta', 'estado', 'registrado_por', 'fecha_registro']
+    list_filter = ['fecha_registro', 'ubicacion', 'estado']
     search_fields = ['producto__nombre', 'comentario']
     list_per_page = 20

@@ -40,6 +40,8 @@
         
         // Información General
         $('#verNombre').text(data.nombre);
+        $('#verCategoria').text(data.categoria_nombre || 'Sin categoría');
+        $('#verContenedor').text(data.contenedor_nombre || 'Sin contenedor');
         $('#verDescripcion').text(data.descripcion || 'Sin descripción');
         
         // Control de Stock

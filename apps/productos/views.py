@@ -3,10 +3,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
-from .models import Producto, HistorialProducto
+from .models import Categoria, Contenedor, Producto, HistorialProducto, ProductoDanado
+from apps.inventario.models import MovimientoInventario
 from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
 
 def verificar_permiso_productos(request):
@@ -32,6 +34,323 @@ def es_almacen(request):
     """Verifica si el usuario es del almacén"""
     return hasattr(request.user, 'perfil') and request.user.perfil.rol == 'almacen'
 
+
+@login_required
+def listar_categorias(request):
+    """Listar categorías con filtros"""
+    if not es_almacen(request):
+        messages.error(request, 'Solo el personal de almacén puede gestionar categorías')
+        return redirect('dashboard')
+
+    buscar = request.GET.get('buscar', '')
+    estado = request.GET.get('estado', '')
+
+    categorias = Categoria.objects.all().order_by('-fecha_creacion')
+
+    if buscar:
+        categorias = categorias.filter(
+            Q(nombre__icontains=buscar) |
+            Q(descripcion__icontains=buscar)
+        )
+
+    if estado == 'activo':
+        categorias = categorias.filter(activo=True)
+    elif estado == 'inactivo':
+        categorias = categorias.filter(activo=False)
+
+    context = {
+        'categorias': categorias,
+        'buscar': buscar,
+        'estado': estado,
+    }
+    return render(request, 'productos/categorias/categorias.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def crear_categoria(request):
+    """Crear nueva categoría"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para crear categorías')
+        return redirect('dashboard')
+
+    try:
+        nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
+        activo = request.POST.get('activo') == 'on'
+
+        if not nombre:
+            messages.error(request, 'El nombre de la categoría es requerido')
+            return redirect('listar_categorias')
+
+        if Categoria.objects.filter(nombre__iexact=nombre).exists():
+            messages.error(request, f'La categoría "{nombre}" ya existe')
+            return redirect('listar_categorias')
+
+        Categoria.objects.create(
+            nombre=nombre,
+            descripcion=descripcion,
+            activo=activo,
+            creado_por=request.user
+        )
+
+        messages.success(request, f'Categoría "{nombre}" creada exitosamente')
+    except Exception as e:
+        messages.error(request, f'Error al crear categoría: {str(e)}')
+
+    return redirect('listar_categorias')
+
+
+@login_required
+def obtener_categoria(request, id):
+    """Obtener datos de una categoría en JSON"""
+    if not es_almacen(request):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    try:
+        categoria = get_object_or_404(Categoria, id=id)
+
+        creado_por_str = ''
+        if categoria.creado_por:
+            creado_por_str = f"{categoria.creado_por.first_name} {categoria.creado_por.last_name}".strip()
+            if not creado_por_str:
+                creado_por_str = categoria.creado_por.username
+
+        data = {
+            'id': categoria.id,
+            'nombre': categoria.nombre,
+            'descripcion': categoria.descripcion or '',
+            'activo': categoria.activo,
+            'creado_por': creado_por_str,
+            'fecha_creacion': categoria.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+            'fecha_actualizacion': categoria.fecha_actualizacion.strftime('%d/%m/%Y %H:%M'),
+        }
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=404)
+
+
+@login_required
+@require_http_methods(["POST"])
+def editar_categoria(request, id):
+    """Editar categoría existente"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para editar categorías')
+        return redirect('dashboard')
+
+    categoria = get_object_or_404(Categoria, id=id)
+
+    try:
+        nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
+        activo = request.POST.get('activo') == 'on'
+
+        if not nombre:
+            messages.error(request, 'El nombre de la categoría es requerido')
+            return redirect('listar_categorias')
+
+        existe = Categoria.objects.filter(nombre__iexact=nombre).exclude(id=categoria.id).exists()
+        if existe:
+            messages.error(request, f'La categoría "{nombre}" ya existe')
+            return redirect('listar_categorias')
+
+        categoria.nombre = nombre
+        categoria.descripcion = descripcion
+        categoria.activo = activo
+        categoria.save()
+
+        messages.success(request, f'Categoría "{categoria.nombre}" actualizada exitosamente')
+    except Exception as e:
+        messages.error(request, f'Error al actualizar categoría: {str(e)}')
+
+    return redirect('listar_categorias')
+
+
+@login_required
+@require_http_methods(["POST"])
+def eliminar_categoria(request, id):
+    """Cambiar estado activo/inactivo de categoría"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para cambiar estado de categorías')
+        return redirect('dashboard')
+
+    categoria = get_object_or_404(Categoria, id=id)
+    categoria.activo = not categoria.activo
+    categoria.save(update_fields=['activo', 'fecha_actualizacion'])
+
+    estado = 'activada' if categoria.activo else 'desactivada'
+    messages.success(request, f'Categoría "{categoria.nombre}" {estado} correctamente')
+    return redirect('listar_categorias')
+
+
+@login_required
+def listar_contenedores(request):
+    """Listar contenedores con filtros"""
+    if not es_almacen(request):
+        messages.error(request, 'Solo el personal de almacén puede gestionar contenedores')
+        return redirect('dashboard')
+
+    buscar = request.GET.get('buscar', '')
+    estado = request.GET.get('estado', '')
+
+    contenedores = Contenedor.objects.all().order_by('-fecha_creacion')
+
+    if buscar:
+        contenedores = contenedores.filter(
+            Q(nombre__icontains=buscar) |
+            Q(proveedor__icontains=buscar)
+        )
+
+    if estado == 'activo':
+        contenedores = contenedores.filter(activo=True)
+    elif estado == 'inactivo':
+        contenedores = contenedores.filter(activo=False)
+
+    context = {
+        'contenedores': contenedores,
+        'buscar': buscar,
+        'estado': estado,
+    }
+    return render(request, 'productos/contenedores/contenedores.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def crear_contenedor(request):
+    """Crear nuevo contenedor"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para crear contenedores')
+        return redirect('dashboard')
+
+    try:
+        nombre = request.POST.get('nombre', '').strip()
+        proveedor = request.POST.get('proveedor', '').strip()
+        stock = request.POST.get('stock', '0').strip()
+        activo = request.POST.get('activo') == 'on'
+
+        if not nombre or not proveedor:
+            messages.error(request, 'Nombre y proveedor son requeridos')
+            return redirect('listar_contenedores')
+
+        if Contenedor.objects.filter(nombre__iexact=nombre).exists():
+            messages.error(request, f'El contenedor "{nombre}" ya existe')
+            return redirect('listar_contenedores')
+
+        try:
+            stock_valor = int(stock)
+            if stock_valor < 0:
+                raise ValueError('Stock inválido')
+        except Exception:
+            messages.error(request, 'El stock debe ser un número entero válido')
+            return redirect('listar_contenedores')
+
+        Contenedor.objects.create(
+            nombre=nombre,
+            proveedor=proveedor,
+            stock=stock_valor,
+            activo=activo,
+            creado_por=request.user
+        )
+
+        messages.success(request, f'Contenedor "{nombre}" creado exitosamente')
+    except Exception as e:
+        messages.error(request, f'Error al crear contenedor: {str(e)}')
+
+    return redirect('listar_contenedores')
+
+
+@login_required
+def obtener_contenedor(request, id):
+    """Obtener datos de un contenedor en JSON"""
+    if not es_almacen(request):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    try:
+        contenedor = get_object_or_404(Contenedor, id=id)
+
+        creado_por_str = ''
+        if contenedor.creado_por:
+            creado_por_str = f"{contenedor.creado_por.first_name} {contenedor.creado_por.last_name}".strip()
+            if not creado_por_str:
+                creado_por_str = contenedor.creado_por.username
+
+        data = {
+            'id': contenedor.id,
+            'nombre': contenedor.nombre,
+            'proveedor': contenedor.proveedor,
+            'stock': contenedor.stock,
+            'activo': contenedor.activo,
+            'creado_por': creado_por_str,
+            'fecha_creacion': contenedor.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+            'fecha_actualizacion': contenedor.fecha_actualizacion.strftime('%d/%m/%Y %H:%M'),
+        }
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=404)
+
+
+@login_required
+@require_http_methods(["POST"])
+def editar_contenedor(request, id):
+    """Editar contenedor existente"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para editar contenedores')
+        return redirect('dashboard')
+
+    contenedor = get_object_or_404(Contenedor, id=id)
+
+    try:
+        nombre = request.POST.get('nombre', '').strip()
+        proveedor = request.POST.get('proveedor', '').strip()
+        stock = request.POST.get('stock', str(contenedor.stock)).strip()
+        activo = request.POST.get('activo') == 'on'
+
+        if not nombre or not proveedor:
+            messages.error(request, 'Nombre y proveedor son requeridos')
+            return redirect('listar_contenedores')
+
+        existe = Contenedor.objects.filter(nombre__iexact=nombre).exclude(id=contenedor.id).exists()
+        if existe:
+            messages.error(request, f'El contenedor "{nombre}" ya existe')
+            return redirect('listar_contenedores')
+
+        try:
+            stock_valor = int(stock)
+            if stock_valor < 0:
+                raise ValueError('Stock inválido')
+        except Exception:
+            messages.error(request, 'El stock debe ser un número entero válido')
+            return redirect('listar_contenedores')
+
+        contenedor.nombre = nombre
+        contenedor.proveedor = proveedor
+        contenedor.stock = stock_valor
+        contenedor.activo = activo
+        contenedor.save()
+
+        messages.success(request, f'Contenedor "{contenedor.nombre}" actualizado exitosamente')
+    except Exception as e:
+        messages.error(request, f'Error al actualizar contenedor: {str(e)}')
+
+    return redirect('listar_contenedores')
+
+
+@login_required
+@require_http_methods(["POST"])
+def eliminar_contenedor(request, id):
+    """Cambiar estado activo/inactivo de contenedor"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para cambiar estado de contenedores')
+        return redirect('dashboard')
+
+    contenedor = get_object_or_404(Contenedor, id=id)
+    contenedor.activo = not contenedor.activo
+    contenedor.save(update_fields=['activo', 'fecha_actualizacion'])
+
+    estado = 'activado' if contenedor.activo else 'desactivado'
+    messages.success(request, f'Contenedor "{contenedor.nombre}" {estado} correctamente')
+    return redirect('listar_contenedores')
+
 @login_required
 def listar_productos(request):
     """Listar todos los productos con filtros"""
@@ -45,14 +364,17 @@ def listar_productos(request):
     estado = request.GET.get('estado', '')
     
     # Query base
-    productos = Producto.objects.all().order_by('-fecha_creacion')
+    productos = Producto.objects.select_related('categoria', 'contenedor').all().order_by('-fecha_creacion')
     
     # Aplicar filtros
     if buscar:
         productos = productos.filter(
             Q(codigo__icontains=buscar) |
             Q(nombre__icontains=buscar) |
-            Q(descripcion__icontains=buscar)
+            Q(descripcion__icontains=buscar) |
+            Q(categoria__nombre__icontains=buscar) |
+            Q(contenedor__nombre__icontains=buscar) |
+            Q(contenedor__proveedor__icontains=buscar)
         )
     
     if estado == 'activo':
@@ -62,6 +384,8 @@ def listar_productos(request):
     
     context = {
         'productos': productos,
+        'categorias': Categoria.objects.filter(activo=True).order_by('nombre'),
+        'contenedores': Contenedor.objects.filter(activo=True).order_by('nombre'),
         'buscar': buscar,
         'estado': estado,
         'es_administrador': es_administrador(request),
@@ -83,6 +407,8 @@ def crear_producto(request):
             # Obtener datos del formulario
             codigo = request.POST.get('codigo', '').strip()
             nombre = request.POST.get('nombre', '').strip()
+            categoria_id = request.POST.get('categoria', '').strip()
+            contenedor_id = request.POST.get('contenedor', '').strip()
             descripcion = request.POST.get('descripcion', '')
             stock = request.POST.get('stock', 0)
             unidades_por_caja = request.POST.get('unidades_por_caja', 1)
@@ -95,6 +421,24 @@ def crear_producto(request):
             if not codigo or not nombre:
                 messages.error(request, 'Código y nombre son requeridos')
                 return redirect('listar_productos')
+
+            if not categoria_id:
+                messages.error(request, 'Debe seleccionar una categoría')
+                return redirect('listar_productos')
+
+            if not contenedor_id:
+                messages.error(request, 'Debe seleccionar un contenedor')
+                return redirect('listar_productos')
+
+            categoria = Categoria.objects.filter(id=categoria_id, activo=True).first()
+            if not categoria:
+                messages.error(request, 'La categoría seleccionada no es válida')
+                return redirect('listar_productos')
+
+            contenedor = Contenedor.objects.filter(id=contenedor_id, activo=True).first()
+            if not contenedor:
+                messages.error(request, 'El contenedor seleccionado no es válido')
+                return redirect('listar_productos')
             
             # Verificar código único
             if Producto.objects.filter(codigo=codigo).exists():
@@ -105,6 +449,8 @@ def crear_producto(request):
             producto = Producto.objects.create(
                 codigo=codigo,
                 nombre=nombre,
+                categoria=categoria,
+                contenedor=contenedor,
                 descripcion=descripcion,
                 stock=int(stock),
                 unidades_por_caja=int(unidades_por_caja),
@@ -124,7 +470,7 @@ def crear_producto(request):
                 producto=producto,
                 accion='creacion',
                 usuario=request.user,
-                detalles=f'Producto creado: {nombre}'
+                detalles=f'Producto creado: {nombre} - Categoría: {categoria.nombre} - Contenedor: {contenedor.nombre}'
             )
             
             # Notificar a administrador
@@ -160,6 +506,10 @@ def obtener_producto(request, id):
             'id': producto.id,
             'codigo': producto.codigo,
             'nombre': producto.nombre,
+            'categoria_id': producto.categoria_id if producto.categoria_id else '',
+            'categoria_nombre': producto.categoria.nombre if producto.categoria else 'Sin categoría',
+            'contenedor_id': producto.contenedor_id if producto.contenedor_id else '',
+            'contenedor_nombre': producto.contenedor.nombre if producto.contenedor else 'Sin contenedor',
             'descripcion': producto.descripcion or '',
             'stock': producto.stock,
             'unidades_por_caja': producto.unidades_por_caja,
@@ -196,6 +546,8 @@ def editar_producto(request, id):
                 # Almacén puede editar todo
                 producto.codigo = request.POST.get('codigo', producto.codigo)
                 producto.nombre = request.POST.get('nombre', producto.nombre)
+                categoria_id = request.POST.get('categoria', '').strip()
+                contenedor_id = request.POST.get('contenedor', '').strip()
                 producto.descripcion = request.POST.get('descripcion', '')
                 producto.stock = int(request.POST.get('stock', producto.stock))
                 producto.unidades_por_caja = int(request.POST.get('unidades_por_caja', producto.unidades_por_caja))
@@ -206,6 +558,27 @@ def editar_producto(request, id):
                 producto.stock_critico = int(request.POST.get('stock_critico', producto.stock_critico))
                 producto.stock_bajo = int(request.POST.get('stock_bajo', producto.stock_bajo))
                 producto.activo = request.POST.get('activo') == 'on'
+
+                if not categoria_id:
+                    messages.error(request, 'Debe seleccionar una categoría')
+                    return redirect('listar_productos')
+
+                categoria = Categoria.objects.filter(id=categoria_id, activo=True).first()
+                if not categoria:
+                    messages.error(request, 'La categoría seleccionada no es válida')
+                    return redirect('listar_productos')
+
+                if not contenedor_id:
+                    messages.error(request, 'Debe seleccionar un contenedor')
+                    return redirect('listar_productos')
+
+                contenedor = Contenedor.objects.filter(id=contenedor_id, activo=True).first()
+                if not contenedor:
+                    messages.error(request, 'El contenedor seleccionado no es válido')
+                    return redirect('listar_productos')
+
+                producto.categoria = categoria
+                producto.contenedor = contenedor
                 
                 # Actualizar foto si se proporciona
                 if request.FILES.get('foto'):
@@ -216,7 +589,11 @@ def editar_producto(request, id):
                 if producto.precio_unidad != float(request.POST.get('precio_unidad', producto.precio_unidad)):
                     cambios.append(f"Precio: {producto.precio_unidad}")
                 
-                detalles = f"Producto actualizado: {producto.nombre}"
+                detalles = (
+                    f"Producto actualizado: {producto.nombre} - "
+                    f"Categoría: {producto.categoria.nombre if producto.categoria else 'Sin categoría'} - "
+                    f"Contenedor: {producto.contenedor.nombre if producto.contenedor else 'Sin contenedor'}"
+                )
                 if cambios:
                     detalles += f" - Cambios: {', '.join(cambios)}"
                 
@@ -324,14 +701,246 @@ def historial_producto(request, id):
     
     return render(request, 'productos/historial.html', context)
 
+# GESTION DE PRODUCTOS DAÑADOS
 @login_required
+@require_http_methods(["GET", "POST"])
 def listar_danados(request):
-    return render(request, 'productos/danados.html')
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil or perfil.rol != 'almacen':
+        messages.error(request, 'Solo el personal de almacén puede gestionar devoluciones')
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        try:
+            producto_id = request.POST.get('producto')
+            cantidad = int(request.POST.get('cantidad', 0))
+            comentario = request.POST.get('comentario', '').strip()
+            foto = request.FILES.get('foto')
+
+            if not producto_id:
+                messages.error(request, 'Debe seleccionar un producto')
+                return redirect('listar_danados')
+
+            if cantidad <= 0:
+                messages.error(request, 'La cantidad dañada debe ser mayor a 0')
+                return redirect('listar_danados')
+
+            producto = get_object_or_404(Producto, id=producto_id, activo=True)
+
+            if producto.stock < cantidad:
+                messages.error(request, f'No hay stock suficiente para registrar daño. Stock actual: {producto.stock}')
+                return redirect('listar_danados')
+
+            with transaction.atomic():
+                producto.stock -= cantidad
+                producto.save(update_fields=['stock', 'fecha_actualizacion'])
+
+                danado = ProductoDanado.objects.create(
+                    producto=producto,
+                    ubicacion=perfil,
+                    cantidad=cantidad,
+                    comentario=comentario,
+                    foto=foto,
+                    registrado_por=request.user,
+                )
+
+                HistorialProducto.objects.create(
+                    producto=producto,
+                    accion='edicion',
+                    usuario=request.user,
+                    detalles=f'Registro de dañado #{danado.id}: -{cantidad} unidades. Comentario: {comentario or "Sin comentario"}'
+                )
+
+                MovimientoInventario.objects.create(
+                    producto=producto,
+                    ubicacion=perfil,
+                    tipo='danado',
+                    cantidad=cantidad,
+                    referencia=f'DAN-{danado.id}',
+                    comentario=comentario or 'Registro de producto dañado'
+                )
+
+            messages.success(request, f'Se registró daño para {producto.nombre}: {cantidad} unidades')
+        except ValueError:
+            messages.error(request, 'Cantidad inválida')
+        except Exception as e:
+            messages.error(request, f'Error al registrar producto dañado: {str(e)}')
+
+        return redirect('listar_danados')
+
+    buscar = request.GET.get('buscar', '').strip()
+    estado = request.GET.get('estado', '').strip()
+
+    danados = ProductoDanado.objects.select_related('producto', 'registrado_por', 'ubicacion').filter(ubicacion=perfil)
+
+    if buscar:
+        danados = danados.filter(
+            Q(producto__codigo__icontains=buscar) |
+            Q(producto__nombre__icontains=buscar) |
+            Q(comentario__icontains=buscar)
+        )
+
+    if estado in ['pendiente', 'parcial', 'cerrado']:
+        danados = danados.filter(estado=estado)
+
+    danados = danados.order_by('-fecha_registro')
+
+    total_registros = danados.count()
+    total_pendientes = sum(item.cantidad_pendiente for item in danados)
+
+    context = {
+        'danados': danados,
+        'productos': Producto.objects.filter(activo=True).order_by('nombre'),
+        'buscar': buscar,
+        'estado': estado,
+        'total_registros': total_registros,
+        'total_pendientes': total_pendientes,
+    }
+    return render(request, 'productos/devoluciones/devoluciones.html', context)
 
 @login_required
 def registrar_danado(request):
-    return render(request, 'productos/registrar_danado.html')
+    return redirect('listar_danados')
 
+
+def _actualizar_estado_danado(danado):
+    if danado.cantidad_pendiente == 0:
+        danado.estado = 'cerrado'
+    elif danado.cantidad_recuperada > 0 or danado.cantidad_repuesta > 0:
+        danado.estado = 'parcial'
+    else:
+        danado.estado = 'pendiente'
+
+
+def _procesar_devolucion(request, danado_id, tipo_accion):
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil or perfil.rol != 'almacen':
+        messages.error(request, 'No tiene permisos para esta acción')
+        return redirect('listar_danados')
+
+    danado = get_object_or_404(ProductoDanado.objects.select_related('producto'), id=danado_id, ubicacion=perfil)
+
+    try:
+        cantidad = int(request.POST.get('cantidad', 0))
+    except ValueError:
+        messages.error(request, 'Cantidad inválida')
+        return redirect('listar_danados')
+
+    if cantidad <= 0:
+        messages.error(request, 'La cantidad debe ser mayor a 0')
+        return redirect('listar_danados')
+
+    if cantidad > danado.cantidad_pendiente:
+        messages.error(request, f'La cantidad excede lo pendiente ({danado.cantidad_pendiente})')
+        return redirect('listar_danados')
+
+    comentario_accion = request.POST.get('comentario', '').strip()
+
+    with transaction.atomic():
+        if tipo_accion == 'agregar':
+            danado.cantidad_recuperada += cantidad
+            tipo_movimiento = 'devolucion'
+            detalle = f'Devolución por recuperación de dañado #{danado.id}: +{cantidad} unidades'
+        else:
+            danado.cantidad_repuesta += cantidad
+            tipo_movimiento = 'entrada'
+            detalle = f'Reposición por dañado #{danado.id}: +{cantidad} unidades'
+
+        _actualizar_estado_danado(danado)
+        danado.save(update_fields=['cantidad_recuperada', 'cantidad_repuesta', 'estado'])
+
+        danado.producto.stock += cantidad
+        danado.producto.save(update_fields=['stock', 'fecha_actualizacion'])
+
+        HistorialProducto.objects.create(
+            producto=danado.producto,
+            accion='edicion',
+            usuario=request.user,
+            detalles=f'{detalle}. Estado dañado: {danado.get_estado_display()}'
+        )
+
+        MovimientoInventario.objects.create(
+            producto=danado.producto,
+            ubicacion=perfil,
+            tipo=tipo_movimiento,
+            cantidad=cantidad,
+            referencia=f'DAN-{danado.id}',
+            comentario=comentario_accion or detalle
+        )
+
+    accion = 'agregado' if tipo_accion == 'agregar' else 'repuesto'
+    messages.success(request, f'Stock {accion} correctamente para {danado.producto.nombre} (+{cantidad})')
+    return redirect('listar_danados')
+
+
+@login_required
+@require_http_methods(["POST"])
+def agregar_mas_danado(request, id):
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil or perfil.rol != 'almacen':
+        messages.error(request, 'No tiene permisos para esta acción')
+        return redirect('listar_danados')
+
+    danado = get_object_or_404(ProductoDanado.objects.select_related('producto'), id=id, ubicacion=perfil)
+
+    try:
+        cantidad = int(request.POST.get('cantidad', 0))
+    except ValueError:
+        messages.error(request, 'Cantidad inválida')
+        return redirect('listar_danados')
+
+    if cantidad <= 0:
+        messages.error(request, 'La cantidad debe ser mayor a 0')
+        return redirect('listar_danados')
+
+    if danado.producto.stock < cantidad:
+        messages.error(request, f'No hay stock suficiente para registrar más dañados. Stock actual: {danado.producto.stock}')
+        return redirect('listar_danados')
+
+    comentario_accion = request.POST.get('comentario', '').strip()
+
+    with transaction.atomic():
+        danado.cantidad += cantidad
+        _actualizar_estado_danado(danado)
+        danado.save(update_fields=['cantidad', 'estado'])
+
+        danado.producto.stock -= cantidad
+        danado.producto.save(update_fields=['stock', 'fecha_actualizacion'])
+
+        detalle = f'Se agregaron {cantidad} unidades dañadas al registro #{danado.id}'
+
+        HistorialProducto.objects.create(
+            producto=danado.producto,
+            accion='edicion',
+            usuario=request.user,
+            detalles=f'{detalle}. Pendiente actual: {danado.cantidad_pendiente}'
+        )
+
+        MovimientoInventario.objects.create(
+            producto=danado.producto,
+            ubicacion=perfil,
+            tipo='danado',
+            cantidad=cantidad,
+            referencia=f'DAN-{danado.id}',
+            comentario=comentario_accion or detalle
+        )
+
+    messages.success(request, f'Se agregaron {cantidad} unidades dañadas para {danado.producto.nombre}')
+    return redirect('listar_danados')
+
+
+@login_required
+@require_http_methods(["POST"])
+def agregar_stock_danado(request, id):
+    return _procesar_devolucion(request, id, 'agregar')
+
+
+@login_required
+@require_http_methods(["POST"])
+def reponer_stock_danado(request, id):
+    return _procesar_devolucion(request, id, 'reponer')
+
+# AGREGAR PRECIOS A PRODUCTOS DESDE EL PANEL DE ADMINISTRADOR
 @login_required
 @require_http_methods(["POST"])
 def editar_precio_producto(request, id):

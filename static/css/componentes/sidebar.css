@@ -186,6 +186,54 @@
     transition: opacity 0.2s ease;
 }
 
+.sidebar-item-with-submenu .submenu-chevron {
+    margin-left: auto;
+    font-size: 0.7rem;
+    transition: transform 0.2s ease;
+}
+
+.sidebar-link-toggle[aria-expanded='true'] .submenu-chevron {
+    transform: rotate(180deg);
+}
+
+.sidebar-submenu {
+    list-style: none;
+    margin: 0.125rem 0 0.25rem 1.9rem;
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.2s ease;
+}
+
+.sidebar-submenu.open {
+    max-height: 220px;
+}
+
+.sidebar-submenu-item {
+    margin: 0.1rem 0;
+}
+
+.sidebar-submenu-link {
+    display: block;
+    padding: 0.45rem 0.75rem;
+    border-radius: var(--radio-md);
+    color: var(--color-texto-secundario);
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.sidebar-submenu-link:hover {
+    background: #f3f4f6;
+    color: var(--color-primario);
+}
+
+.sidebar-submenu-link.active {
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--color-primario);
+}
+
 /* Badge de notificaciones */
 .sidebar-badge {
     margin-left: auto;
@@ -317,6 +365,11 @@
     min-width: 7px;
     border-radius: 50%;
     font-size: 0;
+}
+
+.sidebar.collapsed .submenu-chevron,
+.sidebar.collapsed .sidebar-submenu {
+    display: none;
 }
 
 /* Footer colapsado */
