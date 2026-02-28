@@ -32,6 +32,9 @@ let debounceTimer = null;
 // INICIALIZACIÓN
 $(document).ready(function () {
     initSelectorTipoPago();
+    initSelectorUsuarioVendedor();
+    initSelectorTipoPrecio();
+    initInputDescuento();
     initBuscadorProductos();
     initBtnLimpiarCarrito();
     initBtnGuardarVenta();
@@ -43,6 +46,63 @@ function initSelectorTipoPago() {
         $('.tipo-pago-option').removeClass('active');
         $(this).addClass('active');
         $('#inputTipoPago').val($(this).data('tipo'));
+    });
+}
+
+// SELECTOR USUARIO VENDEDOR (Depósito/Tienda)
+function initSelectorUsuarioVendedor() {
+    $('#selectUsuarioVendedor').on('change', function () {
+        const tipoVendedor = $(this).val();
+        
+        if (!tipoVendedor) {
+            $('#divTipoPrecio').hide();
+            $('#selectTipoPrecio').val('');
+            return;
+        }
+
+        const opciones = tipoVendedor === 'deposito' 
+            ? [
+                { value: 'caja', text: 'Caja', help: 'Venta por cajas' }
+              ]
+            : [
+                { value: 'unidad', text: 'Unidad', help: 'Venta unitaria (1-2 productos)' },
+                { value: 'caja', text: 'Caja', help: 'Venta por cajas' },
+                { value: 'mayor', text: 'Mayor', help: 'Venta por mayor (3 a N-1 unidades)' }
+              ];
+
+        // Llenar selector tipo precio
+        let html = '<option value="">-- Selecciona modalidad --</option>';
+        opciones.forEach(op => {
+            html += `<option value="${op.value}">${op.text}</option>`;
+        });
+        
+        $('#selectTipoPrecio').html(html);
+        $('#divTipoPrecio').show();
+    });
+}
+
+// SELECTOR TIPO PRECIO (Unidad/Caja/Mayor)
+function initSelectorTipoPrecio() {
+    $('#selectTipoPrecio').on('change', function () {
+        const tipoPrecio = $(this).val();
+        let helpText = '';
+
+        if (tipoPrecio === 'unidad') {
+            helpText = '<i class="fas fa-info-circle"></i> Uso: precio_unitario del producto';
+        } else if (tipoPrecio === 'caja') {
+            helpText = '<i class="fas fa-info-circle"></i> Uso: precio_caja del producto';
+        } else if (tipoPrecio === 'mayor') {
+            helpText = '<i class="fas fa-info-circle"></i> Uso: precio_mayor del producto (cantidad entre 3 y N-1)';
+        }
+
+        $('#helpTipoPrecio').html(helpText);
+    });
+}
+
+// INPUT DESCUENTO
+function initInputDescuento() {
+    $('#inputDescuento').on('change input', function () {
+        actualizarResumen();
     });
 }
 
@@ -336,9 +396,19 @@ function actualizarResumen() {
         totalPrecio += item.precioUnitario * item.cantidad;
     });
 
+    // Obtener descuento
+    const descuento = parseFloat($('#inputDescuento').val()) || 0;
+    const totalFinal = Math.max(totalPrecio - descuento, 0); // No permitir negativos
+
     $('#resumenCantItems').text(totalItems);
     $('#resumenSubtotal').text('Bs. ' + totalPrecio.toFixed(2));
-    $('#resumenTotal').text('Bs. ' + totalPrecio.toFixed(2));
+    
+    // Mostrar descuento si es mayor a 0
+    if (descuento > 0) {
+        $('#resumenTotal').html(`<del class="text-muted">Bs. ${totalPrecio.toFixed(2)}</del><br><strong>Bs. ${totalFinal.toFixed(2)}</strong>`);
+    } else {
+        $('#resumenTotal').text('Bs. ' + totalFinal.toFixed(2));
+    }
 }
 
 // CARRITO: LIMPIAR TODO
