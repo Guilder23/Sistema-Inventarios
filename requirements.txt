@@ -17,4 +17,5 @@ Pillow==11.0.0
 
 # Generación de PDFs (solo cuando lo necesites, descomenta)
 # reportlab==4.0.9
+reportlab==4.2.2
 django-storages[boto3]==1.14.4
