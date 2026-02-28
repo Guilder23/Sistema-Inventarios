@@ -26,7 +26,8 @@
     
     <!-- Estilos de Notificaciones -->
     <link rel="stylesheet" href="{% static 'css/notificaciones/badge.css' %}">
-    
+    <link rel="stylesheet" href="{% static 'css/notificaciones/toast.css' %}">
+
     <!-- Estilos Extra por página -->
     {% block estilos_extra %}{% endblock %}
 </head>
@@ -78,6 +79,12 @@
     
     <!-- Scripts de Notificaciones -->
     <script src="{% static 'js/notificaciones/badge.js' %}"></script>
+    <script src="{% static 'js/notificaciones/toast.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toastManager = new ToastManager();
+        });
+    </script>
     
     <!-- Scripts Extra por página -->
     {% block scripts_extra %}{% endblock %}

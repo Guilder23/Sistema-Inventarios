@@ -115,17 +115,16 @@ document.addEventListener("DOMContentLoaded", function () {
             } else if (item.stock <= item.stock_bajo) {
                 badgeClass = 'badge-warning';
             }
-            console.log(`Producto: ${item.nombre}, Stock: ${item.stock}, Clase de fila: ${claseFila}, Badge: ${badgeClass}`);
 
             fila.innerHTML = `
                 <td class="text-center align-middle">
                     <img src="${fotoSrc}" width="45" height="45" style="object-fit:cover; border-radius:5px;" onerror="this.src='https://via.placeholder.com/45'">
                 </td>
-                <td class="align-middle">${item.codigo}</td>
-                <td class="align-middle">${item.nombre}</td>
-                <td class="align-middle">${item.stock}</td>
-                <td class="align-middle">${item.cajas || 0}</td>
-                <td class="align-middle">${item.unidad_operativa || 'N/A'}</td>
+                <td class="align-middle"><span class="codigo-Inventario">${item.codigo}</span></td>
+                <td class="align-middle"><span class="columna-normal">${item.nombre}</span></td>
+                <td class="align-middle"><span class="columna-normal">${item.stock}</span></td>
+                <td class="align-middle"><span class="columna-normal">${item.cajas || 0}</span></td>
+                <td class="align-middle"><span class="columna-normal">${item.unidad_operativa || 'N/A'}</span></td>
                 <td class="text-center">
                     <button class="btn btn-info btn-sm btn-ver-producto" data-producto-id="${item.codigo}">
                         <i class="fas fa-eye"></i>

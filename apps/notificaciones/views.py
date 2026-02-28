@@ -4,6 +4,14 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from .models import Notificacion
 from django.utils import timezone
+import json
+import queue
+from threading import Thread
+from django.views.decorators.cache import never_cache
+from django.http import StreamingHttpResponse
+
+# Cola global para notificaciones en tiempo real
+notificacion_queues = {}
 
 @login_required
 def listar_notificaciones(request):
@@ -115,3 +123,86 @@ def marcar_todas_leidas(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+@login_required
+@never_cache
+def notificaciones_sse(request):
+    """
+    Server-Sent Events para notificaciones en tiempo real
+    """
+    def evento_generador():
+        usuario_id = request.user.id
+        
+        # Crear una cola para este usuario
+        if usuario_id not in notificacion_queues:
+            notificacion_queues[usuario_id] = queue.Queue()
+        
+        user_queue = notificacion_queues[usuario_id]
+        
+        # Enviar ping inicial
+        yield f"data: {json.dumps({'tipo': 'ping'})}\n\n"
+        
+        try:
+            while True:
+                try:
+                    # Esperar notificación (timeout 30 seg)
+                    notificacion = user_queue.get(timeout=30)
+                    
+                    # Obtener última notificación
+                    ultima_notif = Notificacion.objects.filter(
+                        usuario=request.user
+                    ).order_by('-fecha_creacion').first()
+                    
+                    if ultima_notif:
+                        # Mapeo de iconos
+                        iconos = {
+                            'producto_creado': 'fa-plus-circle',
+                            'producto_editado': 'fa-edit',
+                            'producto_eliminado': 'fa-trash',
+                            'precio_modificado': 'fa-dollar-sign',
+                            'pedido': 'fa-shopping-bag',
+                            'traspaso': 'fa-exchange-alt',
+                            'stock_critico': 'fa-exclamation-triangle',
+                            'stock_bajo': 'fa-exclamation-circle',
+                            'venta': 'fa-check-circle',
+                            'general': 'fa-bell',
+                        }
+                        
+                        datos = {
+                            'id': ultima_notif.id,
+                            'titulo': ultima_notif.titulo,
+                            'mensaje': ultima_notif.mensaje,
+                            'tipo': ultima_notif.tipo,
+                            'icono': iconos.get(ultima_notif.tipo, 'fa-bell'),
+                            'url': ultima_notif.url or '#',
+                        }
+                        
+                        yield f"data: {json.dumps(datos)}\n\n"
+                    
+                except queue.Empty:
+                    # Enviar ping cada 30 segundos
+                    yield f"data: {json.dumps({'tipo': 'ping'})}\n\n"
+                    
+        except GeneratorExit:
+            # Limpiar cuando se cierre conexión
+            if usuario_id in notificacion_queues:
+                del notificacion_queues[usuario_id]
+    
+    return StreamingHttpResponse(
+        evento_generador(),
+        content_type='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+        }
+    )
+
+def disparar_notificacion_realtime(usuario_id):
+    """
+    Dispara una notificación en tiempo real
+    Se llama después de crear una notificación
+    """
+    if usuario_id in notificacion_queues:
+        try:
+            notificacion_queues[usuario_id].put_nowait({'nuevo': True})
+        except queue.Full:
+            pass

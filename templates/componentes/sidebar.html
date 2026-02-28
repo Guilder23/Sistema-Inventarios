@@ -106,11 +106,11 @@
             </li>
             {% endif %}
 
-            <!-- Ventas - Vendedores y Administradores (Oculto para Tienda Online) -->
-            {% if user.is_staff or user.groups.filter|length > 0 %}
+            <!-- Ventas - Almacén, Staff y Administradores (Oculto para Tienda Online) -->
+            {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
                 {% if not user.perfil or user.perfil.rol != 'tienda_online' %}
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link" title="Ventas">
+                    <a href="{% url 'ventas:listar_ventas' %}" class="sidebar-link {% if 'ventas' in request.path %}active{% endif %}" title="Ventas">
                         <i class="fas fa-shopping-cart"></i>
                         <span>Ventas</span>
                     </a>
