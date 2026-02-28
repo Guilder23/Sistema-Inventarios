@@ -49,9 +49,16 @@ function initSelectorTipoPago() {
     });
 }
 
-// SELECTOR USUARIO VENDEDOR (Depósito/Tienda)
+// SELECTOR USUARIO VENDEDOR (Depósito/Tienda) - Solo para usuarios tienda
 function initSelectorUsuarioVendedor() {
-    $('#selectUsuarioVendedor').on('change', function () {
+    const selectUsuarioVendedor = $('#selectUsuarioVendedor');
+    
+    // Solo inicializar si el elemento existe (usuarios tienda)
+    if (selectUsuarioVendedor.length === 0) {
+        return;
+    }
+    
+    selectUsuarioVendedor.on('change', function () {
         const tipoVendedor = $(this).val();
         
         if (!tipoVendedor) {
@@ -83,7 +90,14 @@ function initSelectorUsuarioVendedor() {
 
 // SELECTOR TIPO PRECIO (Unidad/Caja/Mayor)
 function initSelectorTipoPrecio() {
-    $('#selectTipoPrecio').on('change', function () {
+    const selectTipoPrecio = $('#selectTipoPrecio');
+    
+    // Solo inicializar si el elemento existe (usuarios tienda)
+    if (selectTipoPrecio.length === 0) {
+        return;
+    }
+    
+    selectTipoPrecio.on('change', function () {
         const tipoPrecio = $(this).val();
         let helpText = '';
 
