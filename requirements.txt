@@ -17,3 +17,4 @@ Pillow==11.0.0
 
 # Generación de PDFs (solo cuando lo necesites, descomenta)
 # reportlab==4.0.9
+boto3==1.42.58
