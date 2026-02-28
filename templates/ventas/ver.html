@@ -1,0 +1,326 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venta {{ venta.codigo }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{% static 'css/base/base.css' %}" rel="stylesheet">
+    <style>
+        .venta-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .venta-codigo {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .detalles-table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+        .totales-section {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
+        .total-row {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .btn-descargar {
+            margin-top: 2rem;
+        }
+        .badge-estado {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
+        .desglose-modalidad {
+            font-size: 0.85rem;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+{% include 'componentes/sidebar.html' %}
+
+<div class="main-content">
+    <div class="container-fluid mt-4">
+        
+        <!-- ENCABEZADO VENTA -->
+        <div class="venta-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="venta-codigo">{{ venta.codigo }}</div>
+                    <p class="mb-0">{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</p>
+                </div>
+                <div class="col-md-4 text-right">
+                    {% if venta.tipo_pago == 'contado' %}
+                        <span class="badge badge-success badge-estado">Contado</span>
+                    {% else %}
+                        <span class="badge badge-warning badge-estado">Crédito</span>
+                    {% endif %}
+                    
+                    {% if venta.estado == 'completada' %}
+                        <span class="badge badge-success badge-estado">Completada</span>
+                    {% elif venta.estado == 'pendiente' %}
+                        <span class="badge badge-warning badge-estado">Pendiente</span>
+                    {% elif venta.estado == 'cancelada' %}
+                        <span class="badge badge-danger badge-estado">Cancelada</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- INFORMACIÓN CLIENTE -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-user"></i> Información del Cliente</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Cliente:</strong> {{ venta.cliente }}</p>
+                        <p><strong>Teléfono:</strong> {{ venta.telefono|default:"-" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Razón Social:</strong> {{ venta.razon_social|default:"-" }}</p>
+                        <p><strong>Dirección:</strong> {{ venta.direccion|default:"-" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INFORMACIÓN VENTA -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información de la Venta</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <p><strong>Vendedor:</strong> {{ venta.vendedor.get_full_name|default:venta.vendedor.username }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Ubicación:</strong> {{ venta.ubicacion.nombre_ubicacion }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Tipo Venta:</strong> 
+                            {% if venta.vendedor.perfil.rol == 'tienda' %}
+                                <span class="badge badge-info">Tienda</span>
+                            {% else %}
+                                <span class="badge badge-primary">Almacén</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Estado:</strong> {{ venta.get_estado_display }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLA DETALLES -->
+        <div class="card detalles-table mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-list"></i> Detalles de la Venta</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-right">P. Unitario</th>
+                                <th class="text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for detalle in venta.detalles.all %}
+                            <tr>
+                                <td>
+                                    <strong>{{ detalle.producto.nombre }}</strong>
+                                    {% if venta.vendedor.perfil.rol == 'tienda' and detalle.cantidad > detalle.producto.unidades_por_caja %}
+                                        {% with cajas=detalle.cantidad|divisibleby:detalle.producto.unidades_por_caja mayor=detalle.cantidad|remainder:detalle.producto.unidades_por_caja %}
+                                        <div class="desglose-modalidad">
+                                            {% widthratio detalle.cantidad detalle.producto.unidades_por_caja 1 as cajas %}
+                                            {% with mayoristas=detalle.cantidad|add:0|add:-cajas|add:detalle.producto.unidades_por_caja|add:cajas %}
+                                                {% if cajas > 0 %}{{ cajas }} caja{% if cajas != 1 %}s{% endif %}{% if mayoristas > 0 %} + {% endif %}{% endif %}{% if mayoristas > 0 %}{{ mayoristas }} mayor{% endif %}
+                                            {% endwith %}
+                                        </div>
+                                        {% endwith %}
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">{{ detalle.cantidad }}</td>
+                                <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
+                                <td class="text-right"><strong>${{ detalle.subtotal|floatformat:2 }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOTALES -->
+        <div class="totales-section">
+            <div class="row">
+                <div class="col-md-8"></div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal:</span>
+                            <span>${{ venta.subtotal|floatformat:2 }}</span>
+                        </div>
+                        {% if venta.total < venta.subtotal %}
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Descuento:</span>
+                            <span class="text-danger">-${{ venta.subtotal|add:venta.total|floatformat:2 }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="d-flex justify-content-between total-row border-top pt-2">
+                            <span>TOTAL:</span>
+                            <span>${{ venta.total|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTONES DE ACCIÓN -->
+        <div class="btn-descargar">
+            <a href="{% url 'ventas:pdf_venta' venta.id %}" class="btn btn-info btn-lg" target="_blank">
+                <i class="fas fa-file-pdf"></i> Descargar PDF
+            </a>
+            
+            {% if venta.tipo_pago == 'credito' and venta.estado != 'cancelada' %}
+            <button class="btn btn-success btn-lg" data-toggle="modal" data-target="#modalAmortizacion">
+                <i class="fas fa-dollar-sign"></i> Abonar Crédito
+            </button>
+            {% endif %}
+            
+            {% if venta.estado != 'cancelada' %}
+            <button class="btn btn-danger btn-lg" onclick="anularVenta({{ venta.id }})">
+                <i class="fas fa-times"></i> Anular Venta
+            </button>
+            {% endif %}
+            
+            <a href="{% url 'ventas:listar_ventas' %}" class="btn btn-secondary btn-lg">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+        </div>
+
+        <!-- MODAL AMORTIZACIÓN -->
+        {% if venta.tipo_pago == 'credito' %}
+        <div class="modal fade" id="modalAmortizacion" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Abonar a Crédito</h5>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <form id="formAmortizacion">
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label><strong>Saldo Pendiente:</strong> ${{ venta.total|floatformat:2 }}</label>
+                            </div>
+                            <div class="form-group">
+                                <label for="monto">Monto a Abonar:</label>
+                                <input type="number" class="form-control" id="monto" name="monto" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="observaciones">Observaciones:</label>
+                                <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-success">Registrar Abono</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+function anularVenta(ventaId) {
+    if (!confirm('¿Está seguro que desea anular esta venta? El stock será devuelto.')) return;
+    
+    fetch(`/ventas/${ventaId}/anular/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(err => alert('Error: ' + err));
+}
+
+{% if venta.tipo_pago == 'credito' %}
+document.getElementById('formAmortizacion').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const monto = document.getElementById('monto').value;
+    const observaciones = document.getElementById('observaciones').value;
+    
+    fetch(`/ventas/{{ venta.id }}/amortizacion/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            monto: parseFloat(monto),
+            observaciones: observaciones
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(err => alert('Error: ' + err));
+});
+{% endif %}
+
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+           document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1] || '';
+}
+</script>
+</body>
+</html>
