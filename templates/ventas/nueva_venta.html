@@ -96,6 +96,39 @@
                         </div>
                         <input type="hidden" id="inputTipoPago" value="contado">
                     </div>
+
+                    <!-- SELECTOR USUARIO VENDEDOR (Depósito/Tienda) - Solo visible para tiendas -->
+                    {% if user.perfil.rol == 'tienda' %}
+                    <div class="form-group mt-3 mb-0">
+                        <label for="selectUsuarioVendedor" class="label-campo">
+                            Usuario Vendedor <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-control form-control-sm" id="selectUsuarioVendedor" required>
+                            <option value="">-- Selecciona tipo de venta --</option>
+                            <option value="deposito">
+                                <i class="fas fa-warehouse"></i> Depósito
+                            </option>
+                            <option value="tienda">
+                                <i class="fas fa-store"></i> Tienda
+                            </option>
+                        </select>
+                        <small class="form-text text-muted mt-1">
+                            <i class="fas fa-info-circle"></i>
+                            Depósito: Solo venta por cajas | Tienda: Unidad, Caja o Mayor
+                        </small>
+                    </div>
+
+                    <!-- SELECTOR TIPO PRECIO (Depende del usuario vendedor) -->
+                    <div class="form-group mt-3 mb-0" id="divTipoPrecio" style="display:none;">
+                        <label for="selectTipoPrecio" class="label-campo">
+                            Tipo de Precio <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-control form-control-sm" id="selectTipoPrecio" required>
+                            <option value="">-- Selecciona modalidad --</option>
+                        </select>
+                        <small class="form-text text-muted mt-1" id="helpTipoPrecio"></small>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -192,6 +225,22 @@
                             <span class="text-muted">Subtotal (<span id="resumenCantItems">0</span> items):</span>
                             <span class="font-weight-bold" id="resumenSubtotal">Bs. 0.00</span>
                         </div>
+
+                        <!-- INPUT DESCUENTO -->
+                        <div class="form-group mt-3 mb-2">
+                            <label for="inputDescuento" class="label-campo" style="font-size: 0.875rem; margin-bottom: 0.35rem;">
+                                <i class="fas fa-percent text-info mr-1"></i>Descuento <small class="text-muted">(opcional)</small>
+                            </label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" class="form-control" id="inputDescuento" 
+                                       placeholder="0.00" min="0" step="0.01" value="0">
+                                <div class="input-group-append">
+                                    <span class="input-group-text bg-light">Bs.</span>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Descuento a aplicar al total</small>
+                        </div>
+
                         <hr class="my-2">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="total-label">TOTAL A PAGAR:</span>
