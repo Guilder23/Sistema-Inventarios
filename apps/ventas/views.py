@@ -657,7 +657,7 @@ def listar_ventas_tienda(request):
         vendedor=request.user
     ).select_related('ubicacion', 'vendedor').order_by('-fecha_elaboracion')
 
-    # Por tipo de pago
+    # Por tipo de pago (aunque tienda siempre es contado)
     ventas_contado = ventas.filter(tipo_pago='contado')
     ventas_credito = ventas.filter(tipo_pago='credito')
 
@@ -666,9 +666,15 @@ def listar_ventas_tienda(request):
     total_contado = ventas_contado.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
     total_credito = ventas_credito.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
     total_general = total_contado + total_credito
+    
+    # Promedio y completadas
+    promedio = total_general / total_ventas if total_ventas > 0 else Decimal('0.00')
+    ventas_completadas = ventas.filter(estado='completada').count()
 
-    # Ventas de crédito pendientes
-    creditos_pendientes = ventas_credito.filter(estado='pendiente').count()
+    # Verificar si se solicita PDF
+    pdf = request.GET.get('pdf')
+    if pdf:
+        return generar_pdf_lista(ventas_contado, 'contado')
 
     context = {
         'ventas_contado': ventas_contado,
@@ -677,11 +683,13 @@ def listar_ventas_tienda(request):
         'total_contado': total_contado,
         'total_credito': total_credito,
         'total_general': total_general,
-        'creditos_pendientes': creditos_pendientes,
+        'promedio': promedio,
+        'ventas_completadas': ventas_completadas,
+        'creditos_pendientes': 0,  # Tienda no usa crédito
         'perfil': perfil,
         'es_tienda': True,
     }
-    return render(request, 'ventas/nueva_venta_tienda.html', context)
+    return render(request, 'ventas/listar_ventas_tienda.html', context)
 
 
 @login_required
