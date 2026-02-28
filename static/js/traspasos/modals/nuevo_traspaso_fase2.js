@@ -10,6 +10,7 @@ function inicializarFase2() {
     
     const btnVolver = document.getElementById('btnVolverFase1');
     const btnCrear = document.getElementById('btnCrearTraspaso');
+    const selectTipoDestino = document.getElementById('tipoDestino');
     
     if (btnVolver) {
         btnVolver.addEventListener('click', volverAFase1);
@@ -17,6 +18,13 @@ function inicializarFase2() {
     
     if (btnCrear) {
         btnCrear.addEventListener('click', crearTraspaso);
+    }
+
+    if (selectTipoDestino && !selectTipoDestino.dataset.listenerBound) {
+        selectTipoDestino.addEventListener('change', function() {
+            renderDestinosPorTipo(this.value);
+        });
+        selectTipoDestino.dataset.listenerBound = 'true';
     }
 }
 
@@ -36,8 +44,14 @@ function cargarInformacionAutomatica() {
     };
     document.getElementById('fechaCreacion').value = ahora.toLocaleDateString('es-CO', opciones);
     
-    //Obtener origen (ubicación actual del usuario desde variable global)
-    if (window.ubicacionActualId && window.ubicacionActualNombre) {
+    // Obtener origen (seleccionado en fase 1 o fallback ubicación actual)
+    if (window.origenTraspasoSeleccionado && window.origenTraspasoSeleccionado.id) {
+        ubicacionActual = {
+            id: window.origenTraspasoSeleccionado.id,
+            nombre: window.origenTraspasoSeleccionado.nombre_ubicacion || window.ubicacionActualNombre
+        };
+        document.getElementById('origen').value = ubicacionActual.nombre;
+    } else if (window.ubicacionActualId && window.ubicacionActualNombre) {
         ubicacionActual = {
             id: window.ubicacionActualId,
             nombre: window.ubicacionActualNombre
@@ -49,31 +63,75 @@ function cargarInformacionAutomatica() {
 }
 
 function cargarDestinos() {
+    const selectTipoDestino = document.getElementById('tipoDestino');
     const selectDestino = document.getElementById('destino');
     
     if (ubicacionActual) {
-        fetch(`/traspasos/api/destinos/?ubicacion_id=${ubicacionActual.id}`)
+        fetch(`/traspasos/api/destinos/?origen_id=${ubicacionActual.id}`)
             .then(response => response.json())
             .then(data => {
                 destinosDisponibles = data;
-                selectDestino.innerHTML = '<option value="">Seleccionar destino...</option>';
-                
-                data.forEach(destino => {
+
+                const tiposDisponibles = [...new Set(data.map(destino => destino.rol).filter(Boolean))];
+                selectTipoDestino.innerHTML = '<option value="">Seleccionar tipo...</option>';
+
+                tiposDisponibles.forEach(tipo => {
                     const option = document.createElement('option');
-                    option.value = destino.id;
-                    const nombreDestino = destino.nombre_ubicacion || 'Sin nombre';
-                    option.textContent = `${nombreDestino} (${destino.rol})`;
-                    selectDestino.appendChild(option);
+                    option.value = tipo;
+                    option.textContent = formatearRol(tipo);
+                    selectTipoDestino.appendChild(option);
                 });
+
+                if (tiposDisponibles.length === 1) {
+                    selectTipoDestino.value = tiposDisponibles[0];
+                    renderDestinosPorTipo(tiposDisponibles[0]);
+                } else {
+                    renderDestinosPorTipo('');
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
+                selectTipoDestino.innerHTML = '<option value="">Error al cargar tipos</option>';
                 selectDestino.innerHTML = '<option value="">Error al cargar destinos</option>';
             });
     } else {
         // Reintentar después de un tiempo si ubicación aún no cargó
         setTimeout(cargarDestinos, 1000);
     }
+}
+
+function renderDestinosPorTipo(tipoSeleccionado) {
+    const selectDestino = document.getElementById('destino');
+    selectDestino.innerHTML = '<option value="">Seleccionar destino...</option>';
+
+    if (!tipoSeleccionado) {
+        return;
+    }
+
+    const destinosFiltrados = destinosDisponibles.filter(destino => destino.rol === tipoSeleccionado);
+
+    if (destinosFiltrados.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = `No hay ${formatearRol(tipoSeleccionado).toLowerCase()} disponibles`;
+        selectDestino.appendChild(option);
+        return;
+    }
+
+    destinosFiltrados.forEach(destino => {
+        const option = document.createElement('option');
+        option.value = destino.id;
+        const nombreDestino = destino.nombre_ubicacion || 'Sin nombre';
+        option.textContent = `${nombreDestino} (${formatearRol(destino.rol)})`;
+        selectDestino.appendChild(option);
+    });
+}
+
+function formatearRol(rol) {
+    if (rol === 'almacen') return 'Almacén';
+    if (rol === 'tienda') return 'Tienda';
+    if (rol === 'deposito') return 'Depósito';
+    return rol;
 }
 
 function mostrarResumenProductos() {
@@ -119,11 +177,18 @@ function mostrarResumenProductos() {
 }
 
 function volverAFase1() {
-    $('#modalTraspasoFase2').modal('hide');
-    
-    setTimeout(() => {
-        $('#modalNuevoTraspaso').modal('show');
-    }, 300);
+    const modalFase2 = $('#modalTraspasoFase2');
+    const modalFase1 = $('#modalNuevoTraspaso');
+
+    if (document.activeElement) {
+        document.activeElement.blur();
+    }
+
+    modalFase2.one('hidden.bs.modal', function() {
+        modalFase1.modal('show');
+    });
+
+    modalFase2.modal('hide');
 }
 
 function crearTraspaso() {
@@ -147,6 +212,9 @@ function crearTraspaso() {
     const tipo = document.getElementById('tipoTraspaso').value || 'normal';
     
     formData.append('tipo', tipo);
+    if (ubicacionActual && ubicacionActual.id) {
+        formData.append('origen', ubicacionActual.id);
+    }
     formData.append('destino', destino);
     formData.append('comentario', document.getElementById('comentario').value);
     

@@ -1,0 +1,173 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Devoluciones y Dañados{% endblock %}
+
+{% block estilos_extra %}
+    <link rel="stylesheet" href="{% static 'css/productos/productos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/devoluciones/devoluciones.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/devoluciones/modals/registrar_danado.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/devoluciones/modals/accion_stock.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="fas fa-rotate-left"></i> Devoluciones
+            </h1>
+            <p class="page-subtitle">Registra productos dañados y restáuralos al inventario</p>
+        </div>
+        <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalRegistrarDanado">
+            <i class="fas fa-plus"></i> Registrar Dañado
+        </button>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6 col-lg-4 mb-3 mb-lg-0">
+            <div class="resumen-card resumen-card-total">
+                <small>Registros</small>
+                <strong>{{ total_registros }}</strong>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4 mb-3 mb-lg-0">
+            <div class="resumen-card resumen-card-pendiente">
+                <small>Unidades Pendientes</small>
+                <strong>{{ total_pendientes }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-filtros">
+        <div class="card-body py-3">
+            <div class="row align-items-center">
+                <div class="col-md-8 mb-2 mb-md-0">
+                    <div class="input-group input-group-sm">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-white border-right-0">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                        </div>
+                        <input
+                            type="text"
+                            class="form-control form-control-sm border-left-0"
+                            id="buscar"
+                            placeholder="Buscar por código, nombre o comentario..."
+                            value="{{ buscar }}"
+                        >
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-control form-control-sm" id="estado">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                        <option value="parcial" {% if estado == 'parcial' %}selected{% endif %}>Parcial</option>
+                        <option value="cerrado" {% if estado == 'cerrado' %}selected{% endif %}>Cerrado</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-tabla">
+        <div class="table-responsive">
+            <table class="table table-sm tabla-productos mb-0" id="tablaDevoluciones">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">Código</th>
+                        <th style="width: 18%;">Producto</th>
+                        <th style="width: 8%;" class="text-center">Dañadas</th>
+                        <th style="width: 8%;" class="text-center">Recuperadas</th>
+                        <th style="width: 8%;" class="text-center">Repuestas</th>
+                        <th style="width: 8%;" class="text-center">Pendiente</th>
+                        <th style="width: 10%;" class="text-center">Estado</th>
+                        <th style="width: 16%;">Comentario</th>
+                        <th style="width: 10%;">Fecha</th>
+                        <th style="width: 14%;" class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in danados %}
+                    <tr>
+                        <td><span class="codigo-badge">{{ item.producto.codigo }}</span></td>
+                        <td>
+                            <div class="font-weight-bold">{{ item.producto.nombre }}</div>
+                            <small class="text-muted">Stock actual: {{ item.producto.stock }}</small>
+                        </td>
+                        <td class="text-center">{{ item.cantidad }}</td>
+                        <td class="text-center text-success font-weight-bold">{{ item.cantidad_recuperada }}</td>
+                        <td class="text-center text-primary font-weight-bold">{{ item.cantidad_repuesta }}</td>
+                        <td class="text-center">
+                            <span class="badge-stock {% if item.cantidad_pendiente > 0 %}badge-stock-critico{% else %}badge-stock-normal{% endif %}">
+                                {{ item.cantidad_pendiente }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            {% if item.estado == 'pendiente' %}
+                                <span class="badge-estado badge-estado-inactivo">Pendiente</span>
+                            {% elif item.estado == 'parcial' %}
+                                <span class="badge-estado badge-stock-bajo">Parcial</span>
+                            {% else %}
+                                <span class="badge-estado badge-estado-activo">Cerrado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 220px;" title="{{ item.comentario|default:'Sin comentario' }}">
+                                {{ item.comentario|default:'Sin comentario' }}
+                            </div>
+                        </td>
+                        <td>{{ item.fecha_registro|date:'d/m/Y H:i' }}</td>
+                        <td class="text-center">
+                            {% if item.cantidad_pendiente > 0 %}
+                            <div class="acciones-devolucion">
+                                <button class="btn btn-warning btn-sm btn-accion-stock"
+                                        data-toggle="modal"
+                                        data-target="#modalAccionStock"
+                                        data-url="{% url 'agregar_mas_danado' item.id %}"
+                                        data-producto="{{ item.producto.nombre }}"
+                                        data-maximo="{{ item.producto.stock }}"
+                                        data-titulo="Agregar más dañados"
+                                        data-accion="danado"
+                                        title="Agregar más productos dañados">
+                                    <i class="fas fa-triangle-exclamation"></i>
+                                </button>
+                                <button class="btn btn-primary btn-sm btn-accion-stock"
+                                        data-toggle="modal"
+                                        data-target="#modalAccionStock"
+                                        data-url="{% url 'reponer_stock_danado' item.id %}"
+                                        data-producto="{{ item.producto.nombre }}"
+                                        data-maximo="{{ item.cantidad_pendiente }}"
+                                        data-titulo="Reponer y agregar al stock"
+                                        data-accion="reponer"
+                                        title="Reponer y agregar al stock">
+                                    <i class="fas fa-box-open"></i>
+                                </button>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">Sin acciones</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">No hay devoluciones registradas</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% include 'productos/devoluciones/modals/registrar_danado.html' %}
+{% include 'productos/devoluciones/modals/accion_stock.html' %}
+{% endblock %}
+
+{% block scripts_extra %}
+    <script src="{% static 'js/productos/devoluciones/modals/accion_stock.js' %}"></script>
+    <script src="{% static 'js/productos/devoluciones/devoluciones.js' %}"></script>
+{% endblock %}

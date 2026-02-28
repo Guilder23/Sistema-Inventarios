@@ -1,10 +1,49 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+
+class Categoria(models.Model):
+    """Modelo de Categoría de productos"""
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True, null=True)
+    creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='categorias_creadas')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Categoría'
+        verbose_name_plural = 'Categorías'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
+
+class Contenedor(models.Model):
+    """Modelo de Contenedor de productos"""
+    nombre = models.CharField(max_length=120, unique=True)
+    proveedor = models.CharField(max_length=150)
+    stock = models.IntegerField(default=0)
+    creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='contenedores_creados')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Contenedor'
+        verbose_name_plural = 'Contenedores'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return f"{self.nombre} - {self.proveedor}"
+
 class Producto(models.Model):
     """Modelo de Producto"""
     codigo = models.CharField(max_length=100, unique=True)
     nombre = models.CharField(max_length=200)
+    categoria = models.ForeignKey('Categoria', on_delete=models.SET_NULL, null=True, blank=True, related_name='productos')
+    contenedor = models.ForeignKey('Contenedor', on_delete=models.SET_NULL, null=True, blank=True, related_name='productos')
     descripcion = models.TextField(blank=True, null=True)
     foto = models.ImageField(upload_to='productos/', blank=True, null=True)
     unidades_por_caja = models.IntegerField(default=1)
@@ -62,11 +101,20 @@ class HistorialProducto(models.Model):
 
 class ProductoDanado(models.Model):
     """Registro de productos dañados"""
+    ESTADOS = (
+        ('pendiente', 'Pendiente'),
+        ('parcial', 'Parcial'),
+        ('cerrado', 'Cerrado'),
+    )
+
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     ubicacion = models.ForeignKey('usuarios.PerfilUsuario', on_delete=models.CASCADE)
     cantidad = models.IntegerField()
-    comentario = models.TextField()
+    comentario = models.TextField(blank=True, null=True)
     foto = models.ImageField(upload_to='danados/', blank=True, null=True)
+    cantidad_recuperada = models.IntegerField(default=0)
+    cantidad_repuesta = models.IntegerField(default=0)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
     registrado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     fecha_registro = models.DateTimeField(auto_now_add=True)
     
@@ -77,3 +125,8 @@ class ProductoDanado(models.Model):
     
     def __str__(self):
         return f"{self.producto.nombre} - {self.cantidad} unidades"
+
+    @property
+    def cantidad_pendiente(self):
+        pendiente = self.cantidad - self.cantidad_recuperada - self.cantidad_repuesta
+        return max(0, pendiente)

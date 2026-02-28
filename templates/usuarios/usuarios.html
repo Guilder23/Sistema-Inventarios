@@ -62,6 +62,7 @@
                                     <option value="administrador" {% if rol == 'administrador' %}selected{% endif %}>Administrador</option>
                                     <option value="almacen" {% if rol == 'almacen' %}selected{% endif %}>Almacén</option>
                                     <option value="tienda" {% if rol == 'tienda' %}selected{% endif %}>Tienda</option>
+                                    <option value="deposito" {% if rol == 'deposito' %}selected{% endif %}>Depósito</option>
                                     <option value="tienda_online" {% if rol == 'tienda_online' %}selected{% endif %}>Tienda Virtual</option>
                                 </select>
                             </div>
@@ -113,6 +114,10 @@
                                             {% elif usuario.perfil.rol == 'tienda' %}
                                                 <span class="badge-rol badge-rol-tienda" data-rol="tienda">
                                                     <i class="fas fa-store"></i> Tienda
+                                                </span>
+                                            {% elif usuario.perfil.rol == 'deposito' %}
+                                                <span class="badge-rol badge-rol-deposito" data-rol="deposito">
+                                                    <i class="fas fa-boxes-stacked"></i> Depósito
                                                 </span>
                                             {% elif usuario.perfil.rol == 'tienda_online' %}
                                                 <span class="badge-rol badge-rol-online" data-rol="tienda_online">
