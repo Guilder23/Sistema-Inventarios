@@ -1,0 +1,322 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Ventas - Tienda{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/ventas/ventas.css' %}">
+<link rel="stylesheet" href="{% static 'css/ventas/modals/detalle_venta.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid py-4">
+
+    {# Header + Botón para nueva venta #}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="page-title mb-1">
+                <i class="fas fa-shopping-cart mr-2"></i>Mis Ventas
+            </h2>
+            <p class="text-muted mb-0">
+                Gestión de ventas de tienda &mdash; {{ user.first_name }}
+            </p>
+        </div>
+        <a href="{% url 'ventas:crear_venta_tienda' %}" class="btn btn-primary btn-nueva-venta">
+            <i class="fas fa-plus-circle mr-1"></i> Nueva Venta
+        </a>
+    </div>
+
+    {# Tarjetas de resumen #}
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card card-stat card-stat--total">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-primary-light">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="stat-label mb-0">Total Ventas</p>
+                        <h4 class="stat-value mb-0">{{ total_ventas }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card card-stat card-stat--contado">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-success-light">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="stat-label mb-0">Total Vendido</p>
+                        <h4 class="stat-value mb-0">Bs. {{ total_general|floatformat:2 }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card card-stat card-stat--credito">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-info-light">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="stat-label mb-0">Promedio por Venta</p>
+                        <h4 class="stat-value mb-0">Bs. {% if total_ventas > 0 %}{{ promedio|floatformat:2 }}{% else %}0.00{% endif %}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card card-stat card-stat--general">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-warning-light">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="stat-label mb-0">Completadas</p>
+                        <h4 class="stat-value mb-0">{{ ventas_completadas }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Card principal con tabla de ventas #}
+    <div class="card card-tabla shadow-sm">
+        <div class="card-header bg-white py-3">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h6 class="mb-0 font-weight-bold">
+                        <i class="fas fa-list mr-2"></i>Historial de Ventas
+                    </h6>
+                </div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-generar-pdf btn-sm" onclick="generarPDF()" {% if not total_ventas %}disabled{% endif %}>
+                        <i class="fas fa-file-pdf mr-1"></i> Descargar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            {# Filtro rápido #}
+            <div class="filtro-bar px-4 py-4 border-bottom">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            </div>
+                            <input type="text" class="form-control filtro-tabla"
+                                   id="filtroTabla"
+                                   placeholder="Buscar por código o cliente...">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <select class="form-control form-control-sm filtro-estado" id="filtroEstado">
+                            <option value="">Todos los estados</option>
+                            <option value="completada">Completada</option>
+                            <option value="cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm table-hover tabla-productos mb-0" id="tablaVentas">
+                    <thead>
+                        <tr>
+                            <th class="pl-3">Código</th>
+                            <th>Cliente</th>
+                            <th>Fecha</th>
+                            <th class="text-right">Total</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center pr-3">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for venta in ventas_contado %}
+                        <tr data-estado="{{ venta.estado }}">
+                            <td class="pl-3">
+                                <span class="codigo-venta">{{ venta.codigo }}</span>
+                            </td>
+                            <td>{{ venta.cliente }}</td>
+                            <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
+                            <td class="text-right font-weight-bold">
+                                Bs. {{ venta.total|floatformat:2 }}
+                            </td>
+                            <td class="text-center">
+                                {% if venta.estado == 'completada' %}
+                                <span class="badge badge-estado badge-completada">
+                                    <i class="fas fa-check-circle mr-1"></i>Completada
+                                </span>
+                                {% elif venta.estado == 'cancelada' %}
+                                <span class="badge badge-estado badge-cancelada">
+                                    <i class="fas fa-times-circle mr-1"></i>Cancelada
+                                </span>
+                                {% else %}
+                                <span class="badge badge-estado badge-pendiente">
+                                    <i class="fas fa-clock mr-1"></i>Pendiente
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center pr-3">
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary btn-ver-detalle"
+                                            data-venta-id="{{ venta.id }}"
+                                            title="Ver detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="{% url 'ventas:pdf_venta' venta.id %}"
+                                       class="btn btn-outline-success"
+                                       title="Descargar PDF"
+                                       target="_blank">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    {% if venta.estado != 'cancelada' %}
+                                    <button class="btn btn-outline-danger btn-anular-venta"
+                                            data-venta-id="{{ venta.id }}"
+                                            data-venta-codigo="{{ venta.codigo }}"
+                                            title="Anular venta">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                No hay ventas registradas.
+                                <div class="mt-2">
+                                    <a href="{% url 'ventas:crear_venta_tienda' %}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus mr-1"></i> Crear Primera Venta
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{# Modal: Detalle de Venta #}
+<div class="modal fade" id="modalDetalleVenta" tabindex="-1" role="dialog" aria-labelledby="modalDetalleVentaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDetalleVentaLabel">Detalle de Venta</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="modalDetalleContenido">
+                <!-- Se cargará via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+// Filtrado de tabla
+document.getElementById('filtroTabla').addEventListener('keyup', filtrarTabla);
+document.getElementById('filtroEstado').addEventListener('change', filtrarTabla);
+
+function filtrarTabla() {
+    const tabla = document.getElementById('tablaVentas');
+    const filas = tabla.querySelectorAll('tbody tr');
+    const filtroTexto = document.getElementById('filtroTabla').value.toLowerCase();
+    const filtroEstado = document.getElementById('filtroEstado').value.toLowerCase();
+
+    filas.forEach(fila => {
+        const codigo = fila.cells[0].textContent.toLowerCase();
+        const cliente = fila.cells[1].textContent.toLowerCase();
+        const estado = fila.getAttribute('data-estado').toLowerCase();
+
+        const coincideTexto = codigo.includes(filtroTexto) || cliente.includes(filtroTexto);
+        const coincideEstado = !filtroEstado || estado === filtroEstado;
+
+        fila.style.display = (coincideTexto && coincideEstado) ? '' : 'none';
+    });
+}
+
+// Ver detalle de venta (Modal)
+document.querySelectorAll('.btn-ver-detalle').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const ventaId = this.getAttribute('data-venta-id');
+        
+        fetch(`/ventas/${ventaId}/ver/`)
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('modalDetalleContenido').innerHTML = html;
+                const modal = new (window.bootstrap ? window.bootstrap.Modal : function(el) {
+                    $(el).modal('show');
+                })(document.getElementById('modalDetalleVenta'));
+            })
+            .catch(error => {
+                alert('Error al cargar el detalle de la venta: ' + error);
+            });
+    });
+});
+
+// Anular venta
+document.querySelectorAll('.btn-anular-venta').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const ventaId = this.getAttribute('data-venta-id');
+        const ventaCodigo = this.getAttribute('data-venta-codigo');
+        
+        if (confirm(`¿Deseas anular la venta ${ventaCodigo}? Esta acción no se puede deshacer.`)) {
+            fetch(`/ventas/${ventaId}/anular/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Venta anulada correctamente.');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Error al anular la venta: ' + error);
+            });
+        }
+    });
+});
+
+// Generar PDF
+function generarPDF() {
+    window.location.href = '{% url "ventas:listar_ventas" %}?pdf=true&tipo_pago=contado';
+}
+
+// Utilidad: CSRF Token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}
