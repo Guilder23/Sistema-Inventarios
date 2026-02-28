@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const registrosPorPagina = 5; // Cambia según necesites
 
     // Cargar datos
-    axios.get('/static/json/inventario/productosPrueba.json?t=' + Date.now())
+    axios.get('/static/json/inventario/productosPrueba.json')
         .then(response => {
             console.log("📦 Datos recibidos:", response.data.length);
             datosOriginales = response.data;
@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
         datos.forEach(item => {
-            const fotoSrc = item.fotos?.[0] || 'https://via.placeholder.com/45';
+            const fotoSrc = item.fotos?.[0] || '/media/productos/4k-black-hole-minimalistic-wallpaper.png';
             const fila = document.createElement("tr");
 
             // Determinar clase de fila según stock
@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             fila.innerHTML = `
                 <td class="text-center align-middle">
-                    <img src="${fotoSrc}" width="45" height="45" style="object-fit:cover; border-radius:5px;" onerror="this.src='https://via.placeholder.com/45'">
+                    <img src="${fotoSrc}" width="45" height="45" style="object-fit:cover; border-radius:5px;" onerror="this.src='/media/productos/4k-black-hole-minimalistic-wallpaper.png'">
                 </td>
                 <td class="align-middle"><span class="codigo-Inventario">${item.codigo}</span></td>
                 <td class="align-middle"><span class="columna-normal">${item.nombre}</span></td>

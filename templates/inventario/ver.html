@@ -1,139 +1,111 @@
 {% extends 'base/base.html' %}
 {% load static %}
 
-{% block titulo %}Inventario{% endblock %}
+{% block titulo %}Gestión de Productos{% endblock %}
 
 {% block estilos_extra %}
-<link rel="stylesheet" href="{% static 'css/productos/productos.css' %}">
-<link rel="stylesheet" href="{% static 'css/inventario/ver.css' %}">
+<link rel="stylesheet" href="{% static 'css/inventario/ver_inventario.css' %}">
+<link rel="stylesheet" href="{% static 'css/inventario/modals/ver.css' %}">
+<link rel="stylesheet" href="{% static 'css/inventario/modals/modalDatos.css' %}">
+<link rel="stylesheet" href="{% static 'css/componentes/tabla.css' %}">
 {% endblock %}
 
 {% block contenido %}
 <div class="container-fluid">
+    <!-- HEADER DE LA PÁGINA -->
     <div class="page-header">
         <div class="page-header-content">
             <h1 class="page-title">
-                <i class="fas fa-warehouse"></i>
-                {{ titulo_inventario|default:'Inventario' }}
+                <i class="fas fa-box"></i> Inventario de Productos
             </h1>
-            <p class="page-subtitle">
-                Ubicación: {{ nombre_ubicacion|default:ubicacion_actual.nombre_ubicacion|default:ubicacion_actual.usuario.username }}
-            </p>
-            {% if sin_depositos_vinculados %}
-            <small class="text-warning">
-                No hay depósitos vinculados aún para esta tienda. Contacte al administrador.
-            </small>
-            {% endif %}
+            <p class="page-subtitle">Visualiza el inventario de productos</p>
         </div>
     </div>
 
-    <div class="row resumen-row">
-        <div class="col-md-6 mb-2">
-            <div class="resumen-card">
-                <span class="resumen-label">Productos</span>
-                <strong class="resumen-value">{{ total_items }}</strong>
-            </div>
-        </div>
-        <div class="col-md-6 mb-2">
-            <div class="resumen-card">
-                <span class="resumen-label">Unidades Totales</span>
-                <strong class="resumen-value">{{ total_unidades }}</strong>
-            </div>
-        </div>
-    </div>
-
-    <div class="card card-filtros mb-3">
+    <!-- FILTROS -->
+    <div class="card card-filtros">
         <div class="card-body py-3">
-            <form method="GET" class="row align-items-center">
-                <div class="col-md-7 mb-2 mb-md-0">
+            <div class="row align-items-center">
+                <div class="col-md-8">
                     <div class="input-group input-group-sm">
                         <div class="input-group-prepend">
                             <span class="input-group-text bg-white border-right-0">
                                 <i class="fas fa-search text-muted"></i>
                             </span>
                         </div>
-                        <input
-                            type="text"
-                            class="form-control form-control-sm border-left-0"
-                            name="buscar"
-                            placeholder="Buscar por código, nombre, categoría o contenedor..."
-                            value="{{ buscar }}"
-                        >
+                        <input type="text" class="form-control form-control-sm border-left-0" id="buscar" placeholder="Buscar por código, nombre o unidad operativa...">
                     </div>
                 </div>
-                <div class="col-md-3 mb-2 mb-md-0">
-                    <select class="form-control form-control-sm" name="estado">
-                        <option value="">Todos los estados</option>
-                        <option value="normal" {% if estado == 'normal' %}selected{% endif %}>Normal</option>
-                        <option value="bajo" {% if estado == 'bajo' %}selected{% endif %}>Bajo</option>
-                        <option value="critico" {% if estado == 'critico' %}selected{% endif %}>Crítico</option>
+                <div class="col-md-4">
+                    <select class="form-control form-control-sm" id="filtros">
+                        <option value="">Todas las unidades Operativas</option>
+                        <!--opciones de filtro-->
                     </select>
                 </div>
-                <div class="col-md-2 text-right">
-                    <button type="submit" class="btn btn-primary btn-sm btn-block btn-filtrar">Filtrar</button>
+                 <div class="col-md-4">
+                     <select class="form-control form-control-sm" id="filtroStock">
+            <option value="">Todos los stocks</option>
+            <option value="critico">Crítico</option>
+            <option value="bajo">Bajo</option>
+            <option value="normal">Normal</option>
+        </select>
                 </div>
-            </form>
+                
+            </div>
         </div>
     </div>
 
+    <!-- TABLA CON PAGINACIÓN -->
     <div class="card card-tabla">
         <div class="table-responsive">
-            <table class="table table-sm tabla-productos tabla-inventario mb-0">
+            <table class="table table-sm tabla-productos mb-0">
                 <thead>
                     <tr>
-                        <th style="width: 12%;">Código</th>
-                        <th style="width: 22%;">Producto</th>
-                        <th style="width: 14%;">Categoría</th>
-                        <th style="width: 16%;">Contenedor</th>
-                        <th style="width: 12%;">{{ label_stock|default:'Stock' }}</th>
-                        <th style="width: 10%;">Estado</th>
-                        <th style="width: 14%;">Actualizado</th>
+                        <th style="width: 6%;">Foto</th>
+                        <th style="width: 10%;">Código</th>
+                        <th style="width: 20%;">Nombre</th>
+                        <th style="width: 12%;">Stock</th>
+                        <th style="width: 10%;">Cajas</th>
+                        <th style="width: 15%;">Unidad Operativa</th>
+                        <th style="width: 12%;">Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% for item in inventarios %}
-                    <tr>
-                        <td>
-                            <span class="codigo-badge">{{ item.producto.codigo }}</span>
-                        </td>
-                        <td>{{ item.producto.nombre }}</td>
-                        <td>{{ item.producto.categoria.nombre|default:'Sin categoría' }}</td>
-                        <td>{{ item.producto.contenedor.nombre|default:'Sin contenedor' }}</td>
-                        <td>
-                            {% if item.estado_stock == 'normal' %}
-                                <span class="badge-stock badge-stock-normal">{{ item.cantidad }} unidades</span>
-                            {% elif item.estado_stock == 'bajo' %}
-                                <span class="badge-stock badge-stock-bajo">{{ item.cantidad }} unidades</span>
-                            {% else %}
-                                <span class="badge-stock badge-stock-critico">{{ item.cantidad }} unidades</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if item.estado_stock == 'normal' %}
-                                <span class="badge-estado badge-estado-activo">Normal</span>
-                            {% elif item.estado_stock == 'bajo' %}
-                                <span class="badge-estado badge-estado-bajo">Bajo</span>
-                            {% else %}
-                                <span class="badge-estado badge-estado-inactivo">Crítico</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ item.fecha_actualizacion|date:'d/m/Y H:i' }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center py-4">
-                            <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
-                            <p class="text-muted mb-0">No hay stock disponible para esta ubicación</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
+                <tbody id="tablaInventario">
+                    <!-- Aquí se llenará dinámicamente con JS -->
                 </tbody>
             </table>
         </div>
+        
+        <!-- PAGINACIÓN (DENTRO DEL MISMO CARD) -->
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
+            <div class="info-paginacion text-muted small">
+                Mostrando <span id="mostrandoDesde">0</span> - <span id="mostrandoHasta">0</span> de <span id="totalRegistros">0</span> registros
+            </div>
+            <nav aria-label="Paginación de productos">
+                <ul class="pagination pagination-sm mb-0" id="paginacion">
+                    <li class="page-item" id="btnAnterior">
+                        <a class="page-link" href="#" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    <!-- Los números de página se generan dinámicamente -->
+                    <li class="page-item" id="btnSiguiente">
+                        <a class="page-link" href="#" aria-label="Siguiente">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
     </div>
-</div>
-{% endblock %}
 
-{% block scripts_extra %}
-<script src="{% static 'js/inventario/ver.js' %}"></script>
+    <!-- MODALES -->
+    {% include 'inventario/Modals/ver.html' %}
+
+</div> <!-- Cierre del container-fluid -->
+
+<!-- JS -->
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="/static/js/inventario/ver_inventario.js"></script>
+<script src="{% static 'js/inventario/modals/ver.js' %}"></script>
 {% endblock %}
