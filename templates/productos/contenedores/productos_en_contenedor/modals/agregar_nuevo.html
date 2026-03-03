@@ -1,0 +1,95 @@
+{% load static %}
+
+<!-- MODAL: AGREGAR NUEVO PRODUCTO AL CONTENEDOR -->
+<div class="modal fade" id="modalAgregarNuevoProducto" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle"></i> Crear Nuevo Producto
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formAgregarNuevoProducto" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="tipo" value="nuevo">
+                    <input type="hidden" name="contenedor_id" id="modalContenedorId">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="codigo_nuevo_modal" class="form-label">
+                                    <i class="fas fa-barcode"></i> Código del Producto
+                                </label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="codigo_nuevo_modal" 
+                                    name="codigo" 
+                                    required
+                                    placeholder="PROD-001"
+                                >
+                                <small class="form-text text-muted">Debe ser único</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="nombre_nuevo_modal" class="form-label">
+                                    <i class="fas fa-tag"></i> Nombre del Producto
+                                </label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="nombre_nuevo_modal" 
+                                    name="nombre" 
+                                    required
+                                    placeholder="Nombre del producto"
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="categoria_modal" class="form-label">
+                                    <i class="fas fa-folder"></i> Categoría
+                                </label>
+                                <select class="form-control" id="categoria_modal" name="categoria">
+                                    <option value="">-- Sin categoría --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="cantidad_nuevo_modal" class="form-label">
+                                    <i class="fas fa-boxes"></i> Cantidad
+                                </label>
+                                <input 
+                                    type="number" 
+                                    class="form-control" 
+                                    id="cantidad_nuevo_modal" 
+                                    name="cantidad" 
+                                    min="1" 
+                                    value="1" 
+                                    required
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Crear y Agregar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

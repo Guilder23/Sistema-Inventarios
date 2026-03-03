@@ -7,7 +7,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
-from .models import Categoria, Contenedor, Producto, HistorialProducto, ProductoDanado
+from .models import Categoria, Contenedor, Producto, HistorialProducto, ProductoDanado, ProductoContenedor
 from apps.inventario.models import MovimientoInventario
 from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
 
@@ -225,7 +225,6 @@ def crear_contenedor(request):
     try:
         nombre = request.POST.get('nombre', '').strip()
         proveedor = request.POST.get('proveedor', '').strip()
-        stock = request.POST.get('stock', '0').strip()
         activo = request.POST.get('activo') == 'on'
 
         if not nombre or not proveedor:
@@ -236,18 +235,9 @@ def crear_contenedor(request):
             messages.error(request, f'El contenedor "{nombre}" ya existe')
             return redirect('listar_contenedores')
 
-        try:
-            stock_valor = int(stock)
-            if stock_valor < 0:
-                raise ValueError('Stock inválido')
-        except Exception:
-            messages.error(request, 'El stock debe ser un número entero válido')
-            return redirect('listar_contenedores')
-
         Contenedor.objects.create(
             nombre=nombre,
             proveedor=proveedor,
-            stock=stock_valor,
             activo=activo,
             creado_por=request.user
         )
@@ -278,7 +268,7 @@ def obtener_contenedor(request, id):
             'id': contenedor.id,
             'nombre': contenedor.nombre,
             'proveedor': contenedor.proveedor,
-            'stock': contenedor.stock,
+            'stock': contenedor.stock_total,
             'activo': contenedor.activo,
             'creado_por': creado_por_str,
             'fecha_creacion': contenedor.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
@@ -302,7 +292,6 @@ def editar_contenedor(request, id):
     try:
         nombre = request.POST.get('nombre', '').strip()
         proveedor = request.POST.get('proveedor', '').strip()
-        stock = request.POST.get('stock', str(contenedor.stock)).strip()
         activo = request.POST.get('activo') == 'on'
 
         if not nombre or not proveedor:
@@ -314,17 +303,8 @@ def editar_contenedor(request, id):
             messages.error(request, f'El contenedor "{nombre}" ya existe')
             return redirect('listar_contenedores')
 
-        try:
-            stock_valor = int(stock)
-            if stock_valor < 0:
-                raise ValueError('Stock inválido')
-        except Exception:
-            messages.error(request, 'El stock debe ser un número entero válido')
-            return redirect('listar_contenedores')
-
         contenedor.nombre = nombre
         contenedor.proveedor = proveedor
-        contenedor.stock = stock_valor
         contenedor.activo = activo
         contenedor.save()
 
@@ -364,7 +344,7 @@ def listar_productos(request):
     estado = request.GET.get('estado', '')
     
     # Query base
-    productos = Producto.objects.select_related('categoria', 'contenedor').all().order_by('-fecha_creacion')
+    productos = Producto.objects.select_related('categoria').all().order_by('-fecha_creacion')
     
     # Aplicar filtros
     if buscar:
@@ -372,9 +352,7 @@ def listar_productos(request):
             Q(codigo__icontains=buscar) |
             Q(nombre__icontains=buscar) |
             Q(descripcion__icontains=buscar) |
-            Q(categoria__nombre__icontains=buscar) |
-            Q(contenedor__nombre__icontains=buscar) |
-            Q(contenedor__proveedor__icontains=buscar)
+            Q(categoria__nombre__icontains=buscar)
         )
     
     if estado == 'activo':
@@ -408,9 +386,7 @@ def crear_producto(request):
             codigo = request.POST.get('codigo', '').strip()
             nombre = request.POST.get('nombre', '').strip()
             categoria_id = request.POST.get('categoria', '').strip()
-            contenedor_id = request.POST.get('contenedor', '').strip()
             descripcion = request.POST.get('descripcion', '')
-            stock = request.POST.get('stock', 0)
             unidades_por_caja = request.POST.get('unidades_por_caja', 1)
             precio_unidad = request.POST.get('precio_unidad', 0)
             stock_critico = request.POST.get('stock_critico', 10)
@@ -426,18 +402,9 @@ def crear_producto(request):
                 messages.error(request, 'Debe seleccionar una categoría')
                 return redirect('listar_productos')
 
-            if not contenedor_id:
-                messages.error(request, 'Debe seleccionar un contenedor')
-                return redirect('listar_productos')
-
             categoria = Categoria.objects.filter(id=categoria_id, activo=True).first()
             if not categoria:
                 messages.error(request, 'La categoría seleccionada no es válida')
-                return redirect('listar_productos')
-
-            contenedor = Contenedor.objects.filter(id=contenedor_id, activo=True).first()
-            if not contenedor:
-                messages.error(request, 'El contenedor seleccionado no es válido')
                 return redirect('listar_productos')
             
             # Verificar código único
@@ -445,14 +412,12 @@ def crear_producto(request):
                 messages.error(request, f'El código "{codigo}" ya existe')
                 return redirect('listar_productos')
             
-            # Crear producto
+            # Crear producto (sin contenedor, se agrega después con ProductoContenedor)
             producto = Producto.objects.create(
                 codigo=codigo,
                 nombre=nombre,
                 categoria=categoria,
-                contenedor=contenedor,
                 descripcion=descripcion,
-                stock=int(stock),
                 unidades_por_caja=int(unidades_por_caja),
                 precio_unidad=float(precio_unidad),
                 stock_critico=int(stock_critico),
@@ -470,7 +435,7 @@ def crear_producto(request):
                 producto=producto,
                 accion='creacion',
                 usuario=request.user,
-                detalles=f'Producto creado: {nombre} - Categoría: {categoria.nombre} - Contenedor: {contenedor.nombre}'
+                detalles=f'Producto creado: {nombre} - Categoría: {categoria.nombre}'
             )
             
             # Notificar a administrador
@@ -481,7 +446,7 @@ def crear_producto(request):
                 url=f'/productos/'
             )
             
-            messages.success(request, f'Producto "{nombre}" creado exitosamente')
+            messages.success(request, f'Producto "{nombre}" creado exitosamente. Ahora puedes agregarlo a contenedores.')
             return redirect('listar_productos')
             
         except Exception as e:
@@ -508,8 +473,6 @@ def obtener_producto(request, id):
             'nombre': producto.nombre,
             'categoria_id': producto.categoria_id if producto.categoria_id else '',
             'categoria_nombre': producto.categoria.nombre if producto.categoria else 'Sin categoría',
-            'contenedor_id': producto.contenedor_id if producto.contenedor_id else '',
-            'contenedor_nombre': producto.contenedor.nombre if producto.contenedor else 'Sin contenedor',
             'descripcion': producto.descripcion or '',
             'stock': producto.stock,
             'unidades_por_caja': producto.unidades_por_caja,
@@ -543,13 +506,11 @@ def editar_producto(request, id):
             # Solo almacén puede editar todos los campos
             # Administrador solo puede editar precio_unidad
             if es_almacen(request):
-                # Almacén puede editar todo
+                # Almacén puede editar todo excepto contenedor (se maneja en ProductoContenedor)
                 producto.codigo = request.POST.get('codigo', producto.codigo)
                 producto.nombre = request.POST.get('nombre', producto.nombre)
                 categoria_id = request.POST.get('categoria', '').strip()
-                contenedor_id = request.POST.get('contenedor', '').strip()
                 producto.descripcion = request.POST.get('descripcion', '')
-                producto.stock = int(request.POST.get('stock', producto.stock))
                 producto.unidades_por_caja = int(request.POST.get('unidades_por_caja', producto.unidades_por_caja))
                 producto.precio_unidad = float(request.POST.get('precio_unidad', producto.precio_unidad))
                 producto.precio_compra = float(request.POST.get('precio_compra', producto.precio_compra))
@@ -568,17 +529,7 @@ def editar_producto(request, id):
                     messages.error(request, 'La categoría seleccionada no es válida')
                     return redirect('listar_productos')
 
-                if not contenedor_id:
-                    messages.error(request, 'Debe seleccionar un contenedor')
-                    return redirect('listar_productos')
-
-                contenedor = Contenedor.objects.filter(id=contenedor_id, activo=True).first()
-                if not contenedor:
-                    messages.error(request, 'El contenedor seleccionado no es válido')
-                    return redirect('listar_productos')
-
                 producto.categoria = categoria
-                producto.contenedor = contenedor
                 
                 # Actualizar foto si se proporciona
                 if request.FILES.get('foto'):
@@ -591,8 +542,7 @@ def editar_producto(request, id):
                 
                 detalles = (
                     f"Producto actualizado: {producto.nombre} - "
-                    f"Categoría: {producto.categoria.nombre if producto.categoria else 'Sin categoría'} - "
-                    f"Contenedor: {producto.contenedor.nombre if producto.contenedor else 'Sin contenedor'}"
+                    f"Categoría: {producto.categoria.nombre if producto.categoria else 'Sin categoría'}"
                 )
                 if cambios:
                     detalles += f" - Cambios: {', '.join(cambios)}"
@@ -1043,4 +993,452 @@ def editar_precio_producto(request, id):
         
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+# ===================== GESTIÓN DE PRODUCTOS EN CONTENEDORES =====================
+
+@login_required
+def listar_contenedores_producto(request, producto_id):
+    """Vista para listar todos los contenedores de un producto"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para ver contenedores')
+        return redirect('dashboard')
+    
+    producto = get_object_or_404(Producto, id=producto_id, activo=True)
+    productos_contenedores = producto.productos_contenedores.all().select_related('contenedor').order_by('-fecha_creacion')
+    
+    context = {
+        'producto': producto,
+        'productos_contenedores': productos_contenedores,
+        'stock_total': producto.stock,
+    }
+    return render(request, 'productos/contenedores/listar_contenedores_producto.html', context)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def agregar_producto_contenedor(request, producto_id):
+    """Vista para agregar un producto a un contenedor"""
+    if not es_almacen(request):
+        messages.error(request, 'No tiene permisos para agregar productos a contenedores')
+        return redirect('dashboard')
+    
+    producto = get_object_or_404(Producto, id=producto_id, activo=True)
+    
+    if request.method == 'POST':
+        try:
+            contenedor_id = request.POST.get('contenedor_id')
+            cantidad = request.POST.get('cantidad', '0')
+            
+            # Validaciones
+            if not contenedor_id:
+                messages.error(request, 'Debe seleccionar un contenedor')
+                return redirect('listar_contenedores_producto', producto_id=producto_id)
+            
+            try:
+                cantidad = int(cantidad)
+                if cantidad <= 0:
+                    messages.error(request, 'La cantidad debe ser mayor a 0')
+                    return redirect('listar_contenedores_producto', producto_id=producto_id)
+            except ValueError:
+                messages.error(request, 'La cantidad debe ser un número válido')
+                return redirect('listar_contenedores_producto', producto_id=producto_id)
+            
+            contenedor = get_object_or_404(Contenedor, id=contenedor_id, activo=True)
+            
+            # Verificar si el producto ya existe en este contenedor
+            producto_contenedor, creado = ProductoContenedor.objects.get_or_create(
+                producto=producto,
+                contenedor=contenedor,
+                defaults={'cantidad': cantidad, 'creado_por': request.user}
+            )
+            
+            if not creado:
+                # Si ya existe, actualizar la cantidad
+                producto_contenedor.cantidad += cantidad
+                producto_contenedor.save()
+                mensaje = f'Cantidad de "{producto.nombre}" en "{contenedor.nombre}" actualizada: +{cantidad} unidades'
+            else:
+                mensaje = f'"{producto.nombre}" agregado a "{contenedor.nombre}" con {cantidad} unidades'
+            
+            messages.success(request, mensaje)
+            
+            # Registrar en historial
+            HistorialProducto.objects.create(
+                producto=producto,
+                accion='edicion',
+                usuario=request.user,
+                detalles=f'Agregado a contenedor "{contenedor.nombre}": {cantidad} unidades'
+            )
+            
+        except Exception as e:
+            messages.error(request, f'Error al agregar producto: {str(e)}')
+        
+        return redirect('listar_contenedores_producto', producto_id=producto_id)
+    
+    # GET - Mostrar form
+    contenedores = Contenedor.objects.filter(activo=True).order_by('nombre')
+    productos_contenedores_existentes = producto.productos_contenedores.values_list('contenedor_id', flat=True)
+    
+    context = {
+        'producto': producto,
+        'contenedores': contenedores,
+        'productos_contenedores_existentes': productos_contenedores_existentes,
+    }
+    return render(request, 'productos/contenedores/agregar_producto_contenedor.html', context)
+
+
+@login_required
+@login_required
+@require_http_methods(["GET", "POST"])
+def editar_producto_contenedor(request, producto_contenedor_id):
+    """Vista para editar la cantidad de un producto en un contenedor"""
+    if not es_almacen(request):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'No tiene permisos para editar'}, status=403)
+        messages.error(request, 'No tiene permisos para editar')
+        return redirect('dashboard')
+    
+    producto_contenedor = get_object_or_404(ProductoContenedor, id=producto_contenedor_id)
+    
+    if request.method == 'POST':
+        try:
+            nueva_cantidad = request.POST.get('cantidad', '0')
+            
+            try:
+                nueva_cantidad = int(nueva_cantidad)
+                if nueva_cantidad < 0:
+                    error_msg = 'La cantidad no puede ser negativa'
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({'error': error_msg}, status=400)
+                    messages.error(request, error_msg)
+                    return redirect('listar_contenedores_producto', 
+                                  producto_id=producto_contenedor.producto_id)
+            except ValueError:
+                error_msg = 'La cantidad debe ser un número válido'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'error': error_msg}, status=400)
+                messages.error(request, error_msg)
+                return redirect('listar_contenedores_producto', 
+                              producto_id=producto_contenedor.producto_id)
+            
+            cantidad_anterior = producto_contenedor.cantidad
+            producto_contenedor.cantidad = nueva_cantidad
+            producto_contenedor.save()
+            
+            cambio = nueva_cantidad - cantidad_anterior
+            if cambio > 0:
+                cambio_texto = f'+{cambio}'
+            else:
+                cambio_texto = str(cambio)
+            
+            mensaje = f'Cantidad actualizada: {cambio_texto} unidades'
+            messages.success(request, mensaje)
+            
+            # Registrar en historial
+            HistorialProducto.objects.create(
+                producto=producto_contenedor.producto,
+                accion='edicion',
+                usuario=request.user,
+                detalles=f'Cantidad en "{producto_contenedor.contenedor.nombre}" modificada: {cantidad_anterior} → {nueva_cantidad}'
+            )
+            
+            # Responder a AJAX
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'mensaje': mensaje})
+            
+        except Exception as e:
+            error_msg = f'Error al editar: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'error': error_msg}, status=500)
+            messages.error(request, error_msg)
+        
+        return redirect('listar_contenedores_producto', 
+                      producto_id=producto_contenedor.producto_id)
+    
+    # GET - Mostrar form
+    context = {
+        'producto_contenedor': producto_contenedor,
+    }
+    return render(request, 'productos/contenedores/editar_producto_contenedor.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def eliminar_producto_contenedor(request, producto_contenedor_id):
+    """Vista para eliminar un producto de un contenedor"""
+    if not es_almacen(request):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'No tiene permisos para eliminar'}, status=403)
+        messages.error(request, 'No tiene permisos para eliminar')
+        return redirect('dashboard')
+    
+    try:
+        producto_contenedor = get_object_or_404(ProductoContenedor, id=producto_contenedor_id)
+        producto_id = producto_contenedor.producto_id
+        contenedor_nombre = producto_contenedor.contenedor.nombre
+        cantidad = producto_contenedor.cantidad
+        
+        # Registrar en historial antes de eliminar
+        HistorialProducto.objects.create(
+            producto=producto_contenedor.producto,
+            accion='edicion',
+            usuario=request.user,
+            detalles=f'Eliminado de contenedor "{contenedor_nombre}": {cantidad} unidades'
+        )
+        
+        producto_contenedor.delete()
+        mensaje = f'Producto eliminado del contenedor "{contenedor_nombre}"'
+        messages.success(request, mensaje)
+        
+        # Responder a AJAX
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'mensaje': mensaje})
+        
+    except Exception as e:
+        error_msg = f'Error al eliminar: {str(e)}'
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': error_msg}, status=500)
+        messages.error(request, error_msg)
+    
+    return redirect('productos_en_contenedor', contenedor_id=producto_contenedor.contenedor_id)
+
+
+@login_required
+def json_contenedores_producto(request, producto_id):
+    """API JSON para obtener contenedores de un producto"""
+    if not es_almacen(request):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+    
+    producto = get_object_or_404(Producto, id=producto_id)
+    
+    contenedores = ProductoContenedor.objects.filter(
+        producto=producto
+    ).select_related('contenedor').values(
+        'id', 'contenedor__id', 'contenedor__nombre', 'contenedor__proveedor', 'cantidad'
+    ).order_by('-fecha_creacion')
+    
+    return JsonResponse({
+        'producto': {
+            'id': producto.id,
+            'codigo': producto.codigo,
+            'nombre': producto.nombre,
+            'stock_total': producto.stock,
+        },
+        'contenedores': list(contenedores)
+    })
+
+
+@login_required
+@login_required
+@require_http_methods(["GET"])
+def json_categorias(request):
+    """API JSON para obtener listado de categorías"""
+    if not es_almacen(request):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+    
+    categorias = Categoria.objects.filter(activo=True).values('id', 'nombre').order_by('nombre')
+    return JsonResponse({'categorias': list(categorias)})
+
+
+@login_required
+@require_http_methods(["GET"])
+def json_productos_disponibles(request, contenedor_id):
+    """API JSON para obtener productos disponibles para un contenedor"""
+    if not es_almacen(request):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+    
+    contenedor = get_object_or_404(Contenedor, id=contenedor_id)
+    
+    # Productos que ya están en el contenedor
+    productos_en_contenedor = ProductoContenedor.objects.filter(
+        contenedor=contenedor
+    ).values_list('producto_id', flat=True)
+    
+    # Todos los productos activos
+    productos = Producto.objects.filter(activo=True).values(
+        'id', 'codigo', 'nombre'
+    ).order_by('nombre')
+    
+    return JsonResponse({
+        'productos': list(productos),
+        'productos_en_contenedor': list(productos_en_contenedor)
+    })
+
+
+@login_required
+def productos_en_contenedor(request, contenedor_id):
+    """Ver productos agregados a un contenedor"""
+    if not es_almacen(request):
+        messages.error(request, 'Solo el personal de almacén puede ver los productos')
+        return redirect('dashboard')
+    
+    contenedor = get_object_or_404(Contenedor, id=contenedor_id)
+    
+    # Obtener productos del contenedor
+    productos_contenedor = ProductoContenedor.objects.filter(
+        contenedor=contenedor
+    ).select_related('producto').order_by('-fecha_creacion')
+    
+    context = {
+        'contenedor': contenedor,
+        'productos_contenedor': productos_contenedor,
+    }
+    return render(request, 'productos/contenedores/productos_en_contenedor/productos_en_contenedor.html', context)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def agregar_producto_a_contenedor(request, contenedor_id):
+    """Agregar producto nuevo o existente a un contenedor"""
+    if not es_almacen(request):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Solo el personal de almacén puede agregar productos'}, status=403)
+        messages.error(request, 'Solo el personal de almacén puede agregar productos')
+        return redirect('dashboard')
+    
+    contenedor = get_object_or_404(Contenedor, id=contenedor_id)
+    
+    if request.method == 'POST':
+        tipo = request.POST.get('tipo')  # 'nuevo' o 'existente'
+        
+        if tipo == 'nuevo':
+            # Crear nuevo producto
+            try:
+                codigo = request.POST.get('codigo')
+                nombre = request.POST.get('nombre')
+                categoria_id = request.POST.get('categoria')
+                cantidad = int(request.POST.get('cantidad', 1))
+                
+                if not codigo or not nombre:
+                    error_msg = 'El código y nombre son requeridos'
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({'error': error_msg}, status=400)
+                    messages.error(request, error_msg)
+                    return redirect('productos_en_contenedor', contenedor_id=contenedor_id)
+                
+                if cantidad <= 0:
+                    error_msg = 'La cantidad debe ser mayor a 0'
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({'error': error_msg}, status=400)
+                    messages.error(request, error_msg)
+                    return redirect('productos_en_contenedor', contenedor_id=contenedor_id)
+                
+                # Verificar que el código sea único
+                if Producto.objects.filter(codigo=codigo).exists():
+                    error_msg = f'Ya existe un producto con el código "{codigo}"'
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({'error': error_msg}, status=400)
+                    messages.error(request, error_msg)
+                    return redirect('productos_en_contenedor', contenedor_id=contenedor_id)
+                
+                categoria = None
+                if categoria_id:
+                    categoria = get_object_or_404(Categoria, id=categoria_id)
+                
+                # Crear producto
+                producto = Producto.objects.create(
+                    codigo=codigo,
+                    nombre=nombre,
+                    categoria=categoria,
+                    creado_por=request.user,
+                    activo=True
+                )
+                
+                # Agregar a contenedor
+                ProductoContenedor.objects.create(
+                    producto=producto,
+                    contenedor=contenedor,
+                    cantidad=cantidad,
+                    creado_por=request.user
+                )
+                
+                mensaje = f'Producto "{nombre}" creado y agregado al contenedor "{contenedor.nombre}"'
+                
+                # Responder a AJAX
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True, 'mensaje': mensaje})
+                
+                messages.success(request, mensaje)
+                
+            except ValueError:
+                error_msg = 'La cantidad debe ser un número válido'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'error': error_msg}, status=400)
+                messages.error(request, error_msg)
+            except Exception as e:
+                error_msg = f'Error al crear el producto: {str(e)}'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'error': error_msg}, status=500)
+                messages.error(request, error_msg)
+        
+        elif tipo == 'existente':
+            # Agregar producto existente
+            try:
+                producto_id = request.POST.get('producto_id')
+                cantidad = int(request.POST.get('cantidad', 1))
+                
+                if not producto_id:
+                    error_msg = 'Debes seleccionar un producto'
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({'error': error_msg}, status=400)
+                    messages.error(request, error_msg)
+                    return redirect('productos_en_contenedor', contenedor_id=contenedor_id)
+                
+                if cantidad <= 0:
+                    error_msg = 'La cantidad debe ser mayor a 0'
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({'error': error_msg}, status=400)
+                    messages.error(request, error_msg)
+                    return redirect('productos_en_contenedor', contenedor_id=contenedor_id)
+                
+                producto = get_object_or_404(Producto, id=producto_id, activo=True)
+                
+                # Verificar si ya existe
+                pc, creado = ProductoContenedor.objects.get_or_create(
+                    producto=producto,
+                    contenedor=contenedor,
+                    defaults={'cantidad': cantidad, 'creado_por': request.user}
+                )
+                
+                if not creado:
+                    pc.cantidad += cantidad
+                    pc.save()
+                    mensaje = f'Cantidad de "{producto.nombre}" incrementada en {cantidad} unidades'
+                else:
+                    mensaje = f'"{producto.nombre}" agregado al contenedor "{contenedor.nombre}"'
+                
+                # Responder a AJAX
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True, 'mensaje': mensaje})
+                
+                messages.success(request, mensaje)
+                
+            except ValueError:
+                error_msg = 'La cantidad debe ser un número válido'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'error': error_msg}, status=400)
+                messages.error(request, error_msg)
+            except Exception as e:
+                error_msg = f'Error al agregar el producto: {str(e)}'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'error': error_msg}, status=500)
+                messages.error(request, error_msg)
+        
+        return redirect('productos_en_contenedor', contenedor_id=contenedor_id)
+    
+    # GET - Mostrar opciones
+    productos_disponibles = Producto.objects.filter(activo=True).order_by('nombre')
+    categorias = Categoria.objects.filter(activo=True).order_by('nombre')
+    productos_ya_en_contenedor = ProductoContenedor.objects.filter(
+        contenedor=contenedor
+    ).values_list('producto_id', flat=True)
+    
+    context = {
+        'contenedor': contenedor,
+        'productos_disponibles': productos_disponibles,
+        'productos_ya_en_contenedor': productos_ya_en_contenedor,
+        'categorias': categorias,
+    }
+    return render(request, 'productos/contenedores/agregar_producto_a_contenedor.html', context)
 

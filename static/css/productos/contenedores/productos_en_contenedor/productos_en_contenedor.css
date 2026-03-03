@@ -1,0 +1,355 @@
+/* ============================================================================
+   ESTILOS PARA LA PÁGINA DE PRODUCTOS EN CONTENEDOR
+   ============================================================================ */
+
+/* MISMO ESTILO QUE GESTIÓN DE CONTENEDORES */
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1.5rem 2rem;
+    background: #1e3a8a;
+    border-radius: 0.5rem;
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.page-header-content {
+    flex: 1;
+}
+
+.page-header-content h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #ffffff;
+}
+
+.page-header-content i {
+    font-size: 1.75rem;
+}
+
+.page-subtitle {
+    margin: 0.25rem 0 0;
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 0.875rem;
+}
+
+.page-header .btn-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.page-header .btn {
+    white-space: nowrap;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+    color: #ffffff !important;
+    padding: 0.625rem 1.25rem;
+    border: none;
+}
+
+.page-header .btn i {
+    color: #ffffff !important;
+    margin-right: 0.5rem;
+}
+
+.page-header .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.page-header .btn-primary {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.page-header .btn-primary:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.page-header .btn-success {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+
+.page-header .btn-success:hover {
+    background-color: #059669;
+    border-color: #059669;
+}
+
+/* TABLA ESTILOS */
+
+.card-tabla {
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tabla-productos {
+    font-size: 0.875rem;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.tabla-productos thead th {
+    background: #3b82f6;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    padding: 0.875rem 0.75rem;
+    vertical-align: middle;
+    text-align: left;
+}
+
+.tabla-productos thead th.text-center {
+    text-align: center;
+}
+
+.tabla-productos tbody td {
+    padding: 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #e5e7eb;
+    background-color: #ffffff;
+}
+
+.tabla-productos tbody tr:hover td {
+    background-color: #f9fafb;
+}
+
+/* BADGES Y ESTILOS ESPECIALES */
+
+.codigo-badge {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+    color: #1e40af;
+    border-radius: 1rem;
+    font-weight: 600;
+    font-size: 0.813rem;
+    border: 1px solid #bfdbfe;
+    font-family: 'Courier New', monospace;
+}
+
+.badge-stock {
+    display: inline-block;
+    padding: 0.3rem 0.55rem;
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+    border-radius: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.badge-modal {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+    border-radius: 0.375rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* BOTONES DE ACCIONES */
+
+.tabla-productos .btn-sm {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+    min-width: 36px;
+    margin-right: 0.2rem;
+    border-radius: 0.375rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.tabla-productos .btn-sm:last-child {
+    margin-right: 0;
+}
+
+.tabla-productos .btn-info {
+    background-color: #06b6d4;
+    border-color: #06b6d4;
+    color: #ffffff;
+}
+
+.tabla-productos .btn-info:hover {
+    background-color: #0891b2;
+    border-color: #0891b2;
+}
+
+.tabla-productos .btn-danger {
+    background-color: #ef4444;
+    border-color: #ef4444;
+    color: #ffffff;
+}
+
+.tabla-productos .btn-danger:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+}
+
+/* ESTADO VACÍO */
+
+.text-center.py-5 {
+    padding: 3rem 1rem !important;
+}
+
+.text-muted {
+    color: #6b7280 !important;
+}
+
+.fa-inbox {
+    color: #d1d5db !important;
+}
+
+/* BOTONES DE NAVEGACIÓN */
+
+.btn-secondary {
+    background-color: #6b7280;
+    border-color: #6b7280;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 1rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: #4b5563;
+    border-color: #4b5563;
+    color: #ffffff;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: left;
+        padding: 1rem;
+    }
+
+    .page-header-content h1 {
+        font-size: 1.5rem;
+    }
+
+    .page-header-content i {
+        font-size: 1.5rem;
+    }
+
+    .page-header .btn-group {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .page-header .btn {
+        flex: 1;
+        min-width: 120px;
+    }
+
+    .tabla-productos {
+        font-size: 0.75rem;
+    }
+
+    .tabla-productos thead th {
+        padding: 0.5rem 0.4rem;
+        font-size: 0.7rem;
+    }
+
+    .tabla-productos tbody td {
+        padding: 0.5rem 0.4rem;
+    }
+
+    .tabla-productos .btn-sm {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.7rem;
+    }
+
+    .codigo-badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .badge-stock {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-header {
+        padding: 0.75rem;
+    }
+
+    .page-header-content h1 {
+        font-size: 1.25rem;
+    }
+
+    .page-subtitle {
+        font-size: 0.75rem;
+    }
+
+    .tabla-productos thead {
+        display: none;
+    }
+
+    .tabla-productos tbody {
+        display: block;
+    }
+
+    .tabla-productos tbody tr {
+        display: block;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 1rem;
+        border-radius: 0.35rem;
+    }
+
+    .tabla-productos tbody td {
+        display: block;
+        text-align: right;
+        padding: 0.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .tabla-productos tbody td:last-child {
+        border-bottom: none;
+    }
+
+    .tabla-productos tbody td:before {
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+        color: #6b7280;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+    }
+}
