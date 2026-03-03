@@ -7,26 +7,32 @@ document.addEventListener("DOMContentLoaded", function () {
     const btnSiguiente = document.getElementById("btnSiguiente");
     const totalRegistros = document.getElementById("totalRegistros");
 
-    let urlNext = null;
-    let urlPrev = null;
+    let paginaNext = null;
+    let paginaPrev = null;
     const urlBase = '/inventario/api/inventario/';
     const imgGrisBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAC0AAAAtCAYAAAAp87u7AAAAAXNSR0IArs4c6QAAAFZJREFUWAnt00EKACAMA0H9/6dtX8Cl9CDYmUvAnS0rqvba896X+TzOnp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp7+ng8X4AIBAUvNawAAAABJRU5ErkJggg==";
 
-    function cargarDatos(url = urlBase) {
-        // Obtenemos los valores de los filtros para enviarlos al backend
+    function extraerPagina(url) {
+        if (!url) return null;
+        const match = url.match(/[?&]page=(\d+)/);
+        return match ? match[1] : null;
+    }
+
+    function cargarDatos(pagina = null) {
         const params = {
             search: inputBuscar.value,
             unidad_operativa: filtroUnidad.value,
             stock_estado: filtroStock.value
         };
+        if (pagina) params.page = pagina;
 
-        axios.get(url, { params })
+        axios.get(urlBase, { params })
             .then(response => {
                 const data = response.data;
-                const items = data.results || data; 
-                
-                urlNext = data.next;
-                urlPrev = data.previous;
+                const items = data.results || data;
+
+                paginaNext = extraerPagina(data.next);
+                paginaPrev = extraerPagina(data.previous);
 
                 // IMPORTANTE: Guardamos en window para que el modal (ver.js) pueda encontrarlos
                 window.inventarioDatos = items;
@@ -40,16 +46,14 @@ document.addEventListener("DOMContentLoaded", function () {
     function renderTabla(datos) {
         tablaBody.innerHTML = "";
         datos.forEach(item => {
-            let fotoSrc = imgGrisBase64;
-            if (item.fotos && (Array.isArray(item.fotos) ? item.fotos.length > 0 : item.fotos.length > 5)) {
-                fotoSrc = Array.isArray(item.fotos) ? item.fotos[0] : item.fotos;
-            }
+            const fotoSrc = (item.fotos && typeof item.fotos === 'string' && item.fotos.startsWith('http'))
+                ? item.fotos
+                : imgGrisBase64;
 
             const fila = document.createElement("tr");
             if (item.stock <= item.stock_critico) fila.classList.add('fila-stock-critico');
             else if (item.stock <= item.stock_bajo) fila.classList.add('fila-stock-bajo');
 
-            // USAMOS data-producto-id para que coincida con ver.js
             fila.innerHTML = `
                 <td class="text-center align-middle"><img src="${fotoSrc}" width="45" height="45" style="object-fit:cover; border-radius:5px;" onerror="this.src='${imgGrisBase64}'"></td>
                 <td class="align-middle"><strong>${item.codigo}</strong></td>
@@ -69,24 +73,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function actualizarInterfazPaginacion(data) {
         totalRegistros.textContent = data.count || 0;
-        // Habilitar/Deshabilitar botones de Li
-        btnAnterior.parentElement.classList.toggle('disabled', !urlPrev);
-        btnSiguiente.parentElement.classList.toggle('disabled', !urlNext);
+        btnAnterior.parentElement.classList.toggle('disabled', !paginaPrev);
+        btnSiguiente.parentElement.classList.toggle('disabled', !paginaNext);
     }
 
-    // Eventos de filtros y paginación
-    inputBuscar.addEventListener("input", () => cargarDatos());
+    // Eventos de filtros
+    let debounceTimer;
+    inputBuscar.addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => cargarDatos(), 350);
+    });
     filtroUnidad.addEventListener("change", () => cargarDatos());
     filtroStock.addEventListener("change", () => cargarDatos());
 
+    // Eventos de paginación
     btnAnterior.addEventListener('click', (e) => {
         e.preventDefault();
-        if (urlPrev) cargarDatos(urlPrev);
+        if (paginaPrev) cargarDatos(paginaPrev);
     });
 
     btnSiguiente.addEventListener('click', (e) => {
         e.preventDefault();
-        if (urlNext) cargarDatos(urlNext);
+        if (paginaNext) cargarDatos(paginaNext);
     });
 
     cargarDatos();

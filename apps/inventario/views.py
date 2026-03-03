@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
+from django.db import models
 
 from .models import Inventario, MovimientoInventario
 from apps.usuarios.models import PerfilUsuario
@@ -29,6 +30,17 @@ class InventarioAPIViewSet(viewsets.ReadOnlyModelViewSet):
                 Q(ubicacion__tienda__nombre__icontains=nombre_unidad) |
                 Q(ubicacion__almacen__nombre__icontains=nombre_unidad)
             )
+
+        stock_estado = self.request.query_params.get("estado_stock")
+        if stock_estado == 'critico':
+            queryset = [item for item in queryset if item.estado_stock == 'producto_stock_critico']
+        elif stock_estado == 'bajo':
+            queryset = queryset.filter(
+                cantidad__gt=models.F('producto__stock_critico'),
+                cantidad__lte=models.F('producto__stock_bajo')
+            )
+        elif stock_estado == 'normal':
+            queryset = queryset.filter(cantidad__gt=models.F('producto__stock_bajo'))
 
         return queryset
 
