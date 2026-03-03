@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.db import transaction
 from django.db.models import Q
 from .models import Traspaso, DetalleTraspaso
-from apps.productos.models import Producto
+from apps.productos.models import Producto, ProductoContenedor
 from apps.usuarios.models import PerfilUsuario
 from apps.inventario.models import Inventario, MovimientoInventario
 from apps.depositos.models import Deposito
@@ -260,22 +260,77 @@ def _stock_disponible_en_ubicacion(producto, ubicacion):
 
 
 def _ajustar_stock_ubicacion(*, producto, ubicacion, delta, tipo_movimiento, referencia, comentario=''):
-    """Ajusta stock por ubicación y registra movimiento."""
+    """
+    Ajusta stock según el tipo de ubicación:
+    - ALMACÉN: Usa ProductoContenedor (reductor de cantidad en contenedores)
+    - TIENDA/DEPÓSITO: Usa tabla Inventario (stock por ubicación)
+    """
+    from apps.productos.models import ProductoContenedor, Contenedor
+    
     ubicacion_stock = _perfil_stock_objetivo(ubicacion)
-    stock_inicial = producto.stock if ubicacion_stock and ubicacion_stock.rol == 'almacen' else 0
-    inventario, _ = Inventario.objects.get_or_create(
-        producto=producto,
-        ubicacion=ubicacion_stock,
-        defaults={'cantidad': stock_inicial}
-    )
-
-    nueva_cantidad = inventario.cantidad + delta
-    if nueva_cantidad < 0:
-        raise ValueError(f'Stock insuficiente para {producto.nombre}. Disponible: {inventario.cantidad}')
-
-    inventario.cantidad = nueva_cantidad
-    inventario.save(update_fields=['cantidad', 'fecha_actualizacion'])
-
+    
+    if not ubicacion_stock:
+        raise ValueError('No hay ubicación objetivo para ajustar stock')
+    
+    # CASO ALMACÉN: Ajustar ProductoContenedor
+    if ubicacion_stock.rol == 'almacen':
+        if delta < 0:
+            # RESTAR stock de contenedores (envío)
+            cantidad_a_restar = abs(delta)
+            pcs = ProductoContenedor.objects.filter(producto=producto).order_by('id')
+            
+            for pc in pcs:
+                if cantidad_a_restar <= 0:
+                    break
+                
+                ajuste = min(pc.cantidad, cantidad_a_restar)
+                pc.cantidad -= ajuste
+                pc.save(update_fields=['cantidad', 'fecha_actualizacion'])
+                cantidad_a_restar -= ajuste
+            
+            if cantidad_a_restar > 0:
+                raise ValueError(f'Stock insuficiente para {producto.nombre}. No se pudo restar {cantidad_a_restar} unidades.')
+        else:
+            # SUMAR stock a contenedores (recepción)
+            # Buscar un contenedor existente del producto o crear uno genérico
+            productos_contenedores = ProductoContenedor.objects.filter(producto=producto).first()
+            
+            if productos_contenedores:
+                contenedor = productos_contenedores.contenedor
+            else:
+                # Crear un contenedor genérico si no existe
+                contenedor, _ = Contenedor.objects.get_or_create(
+                    nombre='Contenedor Genérico',
+                    defaults={'proveedor': 'Sin Proveedor'}
+                )
+            
+            pc, _ = ProductoContenedor.objects.get_or_create(
+                producto=producto,
+                contenedor=contenedor,
+                defaults={'cantidad': 0}
+            )
+            pc.cantidad += delta
+            pc.save(update_fields=['cantidad', 'fecha_actualizacion'])
+    
+    # CASO TIENDA/DEPÓSITO: Ajustar Inventario
+    else:
+        inventario, _ = Inventario.objects.get_or_create(
+            producto=producto,
+            ubicacion=ubicacion_stock,
+            defaults={'cantidad': 0}
+        )
+        
+        nueva_cantidad = inventario.cantidad + delta
+        if nueva_cantidad < 0:
+            raise ValueError(
+                f'Stock insuficiente para {producto.nombre}. '
+                f'Disponible: {inventario.cantidad}, solicitado: {abs(delta)}'
+            )
+        
+        inventario.cantidad = nueva_cantidad
+        inventario.save(update_fields=['cantidad', 'fecha_actualizacion'])
+    
+    # Registrar movimiento en todo caso
     MovimientoInventario.objects.create(
         producto=producto,
         ubicacion=ubicacion_stock,
@@ -285,9 +340,6 @@ def _ajustar_stock_ubicacion(*, producto, ubicacion, delta, tipo_movimiento, ref
         comentario=comentario or referencia,
     )
 
-    if ubicacion_stock and ubicacion_stock.rol == 'almacen':
-        producto.stock = nueva_cantidad
-        producto.save(update_fields=['stock', 'fecha_actualizacion'])
 
 
 @login_required
@@ -334,13 +386,13 @@ def listar_traspasos(request):
 def crear_traspaso(request):
     """Crear nuevo traspaso"""
     if not es_almacen_o_tienda(request.user):
-        messages.error(request, 'No tiene permisos para crear traspasos')
-        return redirect('dashboard')
+        return JsonResponse({'error': 'No tiene permisos para crear traspasos'}, status=403)
     
     ubicacion_actual = request.user.perfil if hasattr(request.user, 'perfil') else None
     
     if request.method == 'POST':
         try:
+            # Obtener parámetros
             tipo = request.POST.get('tipo', 'normal')
             origen_id = request.POST.get('origen')
             destino_id = request.POST.get('destino')
@@ -348,21 +400,41 @@ def crear_traspaso(request):
             productos_ids = request.POST.getlist('producto_id')
             productos_cantidades = request.POST.getlist('cantidad')
             
+            # Validar datos básicos
             if not destino_id:
-                return JsonResponse({'error': 'Debe seleccionar destino'}, status=400)
+                return JsonResponse({'error': 'Debe seleccionar un destino'}, status=400)
             
-            if not productos_ids:
+            if not productos_ids or len(productos_ids) == 0:
                 return JsonResponse({'error': 'Debe agregar al menos un producto'}, status=400)
+            
+            if len(productos_ids) != len(productos_cantidades):
+                return JsonResponse({'error': 'Error en la cantidad de elementos'}, status=400)
 
+            # Obtener y validar origen
             origenes_validos = _origenes_validos_para_usuario(ubicacion_actual)
             if origen_id:
-                origen = get_object_or_404(origenes_validos, id=origen_id)
+                try:
+                    origen = origenes_validos.get(id=int(origen_id))
+                    if not origen:
+                        return JsonResponse({'error': 'Origen no válido'}, status=400)
+                except (ValueError, TypeError):
+                    return JsonResponse({'error': 'ID de origen inválido'}, status=400)
             else:
                 origen = ubicacion_actual
             
-            destinos_validos = _destinos_validos_para_origen(origen)
-            destino = get_object_or_404(destinos_validos, id=destino_id)
+            if not origen:
+                return JsonResponse({'error': 'No hay origen disponible'}, status=400)
             
+            # Obtener y validar destino
+            destinos_validos = _destinos_validos_para_origen(origen)
+            try:
+                destino = destinos_validos.get(id=int(destino_id))
+                if not destino:
+                    return JsonResponse({'error': 'Destino no válido para este origen'}, status=400)
+            except (ValueError, TypeError):
+                return JsonResponse({'error': 'ID de destino inválido'}, status=400)
+            
+            # Crear traspaso y detalles
             with transaction.atomic():
                 codigo = Traspaso.generar_codigo()
                 traspaso = Traspaso.objects.create(
@@ -375,28 +447,41 @@ def crear_traspaso(request):
                     creado_por=request.user,
                 )
 
+                detalles_creados = 0
                 for producto_id, cantidad in zip(productos_ids, productos_cantidades):
                     try:
-                        producto = Producto.objects.get(id=producto_id)
+                        producto_id = int(producto_id)
                         cantidad = int(cantidad)
-                        if cantidad > 0:
-                            stock_disponible = _stock_disponible_en_ubicacion(producto, origen)
-                            if stock_disponible < cantidad:
-                                raise ValueError(
-                                    f'Stock insuficiente para {producto.nombre}. Disponible en ubicación: {stock_disponible}'
-                                )
-
-                            DetalleTraspaso.objects.create(
-                                traspaso=traspaso,
-                                producto=producto,
-                                cantidad=cantidad
-                            )
+                    except (ValueError, TypeError):
+                        continue
+                    
+                    if cantidad <= 0:
+                        continue
+                    
+                    try:
+                        producto = Producto.objects.get(id=producto_id, activo=True)
                     except Producto.DoesNotExist:
                         continue
 
-                if not traspaso.detalles.exists():
-                    raise ValueError('Debe agregar al menos un producto')
+                    # Verificar stock disponible
+                    stock_disponible = _stock_disponible_en_ubicacion(producto, origen)
+                    if stock_disponible < cantidad:
+                        raise ValueError(
+                            f'Stock insuficiente para {producto.nombre}. '
+                            f'Disponible: {stock_disponible}, solicitado: {cantidad}'
+                        )
+
+                    DetalleTraspaso.objects.create(
+                        traspaso=traspaso,
+                        producto=producto,
+                        cantidad=cantidad
+                    )
+                    detalles_creados += 1
+
+                if detalles_creados == 0:
+                    raise ValueError('No se pudo crear ningún detalle de traspaso con validez')
             
+            # Crear notificación
             from apps.notificaciones.models import Notificacion
             Notificacion.objects.create(
                 usuario=request.user,
@@ -406,20 +491,21 @@ def crear_traspaso(request):
                 url=f'/traspasos/{traspaso.id}/ver/'
             )
             
-            messages.success(request, f'Traspaso {codigo} creado exitosamente')
             return JsonResponse({'success': True, 'traspaso_id': traspaso.id})
             
         except ValueError as e:
             return JsonResponse({'error': str(e)}, status=400)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            import traceback
+            print(f"ERROR crear_traspaso: {str(e)}")
+            print(traceback.format_exc())
+            return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
     
+    # GET - mostrar formulario
     destinos = _destinos_validos_para_origen(ubicacion_actual)
-    productos = Producto.objects.filter(activo=True)
     
     context = {
         'destinos': destinos,
-        'productos': productos,
         'ubicacion_actual': ubicacion_actual,
     }
     
@@ -513,13 +599,13 @@ def cambiar_estado_traspaso(request, id):
                 return JsonResponse({'error': 'Solo se pueden rechazar traspasos en tránsito'}, status=400)
             
             # Si se rechaza, devolver el stock al origen
-            if traspaso.estado == 'transito':
+            with transaction.atomic():
                 for detalle in traspaso.detalles.all():
                     _ajustar_stock_ubicacion(
                         producto=detalle.producto,
                         ubicacion=traspaso.origen,
                         delta=detalle.cantidad,
-                        tipo_movimiento='traspaso_recibido',
+                        tipo_movimiento='devolucion',
                         referencia=traspaso.codigo,
                         comentario='Reverso por rechazo de traspaso'
                     )
@@ -629,10 +715,30 @@ def obtener_productos_traspaso(request):
             origen = ubicacion_actual
 
         if origen.rol == 'almacen':
-            productos = Producto.objects.filter(activo=True, stock__gt=0).values(
-                'id', 'codigo', 'nombre', 'stock', 'precio_unidad'
-            )
-            return JsonResponse(list(productos), safe=False)
+            # Obtener productos con stock en ProductoContenedor
+            productos_contenedores = ProductoContenedor.objects.filter(
+                cantidad__gt=0,
+                producto__activo=True
+            ).values(
+                'producto__id',
+                'producto__codigo',
+                'producto__nombre',
+                'producto__precio_unidad'
+            ).distinct()
+            
+            # Construir respuesta con stock calculado
+            resultado = []
+            for pc in productos_contenedores:
+                producto_id = pc['producto__id']
+                producto_obj = Producto.objects.get(id=producto_id)
+                resultado.append({
+                    'id': producto_id,
+                    'codigo': pc['producto__codigo'],
+                    'nombre': pc['producto__nombre'],
+                    'stock': producto_obj.stock,
+                    'precio_unidad': float(pc['producto__precio_unidad'] or 0),
+                })
+            return JsonResponse(resultado, safe=False)
 
         origen_stock = _perfil_stock_objetivo(origen)
         inventarios = Inventario.objects.select_related('producto').filter(
@@ -641,16 +747,20 @@ def obtener_productos_traspaso(request):
             producto__activo=True,
         )
 
-        productos = [
-            {
+        productos = []
+        for inv in inventarios:
+            try:
+                precio = float(inv.producto.precio_unidad) if inv.producto.precio_unidad else 0.0
+            except (ValueError, TypeError):
+                precio = 0.0
+            
+            productos.append({
                 'id': inv.producto.id,
                 'codigo': inv.producto.codigo,
                 'nombre': inv.producto.nombre,
                 'stock': inv.cantidad,
-                'precio_unidad': float(inv.producto.precio_unidad),
-            }
-            for inv in inventarios
-        ]
+                'precio_unidad': precio,
+            })
         return JsonResponse(productos, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

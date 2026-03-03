@@ -56,7 +56,7 @@
                             type="text"
                             class="form-control form-control-sm border-left-0"
                             name="buscar"
-                            placeholder="Buscar por código, nombre, categoría o contenedor..."
+                            placeholder="Buscar por código, nombre{% if not es_almacen %}, categoría o contenedor{% endif %}..."
                             value="{{ buscar }}"
                         >
                     </div>
@@ -84,8 +84,8 @@
                         <th style="width: 12%;">Código</th>
                         <th style="width: 22%;">Producto</th>
                         <th style="width: 14%;">Categoría</th>
-                        <th style="width: 16%;">Contenedor</th>
-                        <th style="width: 12%;">{{ label_stock|default:'Stock' }}</th>
+                        {% if not es_almacen %}<th style="width: 16%;">Contenedor</th>{% endif %}
+                        <th style="width: {% if es_almacen %}18{% else %}12{% endif %}%;">{{ label_stock|default:'Stock' }}</th>
                         <th style="width: 10%;">Estado</th>
                         <th style="width: 14%;">Actualizado</th>
                     </tr>
@@ -98,7 +98,7 @@
                         </td>
                         <td>{{ item.producto.nombre }}</td>
                         <td>{{ item.producto.categoria.nombre|default:'Sin categoría' }}</td>
-                        <td>{{ item.producto.contenedor.nombre|default:'Sin contenedor' }}</td>
+                        {% if not es_almacen %}<td>{{ item.producto.contenedor.nombre|default:'Sin contenedor' }}</td>{% endif %}
                         <td>
                             {% if item.estado_stock == 'normal' %}
                                 <span class="badge-stock badge-stock-normal">{{ item.cantidad }} unidades</span>
