@@ -51,9 +51,16 @@
 
                             <div class="form-group">
                                 <label for="categoria_modal" class="form-label">Categoría <span class="text-danger">*</span></label>
-                                <select class="form-control" id="categoria_modal" name="categoria" required>
-                                    <option value="">Seleccione una categoría</option>
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-control" id="categoria_modal" name="categoria" required>
+                                        <option value="">Seleccione una categoría</option>
+                                    </select>
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" id="btnAgregarCategoria" title="Crear nueva categoría">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="form-group">
@@ -170,6 +177,70 @@
                     </button>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save"></i> Guardar Producto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL ANIDADO: CREAR CATEGORÍA -->
+<div class="modal fade" id="modalCrearCategoriaProducto" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-folder-plus"></i> Crear Nueva Categoría
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formCrearCategoriaDesdeProducto">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="nombre_categoria_modal" class="form-label">Nombre de Categoría <span class="text-danger">*</span></label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="nombre_categoria_modal" 
+                            name="nombre" 
+                            required
+                            placeholder="Ej: Electrónica"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="descripcion_categoria_modal" class="form-label">Descripción</label>
+                        <textarea 
+                            class="form-control" 
+                            id="descripcion_categoria_modal" 
+                            name="descripcion"
+                            rows="3"
+                            placeholder="Descripción de la categoría"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group form-check">
+                        <input 
+                            type="checkbox" 
+                            class="form-check-input" 
+                            id="activo_categoria_modal" 
+                            name="activo"
+                            checked
+                        >
+                        <label class="form-check-label" for="activo_categoria_modal">
+                            Activa
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Crear Categoría
                     </button>
                 </div>
             </form>

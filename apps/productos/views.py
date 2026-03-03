@@ -71,6 +71,8 @@ def listar_categorias(request):
 def crear_categoria(request):
     """Crear nueva categoría"""
     if not es_almacen(request):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'No tiene permisos para crear categorías'}, status=403)
         messages.error(request, 'No tiene permisos para crear categorías')
         return redirect('dashboard')
 
@@ -80,22 +82,31 @@ def crear_categoria(request):
         activo = request.POST.get('activo') == 'on'
 
         if not nombre:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'El nombre de la categoría es requerido'})
             messages.error(request, 'El nombre de la categoría es requerido')
             return redirect('listar_categorias')
 
         if Categoria.objects.filter(nombre__iexact=nombre).exists():
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': f'La categoría "{nombre}" ya existe'})
             messages.error(request, f'La categoría "{nombre}" ya existe')
             return redirect('listar_categorias')
 
-        Categoria.objects.create(
+        categoria = Categoria.objects.create(
             nombre=nombre,
             descripcion=descripcion,
             activo=activo,
             creado_por=request.user
         )
 
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': f'Categoría "{nombre}" creada exitosamente', 'categoria_id': categoria.id})
+        
         messages.success(request, f'Categoría "{nombre}" creada exitosamente')
     except Exception as e:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': f'Error al crear categoría: {str(e)}'})
         messages.error(request, f'Error al crear categoría: {str(e)}')
 
     return redirect('listar_categorias')

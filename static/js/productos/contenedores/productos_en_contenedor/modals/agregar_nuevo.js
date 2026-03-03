@@ -75,6 +75,40 @@
         });
     }
     
+    // Crear nueva categoría
+    function crearNuevaCategoria(nombre, descripcion, activo) {
+        const formData = new FormData();
+        formData.append('nombre', nombre);
+        formData.append('descripcion', descripcion);
+        formData.append('activo', activo ? 'on' : 'off');
+        
+        return fetch('/productos/categorias/crear/', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': obtenerCSRFToken()
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Recargar categorías después de crear una nueva
+                cargarCategorias();
+                return { success: true, data: data };
+            } else {
+                return { success: false, error: data.error || 'Error al crear la categoría' };
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            return { success: false, error: error.message };
+        });
+    }
+    
     // Esperar a que el DOM esté listo para asignar event listeners
     document.addEventListener('DOMContentLoaded', function() {
         
@@ -84,6 +118,51 @@
             btnAgregarNuevo.addEventListener('click', function() {
                 const contenedorId = this.getAttribute('data-contenedor-id');
                 abrirModalAgregarNuevoProducto(contenedorId);
+            });
+        }
+        
+        // Botón para crear nuevas categorías
+        const btnAgregarCategoria = document.getElementById('btnAgregarCategoria');
+        if (btnAgregarCategoria) {
+            btnAgregarCategoria.addEventListener('click', function(e) {
+                e.preventDefault();
+                $('#modalCrearCategoriaProducto').modal('show');
+            });
+        }
+        
+        // Formulario para crear categoría
+        const formCrearCategoria = document.getElementById('formCrearCategoriaDesdeProducto');
+        if (formCrearCategoria) {
+            formCrearCategoria.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const nombre = document.getElementById('nombre_categoria_modal').value.trim();
+                const descripcion = document.getElementById('descripcion_categoria_modal').value.trim();
+                const activo = document.getElementById('activo_categoria_modal').checked;
+                
+                if (!nombre) {
+                    alert('Por favor ingresa el nombre de la categoría');
+                    return;
+                }
+                
+                const btnSubmit = formCrearCategoria.querySelector('button[type="submit"]');
+                const textoOriginal = btnSubmit.innerHTML;
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
+                
+                crearNuevaCategoria(nombre, descripcion, activo).then(result => {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = textoOriginal;
+                    
+                    if (result.success) {
+                        alert('Categoría creada exitosamente');
+                        $('#modalCrearCategoriaProducto').modal('hide');
+                        formCrearCategoria.reset();
+                        // La categoría ya está cargada en el dropdown por cargarCategorias()
+                    } else {
+                        alert('Error: ' + (result.error || 'No se pudo crear la categoría'));
+                    }
+                });
             });
         }
         
