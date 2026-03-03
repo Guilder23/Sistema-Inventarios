@@ -1303,15 +1303,28 @@ def agregar_producto_a_contenedor(request, contenedor_id):
         tipo = request.POST.get('tipo')  # 'nuevo' o 'existente'
         
         if tipo == 'nuevo':
-            # Crear nuevo producto
+            # Crear nuevo producto con todos los campos
             try:
                 codigo = request.POST.get('codigo')
                 nombre = request.POST.get('nombre')
                 categoria_id = request.POST.get('categoria')
+                descripcion = request.POST.get('descripcion', '').strip()
+                unidades_por_caja = int(request.POST.get('unidades_por_caja', 1))
+                precio_unidad = float(request.POST.get('precio_unidad', 0))
+                stock_critico = int(request.POST.get('stock_critico', 10))
+                stock_bajo = int(request.POST.get('stock_bajo', 30))
                 cantidad = int(request.POST.get('cantidad', 1))
+                foto = request.FILES.get('foto')
                 
                 if not codigo or not nombre:
                     error_msg = 'El código y nombre son requeridos'
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({'error': error_msg}, status=400)
+                    messages.error(request, error_msg)
+                    return redirect('productos_en_contenedor', contenedor_id=contenedor_id)
+                
+                if not categoria_id:
+                    error_msg = 'Debe seleccionar una categoría'
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return JsonResponse({'error': error_msg}, status=400)
                     messages.error(request, error_msg)
@@ -1336,11 +1349,17 @@ def agregar_producto_a_contenedor(request, contenedor_id):
                 if categoria_id:
                     categoria = get_object_or_404(Categoria, id=categoria_id)
                 
-                # Crear producto
+                # Crear producto con todos los campos
                 producto = Producto.objects.create(
                     codigo=codigo,
                     nombre=nombre,
                     categoria=categoria,
+                    descripcion=descripcion,
+                    unidades_por_caja=unidades_por_caja,
+                    precio_unidad=precio_unidad,
+                    stock_critico=stock_critico,
+                    stock_bajo=stock_bajo,
+                    foto=foto,
                     creado_por=request.user,
                     activo=True
                 )
@@ -1351,6 +1370,14 @@ def agregar_producto_a_contenedor(request, contenedor_id):
                     contenedor=contenedor,
                     cantidad=cantidad,
                     creado_por=request.user
+                )
+                
+                # Registrar en historial
+                HistorialProducto.objects.create(
+                    producto=producto,
+                    accion='creacion',
+                    usuario=request.user,
+                    detalles=f'Producto creado y agregado al contenedor "{contenedor.nombre}" con {cantidad} unidades'
                 )
                 
                 mensaje = f'Producto "{nombre}" creado y agregado al contenedor "{contenedor.nombre}"'

@@ -1,200 +1,121 @@
 /* ============================================================================
-   ESTILOS PARA MODAL DE AGREGAR NUEVO PRODUCTO
+   ESTILOS PARA MODAL AGREGAR NUEVO PRODUCTO EN CONTENEDOR
    ============================================================================ */
 
-/* MODAL DIALOG */
-.modal-content {
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    background: white;
-}
-
-/* MODAL HEADER */
-.modal-header {
+#modalAgregarNuevoProducto .modal-header {
     background: #1e3a8a;
-    border: none;
+    color: white;
+    padding: 1rem 1.5rem;
     border-bottom: 3px solid #065f46;
-    padding: 1.25rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
 }
 
-.modal-header .modal-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: white;
-    margin: 0;
+#modalAgregarNuevoProducto .modal-title {
+    font-size: 1.05rem;
+    font-weight: 600;
 }
 
-.modal-header i {
-    color: white;
-    font-size: 1.5rem;
+#modalAgregarNuevoProducto .modal-body {
+    padding: 1.25rem 1.5rem;
 }
 
-.btn-close {
-    filter: brightness(0) invert(1);
-    opacity: 0.5;
+#modalAgregarNuevoProducto .form-group {
+    margin-bottom: 0.875rem;
 }
 
-.btn-close:hover {
-    opacity: 1;
-}
-
-/* MODAL BODY */
-.modal-body {
-    padding: 2rem;
+#modalAgregarNuevoProducto .form-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
     color: #374151;
+    margin-bottom: 0.25rem;
 }
 
-/* FORM GROUPS */
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-group:last-of-type {
-    margin-bottom: 0;
-}
-
-.form-label {
-    font-weight: 600;
-    color: #1f2937;
-    font-size: 0.95rem;
-    margin-bottom: 0.5rem;
-    display: block;
-}
-
-.form-label .required {
-    color: #dc2626;
-}
-
-/* FORM CONTROLS */
-.form-control {
+#modalAgregarNuevoProducto .form-control {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
     border: 1px solid #d1d5db;
-    border-radius: 0.375rem;
-    padding: 0.625rem 0.875rem;
-    font-size: 0.95rem;
-    color: #1f2937;
-    background: white;
-    transition: all 0.2s ease;
+    border-radius: 0.25rem;
 }
 
-.form-control:focus {
+#modalAgregarNuevoProducto .form-control:focus {
     border-color: #1e3a8a;
-    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
-    outline: none;
+    box-shadow: 0 0 0 0.15rem rgba(30, 58, 138, 0.15);
 }
 
-.form-select {
-    border: 1px solid #d1d5db;
-    border-radius: 0.375rem;
-    padding: 0.625rem 0.875rem;
-    font-size: 0.95rem;
-    color: #1f2937;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.form-select:focus {
-    border-color: #1e3a8a;
-    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
-    outline: none;
-}
-
-/* MODAL FOOTER */
-.modal-footer {
-    background: #f9fafb;
-    border-top: 1px solid #e5e7eb;
-    padding: 1.25rem;
-    display: flex;
-    gap: 0.75rem;
-    justify-content: flex-end;
-}
-
-/* BUTTONS IN MODAL */
-.btn {
-    padding: 0.625rem 1.25rem;
-    font-weight: 600;
-    border-radius: 0.375rem;
+#modalAgregarNuevoProducto .modal-footer {
+    background: #f8f9fa;
     border: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.95rem;
+    padding: 0.875rem 1.5rem;
+    border-radius: 0 0 12px 12px;
 }
 
-.btn-primary {
+#modalAgregarNuevoProducto .modal-footer .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.25rem;
+    transition: all 0.3s;
+}
+
+#modalAgregarNuevoProducto .modal-footer .btn-primary {
     background: #1e3a8a;
-    color: white;
+    border-color: #1e3a8a;
 }
 
-.btn-primary:hover {
+#modalAgregarNuevoProducto .modal-footer .btn-primary:hover {
     background: #1e40af;
+    border-color: #1e40af;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
-    color: white;
+    box-shadow: 0 2px 4px rgba(30, 58, 138, 0.3);
 }
 
-.btn-primary:active {
-    background: #1e3a8a;
-    transform: translateY(0);
+#modalAgregarNuevoProducto .modal-footer .btn-secondary {
+    background: #6b7280;
+    border-color: #6b7280;
+    color: #fff;
 }
 
-.btn-secondary {
-    background: #e5e7eb;
-    color: #374151;
+#modalAgregarNuevoProducto .modal-footer .btn-secondary:hover {
+    background: #4b5563;
+    border-color: #4b5563;
 }
 
-.btn-secondary:hover {
-    background: #d1d5db;
-    transform: translateY(-1px);
+#modalAgregarNuevoProducto .modal-content {
+    border: none;
+    border-radius: 0.375rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* LOADING STATE */
-.btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
+#modalAgregarNuevoProducto .form-control:disabled {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+#modalAgregarNuevoProducto #previewFotoModal {
+    min-height: 60px;
+}
+
+#modalAgregarNuevoProducto #previewFotoModal img {
+    max-width: 100%;
+    max-height: 250px;
+    object-fit: cover;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.375rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: block;
+    margin: 0 auto;
 }
 
 /* RESPONSIVE */
 @media (max-width: 576px) {
-    .modal-dialog {
-        margin: 0.5rem;
-    }
-
-    .modal-content {
-        border-radius: 8px;
-    }
-
-    .modal-header {
-        padding: 1rem;
-    }
-
-    .modal-header .modal-title {
-        font-size: 1.1rem;
-    }
-
-    .modal-body {
+    #modalAgregarNuevoProducto .modal-body {
         padding: 1.5rem;
     }
 
-    .modal-footer {
-        flex-direction: column-reverse;
+    #modalAgregarNuevoProducto .modal-footer {
+        flex-direction: column;
     }
 
-    .modal-footer .btn {
+    #modalAgregarNuevoProducto .modal-footer .btn {
         width: 100%;
-    }
-
-    .form-label {
-        font-size: 0.9rem;
-    }
-
-    .form-control,
-    .form-select {
-        font-size: 16px; /* Prevents zoom on iOS */
     }
 }
