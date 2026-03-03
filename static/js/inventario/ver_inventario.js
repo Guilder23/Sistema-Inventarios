@@ -1,131 +1,63 @@
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("✅ ver_inventario.js cargado correctamente");
-
-    // Elementos del DOM
     const tablaBody = document.getElementById("tablaInventario");
     const inputBuscar = document.getElementById("buscar");
-    const filtroUnidad = document.getElementById("filtros");       // Select de unidades (id="filtros")
-    const filtroStock = document.getElementById("filtroStock");   // Select de stock
-    const paginacion = document.getElementById("paginacion");
-    const mostrandoDesde = document.getElementById("mostrandoDesde");
-    const mostrandoHasta = document.getElementById("mostrandoHasta");
-    const totalRegistros = document.getElementById("totalRegistros");
+    const filtroUnidad = document.getElementById("filtros");
+    const filtroStock = document.getElementById("filtroStock");
     const btnAnterior = document.getElementById("btnAnterior");
     const btnSiguiente = document.getElementById("btnSiguiente");
+    const totalRegistros = document.getElementById("totalRegistros");
 
-    // Variables de paginación
-    let datosOriginales = [];
-    let datosFiltrados = [];
-    let paginaActual = 1;
-    const registrosPorPagina = 5; // Cambia según necesites
+    let urlNext = null;
+    let urlPrev = null;
+    const urlBase = '/inventario/api/inventario/';
+    const imgGrisBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAC0AAAAtCAYAAAAp87u7AAAAAXNSR0IArs4c6QAAAFZJREFUWAnt00EKACAMA0H9/6dtX8Cl9CDYmUvAnS0rqvba896X+TzOnp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp7+ng8X4AIBAUvNawAAAABJRU5ErkJggg==";
 
-    // Cargar datos
-    axios.get('/static/json/inventario/productosPrueba.json')
-        .then(response => {
-            console.log("📦 Datos recibidos:", response.data.length);
-            datosOriginales = response.data;
-            window.inventarioDatos = datosOriginales; // Para el modal
+    function cargarDatos(url = urlBase) {
+        // Obtenemos los valores de los filtros para enviarlos al backend
+        const params = {
+            search: inputBuscar.value,
+            unidad_operativa: filtroUnidad.value,
+            stock_estado: filtroStock.value
+        };
 
-            // Poblar select de unidades con valores únicos (después de la opción "Todas")
-            const unidades = [...new Set(datosOriginales.map(item => item.unidad_operativa).filter(Boolean))];
-            unidades.forEach(unidad => {
-                const option = document.createElement('option');
-                option.value = unidad;
-                option.textContent = unidad;
-                filtroUnidad.appendChild(option);
-            });
+        axios.get(url, { params })
+            .then(response => {
+                const data = response.data;
+                const items = data.results || data; 
+                
+                urlNext = data.next;
+                urlPrev = data.previous;
 
-            datosFiltrados = [...datosOriginales];
-            renderTablaConPaginacion();
+                // IMPORTANTE: Guardamos en window para que el modal (ver.js) pueda encontrarlos
+                window.inventarioDatos = items;
 
-            // Eventos de filtros (usando la misma función para todos)
-            inputBuscar.addEventListener("keyup", aplicarFiltros);
-            filtroUnidad.addEventListener("change", aplicarFiltros);
-            filtroStock.addEventListener("change", aplicarFiltros);
-        })
-        .catch(err => console.error("❌ Error cargando inventario:", err));
-
-    // ===== FUNCIÓN QUE APLICA TODOS LOS FILTROS (texto + unidad + stock) =====
-    function aplicarFiltros() {
-        const texto = inputBuscar.value.toLowerCase();
-        const unidadSel = filtroUnidad.value;
-        const stockSel = filtroStock.value;
-
-        datosFiltrados = datosOriginales.filter(item => {
-            // Filtro de búsqueda por texto
-            const coincideTexto = texto === '' ||
-                (item.codigo || '').toLowerCase().includes(texto) ||
-                (item.nombre || '').toLowerCase().includes(texto) ||
-                (item.unidad_operativa || '').toLowerCase().includes(texto);
-
-            // Filtro por unidad operativa
-            const coincideUnidad = unidadSel === '' || item.unidad_operativa === unidadSel;
-
-            // Filtro por estado de stock
-            let coincideStock = true;
-            if (stockSel === 'critico') {
-                coincideStock = item.stock <= item.stock_critico;
-            } else if (stockSel === 'bajo') {
-                coincideStock = item.stock > item.stock_critico && item.stock <= item.stock_bajo;
-            } else if (stockSel === 'normal') {
-                coincideStock = item.stock > item.stock_bajo;
-            }
-
-            return coincideTexto && coincideUnidad && coincideStock;
-        });
-
-        paginaActual = 1;
-        renderTablaConPaginacion();
-    }
-
-    // ===== FUNCIONES PRINCIPALES =====
-    function renderTablaConPaginacion() {
-        const inicio = (paginaActual - 1) * registrosPorPagina;
-        const fin = inicio + registrosPorPagina;
-        const datosPaginados = datosFiltrados.slice(inicio, fin);
-        
-        actualizarInfoPaginacion();
-        renderTabla(datosPaginados);
-        renderPaginacion();
+                renderTabla(items);
+                actualizarInterfazPaginacion(data);
+            })
+            .catch(err => console.error("❌ Error cargando datos:", err));
     }
 
     function renderTabla(datos) {
         tablaBody.innerHTML = "";
-        if (datos.length === 0) {
-            tablaBody.innerHTML = `<tr><td colspan="7" class="text-center py-4">No se encontraron productos</td></tr>`;
-            return;
-        }
         datos.forEach(item => {
-            const fotoSrc = item.fotos?.[0] || '/media/productos/4k-black-hole-minimalistic-wallpaper.png';
+            let fotoSrc = imgGrisBase64;
+            if (item.fotos && (Array.isArray(item.fotos) ? item.fotos.length > 0 : item.fotos.length > 5)) {
+                fotoSrc = Array.isArray(item.fotos) ? item.fotos[0] : item.fotos;
+            }
+
             const fila = document.createElement("tr");
+            if (item.stock <= item.stock_critico) fila.classList.add('fila-stock-critico');
+            else if (item.stock <= item.stock_bajo) fila.classList.add('fila-stock-bajo');
 
-            // Determinar clase de fila según stock
-            let claseFila = '';
-            if (item.stock <= item.stock_critico) {
-                claseFila = 'fila-stock-critico';
-            } else if (item.stock <= item.stock_bajo) {
-                claseFila = 'fila-stock-bajo';
-            }
-            if (claseFila) fila.classList.add(claseFila);
-            
-            // Badge de stock
-            let badgeClass = 'badge-secondary';
-            if (item.stock <= item.stock_critico) {
-                badgeClass = 'badge-danger';
-            } else if (item.stock <= item.stock_bajo) {
-                badgeClass = 'badge-warning';
-            }
-
+            // USAMOS data-producto-id para que coincida con ver.js
             fila.innerHTML = `
+                <td class="text-center align-middle"><img src="${fotoSrc}" width="45" height="45" style="object-fit:cover; border-radius:5px;" onerror="this.src='${imgGrisBase64}'"></td>
+                <td class="align-middle"><strong>${item.codigo}</strong></td>
+                <td class="align-middle">${item.nombre}</td>
+                <td class="align-middle">${item.stock}</td>
+                <td class="align-middle">${item.cajas || 0}</td>
+                <td class="align-middle">${item.unidad_operativa || 'N/A'}</td>
                 <td class="text-center align-middle">
-                    <img src="${fotoSrc}" width="45" height="45" style="object-fit:cover; border-radius:5px;" onerror="this.src='/media/productos/4k-black-hole-minimalistic-wallpaper.png'">
-                </td>
-                <td class="align-middle"><span class="codigo-Inventario">${item.codigo}</span></td>
-                <td class="align-middle"><span class="columna-normal">${item.nombre}</span></td>
-                <td class="align-middle"><span class="columna-normal">${item.stock}</span></td>
-                <td class="align-middle"><span class="columna-normal">${item.cajas || 0}</span></td>
-                <td class="align-middle"><span class="columna-normal">${item.unidad_operativa || 'N/A'}</span></td>
-                <td class="text-center">
                     <button class="btn btn-info btn-sm btn-ver-producto" data-producto-id="${item.codigo}">
                         <i class="fas fa-eye"></i>
                     </button>
@@ -135,62 +67,27 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    function actualizarInfoPaginacion() {
-        const total = datosFiltrados.length;
-        const inicio = total === 0 ? 0 : (paginaActual - 1) * registrosPorPagina + 1;
-        const fin = Math.min(paginaActual * registrosPorPagina, total);
-        mostrandoDesde.textContent = inicio;
-        mostrandoHasta.textContent = fin;
-        totalRegistros.textContent = total;
+    function actualizarInterfazPaginacion(data) {
+        totalRegistros.textContent = data.count || 0;
+        // Habilitar/Deshabilitar botones de Li
+        btnAnterior.parentElement.classList.toggle('disabled', !urlPrev);
+        btnSiguiente.parentElement.classList.toggle('disabled', !urlNext);
     }
 
-    function renderPaginacion() {
-        const totalPaginas = Math.ceil(datosFiltrados.length / registrosPorPagina);
-        
-        // Eliminar números de página existentes (excepto anterior y siguiente)
-        while (paginacion.children.length > 2) {
-            paginacion.removeChild(paginacion.children[1]);
-        }
+    // Eventos de filtros y paginación
+    inputBuscar.addEventListener("input", () => cargarDatos());
+    filtroUnidad.addEventListener("change", () => cargarDatos());
+    filtroStock.addEventListener("change", () => cargarDatos());
 
-        // Insertar números de página después del botón anterior
-        for (let i = 1; i <= totalPaginas; i++) {
-            const li = document.createElement('li');
-            li.className = `page-item ${i === paginaActual ? 'active' : ''}`;
-            li.innerHTML = `<a class="page-link" href="#" data-pagina="${i}">${i}</a>`;
-            paginacion.insertBefore(li, btnSiguiente);
-        }
-
-        btnAnterior.classList.toggle('disabled', paginaActual === 1);
-        btnSiguiente.classList.toggle('disabled', paginaActual === totalPaginas || totalPaginas === 0);
-    }
-
-    // ===== EVENTOS DE PAGINACIÓN =====
     btnAnterior.addEventListener('click', (e) => {
         e.preventDefault();
-        if (paginaActual > 1) {
-            paginaActual--;
-            renderTablaConPaginacion();
-        }
+        if (urlPrev) cargarDatos(urlPrev);
     });
 
     btnSiguiente.addEventListener('click', (e) => {
         e.preventDefault();
-        const totalPaginas = Math.ceil(datosFiltrados.length / registrosPorPagina);
-        if (paginaActual < totalPaginas) {
-            paginaActual++;
-            renderTablaConPaginacion();
-        }
+        if (urlNext) cargarDatos(urlNext);
     });
 
-    paginacion.addEventListener('click', (e) => {
-        const link = e.target.closest('.page-link');
-        if (!link) return;
-        if (link.closest('#btnAnterior') || link.closest('#btnSiguiente')) return;
-        e.preventDefault();
-        const pagina = link.dataset.pagina;
-        if (pagina) {
-            paginaActual = parseInt(pagina);
-            renderTablaConPaginacion();
-        }
-    });
+    cargarDatos();
 });

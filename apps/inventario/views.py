@@ -7,6 +7,32 @@ from .models import Inventario, MovimientoInventario
 from apps.usuarios.models import PerfilUsuario
 from apps.depositos.models import Deposito
 
+from .serializers import InventarioAPISerializer
+from rest_framework import filters, viewsets
+
+class InventarioAPIViewSet(viewsets.ReadOnlyModelViewSet):
+
+    serializer_class = InventarioAPISerializer
+
+    def get_queryset(self):
+        queryset = Inventario.objects.select_related(
+            "producto",
+            "ubicacion",
+            "ubicacion__almacen",
+            "ubicacion__tienda"
+        )
+
+        nombre_unidad = self.request.query_params.get("unidad_operativa")
+
+        if nombre_unidad:
+            queryset = queryset.filter(
+                Q(ubicacion__tienda__nombre__icontains=nombre_unidad) |
+                Q(ubicacion__almacen__nombre__icontains=nombre_unidad)
+            )
+
+        return queryset
+
+
 @login_required
 def ver_inventario(request):
     perfil = getattr(request.user, 'perfil', None)
