@@ -10,6 +10,7 @@ router.register(r'inventario', InventarioAPIViewSet, basename='inventario_api')
 urlpatterns = [
     # 1. Ponemos la API bajo el prefijo /api/
     path('api/', include(router.urls)),
+    path('api/roles/', views.RolesAPIView.as_view(), name='roles_api'),
     # Inventario
     path('', views.ver_inventario, name='ver_inventario'),
     path('deposito/', views.ver_inventario_deposito, name='ver_inventario_deposito'),

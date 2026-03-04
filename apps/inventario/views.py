@@ -7,10 +7,26 @@ from django.db import models
 from .models import Inventario, MovimientoInventario
 from apps.usuarios.models import PerfilUsuario
 from apps.depositos.models import Deposito
+from apps.almacenes.models import Almacen
+from apps.tiendas.models import Tienda
+from apps.filtros.serializers import AllRolesSerializer
 
 from .serializers import InventarioAPISerializer
 from rest_framework import filters, viewsets
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
+class RolesAPIView(APIView):
+    def get(self, request):
+        data_context = {
+            # Traemos la lista de los modelos que definiste en el Serializer
+            'almacenes': Almacen.objects.all(), 
+            'tiendas': Tienda.objects.all(),
+            'depositos': Deposito.objects.all(),
+        }
+        serializer = AllRolesSerializer(data_context)
+        return Response(serializer.data)
+    
 class InventarioAPIViewSet(viewsets.ReadOnlyModelViewSet):
 
     serializer_class = InventarioAPISerializer
