@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, F
 from django.db import models
 
 from .models import Inventario, MovimientoInventario
@@ -28,9 +28,7 @@ class RolesAPIView(APIView):
         return Response(serializer.data)
     
 class InventarioAPIViewSet(viewsets.ReadOnlyModelViewSet):
-
     serializer_class = InventarioAPISerializer
-
     def get_queryset(self):
         queryset = Inventario.objects.select_related(
             "producto",
@@ -39,24 +37,40 @@ class InventarioAPIViewSet(viewsets.ReadOnlyModelViewSet):
             "ubicacion__tienda"
         )
 
-        nombre_unidad = self.request.query_params.get("unidad_operativa")
-
-        if nombre_unidad:
+        # ── BUSCADOR: ?search=texto ──────────────────────────────
+        search = self.request.query_params.get("search", "").strip()
+        if search:
             queryset = queryset.filter(
-                Q(ubicacion__tienda__nombre__icontains=nombre_unidad) |
-                Q(ubicacion__almacen__nombre__icontains=nombre_unidad)
+                Q(producto__codigo__icontains=search) |
+                Q(producto__nombre__icontains=search) |
+                Q(ubicacion__tienda__nombre__icontains=search) |
+                Q(ubicacion__almacen__nombre__icontains=search)
             )
 
-        stock_estado = self.request.query_params.get("estado_stock")
+        # ── FILTRO UNIDAD OPERATIVA: ?unidad_operativa=texto ─────
+        unidad = self.request.query_params.get("unidad_operativa", "").strip()
+        if unidad:
+            queryset = queryset.filter(
+                Q(ubicacion__tienda__nombre__icontains=unidad) |
+                Q(ubicacion__almacen__nombre__icontains=unidad)
+            )
+
+        # ── FILTRO STOCK: ?stock_estado=critico/bajo/normal ──────
+        # Nombre igual al que envía el JS
+        stock_estado = self.request.query_params.get("stock_estado", "").strip()
         if stock_estado == 'critico':
-            queryset = [item for item in queryset if item.estado_stock == 'producto_stock_critico']
+            queryset = queryset.filter(
+                cantidad__lte=F('producto__stock_critico')
+            )
         elif stock_estado == 'bajo':
             queryset = queryset.filter(
-                cantidad__gt=models.F('producto__stock_critico'),
-                cantidad__lte=models.F('producto__stock_bajo')
+                cantidad__gt=F('producto__stock_critico'),
+                cantidad__lte=F('producto__stock_bajo')
             )
         elif stock_estado == 'normal':
-            queryset = queryset.filter(cantidad__gt=models.F('producto__stock_bajo'))
+            queryset = queryset.filter(
+                cantidad__gt=F('producto__stock_bajo')
+            )
 
         return queryset
 

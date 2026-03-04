@@ -3,8 +3,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const inputBuscar = document.getElementById("buscar");
     const filtroUnidad = document.getElementById("filtros");
     const filtroStock = document.getElementById("filtroStock");
-    const btnAnterior = document.getElementById("btnAnterior");
-    const btnSiguiente = document.getElementById("btnSiguiente");
+    const btnAnterior = document.querySelector("#btnAnterior .page-link");
+    const btnSiguiente = document.querySelector("#btnSiguiente .page-link");
     const totalRegistros = document.getElementById("totalRegistros");
 
     let paginaNext = null;
@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function extraerPagina(url) {
         if (!url) return null;
         const match = url.match(/[?&]page=(\d+)/);
-        return match ? match[1] : null;
+        return match ? match[1] : "1";
     }
 
     function cargarDatos(pagina = null) {
@@ -24,13 +24,25 @@ document.addEventListener("DOMContentLoaded", function () {
             unidad_operativa: filtroUnidad.value,
             stock_estado: filtroStock.value
         };
+            // ← Si es nueva búsqueda (no paginación), resetea a página 1
+    if (!pagina) {
+        paginaNext = null;
+        paginaPrev = null;
+    } else {
+        params.page = pagina;
+    }
         if (pagina) params.page = pagina;
+            console.log("🔍 URL solicitada:", urlBase);
+            console.log("📦 Params enviados:", params);
 
         axios.get(urlBase, { params })
             .then(response => {
                 const data = response.data;
+                console.log("📄 data.next:", data.next);
+            console.log("📄 data.previous:", data.previous);
+            console.log("🔢 paginaNext extraída:", extraerPagina(data.next));
+            console.log("🔢 paginaPrev extraída:", extraerPagina(data.previous));
                 const items = data.results || data;
-
                 paginaNext = extraerPagina(data.next);
                 paginaPrev = extraerPagina(data.previous);
 
@@ -62,7 +74,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 <td class="align-middle">${item.cajas || 0}</td>
                 <td class="align-middle">${item.unidad_operativa || 'N/A'}</td>
                 <td class="text-center align-middle">
-                    <button class="btn btn-info btn-sm btn-ver-producto" data-producto-id="${item.codigo}">
+                    <button class="btn btn-info btn-sm btn-ver-producto" 
+                    data-producto-id="${item.codigo}"
+                    data-unidad="${item.unidad_operativa || 'N/A'}">
                         <i class="fas fa-eye"></i>
                     </button>
                 </td>
@@ -73,8 +87,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function actualizarInterfazPaginacion(data) {
         totalRegistros.textContent = data.count || 0;
-        btnAnterior.parentElement.classList.toggle('disabled', !paginaPrev);
-        btnSiguiente.parentElement.classList.toggle('disabled', !paginaNext);
+        btnAnterior.classList.toggle('disabled', !paginaPrev);
+        btnSiguiente.classList.toggle('disabled', !paginaNext);
     }
 
     // Eventos de filtros

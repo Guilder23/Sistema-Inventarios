@@ -68,7 +68,8 @@ class InventarioAPISerializer(serializers.ModelSerializer):
         
         return None
     
-    def get_cajas(self, obj):
+
+    def get_cajas(self, obj): 
         if not obj.producto or not obj.cantidad:
             return "0c/0u"
 
@@ -77,6 +78,6 @@ class InventarioAPISerializer(serializers.ModelSerializer):
         if unidades_por_caja > 0:
             cajas = obj.cantidad // unidades_por_caja
             sobrantes = obj.cantidad % unidades_por_caja
-        return f"{cajas}c/{sobrantes}u"
-    
+            return f"{cajas}c/{sobrantes}u"
+
         return "0c/0u"
