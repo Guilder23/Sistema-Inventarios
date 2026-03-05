@@ -53,6 +53,8 @@ INSTALLED_APPS = [
     'apps.tiendas',
     'apps.depositos',
     'apps.tiendas_virtuales',
+    'storages',  # Para almacenamiento en S3 (Blackblaze B2)
+    'rest_framework',  # Para la API REST
     'apps.vendedores',
 ]
 
@@ -223,4 +225,8 @@ LOGGING = {
         'handlers': ['console'],
         'level': 'DEBUG',
     },
+}
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 5,
 }
