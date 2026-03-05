@@ -126,7 +126,7 @@
                                         data-target="#modalAccionStock"
                                         data-url="{% url 'devoluciones:agregar_devolucion' item.id %}"
                                         data-producto="{{ item.producto.nombre }}"
-                                        data-maximo="1000"
+                                        data-maximo="{{ item.cantidad_pendiente }}"
                                         data-titulo="Agregar más devoluciones"
                                         data-accion="devolucion"
                                         title="Agregar más productos devueltos">

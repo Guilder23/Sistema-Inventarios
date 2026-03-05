@@ -8,6 +8,7 @@ function inicializarModalAccionStock() {
     const titulo = document.getElementById('tituloAccionStock');
     const nombreProducto = document.getElementById('nombreProductoAccion');
     const maximo = document.getElementById('maximoAccion');
+    const labelMaximo = document.getElementById('labelMaximo');
     const cantidadInput = document.getElementById('cantidadAccion');
     const btnConfirmar = document.getElementById('btnConfirmarAccion');
     const labelCantidad = document.getElementById('labelCantidad');
@@ -32,16 +33,19 @@ function inicializarModalAccionStock() {
             cantidadInput.placeholder = Math.min(5, max) > 0 ? String(Math.min(5, max)) : '1';
             
             if (accion === 'devolucion') {
+                if (labelMaximo) labelMaximo.textContent = 'Pendientes:';
                 labelCantidad.textContent = '¿Cuántas más devoluciones hay de este producto?';
                 helperCantidad.textContent = 'Este número se sumará a las devoluciones actuales (no afecta el stock)';
                 btnConfirmar.textContent = '+ Agregar devoluciones';
                 btnConfirmar.className = 'btn btn-warning';
             } else if (accion === 'repuesto') {
+                if (labelMaximo) labelMaximo.textContent = 'Pendientes:';
                 labelCantidad.textContent = '¿Cuántas unidades repones al stock?';
                 helperCantidad.textContent = 'Productos repuestos que se agregarán al inventario';
                 btnConfirmar.textContent = '↻ Reponer al stock';
                 btnConfirmar.className = 'btn btn-primary';
             } else {
+                if (labelMaximo) labelMaximo.textContent = 'Pendientes:';
                 labelCantidad.textContent = 'Ingresa la cantidad';
                 helperCantidad.textContent = 'Indica la cantidad a procesar';
                 btnConfirmar.textContent = 'Confirmar';
