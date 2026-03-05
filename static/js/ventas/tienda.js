@@ -1,8 +1,14 @@
 // CARRITO EN MEMORIA
 let carrito = [];
-let modalidadSeleccionada = 'tienda'; // Siempre tienda en esta vista
+let tipoVendedorActual = null; // null, 'tienda', o 'deposito'
 
-// VALIDADORES POR MODALIDAD
+// FUNCIONES AUXILIARES
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+           document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1] || '';
+}
+
+// VALIDADORES POR MODALIDAD (SOLO PARA TIENDA)
 function validarCantidad(cantidad, modalidad, unidadesPorCaja) {
     const cant = parseInt(cantidad);
     
@@ -12,7 +18,7 @@ function validarCantidad(cantidad, modalidad, unidadesPorCaja) {
     
     switch(modalidad) {
         case 'unidad':
-            return { valido: cant >= 1, mensaje: 'Mínimo 1 unidad' };
+            return { valido: (cant >= 1 && cant <= 2), mensaje: 'Debe ser 1-2 unidades' };
         
         case 'caja':
             if (cant % unidadesPorCaja !== 0) {
@@ -64,18 +70,7 @@ function obtenerTextoDesglose(cantidad, unidadesPorCaja) {
     return partes.length > 0 ? partes.join(' + ') : 'Sin desglose';
 }
 
-// FUNCIONES CARRITO
-function seleccionarModalidad(tipo) {
-    modalidadSeleccionada = tipo;
-    carrito = [];
-    
-    document.getElementById('selectorModalidad').style.display = 'none';
-    document.getElementById('titulo').textContent = 
-        tipo === 'deposito' ? 'Nueva Venta Depósito' : 'Nueva Venta Tienda';
-    
-    renderCarrito();
-}
-
+// AGREGAR AL CARRITO CON VALIDACIÓN
 function agregarAlCarrito(producto, cantidad, modalidad, precioUnitario) {
     const validacion = validarCantidad(cantidad, modalidad, producto.unidades_por_caja);
     
@@ -84,7 +79,7 @@ function agregarAlCarrito(producto, cantidad, modalidad, precioUnitario) {
         return false;
     }
     
-    // Buscar si producto ya existe
+    // Buscar si producto ya existe con la misma modalidad
     const indexExistente = carrito.findIndex(item => 
         item.producto.id === producto.id && item.modalidad === modalidad
     );
@@ -135,7 +130,7 @@ function renderCarrito() {
                     <span class="badge badge-info badge-modalidad">${item.modalidad}</span>
                 </td>
                 <td class="text-center">${item.cantidad}</td>
-                <td class="text-right">Bs. ${item.precio_unitario.toFixed(2)}</td>
+                <td class="text-right">Bs. ${item.subtotal.toFixed(2)}</td>
                 <td class="text-center pr-3">
                     <button type="button" class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${index})" title="Eliminar">
                         <i class="fas fa-trash"></i>
@@ -152,6 +147,17 @@ function renderCarrito() {
 
 function actualizarTotales() {
     const subtotal = carrito.reduce((sum, item) => sum + item.subtotal, 0);
+    const descuentoInput = document.getElementById('inputDescuento');
+    const descuento = parseFloat(descuentoInput.value) || 0;
+    
+    // Validar que descuento no sea mayor que subtotal
+    let descuentoAplicado = Math.min(descuento, subtotal);
+    if (descuentoAplicado !== descuento && descuento > 0) {
+        descuentoInput.value = descuentoAplicado.toFixed(2);
+    }
+    
+    const total = subtotal - descuentoAplicado;
+    
     const resumenCantItems = document.getElementById('resumenCantItems');
     const resumenSubtotal = document.getElementById('resumenSubtotal');
     const resumenTotal = document.getElementById('resumenTotal');
@@ -159,11 +165,11 @@ function actualizarTotales() {
     
     resumenCantItems.textContent = cantidadItems;
     resumenSubtotal.textContent = 'Bs. ' + subtotal.toFixed(2);
-    resumenTotal.textContent = 'Bs. ' + subtotal.toFixed(2);
+    resumenTotal.textContent = 'Bs. ' + total.toFixed(2);
 }
 
 // BÚSQUEDA AJAX PRODUCTOS
-document.getElementById('inputBuscarProducto').addEventListener('input', function(e) {
+document.getElementById('inputBuscarProducto') && document.getElementById('inputBuscarProducto').addEventListener('input', function(e) {
     const query = this.value.trim();
     
     if (query.length < 2) {
@@ -184,6 +190,9 @@ document.getElementById('inputBuscarProducto').addEventListener('input', functio
             }
             
             data.productos.forEach(producto => {
+                const unidadesPorCaja = producto.unidades_por_caja || 1;
+                const stockText = `Stock: ${producto.stock} | Caja: ${unidadesPorCaja} unidad${unidadesPorCaja > 1 ? 'es' : ''}`;
+                
                 const item = document.createElement('a');
                 item.href = '#';
                 item.className = 'list-group-item list-group-item-action';
@@ -191,7 +200,7 @@ document.getElementById('inputBuscarProducto').addEventListener('input', functio
                     <div>
                         <strong>${producto.nombre}</strong>
                         <br>
-                        <small>Stock: ${producto.stock} | Caja: ${producto.unidades_por_caja} unid</small>
+                        <small>${stockText}</small>
                     </div>
                 `;
                 item.addEventListener('click', (e) => {
@@ -206,79 +215,262 @@ document.getElementById('inputBuscarProducto').addEventListener('input', functio
         .catch(err => console.error('Error:', err));
 });
 
-document.getElementById('btnLimpiarBusqueda').addEventListener('click', function() {
-    document.getElementById('buscarProducto').value = '';
-    document.getElementById('resultadosBusqueda').style.display = 'none';
-});
-
-function seleccionarProducto(producto) {
-    document.getElementById('modalProductoId').value = producto.id;
-    document.getElementById('modalUnidadesPorCaja').value = producto.unidades_por_caja;
-    document.getElementById('modalNombreProducto').textContent = producto.nombre;
-    document.getElementById('modalCantidad').value = '';
-    document.getElementById('modalCantidad').focus();
-    
-    // Mostrar opciones de modalidad (tienda tiene acceso a todas)
-    const modalidadSelect = document.getElementById('modalModalidad');
-    modalidadSelect.innerHTML = `
-        <option value="">-- Selecciona modalidad --</option>
-        <option value="unidad">Unidad (1-2 productos)</option>
-        <option value="caja">Caja (múltiplos de unidades/caja)</option>
-        <option value="mayor">Mayor (3 a ${producto.unidades_por_caja - 1} unidades)</option>
-    `;
-    
-    // Actualizar precio según modalidad
-    actualizarPrecio(producto);
-    
-    $('#modalAgregarProducto').modal('show');
+document.getElementById('btnLimpiarBusqueda') && document.getElementById('btnLimpiarBusqueda').addEventListener('click', function() {
     document.getElementById('inputBuscarProducto').value = '';
     document.getElementById('resultadosBusqueda').style.display = 'none';
+});
+
+// SELECCIONAR PRODUCTO Y MOSTRAR INTERFAZ SEGÚN TIPO VENDEDOR
+function seleccionarProducto(producto) {
+    if (!tipoVendedorActual) {
+        alert('Por favor selecciona Tipo de Vendedor primero');
+        return;
+    }
+    
+    document.getElementById('modalProductoId').value = producto.id;
+    document.getElementById('modalUnidadesPorCaja').value = producto.unidades_por_caja || 1;
+    document.getElementById('modalTipoVendedor').value = tipoVendedorActual;
+    document.getElementById('modalNombreProducto').textContent = producto.nombre;
+    
+    // Limpiar búsqueda
+    document.getElementById('inputBuscarProducto').value = '';
+    document.getElementById('resultadosBusqueda').style.display = 'none';
+    
+    // Mostrar modal primero
+    const modal = $('#modalAgregarProducto');
+    modal.modal('show');
+    
+    // LUEGO configurar la interfaz cuando el modal está visible
+    setTimeout(() => {
+        if (tipoVendedorActual === 'tienda') {
+            mostrarInterfazTienda(producto);
+        } else {
+            mostrarInterfazDeposito(producto);
+        }
+    }, 300); // Esperar a que Bootstrap termine de animar
 }
 
-function actualizarPrecio(producto) {
-    const modalidad = document.getElementById('modalModalidad').value;
+// MOSTRAR INTERFAZ PARA TIENDA CON MODALIDADES
+function mostrarInterfazTienda(producto) {
+    document.getElementById('interfazTienda').style.display = 'block';
+    document.getElementById('interfazDeposito').style.display = 'none';
     
-    let precio = 0;
+    const unidadesPorCaja = producto.unidades_por_caja || 1;
+    document.getElementById('textoUnidadesPorCaja').textContent = unidadesPorCaja;
+    document.getElementById('textoMayorMax').textContent = (unidadesPorCaja - 1);
+    
+    // Resetear selección de modalidad
+    document.getElementById('modalModalidad').value = '';
+    document.getElementById('camposCantidadTienda').innerHTML = '';
+    document.getElementById('modalAvisoModalidad').textContent = '';
+    document.getElementById('modalDesglose').style.display = 'none';
+    
+    // Agregar event listeners a las tarjetas de modalidad
+    document.querySelectorAll('.modalidad-card').forEach(card => {
+        card.style.borderColor = '#dee2e6';
+        card.style.backgroundColor = '#fff';
+        card.style.cursor = 'pointer';
+        
+        // Remover todos los listeners anteriores
+        const newCard = card.cloneNode(true);
+        card.parentNode.replaceChild(newCard, card);
+        
+        // Agregar nuevo listener
+        newCard.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const modalidad = this.getAttribute('data-modalidad');
+            console.log('Card clicked, modalidad:', modalidad);
+            seleccionarModalidadTienda(modalidad, producto);
+        }, false);
+    });
+}
+
+// SELECCIONAR MODALIDAD EN TIENDA
+function seleccionarModalidadTienda(modalidad, producto) {
+    const unidadesPorCaja = producto.unidades_por_caja || 1;
+    
+    document.getElementById('modalModalidad').value = modalidad;
+    
+    // Actualizar estilos de tarjetas
+    document.querySelectorAll('.modalidad-card').forEach(card => {
+        const isSelected = card.getAttribute('data-modalidad') === modalidad;
+        if (isSelected) {
+            card.style.borderColor = '#667eea';
+            card.style.backgroundColor = '#f0f4ff';
+            card.style.borderWidth = '2px';
+        } else {
+            card.style.borderColor = '#dee2e6';
+            card.style.backgroundColor = '#fff';
+            card.style.borderWidth = '1px';
+        }
+    });
+    
+    // Generar campos dinámicos según modalidad
+    let camposHTML = '';
+    
     if (modalidad === 'unidad') {
-        precio = producto.precio_unidad;
+        camposHTML = `
+            <div class="form-group">
+                <label for="modalCantidadUnidad" class="label-campo">
+                    Cantidad (máx 2 unidades) <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="decrementarCantidad('modalCantidadUnidad', 1)">−</button>
+                    <input type="number" class="form-control text-center" id="modalCantidadUnidad"
+                           placeholder="1" min="1" max="2" value="1" required onchange="actualizarValidacionTienda(this, '${modalidad}', ${unidadesPorCaja})">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="incrementarCantidad('modalCantidadUnidad', 2)">+</button>
+                </div>
+                <small class="form-text text-muted mt-1">Cantidad válida: 1-2 unidades</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="modalPrecioUnitario" class="label-campo">
+                    Precio Unitario <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <input type="number" class="form-control" id="modalPrecioUnitario"
+                           value="${producto.precio_unidad ? producto.precio_unidad.toFixed(2) : ''}" 
+                           placeholder="0.00" step="0.01" required>
+                    <div class="input-group-append">
+                        <span class="input-group-text bg-light">Bs.</span>
+                    </div>
+                </div>
+            </div>
+        `;
     } else if (modalidad === 'caja') {
-        precio = producto.precio_caja;
+        camposHTML = `
+            <div class="form-group">
+                <label for="modalCantidadCaja" class="label-campo">
+                    Cantidad (múltiplos de ${unidadesPorCaja}) <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="decrementarCaja('modalCantidadCaja', ${unidadesPorCaja})">−</button>
+                    <input type="number" class="form-control text-center" id="modalCantidadCaja"
+                           placeholder="${unidadesPorCaja}" min="${unidadesPorCaja}" step="${unidadesPorCaja}" value="${unidadesPorCaja}" required 
+                           onchange="actualizarValidacionTienda(this, '${modalidad}', ${unidadesPorCaja})">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="incrementarCaja('modalCantidadCaja', ${unidadesPorCaja})">+</button>
+                </div>
+                <small class="form-text text-muted mt-1">Cantidad debe ser múltiplo de ${unidadesPorCaja}</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="modalPrecioCaja" class="label-campo">
+                    Precio por Caja <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <input type="number" class="form-control" id="modalPrecioCaja"
+                           value="${producto.precio_caja ? producto.precio_caja.toFixed(2) : ''}" 
+                           placeholder="0.00" step="0.01" required>
+                    <div class="input-group-append">
+                        <span class="input-group-text bg-light">Bs.</span>
+                    </div>
+                </div>
+            </div>
+        `;
     } else if (modalidad === 'mayor') {
-        precio = producto.precio_mayor;
-    } else {
-        precio = producto.precio_unidad;
+        camposHTML = `
+            <div class="form-group">
+                <label for="modalCantidadMayor" class="label-campo">
+                    Cantidad (3 a ${unidadesPorCaja - 1} unidades) <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="decrementarCantidad('modalCantidadMayor', 1)">−</button>
+                    <input type="number" class="form-control text-center" id="modalCantidadMayor"
+                           placeholder="5" min="3" max="${unidadesPorCaja - 1}" value="3" required 
+                           onchange="actualizarValidacionTienda(this, '${modalidad}', ${unidadesPorCaja})">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="incrementarCantidad('modalCantidadMayor', ${unidadesPorCaja - 1})">+</button>
+                </div>
+                <small class="form-text text-muted mt-1">Cantidad válida: 3 a ${unidadesPorCaja - 1} unidades</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="modalPrecioMayor" class="label-campo">
+                    Precio Unitario (Mayor) <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <input type="number" class="form-control" id="modalPrecioMayor"
+                           value="${producto.precio_mayor ? producto.precio_mayor.toFixed(2) : ''}" 
+                           placeholder="0.00" step="0.01" required>
+                    <div class="input-group-append">
+                        <span class="input-group-text bg-light">Bs.</span>
+                    </div>
+                </div>
+            </div>
+        `;
     }
     
-    document.getElementById('modalPrecioUnitario').value = precio.toFixed(2);
+    const container = document.getElementById('camposCantidadTienda');
+    if (!container) {
+        console.error('Container camposCantidadTienda not found!');
+        return;
+    }
+    
+    container.innerHTML = camposHTML;
+    console.log('HTML inyectado para modalidad:', modalidad);
+    console.log('Verifying fields exist:');
+    
+    if (modalidad === 'unidad') {
+        console.log('Buscando: modalCantidadUnidad, modalPrecioUnitario');
+        console.log('modalCantidadUnidad existe:', !!document.getElementById('modalCantidadUnidad'));
+        console.log('modalPrecioUnitario existe:', !!document.getElementById('modalPrecioUnitario'));
+    } else if (modalidad === 'caja') {
+        console.log('Buscando: modalCantidadCaja, modalPrecioCaja');
+        console.log('modalCantidadCaja existe:', !!document.getElementById('modalCantidadCaja'));
+        console.log('modalPrecioCaja existe:', !!document.getElementById('modalPrecioCaja'));
+    } else if (modalidad === 'mayor') {
+        console.log('Buscando: modalCantidadMayor, modalPrecioMayor');
+        console.log('modalCantidadMayor existe:', !!document.getElementById('modalCantidadMayor'));
+        console.log('modalPrecioMayor existe:', !!document.getElementById('modalPrecioMayor'));
+    }
 }
 
-document.getElementById('modalModalidad').addEventListener('change', function() {
-    const productoId = document.getElementById('modalProductoId').value;
-    if (productoId) {
-        // Buscar producto en carrito o en búsqueda anterior
-        fetch(URLS.buscarProductos + `?id=${productoId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.productos && data.productos.length > 0) {
-                    const producto = data.productos[0];
-                    actualizarPrecio(producto);
-                    
-                    // Mostrar validación de cantidad
-                    const cantidad = parseInt(document.getElementById('modalCantidad').value) || 0;
-                    mostrarValidacionCantidad(cantidad, this.value, producto.unidades_por_caja);
-                }
-            });
-    }
-});
-
-document.getElementById('modalCantidad').addEventListener('input', function() {
-    const modalidad = document.getElementById('modalModalidad').value;
-    const unidadesPorCaja = parseInt(document.getElementById('modalUnidadesPorCaja').value);
+// MOSTRAR INTERFAZ SIMPLIFICADA PARA DEPÓSITO
+function mostrarInterfazDeposito(producto) {
+    document.getElementById('interfazTienda').style.display = 'none';
+    document.getElementById('interfazDeposito').style.display = 'block';
+    document.getElementById('modalDesglose').style.display = 'none';
     
-    mostrarValidacionCantidad(parseInt(this.value) || 0, modalidad, unidadesPorCaja);
-});
+    document.getElementById('modalCantidadDeposito').value = '';
+    document.getElementById('modalPrecioDepositoUnitario').value = producto.precio_unidad ? producto.precio_unidad.toFixed(2) : '';
+}
 
-function mostrarValidacionCantidad(cantidad, modalidad, unidadesPorCaja) {
+// FUNCIONES AUXILIARES PARA INCREMENTAR/DECREMENTAR
+function incrementarCantidad(inputId, maximo) {
+    const input = document.getElementById(inputId);
+    let valor = parseInt(input.value) || 0;
+    valor = Math.min(valor + 1, maximo);
+    input.value = valor;
+    input.dispatchEvent(new Event('change'));
+}
+
+function decrementarCantidad(inputId, minimo = 1) {
+    const input = document.getElementById(inputId);
+    let valor = parseInt(input.value) || 0;
+    valor = Math.max(valor - 1, minimo);
+    input.value = valor;
+    input.dispatchEvent(new Event('change'));
+}
+
+function incrementarCaja(inputId, unidadesPorCaja) {
+    const input = document.getElementById(inputId);
+    let valor = parseInt(input.value) || 0;
+    valor += unidadesPorCaja;
+    input.value = valor;
+    input.dispatchEvent(new Event('change'));
+}
+
+function decrementarCaja(inputId, unidadesPorCaja) {
+    const input = document.getElementById(inputId);
+    let valor = parseInt(input.value) || 0;
+    valor = Math.max(valor - unidadesPorCaja, unidadesPorCaja);
+    input.value = valor;
+    input.dispatchEvent(new Event('change'));
+}
+
+// ACTUALIZAR VALIDACIÓN EN TIENDA
+function actualizarValidacionTienda(inputElement, modalidad, unidadesPorCaja) {
+    const cantidad = parseInt(inputElement.value) || 0;
     const validacion = validarCantidad(cantidad, modalidad, unidadesPorCaja);
     const avisoEl = document.getElementById('modalAvisoModalidad');
     const desgloseEl = document.getElementById('modalDesglose');
@@ -286,106 +478,238 @@ function mostrarValidacionCantidad(cantidad, modalidad, unidadesPorCaja) {
     avisoEl.textContent = validacion.mensaje;
     avisoEl.style.color = validacion.valido ? '#28a745' : '#dc3545';
     
-    if (cantidad > 0 && cantidad > unidadesPorCaja && modalidad === 'mayor') {
+    // Mostrar desglose solo para cantidad mayor
+    if (modalidad === 'mayor' && cantidad > 0) {
         const { cajas, mayoristas } = calcularDesglose(cantidad, unidadesPorCaja);
-        document.getElementById('modalDesgloseTexto').textContent = `${cajas} caja(s) + ${mayoristas} unidades mayoristas`;
+        document.getElementById('modalDesgloseTexto').textContent = 
+            `${cajas} caja${cajas > 1 ? 's' : ''} + ${mayoristas} unidad${mayoristas > 1 ? 'es' : ''} por mayor`;
         desgloseEl.style.display = 'block';
-    } else if (cantidad > 0 && modalidad === 'caja') {
+    } else if (modalidad === 'caja' && cantidad > 0) {
         const cajas = cantidad / unidadesPorCaja;
-        document.getElementById('modalDesgloseTexto').textContent = `${cajas} caja(s)`;
+        document.getElementById('modalDesgloseTexto').textContent = `${cajas} caja${cajas > 1 ? 's' : ''}`;
         desgloseEl.style.display = 'block';
     } else {
         desgloseEl.style.display = 'none';
     }
 }
 
-// GUARDAR VENTA
-document.getElementById('formAgregarProducto').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const producto = {
-        id: parseInt(document.getElementById('modalProductoId').value),
-        nombre: document.getElementById('modalNombreProducto').textContent,
-        unidades_por_caja: parseInt(document.getElementById('modalUnidadesPorCaja').value)
-    };
-    
-    const cantidad = parseInt(document.getElementById('modalCantidad').value);
-    const modalidad = document.getElementById('modalModalidad').value;
-    const precio = parseFloat(document.getElementById('modalPrecioUnitario').value);
-    
-    if (agregarAlCarrito(producto, cantidad, modalidad, precio)) {
-        $('#modalAgregarProducto').modal('hide');
-    }
-});
-
-document.getElementById('btnGuardarVenta').addEventListener('click', function() {
-    if (carrito.length === 0) {
-        alert('El carrito está vacío');
-        return;
-    }
-    
-    const cliente = document.getElementById('inputCliente').value.trim();
-    if (!cliente) {
-        alert('Ingresa el nombre del cliente');
-        return;
-    }
-    
-    const datosVenta = {
-        cliente,
-        telefono: document.getElementById('inputTelefono').value.trim(),
-        razon_social: document.getElementById('inputRazonSocial').value.trim(),
-        direccion: document.getElementById('inputDireccion').value.trim(),
-        tipo_pago: 'contado',  // Siempre es contado para tienda
-        descuento: 0,  // Descuento comentado para v2
-        items: carrito.map(item => ({
-            producto_id: item.producto.id,
-            cantidad: item.cantidad,
-            modalidad: item.modalidad,
-            precio_unitario: item.precio_unitario
-        }))
-    };
-    
-    fetch(URLS.guardarVentaTienda, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCSRFToken(),
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(datosVenta)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(`Venta ${data.venta_codigo} guardada exitosamente`);
-            window.location.href = data.redireccionar_a;
-        } else {
-            alert('Error: ' + data.error);
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert('Error al guardar la venta: ' + err);
-    });
-});
-
-document.getElementById('btnLimpiarCarrito').addEventListener('click', function() {
-    if (confirm('¿Limpiar carrito?')) {
-        carrito = [];
-        renderCarrito();
-    }
-});
-
-// FUNCIONES AUXILIARES
-function getCSRFToken() {
-    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
-           document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1] || '';
-}
-
-// Mostrar selector de modalidad al cargar
+// GUARDAR VENTA - Manejar Tienda y Depósito
 document.addEventListener('DOMContentLoaded', function() {
-    if (typeof esTienda !== 'undefined' && esTienda) {
-        document.getElementById('selectorModalidad').style.display = 'block';
-    } else {
-        seleccionarModalidad('tienda');
+    // Event listener para formAgregarProducto
+    const formAgregarProducto = document.getElementById('formAgregarProducto');
+    if (formAgregarProducto) {
+        formAgregarProducto.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            console.log('Form submitted');
+            
+            const tipoVendedor = document.getElementById('modalTipoVendedor').value;
+            console.log('Tipo vendedor:', tipoVendedor);
+            
+            const producto = {
+                id: parseInt(document.getElementById('modalProductoId').value),
+                nombre: document.getElementById('modalNombreProducto').textContent,
+                unidades_por_caja: parseInt(document.getElementById('modalUnidadesPorCaja').value)
+            };
+            
+            let cantidad, modalidad, precio;
+            
+            if (tipoVendedor === 'tienda') {
+                // Obtener datos según modalidad seleccionada
+                modalidad = document.getElementById('modalModalidad').value;
+                console.log('Modalidad seleccionada:', modalidad);
+                
+                if (!modalidad) {
+                    alert('Por favor selecciona una modalidad');
+                    return;
+                }
+                
+                if (modalidad === 'unidad') {
+                    const cantidadInput = document.getElementById('modalCantidadUnidad');
+                    const precioInput = document.getElementById('modalPrecioUnitario');
+                    
+                    if (!cantidadInput || !precioInput) {
+                        alert('Error: campos de unidad no encontrados');
+                        return;
+                    }
+                    
+                    cantidad = parseInt(cantidadInput.value);
+                    precio = parseFloat(precioInput.value);
+                    
+                    if (!cantidad || !precio) {
+                        alert('Por favor ingresa cantidad y precio');
+                        return;
+                    }
+                } else if (modalidad === 'caja') {
+                    const cantidadInput = document.getElementById('modalCantidadCaja');
+                    const precioInput = document.getElementById('modalPrecioCaja');
+                    
+                    if (!cantidadInput || !precioInput) {
+                        alert('Error: campos de caja no encontrados');
+                        return;
+                    }
+                    
+                    cantidad = parseInt(cantidadInput.value);
+                    precio = parseFloat(precioInput.value);
+                    
+                    if (!cantidad || !precio) {
+                        alert('Por favor ingresa cantidad y precio');
+                        return;
+                    }
+                } else if (modalidad === 'mayor') {
+                    const cantidadInput = document.getElementById('modalCantidadMayor');
+                    const precioInput = document.getElementById('modalPrecioMayor');
+                    
+                    if (!cantidadInput || !precioInput) {
+                        alert('Error: campos de mayor no encontrados');
+                        return;
+                    }
+                    
+                    cantidad = parseInt(cantidadInput.value);
+                    precio = parseFloat(precioInput.value);
+                    
+                    if (!cantidad || !precio) {
+                        alert('Por favor ingresa cantidad y precio');
+                        return;
+                    }
+                }
+            } else if (tipoVendedor === 'deposito') {
+                // DEPÓSITO: Solo unidad, sin modalidades
+                const cantidadInput = document.getElementById('modalCantidadDeposito');
+                const precioInput = document.getElementById('modalPrecioDepositoUnitario');
+                
+                if (!cantidadInput || !precioInput) {
+                    alert('Error: campos de depósito no encontrados');
+                    return;
+                }
+                
+                cantidad = parseInt(cantidadInput.value);
+                precio = parseFloat(precioInput.value);
+                modalidad = 'unidad'; // Por defecto en depósito
+                
+                if (!cantidad || !precio) {
+                    alert('Por favor ingresa cantidad y precio');
+                    return;
+                }
+            } else {
+                alert('Por favor selecciona un tipo de vendedor');
+                return;
+            }
+            
+            console.log('Datos a agregar:', { producto, cantidad, modalidad, precio });
+            
+            if (agregarAlCarrito(producto, cantidad, modalidad, precio)) {
+                console.log('Producto agregado al carrito');
+                $('#modalAgregarProducto').modal('hide');
+            }
+        });
+    }
+    
+    // Event listener para btnGuardarVenta
+    const btnGuardarVenta = document.getElementById('btnGuardarVenta');
+    if (btnGuardarVenta) {
+        btnGuardarVenta.addEventListener('click', function() {
+            if (carrito.length === 0) {
+                alert('El carrito está vacío');
+                return;
+            }
+            
+            const cliente = document.getElementById('inputCliente').value.trim();
+            if (!cliente) {
+                alert('Ingresa el nombre del cliente');
+                return;
+            }
+            
+            const descuentoValue = parseFloat(document.getElementById('inputDescuento').value) || 0;
+            const subtotal = carrito.reduce((sum, item) => sum + item.subtotal, 0);
+            const descuentoAplicado = Math.min(descuentoValue, subtotal);
+            
+            const datosVenta = {
+                cliente,
+                telefono: document.getElementById('inputTelefono').value.trim(),
+                razon_social: document.getElementById('inputRazonSocial').value.trim(),
+                direccion: document.getElementById('inputDireccion').value.trim(),
+                tipo_pago: 'contado',  // Siempre es contado para tienda
+                descuento: descuentoAplicado,
+                items: carrito.map(item => ({
+                    producto_id: item.producto.id,
+                    cantidad: item.cantidad,
+                    modalidad: item.modalidad,
+                    precio_unitario: item.precio_unitario
+                }))
+            };
+            
+            fetch(URLS.guardarVentaTienda, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(datosVenta)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Venta ${data.venta_codigo} guardada exitosamente`);
+                    window.location.href = data.redireccionar_a;
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Error al guardar la venta: ' + err);
+            });
+        });
+    }
+    
+    // Event listener para btnLimpiarCarrito
+    const btnLimpiarCarrito = document.getElementById('btnLimpiarCarrito');
+    if (btnLimpiarCarrito) {
+        btnLimpiarCarrito.addEventListener('click', function() {
+            Swal.fire({
+                title: '¿Limpiar carrito?',
+                text: 'Se eliminarán todos los productos agregados',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, limpiar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    carrito = [];
+                    renderCarrito();
+                }
+            });
+        });
+    }
+    
+    // Event listener para inputDescuento
+    const inputDescuento = document.getElementById('inputDescuento');
+    if (inputDescuento) {
+        inputDescuento.addEventListener('input', function() {
+            actualizarTotales();
+        });
+    }
+    
+    // Event listener para selectTipoVendedor
+    const selectTipoVendedor = document.getElementById('selectTipoVendedor');
+    if (selectTipoVendedor) {
+        selectTipoVendedor.addEventListener('change', function() {
+            const tipo = this.value;
+            
+            if (tipo === 'tienda') {
+                tipoVendedorActual = 'tienda';
+                carrito = [];
+                renderCarrito();
+            } else if (tipo === 'deposito') {
+                tipoVendedorActual = 'deposito';
+                carrito = [];
+                renderCarrito();
+            } else {
+                tipoVendedorActual = null;
+            }
+        });
     }
 });
