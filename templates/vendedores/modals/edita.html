@@ -1,0 +1,160 @@
+<!-- MODAL: EDITAR VENDEDOR -->
+<div class="modal fade" id="modalEditarVendedor" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> Editar Vendedor
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formEditarVendedor" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="editarVendedorId" name="id">
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- COLUMNA IZQUIERDA -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-user"></i> Información Personal
+                            </h6>
+                            
+                            <div class="form-group">
+                                <label for="editarNombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="editarNombre" 
+                                    name="nombre" 
+                                    required
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editarApellido" class="form-label">Apellido <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="editarApellido" 
+                                    name="apellido" 
+                                    required
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editarCedula" class="form-label">Cédula/DNI <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="editarCedula" 
+                                    name="cedula" 
+                                    required
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editarEmail" class="form-label">Email</label>
+                                <input 
+                                    type="email" 
+                                    class="form-control" 
+                                    id="editarEmail" 
+                                    name="email"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editarTelefono" class="form-label">Teléfono</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="editarTelefono" 
+                                    name="telefono"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- COLUMNA DERECHA -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-building"></i> Ubicación y Comisión
+                            </h6>
+
+                            <div class="form-group">
+                                <label for="editarTipoUbicacion" class="form-label">Tipo de Ubicación <span class="text-danger">*</span></label>
+                                <select class="form-control" id="editarTipoUbicacion" name="tipo_ubicacion" required>
+                                    <option value="">Seleccione una opción</option>
+                                    <option value="almacen">Almacén</option>
+                                    <option value="tienda">Tienda</option>
+                                </select>
+                            </div>
+
+                            <!-- Selector de Almacén (Solo si selecciona Almacén) -->
+                            <div class="form-group" id="editarGrupoAlmacen" style="display: none;">
+                                <label for="editarAlmacen" class="form-label">Almacén <span class="text-danger">*</span></label>
+                                <select class="form-control" id="editarAlmacen" name="almacen">
+                                    <option value="">Seleccione un almacén</option>
+                                    {% for almacen in almacenes %}
+                                        <option value="{{ almacen.id }}">{{ almacen.nombre }} - {{ almacen.ciudad }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Selector de Tienda (Solo si selecciona Tienda) -->
+                            <div class="form-group" id="editarGrupoTienda" style="display: none;">
+                                <label for="editarTienda" class="form-label">Tienda <span class="text-danger">*</span></label>
+                                <select class="form-control" id="editarTienda" name="tienda">
+                                    <option value="">Seleccione una tienda</option>
+                                    {% for tienda in tiendas %}
+                                        <option value="{{ tienda.id }}">{{ tienda.nombre }} - {{ tienda.ciudad }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editarComision" class="form-label">Comisión (%)</label>
+                                <input 
+                                    type="number" 
+                                    class="form-control" 
+                                    id="editarComision" 
+                                    name="comision"
+                                    step="0.01"
+                                    min="0"
+                                    max="100"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editarEstado" class="form-label">Estado</label>
+                                <select class="form-control" id="editarEstado" name="estado">
+                                    <option value="activo">Activo</option>
+                                    <option value="inactivo">Inactivo</option>
+                                    <option value="suspendido">Suspendido</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editarDireccion" class="form-label">Dirección</label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="editarDireccion" 
+                                    name="direccion" 
+                                    rows="2"
+                                ></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

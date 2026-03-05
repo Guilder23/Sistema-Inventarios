@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'apps.tiendas',
     'apps.depositos',
     'apps.tiendas_virtuales',
+    'apps.vendedores',
 ]
 
 MIDDLEWARE = [
