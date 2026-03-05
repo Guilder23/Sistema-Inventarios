@@ -23,6 +23,7 @@ urlpatterns = [
     # Productos dañados
     path('danados/', views.listar_danados, name='listar_danados'),
     path('danados/registrar/', views.registrar_danado, name='registrar_danado'),
+    path('danados/<int:id>/obtener/', views.obtener_danado, name='obtener_danado'),
     path('danados/<int:id>/agregar-danado/', views.agregar_mas_danado, name='agregar_mas_danado'),
     path('danados/<int:id>/agregar-stock/', views.agregar_stock_danado, name='agregar_stock_danado'),
     path('danados/<int:id>/reponer-stock/', views.reponer_stock_danado, name='reponer_stock_danado'),

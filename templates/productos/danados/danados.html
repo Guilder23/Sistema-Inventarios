@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{% static 'css/productos/danados/danados.css' %}">
     <link rel="stylesheet" href="{% static 'css/productos/danados/modals/registrar_danado.css' %}">
     <link rel="stylesheet" href="{% static 'css/productos/danados/modals/accion_stock.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/danados/modals/ver_danado.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -129,8 +130,14 @@
                         </td>
                         <td>{{ item.fecha_registro|date:'d/m/Y H:i' }}</td>
                         <td class="text-center">
-                            {% if item.cantidad_pendiente > 0 %}
                             <div class="acciones-devolucion">
+                                <button class="btn btn-info btn-sm btn-ver-danado"
+                                        data-id="{{ item.id }}"
+                                        data-url="{% url 'obtener_danado' item.id %}"
+                                        title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if item.cantidad_pendiente > 0 %}
                                 <button class="btn btn-warning btn-sm btn-accion-stock"
                                         data-toggle="modal"
                                         data-target="#modalAccionStock"
@@ -153,10 +160,8 @@
                                         title="Reponer y agregar al stock">
                                     <i class="fas fa-box-open"></i>
                                 </button> -->
+                                {% endif %}
                             </div>
-                            {% else %}
-                            <span class="text-muted">Sin acciones</span>
-                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
@@ -175,10 +180,12 @@
 
 {% include 'productos/danados/modals/registrar_danado.html' %}
 {% include 'productos/danados/modals/accion_stock.html' %}
+{% include 'productos/danados/modals/ver_danado.html' %}
 {% endblock %}
 
 {% block scripts_extra %}
     <script src="{% static 'js/productos/danados/modals/registrar_danado.js' %}"></script>
     <script src="{% static 'js/productos/danados/modals/accion_stock.js' %}"></script>
+    <script src="{% static 'js/productos/danados/modals/ver_danado.js' %}"></script>
     <script src="{% static 'js/productos/danados/danados.js' %}"></script>
 {% endblock %}

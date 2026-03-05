@@ -897,6 +897,58 @@ def agregar_mas_danado(request, id):
 
 
 @login_required
+@require_http_methods(["GET"])
+def obtener_danado(request, id):
+    """Obtener detalles de un producto dañado"""
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil or perfil.rol != 'almacen':
+        return JsonResponse({'success': False, 'error': 'No tiene permisos para esta acción'}, status=403)
+
+    try:
+        danado = ProductoDanado.objects.select_related(
+            'producto',
+            'producto__categoria',
+            'ubicacion',
+            'ubicacion__usuario',
+            'registrado_por'
+        ).get(id=id, ubicacion=perfil)
+
+        data = {
+            'success': True,
+            'danado': {
+                'id': danado.id,
+                'producto': {
+                    'codigo': danado.producto.codigo,
+                    'nombre': danado.producto.nombre,
+                    'categoria': danado.producto.categoria.nombre if danado.producto.categoria else 'Sin categoría',
+                    'stock_actual': danado.producto.stock,
+                    'foto': danado.producto.foto.url if danado.producto.foto else None,
+                },
+                'cantidad_danada': danado.cantidad,
+                'cantidad_recuperada': danado.cantidad_recuperada,
+                'cantidad_repuesta': danado.cantidad_repuesta,
+                'cantidad_pendiente': danado.cantidad_pendiente,
+                'estado': danado.get_estado_display(),
+                'comentario': danado.comentario or 'Sin comentario',
+                'foto': danado.foto.url if danado.foto else None,
+                'ubicacion': {
+                    'nombre': danado.ubicacion.usuario.get_full_name() or danado.ubicacion.usuario.username if danado.ubicacion.usuario else danado.ubicacion.nombre_ubicacion or 'Sin ubicación',
+                    'rol': danado.ubicacion.get_rol_display(),
+                },
+                'registrado_por': {
+                    'nombre': danado.registrado_por.get_full_name() or danado.registrado_por.username if danado.registrado_por else 'N/A',
+                },
+                'fecha_registro': danado.fecha_registro.strftime('%d/%m/%Y %H:%M'),
+            }
+        }
+        return JsonResponse(data)
+    except ProductoDanado.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Producto dañado no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
 @require_http_methods(["POST"])
 def agregar_stock_danado(request, id):
     return _procesar_devolucion(request, id, 'agregar')
