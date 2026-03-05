@@ -15,7 +15,12 @@ urlpatterns = [
     path('tienda/crear/', views.crear_venta_tienda, name='crear_venta_tienda'),
     path('tienda/guardar/', views.guardar_venta_tienda, name='guardar_venta_tienda'),
     path('tienda/listar/', views.listar_ventas_tienda, name='listar_ventas_tienda'),
-    path('<int:id>/anular/', views.anular_venta, name='anular_venta'),   
+    path('<int:id>/anular/', views.anular_venta, name='anular_venta'),
+    
+    # Solicitudes de anulación
+    path('solicitudes/anulacion/', views.validar_solicitudes_anulacion, name='solicitudes_anulacion'),
+    path('solicitudes/<int:id>/detalle/', views.detalle_solicitud_anulacion, name='detalle_solicitud_anulacion'),
+    path('solicitudes/<int:id>/responder/', views.responder_solicitud_anulacion, name='responder_solicitud_anulacion'),   
         
     # Amortizaciones
     path('<int:venta_id>/amortizacion/', views.registrar_amortizacion, name='registrar_amortizacion'),
