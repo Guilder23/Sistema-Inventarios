@@ -693,8 +693,10 @@ def listar_danados(request):
                 return redirect('listar_danados')
 
             with transaction.atomic():
-                producto.stock -= cantidad
-                producto.save(update_fields=['stock', 'fecha_actualizacion'])
+                # Reducir stock usando el método del modelo
+                if not producto.reducir_stock(cantidad, request.user):
+                    messages.error(request, 'Error al reducir el stock')
+                    return redirect('listar_danados')
 
                 danado = ProductoDanado.objects.create(
                     producto=producto,
@@ -810,8 +812,10 @@ def _procesar_devolucion(request, danado_id, tipo_accion):
         _actualizar_estado_danado(danado)
         danado.save(update_fields=['cantidad_recuperada', 'cantidad_repuesta', 'estado'])
 
-        danado.producto.stock += cantidad
-        danado.producto.save(update_fields=['stock', 'fecha_actualizacion'])
+        # Aumentar stock usando el método del modelo
+        if not danado.producto.aumentar_stock(cantidad, request.user):
+            messages.error(request, 'Error al aumentar el stock')
+            return redirect('listar_danados')
 
         HistorialProducto.objects.create(
             producto=danado.producto,
@@ -861,12 +865,14 @@ def agregar_mas_danado(request, id):
     comentario_accion = request.POST.get('comentario', '').strip()
 
     with transaction.atomic():
+        # Reducir stock usando el método del modelo
+        if not danado.producto.reducir_stock(cantidad, request.user):
+            messages.error(request, 'Error al reducir el stock. Verifica que hay stock suficiente.')
+            return redirect('listar_danados')
+        
         danado.cantidad += cantidad
         _actualizar_estado_danado(danado)
         danado.save(update_fields=['cantidad', 'estado'])
-
-        danado.producto.stock -= cantidad
-        danado.producto.save(update_fields=['stock', 'fecha_actualizacion'])
 
         detalle = f'Se agregaron {cantidad} unidades dañadas al registro #{danado.id}'
 
