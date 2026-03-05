@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <td class="text-center align-middle"><img src="${fotoSrc}" width="45" height="45" style="object-fit:cover; border-radius:5px;" onerror="this.src='${imgGrisBase64}'"></td>
                 <td class="align-middle"><strong>${item.codigo}</strong></td>
                 <td class="align-middle">${item.nombre}</td>
-                <td class="align-middle">${item.stock}</td>
+                <td class="badge-stock-inventario">${item.stock}</td>
                 <td class="align-middle">${item.cajas || 0}</td>
                 <td class="align-middle">${item.unidad_operativa || 'N/A'}</td>
                 <td class="text-center align-middle">
