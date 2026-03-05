@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{% static 'css/devoluciones/devoluciones.css' %}">
     <link rel="stylesheet" href="{% static 'css/devoluciones/modals/registrar_devolucion.css' %}">
     <link rel="stylesheet" href="{% static 'css/devoluciones/modals/accion_stock.css' %}">
+    <link rel="stylesheet" href="{% static 'css/devoluciones/modals/ver_devolucion.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -119,8 +120,14 @@
                         </td>
                         <td>{{ item.fecha_registro|date:'d/m/Y H:i' }}</td>
                         <td class="text-center">
-                            {% if item.cantidad_pendiente > 0 %}
                             <div class="acciones-devolucion">
+                                <button class="btn btn-info btn-sm btn-ver-devolucion"
+                                        data-id="{{ item.id }}"
+                                        data-url="{% url 'devoluciones:obtener' item.id %}"
+                                        title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if item.cantidad_pendiente > 0 %}
                                 <button class="btn btn-warning btn-sm btn-accion-stock"
                                         data-toggle="modal"
                                         data-target="#modalAccionStock"
@@ -143,10 +150,8 @@
                                         title="Reponer productos y agregar al stock">
                                     <i class="fas fa-box-open"></i>
                                 </button>
+                                {% endif %}
                             </div>
-                            {% else %}
-                            <span class="text-muted">Sin acciones</span>
-                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
@@ -165,9 +170,11 @@
 
 {% include 'devoluciones/modals/registrar_devolucion.html' %}
 {% include 'devoluciones/modals/accion_stock.html' %}
+{% include 'devoluciones/modals/ver_devolucion.html' %}
 {% endblock %}
 
 {% block scripts_extra %}
     <script src="{% static 'js/devoluciones/modals/accion_stock.js' %}"></script>
+    <script src="{% static 'js/devoluciones/modals/ver_devolucion.js' %}"></script>
     <script src="{% static 'js/devoluciones/devoluciones.js' %}"></script>
 {% endblock %}

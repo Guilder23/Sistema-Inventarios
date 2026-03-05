@@ -126,25 +126,52 @@ def registrar_devolucion(request):
 def obtener_devolucion(request, id):
     """Obtiene los detalles de una devolución"""
     try:
-        devolucion = Devolucion.objects.select_related('producto', 'registrado_por').get(id=id)
+        perfil = PerfilUsuario.objects.get(usuario=request.user)
+    except PerfilUsuario.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'No tiene un perfil asignado'}, status=403)
+    
+    try:
+        devolucion = Devolucion.objects.select_related(
+            'producto',
+            'producto__categoria',
+            'ubicacion',
+            'ubicacion__usuario',
+            'registrado_por'
+        ).get(id=id, ubicacion=perfil)
         
-        return JsonResponse({
+        data = {
             'success': True,
-            'id': devolucion.id,
-            'producto_id': devolucion.producto.id,
-            'producto_nombre': devolucion.producto.nombre,
-            'producto_codigo': devolucion.producto.codigo,
-            'cantidad': devolucion.cantidad,
-            'cantidad_recuperada': devolucion.cantidad_recuperada,
-            'cantidad_repuesta': devolucion.cantidad_repuesta,
-            'cantidad_pendiente': devolucion.cantidad_pendiente,
-            'comentario': devolucion.comentario or '',
-            'estado': devolucion.estado,
-            'registrado_por': devolucion.registrado_por.get_full_name() or devolucion.registrado_por.username,
-            'fecha_registro': devolucion.fecha_registro.strftime('%d/%m/%Y %H:%M'),
-        })
+            'devolucion': {
+                'id': devolucion.id,
+                'producto': {
+                    'codigo': devolucion.producto.codigo,
+                    'nombre': devolucion.producto.nombre,
+                    'categoria': devolucion.producto.categoria.nombre if devolucion.producto.categoria else 'Sin categoría',
+                    'stock_actual': devolucion.producto.stock,
+                    'foto': devolucion.producto.foto.url if devolucion.producto.foto else None,
+                },
+                'cantidad_devuelta': devolucion.cantidad,
+                'cantidad_recuperada': devolucion.cantidad_recuperada,
+                'cantidad_repuesta': devolucion.cantidad_repuesta,
+                'cantidad_pendiente': devolucion.cantidad_pendiente,
+                'estado': devolucion.get_estado_display(),
+                'comentario': devolucion.comentario or 'Sin comentario',
+                'foto': devolucion.foto.url if devolucion.foto else None,
+                'ubicacion': {
+                    'nombre': devolucion.ubicacion.usuario.get_full_name() or devolucion.ubicacion.usuario.username if devolucion.ubicacion.usuario else devolucion.ubicacion.nombre_ubicacion or 'Sin ubicación',
+                    'rol': devolucion.ubicacion.get_rol_display(),
+                },
+                'registrado_por': {
+                    'nombre': devolucion.registrado_por.get_full_name() or devolucion.registrado_por.username if devolucion.registrado_por else 'N/A',
+                },
+                'fecha_registro': devolucion.fecha_registro.strftime('%d/%m/%Y %H:%M'),
+            }
+        }
+        return JsonResponse(data)
     except Devolucion.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Devolución no encontrada'})
+        return JsonResponse({'success': False, 'error': 'Devolución no encontrada'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 @login_required
