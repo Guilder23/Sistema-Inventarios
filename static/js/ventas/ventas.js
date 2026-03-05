@@ -42,8 +42,8 @@ $(document).ready(function () {
     initFiltrosBusqueda();
     initFiltrosEstado();
     initBotonesDetalle();
+    initBotonesPDF();
     initBotonesAmortizacion();
-    initBotonesAnular();
 });
 
 // FILTROS DE BÚSQUEDA EN TABLAS
@@ -325,7 +325,9 @@ function guardarAmortizacion() {
     const ventaId = $('#amortVentaId').val();
     const monto = $('#amortMonto').val();
     const observaciones = $('#amortObservaciones').val();
+    const comprobante = document.getElementById('amortComprobante').files[0];
 
+    // Validaciones
     if (!monto || parseFloat(monto) <= 0) {
         Swal.fire({
             icon: 'warning',
@@ -335,16 +337,42 @@ function guardarAmortizacion() {
         return;
     }
 
+    if (!comprobante) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Comprobante requerido',
+            text: 'Debe seleccionar una fotografía como evidencia.',
+        });
+        return;
+    }
+
+    // Validar tipo de archivo
+    if (!comprobante.type.startsWith('image/')) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Tipo de archivo inválido',
+            text: 'Por favor, seleccione una imagen.',
+        });
+        return;
+    }
+
     const $btn = $('#btnGuardarAmortizacion');
     $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Guardando...');
 
-// NOTA: URL usa /ventas/<venta_id>/amortizacion/ de tu urls.py
-    fetchConCSRF(`/ventas/${ventaId}/amortizacion/`, {
+    // Crear FormData para enviar archivo + datos
+    const formData = new FormData();
+    formData.append('monto', monto);
+    formData.append('observaciones', observaciones);
+    formData.append('comprobante', comprobante);
+
+    // URL: /ventas/<venta_id>/amortizacion/
+    const csrfToken = getCookie('csrftoken');
+    fetch(`/ventas/${ventaId}/amortizacion/`, {
         method: 'POST',
-        body: JSON.stringify({
-            monto: monto,
-            observaciones: observaciones,
-        }),
+        headers: {
+            'X-CSRFToken': csrfToken,
+        },
+        body: formData, // Enviar FormData, no JSON
     })
         .then(res => res.json())
         .then(data => {
@@ -380,28 +408,17 @@ function guardarAmortizacion() {
         });
 }
 
-// BOTÓN: ANULAR VENTA
-function initBotonesAnular() {
-    $(document).on('click', '.btn-anular-venta', function () {
+// BOTONES PDF: GENERAR PDF DE UNA VENTA INDIVIDUAL
+function initBotonesPDF() {
+    $(document).on('click', '.btn-generar-pdf-venta', function () {
         const ventaId = $(this).data('venta-id');
-        const ventaCodigo = $(this).data('venta-codigo');
-
-        Swal.fire({
-            title: 'Anular Venta',
-            html: `<p>¿Está seguro de anular la venta <strong>${ventaCodigo}</strong>?</p>
-                   <p class="text-muted">Se devolverá el stock de los productos.</p>`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: '<i class="fas fa-ban mr-1"></i>Sí, anular',
-            cancelButtonText: 'Cancelar',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                anularVenta(ventaId);
-            }
-        });
+        generarPDFVenta(ventaId);
     });
+}
+
+function generarPDFVenta(ventaId) {
+    // Redirigir a la URL de descarga de PDF
+    window.location.href = `/ventas/${ventaId}/pdf/`;
 }
 
 function anularVenta(ventaId) {

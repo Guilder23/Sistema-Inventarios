@@ -15,10 +15,15 @@ whitenoise==6.8.2
 # Manejo de imágenes (fotos de productos)
 Pillow==11.0.0
 
-# Generación de PDFs (solo cuando lo necesites, descomenta)
-# reportlab==4.0.9
-reportlab==4.2.2
-django-storages[boto3]==1.14.4
+# Generación de PDFs
+reportlab==4.0.9
+
+# API REST
+djangorestframework==3.14.0
+
+# Almacenamiento en Blackblaze B2
+django-storages==1.14.2
+boto3==1.42.58
 
 # API
 djangorestframework==3.15.2

@@ -23,9 +23,14 @@
                 Gestión de ventas &mdash; {{ perfil }}
             </p>
         </div>
-        <a href="{% url 'ventas:crear_venta' %}" class="btn btn-primary btn-nueva-venta">
-            <i class="fas fa-plus-circle mr-1"></i> Nueva Venta
-        </a>
+        <div>
+            <a href="{% url 'ventas:solicitudes_anulacion' %}" class="btn btn-warning btn-sm mr-2">
+                <i class="fas fa-file-invoice mr-1"></i>Solicitudes de Anulación
+            </a>
+            <a href="{% url 'ventas:crear_venta' %}" class="btn btn-primary btn-nueva-venta">
+                <i class="fas fa-plus-circle mr-1"></i> Nueva Venta
+            </a>
+        </div>
     </div>
 
 {#Tarjetas de resumen#}
@@ -120,30 +125,36 @@
 
                     {# Filtro rápido + Botón PDF #}
                     <div class="filtro-bar px-4 py-4">
-                        <div class="row align-items-center">
-                            <div class="col-md-3">
-                                <div class="input-group input-group-sm">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                    </div>
-                                    <input type="text" class="form-control filtro-tabla"
-                                           data-tabla="tablaContado"
-                                           placeholder="Buscar por código, cliente...">
-                                </div>
+                        <form method="GET" action="{% url 'ventas:listar_ventas' %}" class="row align-items-end">
+                            <div class="col-md-2">
+                                <label for="inputClienteFiltro" class="small font-weight-bold">Cliente</label>
+                                <input type="text" class="form-control form-control-sm" id="inputClienteFiltro"
+                                       name="cliente" value="{{ cliente_filtro }}"
+                                       placeholder="Buscar cliente...">
                             </div>
-                            <div class="col-md-3">
-                                <select class="form-control form-control-sm filtro-estado" data-tabla="tablaContado">
-                                    <option value="">Todos los estados</option>
-                                    <option value="completada">Completada</option>
-                                    <option value="cancelada">Cancelada</option>
-                                </select>
+                            <div class="col-md-2">
+                                <label for="inputFechaDesde" class="small font-weight-bold">Desde</label>
+                                <input type="date" class="form-control form-control-sm" id="inputFechaDesde"
+                                       name="fecha_desde" value="{{ fecha_desde }}">
                             </div>
-                            <div class="col-md-6 text-right">
-                                <button type="button" class="btn btn-generar-pdf btn-sm" onclick="generarPDFContado()" {% if not ventas_contado %}disabled{% endif %}>
-                                    <i class="fas fa-file-pdf mr-1"></i> Descargar PDF
+                            <div class="col-md-2">
+                                <label for="inputFechaHasta" class="small font-weight-bold">Hasta</label>
+                                <input type="date" class="form-control form-control-sm" id="inputFechaHasta"
+                                       name="fecha_hasta" value="{{ fecha_hasta }}">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary btn-sm btn-block">
+                                    <i class="fas fa-filter mr-1"></i>Filtrar
                                 </button>
                             </div>
-                        </div>
+                            {% if cliente_filtro or fecha_desde or fecha_hasta %}
+                            <div class="col-md-2">
+                                <a href="{% url 'ventas:listar_ventas' %}" class="btn btn-outline-secondary btn-sm btn-block">
+                                    <i class="fas fa-redo mr-1"></i>Limpiar
+                                </a>
+                            </div>
+                            {% endif %}
+                        </form>
                     </div>
 
                     <div class="table-responsive">
@@ -191,12 +202,17 @@
                                                     title="Ver detalle">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            {% if venta.estado != 'cancelada' %}
+                                            <button class="btn btn-outline-info btn-generar-pdf-venta"
+                                                    data-venta-id="{{ venta.id }}"
+                                                    title="Generar PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </button>
+                                            {% if venta.estado != 'cancelada' and venta.estado != 'anulada' %}
                                             <button class="btn btn-outline-danger btn-anular-venta"
                                                     data-venta-id="{{ venta.id }}"
                                                     data-venta-codigo="{{ venta.codigo }}"
                                                     title="Anular venta">
-                                                <i class="fas fa-ban"></i>
+                                                <i class="fas fa-trash"></i>
                                             </button>
                                             {% endif %}
                                         </div>
@@ -220,31 +236,37 @@
 
                     {# Filtro rápido + Botón PDF #}
                     <div class="filtro-bar px-4 py-4">
-                        <div class="row align-items-center">
-                            <div class="col-md-3">
-                                <div class="input-group input-group-sm">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                    </div>
-                                    <input type="text" class="form-control filtro-tabla"
-                                           data-tabla="tablaCredito"
-                                           placeholder="Buscar por código, cliente...">
-                                </div>
+                        <form method="GET" action="{% url 'ventas:listar_ventas' %}" class="row align-items-end">
+                            <input type="hidden" name="tab" value="credito">
+                            <div class="col-md-2">
+                                <label for="inputClienteFiltroCredito" class="small font-weight-bold">Cliente</label>
+                                <input type="text" class="form-control form-control-sm" id="inputClienteFiltroCredito"
+                                       name="cliente" value="{{ cliente_filtro }}"
+                                       placeholder="Buscar cliente...">
                             </div>
-                            <div class="col-md-3">
-                                <select class="form-control form-control-sm filtro-estado" data-tabla="tablaCredito">
-                                    <option value="">Todos los estados</option>
-                                    <option value="pendiente">Pendiente</option>
-                                    <option value="completada">Completada</option>
-                                    <option value="cancelada">Cancelada</option>
-                                </select>
+                            <div class="col-md-2">
+                                <label for="inputFechaDesdeCredito" class="small font-weight-bold">Desde</label>
+                                <input type="date" class="form-control form-control-sm" id="inputFechaDesdeCredito"
+                                       name="fecha_desde" value="{{ fecha_desde }}">
                             </div>
-                            <div class="col-md-6 text-right">
-                                <button type="button" class="btn btn-generar-pdf btn-sm" onclick="generarPDFCredito()" {% if not ventas_credito %}disabled{% endif %}>
-                                    <i class="fas fa-file-pdf mr-1"></i> Descargar PDF
+                            <div class="col-md-2">
+                                <label for="inputFechaHastaCredito" class="small font-weight-bold">Hasta</label>
+                                <input type="date" class="form-control form-control-sm" id="inputFechaHastaCredito"
+                                       name="fecha_hasta" value="{{ fecha_hasta }}">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary btn-sm btn-block">
+                                    <i class="fas fa-filter mr-1"></i>Filtrar
                                 </button>
                             </div>
-                        </div>
+                            {% if cliente_filtro or fecha_desde or fecha_hasta %}
+                            <div class="col-md-2">
+                                <a href="{% url 'ventas:listar_ventas' %}" class="btn btn-outline-secondary btn-sm btn-block">
+                                    <i class="fas fa-redo mr-1"></i>Limpiar
+                                </a>
+                            </div>
+                            {% endif %}
+                        </form>
                     </div>
 
                     <div class="table-responsive">
@@ -292,6 +314,11 @@
                                                     title="Ver detalle">
                                                 <i class="fas fa-eye"></i>
                                             </button>
+                                            <button class="btn btn-outline-info btn-generar-pdf-venta"
+                                                    data-venta-id="{{ venta.id }}"
+                                                    title="Generar PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </button>
                                             {% if venta.estado == 'pendiente' %}
                                             <button class="btn btn-outline-success btn-registrar-amortizacion"
                                                     data-venta-id="{{ venta.id }}"
@@ -301,12 +328,12 @@
                                                 <i class="fas fa-hand-holding-usd"></i>
                                             </button>
                                             {% endif %}
-                                            {% if venta.estado != 'cancelada' %}
+                                            {% if venta.estado != 'cancelada' and venta.estado != 'anulada' %}
                                             <button class="btn btn-outline-danger btn-anular-venta"
                                                     data-venta-id="{{ venta.id }}"
                                                     data-venta-codigo="{{ venta.codigo }}"
                                                     title="Anular venta">
-                                                <i class="fas fa-ban"></i>
+                                                <i class="fas fa-trash"></i>
                                             </button>
                                             {% endif %}
                                         </div>
@@ -419,6 +446,18 @@
                         <textarea class="form-control" id="amortObservaciones" rows="2"
                                   placeholder="Ej: Pago parcial, abono semanal..."></textarea>
                     </div>
+
+                    <div class="form-group">
+                        <label for="amortComprobante" class="font-weight-bold text-danger">
+                            <i class="fas fa-image mr-1"></i>Fotografía de Comprobante <span class="badge badge-danger ml-1">Obligatoria</span>
+                        </label>
+                        <input type="file" class="form-control" id="amortComprobante"
+                               accept="image/*" required
+                               placeholder="Selecciona una foto...">
+                        <small class="form-text text-muted">
+                            Sube una fotografía como evidencia del cobro. Formatos: JPG, PNG, etc.
+                        </small>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -434,16 +473,43 @@
 {% endblock %}
 
 {% block scripts_extra %}
+<script src="{% static 'js/ventas/anulacion_comun.js' %}"></script>
 <script src="{% static 'js/ventas/ventas.js' %}"></script>
 <script>
-function generarPDFContado() {
-    const perfil = '{{ perfil.id }}';
-    window.location.href = "{% url 'ventas:listar_ventas' %}?tipo_pago=contado&pdf=1";
-}
 
-function generarPDFCredito() {
-    const perfil = '{{ perfil.id }}';
-    window.location.href = "{% url 'ventas:listar_ventas' %}?tipo_pago=credito&pdf=1";
-}
+// Integración de botones anular con modales personalizados
+document.addEventListener('DOMContentLoaded', function() {
+    // Activar la pestaña correcta según parámetro ?tab= en la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabActivo = urlParams.get('tab');
+    
+    if (tabActivo === 'credito') {
+        // Desactivar todas las pestañas
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('show', 'active');
+        });
+        
+        // Activar pestaña de crédito
+        document.getElementById('credito-tab').classList.add('active');
+        document.getElementById('tabCredito').classList.add('show', 'active');
+    }
+    
+    // Delegar eventos para botones de anulación
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-anular-venta')) {
+            const btn = e.target.closest('.btn-anular-venta');
+            const ventaId = btn.dataset.ventaId;
+            const ventaCodigo = btn.dataset.ventaCodigo;
+            
+            // Para almacén: siempre true
+            const esAlmacen = true;
+            
+            abrirModalAnularVenta(ventaId, ventaCodigo, esAlmacen);
+        }
+    });
+});
 </script>
 {% endblock %}

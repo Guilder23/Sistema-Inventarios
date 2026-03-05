@@ -60,8 +60,8 @@ class ProductoAdmin(admin.ModelAdmin):
             'description': 'Todos los precios pueden ser editados por el administrador'
         }),
         ('Stock', {
-            'fields': ('unidades_por_caja', 'stock_critico', 'stock_bajo'),
-            'description': 'El stock total se calcula automáticamente desde los contenedores'
+            'fields': ('stock', 'unidades_por_caja', 'stock_critico', 'stock_bajo'),
+            'description': 'El stock principal se guarda en el campo Slock. El stock desde contenedores es un cálculo adicional'
         }),
         ('Auditoría', {
             'fields': ('creado_por', 'fecha_creacion', 'fecha_actualizacion'),

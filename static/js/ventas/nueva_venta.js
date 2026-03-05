@@ -32,6 +32,8 @@ let debounceTimer = null;
 // INICIALIZACIÓN
 $(document).ready(function () {
     initSelectorTipoPago();
+    initSelectorUsuarioVendedor();
+    initSelectorTipoPrecio();
     initBuscadorProductos();
     initBtnLimpiarCarrito();
     initBtnGuardarVenta();
@@ -43,6 +45,70 @@ function initSelectorTipoPago() {
         $('.tipo-pago-option').removeClass('active');
         $(this).addClass('active');
         $('#inputTipoPago').val($(this).data('tipo'));
+    });
+}
+
+// SELECTOR USUARIO VENDEDOR (Depósito/Tienda) - Solo para usuarios tienda
+function initSelectorUsuarioVendedor() {
+    const selectUsuarioVendedor = $('#selectUsuarioVendedor');
+    
+    // Solo inicializar si el elemento existe (usuarios tienda)
+    if (selectUsuarioVendedor.length === 0) {
+        return;
+    }
+    
+    selectUsuarioVendedor.on('change', function () {
+        const tipoVendedor = $(this).val();
+        
+        if (!tipoVendedor) {
+            $('#divTipoPrecio').hide();
+            $('#selectTipoPrecio').val('');
+            return;
+        }
+
+        const opciones = tipoVendedor === 'deposito' 
+            ? [
+                { value: 'caja', text: 'Caja', help: 'Venta por cajas' }
+              ]
+            : [
+                { value: 'unidad', text: 'Unidad', help: 'Venta unitaria (1-2 productos)' },
+                { value: 'caja', text: 'Caja', help: 'Venta por cajas' },
+                { value: 'mayor', text: 'Mayor', help: 'Venta por mayor (3 a N-1 unidades)' }
+              ];
+
+        // Llenar selector tipo precio
+        let html = '<option value="">-- Selecciona modalidad --</option>';
+        opciones.forEach(op => {
+            html += `<option value="${op.value}">${op.text}</option>`;
+        });
+        
+        $('#selectTipoPrecio').html(html);
+        $('#divTipoPrecio').show();
+    });
+}
+
+// SELECTOR TIPO PRECIO (Unidad/Caja/Mayor)
+function initSelectorTipoPrecio() {
+    const selectTipoPrecio = $('#selectTipoPrecio');
+    
+    // Solo inicializar si el elemento existe (usuarios tienda)
+    if (selectTipoPrecio.length === 0) {
+        return;
+    }
+    
+    selectTipoPrecio.on('change', function () {
+        const tipoPrecio = $(this).val();
+        let helpText = '';
+
+        if (tipoPrecio === 'unidad') {
+            helpText = '<i class="fas fa-info-circle"></i> Uso: precio_unitario del producto';
+        } else if (tipoPrecio === 'caja') {
+            helpText = '<i class="fas fa-info-circle"></i> Uso: precio_caja del producto';
+        } else if (tipoPrecio === 'mayor') {
+            helpText = '<i class="fas fa-info-circle"></i> Uso: precio_mayor del producto (cantidad entre 3 y N-1)';
+        }
+
+        $('#helpTipoPrecio').html(helpText);
     });
 }
 
@@ -499,3 +565,21 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
             $btn.prop('disabled', false).html('<i class="fas fa-check-circle mr-2"></i>Registrar Venta');
         });
 }
+
+// Validar que teléfono solo acepte números
+document.addEventListener('DOMContentLoaded', function() {
+    const inputTelefono = document.getElementById('inputTelefono');
+    if (inputTelefono) {
+        inputTelefono.addEventListener('keypress', function(e) {
+            if (!/[0-9]/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+        inputTelefono.addEventListener('paste', function(e) {
+            const text = e.clipboardData.getData('text');
+            if (!/^[0-9]*$/.test(text)) {
+                e.preventDefault();
+            }
+        });
+    }
+});
