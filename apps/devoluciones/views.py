@@ -7,9 +7,56 @@ from django.db.models import Q, Sum
 from django.db import transaction
 from apps.usuarios.models import PerfilUsuario
 from apps.productos.models import Producto, HistorialProducto
-from apps.inventario.models import MovimientoInventario
+from apps.inventario.models import Inventario, MovimientoInventario
 from .models import Devolucion
 import json
+
+
+def _ajustar_stock_por_rol(*, producto, perfil, cantidad, es_reduccion=True, usuario=None):
+    """
+    Ajusta el stock según el rol del usuario:
+    - Si es ALMACÉN: usa producto.reducir_stock() o producto.aumentar_stock() (ProductoContenedor)
+    - Si es TIENDA/DEPÓSITO: usa tabla Inventario (stock por ubicación)
+    
+    Retorna True si la operación fue exitosa, False en caso contrario.
+    """
+    if perfil.rol == 'almacen':
+        # ALMACÉN: usar stock global (ProductoContenedor)
+        if es_reduccion:
+            return producto.reducir_stock(cantidad, usuario)
+        else:
+            return producto.aumentar_stock(cantidad, usuario)
+    else:
+        # TIENDA/DEPÓSITO: usar stock local (Inventario)
+        inventario, created = Inventario.objects.get_or_create(
+            producto=producto,
+            ubicacion=perfil,
+            defaults={'cantidad': 0}
+        )
+        
+        if es_reduccion:
+            # Verificar que hay stock suficiente
+            if inventario.cantidad < cantidad:
+                return False
+            inventario.cantidad -= cantidad
+        else:
+            inventario.cantidad += cantidad
+        
+        inventario.save(update_fields=['cantidad', 'fecha_actualizacion'])
+        return True
+
+
+def _obtener_stock_disponible(producto, perfil):
+    """
+    Obtiene el stock disponible según el rol:
+    - ALMACÉN: retorna producto.stock (stock global)
+    - TIENDA/DEPÓSITO: retorna inventario local
+    """
+    if perfil.rol == 'almacen':
+        return producto.stock
+    else:
+        inventario = Inventario.objects.filter(producto=producto, ubicacion=perfil).first()
+        return inventario.cantidad if inventario else 0
 
 
 @login_required
@@ -274,8 +321,9 @@ def agregar_stock_recuperado(request, id):
         
         devolucion.save(update_fields=['cantidad_recuperada', 'estado'])
         
-        # Aumentar stock usando el método del modelo
-        if not devolucion.producto.aumentar_stock(cantidad, request.user):
+        # Aumentar stock según el rol (almacén usa ProductoContenedor, tienda usa Inventario)
+        if not _ajustar_stock_por_rol(producto=devolucion.producto, perfil=perfil, cantidad=cantidad,
+                                      es_reduccion=False, usuario=request.user):
             messages.error(request, 'Error al aumentar el stock')
             return redirect('devoluciones:listar')
         
@@ -341,8 +389,9 @@ def agregar_stock_repuesto(request, id):
         
         devolucion.save(update_fields=['cantidad_repuesta', 'estado'])
         
-        # Aumentar stock usando el método del modelo
-        if not devolucion.producto.aumentar_stock(cantidad, request.user):
+        # Aumentar stock según el rol (almacén usa ProductoContenedor, tienda usa Inventario)
+        if not _ajustar_stock_por_rol(producto=devolucion.producto, perfil=perfil, cantidad=cantidad,
+                                      es_reduccion=False, usuario=request.user):
             messages.error(request, 'Error al aumentar el stock')
             return redirect('devoluciones:listar')
         

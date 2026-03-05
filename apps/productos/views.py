@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
 from .models import Categoria, Contenedor, Producto, HistorialProducto, ProductoDanado, ProductoContenedor
-from apps.inventario.models import MovimientoInventario
+from apps.inventario.models import Inventario, MovimientoInventario
 from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
 
 def verificar_permiso_productos(request):
@@ -33,6 +33,53 @@ def es_administrador(request):
 def es_almacen(request):
     """Verifica si el usuario es del almacén"""
     return hasattr(request.user, 'perfil') and request.user.perfil.rol == 'almacen'
+
+
+def _ajustar_stock_por_rol(*, producto, perfil, cantidad, es_reduccion=True, usuario=None):
+    """
+    Ajusta el stock según el rol del usuario:
+    - Si es ALMACÉN: usa producto.reducir_stock() o producto.aumentar_stock() (ProductoContenedor)
+    - Si es TIENDA/DEPÓSITO: usa tabla Inventario (stock por ubicación)
+    
+    Retorna True si la operación fue exitosa, False en caso contrario.
+    """
+    if perfil.rol == 'almacen':
+        # ALMACÉN: usar stock global (ProductoContenedor)
+        if es_reduccion:
+            return producto.reducir_stock(cantidad, usuario)
+        else:
+            return producto.aumentar_stock(cantidad, usuario)
+    else:
+        # TIENDA/DEPÓSITO: usar stock local (Inventario)
+        inventario, created = Inventario.objects.get_or_create(
+            producto=producto,
+            ubicacion=perfil,
+            defaults={'cantidad': 0}
+        )
+        
+        if es_reduccion:
+            # Verificar que hay stock suficiente
+            if inventario.cantidad < cantidad:
+                return False
+            inventario.cantidad -= cantidad
+        else:
+            inventario.cantidad += cantidad
+        
+        inventario.save(update_fields=['cantidad', 'fecha_actualizacion'])
+        return True
+
+
+def _obtener_stock_disponible(producto, perfil):
+    """
+    Obtiene el stock disponible según el rol:
+    - ALMACÉN: retorna producto.stock (stock global)
+    - TIENDA/DEPÓSITO: retorna inventario local
+    """
+    if perfil.rol == 'almacen':
+        return producto.stock
+    else:
+        inventario = Inventario.objects.filter(producto=producto, ubicacion=perfil).first()
+        return inventario.cantidad if inventario else 0
 
 
 @login_required
@@ -667,8 +714,8 @@ def historial_producto(request, id):
 @require_http_methods(["GET", "POST"])
 def listar_danados(request):
     perfil = getattr(request.user, 'perfil', None)
-    if not perfil or perfil.rol != 'almacen':
-        messages.error(request, 'Solo el personal de almacén puede gestionar devoluciones')
+    if not perfil or perfil.rol not in ['almacen', 'tienda']:
+        messages.error(request, 'Solo el personal de almacén y tienda puede gestionar productos dañados')
         return redirect('dashboard')
 
     if request.method == 'POST':
@@ -688,13 +735,16 @@ def listar_danados(request):
 
             producto = get_object_or_404(Producto, id=producto_id, activo=True)
 
-            if producto.stock < cantidad:
-                messages.error(request, f'No hay stock suficiente para registrar daño. Stock actual: {producto.stock}')
+            # Verificar stock disponible según el rol
+            stock_disponible = _obtener_stock_disponible(producto, perfil)
+            if stock_disponible < cantidad:
+                messages.error(request, f'No hay stock suficiente para registrar daño. Stock disponible: {stock_disponible}')
                 return redirect('listar_danados')
 
             with transaction.atomic():
-                # Reducir stock usando el método del modelo
-                if not producto.reducir_stock(cantidad, request.user):
+                # Reducir stock según el rol (almacén usa ProductoContenedor, tienda usa Inventario)
+                if not _ajustar_stock_por_rol(producto=producto, perfil=perfil, cantidad=cantidad, 
+                                              es_reduccion=True, usuario=request.user):
                     messages.error(request, 'Error al reducir el stock')
                     return redirect('listar_danados')
 
@@ -777,7 +827,7 @@ def _actualizar_estado_danado(danado):
 
 def _procesar_devolucion(request, danado_id, tipo_accion):
     perfil = getattr(request.user, 'perfil', None)
-    if not perfil or perfil.rol != 'almacen':
+    if not perfil or perfil.rol not in ['almacen', 'tienda']:
         messages.error(request, 'No tiene permisos para esta acción')
         return redirect('listar_danados')
 
@@ -812,8 +862,9 @@ def _procesar_devolucion(request, danado_id, tipo_accion):
         _actualizar_estado_danado(danado)
         danado.save(update_fields=['cantidad_recuperada', 'cantidad_repuesta', 'estado'])
 
-        # Aumentar stock usando el método del modelo
-        if not danado.producto.aumentar_stock(cantidad, request.user):
+        # Aumentar stock según el rol (almacén usa ProductoContenedor, tienda usa Inventario)
+        if not _ajustar_stock_por_rol(producto=danado.producto, perfil=perfil, cantidad=cantidad,
+                                      es_reduccion=False, usuario=request.user):
             messages.error(request, 'Error al aumentar el stock')
             return redirect('listar_danados')
 
@@ -842,7 +893,7 @@ def _procesar_devolucion(request, danado_id, tipo_accion):
 @require_http_methods(["POST"])
 def agregar_mas_danado(request, id):
     perfil = getattr(request.user, 'perfil', None)
-    if not perfil or perfil.rol != 'almacen':
+    if not perfil or perfil.rol not in ['almacen', 'tienda']:
         messages.error(request, 'No tiene permisos para esta acción')
         return redirect('listar_danados')
 
@@ -858,15 +909,18 @@ def agregar_mas_danado(request, id):
         messages.error(request, 'La cantidad debe ser mayor a 0')
         return redirect('listar_danados')
 
-    if danado.producto.stock < cantidad:
-        messages.error(request, f'No hay stock suficiente para registrar más dañados. Stock actual: {danado.producto.stock}')
+    # Verificar stock disponible según el rol
+    stock_disponible = _obtener_stock_disponible(danado.producto, perfil)
+    if stock_disponible < cantidad:
+        messages.error(request, f'No hay stock suficiente para registrar más dañados. Stock disponible: {stock_disponible}')
         return redirect('listar_danados')
 
     comentario_accion = request.POST.get('comentario', '').strip()
 
     with transaction.atomic():
-        # Reducir stock usando el método del modelo
-        if not danado.producto.reducir_stock(cantidad, request.user):
+        # Reducir stock según el rol (almacén usa ProductoContenedor, tienda usa Inventario)
+        if not _ajustar_stock_por_rol(producto=danado.producto, perfil=perfil, cantidad=cantidad,
+                                      es_reduccion=True, usuario=request.user):
             messages.error(request, 'Error al reducir el stock. Verifica que hay stock suficiente.')
             return redirect('listar_danados')
         
@@ -901,7 +955,7 @@ def agregar_mas_danado(request, id):
 def obtener_danado(request, id):
     """Obtener detalles de un producto dañado"""
     perfil = getattr(request.user, 'perfil', None)
-    if not perfil or perfil.rol != 'almacen':
+    if not perfil or perfil.rol not in ['almacen', 'tienda']:
         return JsonResponse({'success': False, 'error': 'No tiene permisos para esta acción'}, status=403)
 
     try:

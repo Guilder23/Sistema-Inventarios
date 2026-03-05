@@ -73,8 +73,8 @@
             {% endwith %}
             {% endif %}
 
-            <!-- Productos Dañados - Solo Almacén -->
-            {% if user.perfil.rol == 'almacen' %}
+            <!-- Productos Dañados - Almacén y Tienda -->
+            {% if user.perfil.rol == 'almacen' or user.perfil.rol == 'tienda' %}
             <li class="sidebar-item">
                 <a href="{% url 'listar_danados' %}" class="sidebar-link {% if request.resolver_match.url_name == 'listar_danados' %}active{% endif %}" title="Productos Dañados">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -83,8 +83,8 @@
             </li>
             {% endif %}
 
-            <!-- Devoluciones - Solo Almacén -->
-            {% if user.perfil.rol == 'almacen' %}
+            <!-- Devoluciones - Almacén y Tienda -->
+            {% if user.perfil.rol == 'almacen' or user.perfil.rol == 'tienda' %}
             <li class="sidebar-item">
                 <a href="{% url 'devoluciones:listar' %}" class="sidebar-link {% if request.resolver_match.url_name == 'devoluciones:listar' or 'devoluciones' in request.resolver_match.url_name %}active{% endif %}" title="Devoluciones">
                     <i class="fas fa-undo"></i>
