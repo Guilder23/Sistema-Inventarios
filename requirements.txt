@@ -19,7 +19,7 @@ Pillow==11.0.0
 reportlab==4.0.9
 
 # API REST
-djangorestframework==3.14.0
+# djangorestframework==3.14.0
 
 # Almacenamiento en Blackblaze B2
 django-storages==1.14.2
