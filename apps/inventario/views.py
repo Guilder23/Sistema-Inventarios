@@ -1,12 +1,81 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Sum
+from django.db.models import Q, F, Sum
+from django.db import models
 
 from .models import Inventario, MovimientoInventario
 from apps.usuarios.models import PerfilUsuario
 from apps.depositos.models import Deposito
+from apps.almacenes.models import Almacen
+from apps.tiendas.models import Tienda
+from apps.filtros.serializers import AllRolesSerializer
+
+from .serializers import InventarioAPISerializer
+from rest_framework import filters, viewsets
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from apps.productos.models import Producto, ProductoContenedor
+
+class RolesAPIView(APIView):
+    def get(self, request):
+        data_context = {
+            # Traemos la lista de los modelos que definiste en el Serializer
+            'almacenes': Almacen.objects.all(), 
+            'tiendas': Tienda.objects.all(),
+            'depositos': Deposito.objects.all(),
+        }
+        serializer = AllRolesSerializer(data_context)
+        return Response(serializer.data)
+    
+class InventarioAPIViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = InventarioAPISerializer
+    def get_queryset(self):
+        queryset = Inventario.objects.select_related(
+            "producto",
+            "ubicacion",
+            "ubicacion__almacen",
+            "ubicacion__tienda"
+        )
+
+        # ── BUSCADOR: ?search=texto ──────────────────────────────
+        search = self.request.query_params.get("search", "").strip()
+        if search:
+            queryset = queryset.filter(
+                Q(producto__codigo__icontains=search) |
+                Q(producto__nombre__icontains=search) |
+                Q(ubicacion__tienda__nombre__icontains=search) |
+                Q(ubicacion__almacen__nombre__icontains=search)
+            )
+
+        # ── FILTRO UNIDAD OPERATIVA: ?unidad_operativa=texto ─────
+        unidad = self.request.query_params.get("unidad_operativa", "").strip()
+        if unidad:
+            queryset = queryset.filter(
+                Q(ubicacion__tienda__nombre__icontains=unidad) |
+                Q(ubicacion__almacen__nombre__icontains=unidad)
+            )
+
+        # ── FILTRO STOCK: ?stock_estado=critico/bajo/normal ──────
+        # Nombre igual al que envía el JS
+        stock_estado = self.request.query_params.get("stock_estado", "").strip()
+        if stock_estado == 'critico':
+            queryset = queryset.filter(
+                cantidad__lte=F('producto__stock_critico')
+            )
+        elif stock_estado == 'bajo':
+            queryset = queryset.filter(
+                cantidad__gt=F('producto__stock_critico'),
+                cantidad__lte=F('producto__stock_bajo')
+            )
+        elif stock_estado == 'normal':
+            queryset = queryset.filter(
+                cantidad__gt=F('producto__stock_bajo')
+            )
+
+        return queryset
+
+
 
 @login_required
 def ver_inventario(request):
@@ -175,7 +244,7 @@ def ver_inventario_ubicacion(request, ubicacion_id):
         'buscar': '',
         'estado': '',
     }
-    return render(request, 'inventario/ver.html', context)
+    return render(request, 'inventario/ver_inventario.html', context)
 
 @login_required
 def asignar_precio(request, producto_id):
