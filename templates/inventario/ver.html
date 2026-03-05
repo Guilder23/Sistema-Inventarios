@@ -33,7 +33,13 @@
                                 <i class="fas fa-search text-muted"></i>
                             </span>
                         </div>
-                        <input type="text" class="form-control form-control-sm border-left-0" id="buscar" placeholder="Buscar por código, nombre o unidad operativa...">
+                        <input
+                            type="text"
+                            class="form-control form-control-sm border-left-0"
+                            name="buscar"
+                            placeholder="Buscar por código, nombre{% if not es_almacen %}, categoría o contenedor{% endif %}..."
+                            value="{{ buscar }}"
+                        >
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -58,20 +64,55 @@
     <!-- TABLA CON PAGINACIÓN -->
     <div class="card card-tabla">
         <div class="table-responsive">
-            <table class="table table-sm tabla-productos mb-0">
+            <table class="table table-sm tabla-productos tabla-inventario {% if es_almacen %}almacen-view{% else %}tienda-view{% endif %} mb-0">
                 <thead>
                     <tr>
-                        <th style="width: 6%;">Foto</th>
-                        <th style="width: 10%;">Código</th>
-                        <th style="width: 20%;">Nombre</th>
-                        <th style="width: 12%;">Stock</th>
-                        <th style="width: 10%;">Cajas</th>
-                        <th style="width: 15%;">Unidad Operativa</th>
-                        <th style="width: 12%;">Acciones</th>
+                        <th style="width: 12%;">Código</th>
+                        <th style="width: 22%;">Producto</th>
+                        <th style="width: 14%;">Categoría</th>
+                        {% if not es_almacen %}<th style="width: 16%;">Contenedor</th>{% endif %}
+                        <th class="col-stock-almacen">{{ label_stock|default:'Stock' }}</th>
+                        <th style="width: 10%;">Estado</th>
+                        <th style="width: 14%;">Actualizado</th>
                     </tr>
                 </thead>
-                <tbody id="tablaInventario">
-                    <!-- Aquí se llenará dinámicamente con JS -->
+                <tbody>
+                    {% for item in inventarios %}
+                    <tr>
+                        <td>
+                            <span class="codigo-badge">{{ item.producto.codigo }}</span>
+                        </td>
+                        <td>{{ item.producto.nombre }}</td>
+                        <td>{{ item.producto.categoria.nombre|default:'Sin categoría' }}</td>
+                        {% if not es_almacen %}<td>{{ item.producto.contenedor.nombre|default:'Sin contenedor' }}</td>{% endif %}
+                        <td>
+                            {% if item.estado_stock == 'normal' %}
+                                <span class="badge-stock badge-stock-normal">{{ item.cantidad }} unidades</span>
+                            {% elif item.estado_stock == 'bajo' %}
+                                <span class="badge-stock badge-stock-bajo">{{ item.cantidad }} unidades</span>
+                            {% else %}
+                                <span class="badge-stock badge-stock-critico">{{ item.cantidad }} unidades</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.estado_stock == 'normal' %}
+                                <span class="badge-estado badge-estado-activo">Normal</span>
+                            {% elif item.estado_stock == 'bajo' %}
+                                <span class="badge-estado badge-estado-bajo">Bajo</span>
+                            {% else %}
+                                <span class="badge-estado badge-estado-inactivo">Crítico</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.fecha_actualizacion|date:'d/m/Y H:i' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if es_almacen %}6{% else %}7{% endif %}" class="text-center py-4">
+                            <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">No hay stock disponible para esta ubicación</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>

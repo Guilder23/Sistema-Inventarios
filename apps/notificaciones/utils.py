@@ -70,3 +70,74 @@ def notificar_almacen_precio(titulo, mensaje, url=None):
     except Exception as e:
         print(f"Error al notificar almacén: {str(e)}")
         return False
+
+def crear_notificacion_realtime(usuario, tipo, titulo, mensaje, url=None):
+    """
+    Args:
+        usuario: Usuario destinatario
+        tipo: Tipo de notificación
+        titulo: Título
+        mensaje: Mensaje
+        url: URL opcional (por ahora? xd)
+    """
+    try:
+        notif = Notificacion.objects.create(
+            usuario=usuario,
+            tipo=tipo,
+            titulo=titulo,
+            mensaje=mensaje,
+            url=url
+        )
+        
+        # Disparar en tiempo real
+        from .views import disparar_notificacion_realtime
+        disparar_notificacion_realtime(usuario.id)
+        
+        return True
+    except Exception as e:
+        print(f"Error al crear notificación realtime: {str(e)}")
+        return False
+
+def crear_notificacion_venta(usuario, codigo_venta, cliente, monto, tipo_pago, url=None):
+    """
+    Args:
+        usuario: Usuario destinatario
+        codigo_venta: Código de la venta
+        cliente: Nombre del cliente
+        monto: Monto de la venta
+        tipo_pago: 'contado' o 'credito'
+        url: URL a detalles de venta
+    """
+    tipo_pago_display = "al contado" if tipo_pago == "contado" else "a crédito"
+    
+    titulo = 'Nueva Venta Registrada'
+    mensaje = f'Venta {codigo_venta} de ${monto:.2f} de {cliente} ({tipo_pago_display}).'
+    
+    return crear_notificacion_realtime(usuario, 'venta', titulo, mensaje, url)
+
+def crear_notificacion_traspaso(usuario, codigo_traspaso, almacen_origen, almacen_destino, estado, url=None):
+    """
+    Args:
+        usuario: Usuario destinatario
+        codigo_traspaso: Código del traspaso
+        almacen_origen: Almacén origen
+        almacen_destino: Almacén destino
+        estado: 'completado', 'cancelado', o 'pendiente'
+        url: URL a detalles del traspaso
+    """
+    titulos = {
+        'completado': 'Traspaso Completado',
+        'cancelado': 'Traspaso Cancelado',
+        'pendiente': 'Nuevo Traspaso Pendiente',
+    }
+    
+    mensajes = {
+        'completado': f'El traspaso {codigo_traspaso} de {almacen_origen} a {almacen_destino} se completó.',
+        'cancelado': f'El traspaso {codigo_traspaso} de {almacen_origen} a {almacen_destino} fue cancelado.',
+        'pendiente': f'Nuevo traspaso {codigo_traspaso} pendiente de {almacen_origen} a {almacen_destino}.',
+    }
+    
+    titulo = titulos.get(estado, 'Actualización de Traspaso')
+    mensaje = mensajes.get(estado, f'El traspaso {codigo_traspaso} tiene una actualización.')
+    
+    return crear_notificacion_realtime(usuario, 'traspaso', titulo, mensaje, url)

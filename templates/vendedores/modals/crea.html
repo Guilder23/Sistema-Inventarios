@@ -1,0 +1,167 @@
+<!-- MODAL: CREAR VENDEDOR -->
+<div class="modal fade" id="modalCrearVendedor" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus"></i> Crear Nuevo Vendedor
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formCrearVendedor" method="post" action="{% url 'crear_vendedor' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- COLUMNA IZQUIERDA -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-user"></i> Información Personal
+                            </h6>
+                            
+                            <div class="form-group">
+                                <label for="nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="nombre" 
+                                    name="nombre" 
+                                    required
+                                    placeholder="Ingrese el nombre"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="apellido" class="form-label">Apellido <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="apellido" 
+                                    name="apellido" 
+                                    required
+                                    placeholder="Ingrese el apellido"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cedula" class="form-label">Cédula/DNI <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="cedula" 
+                                    name="cedula" 
+                                    required
+                                    placeholder="Número de cédula"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email" class="form-label">Email</label>
+                                <input 
+                                    type="email" 
+                                    class="form-control" 
+                                    id="email" 
+                                    name="email" 
+                                    placeholder="ejemplo@correo.com"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="telefono" class="form-label">Teléfono</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="telefono" 
+                                    name="telefono" 
+                                    placeholder="Número de teléfono"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- COLUMNA DERECHA -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-building"></i> Ubicación y Comisión
+                            </h6>
+
+                            <div class="form-group">
+                                <label for="tipoUbicacion" class="form-label">Tipo de Ubicación <span class="text-danger">*</span></label>
+                                <select class="form-control" id="tipoUbicacion" name="tipo_ubicacion" required>
+                                    <option value="">Seleccione una opción</option>
+                                    <option value="almacen">Almacén</option>
+                                    <option value="tienda">Tienda</option>
+                                </select>
+                            </div>
+
+                            <!-- Selector de Almacén (Solo si selecciona Almacén) -->
+                            <div class="form-group" id="grupoAlmacen" style="display: none;">
+                                <label for="almacen" class="form-label">Almacén <span class="text-danger">*</span></label>
+                                <select class="form-control" id="almacen" name="almacen">
+                                    <option value="">Seleccione un almacén</option>
+                                    {% for almacen in almacenes %}
+                                        <option value="{{ almacen.id }}">{{ almacen.nombre }} - {{ almacen.ciudad }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Selector de Tienda (Solo si selecciona Tienda) -->
+                            <div class="form-group" id="grupoTienda" style="display: none;">
+                                <label for="tienda" class="form-label">Tienda <span class="text-danger">*</span></label>
+                                <select class="form-control" id="tienda" name="tienda">
+                                    <option value="">Seleccione una tienda</option>
+                                    {% for tienda in tiendas %}
+                                        <option value="{{ tienda.id }}">{{ tienda.nombre }} - {{ tienda.ciudad }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="comision" class="form-label">Comisión (%)</label>
+                                <input 
+                                    type="number" 
+                                    class="form-control" 
+                                    id="comision" 
+                                    name="comision"
+                                    step="0.01"
+                                    min="0"
+                                    max="100"
+                                    value="0"
+                                    placeholder="0.00"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="estado" class="form-label">Estado</label>
+                                <select class="form-control" id="estado" name="estado">
+                                    <option value="activo">Activo</option>
+                                    <option value="inactivo">Inactivo</option>
+                                    <option value="suspendido">Suspendido</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="direccion" class="form-label">Dirección</label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="direccion" 
+                                    name="direccion" 
+                                    rows="2"
+                                    placeholder="Dirección del vendedor"
+                                ></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar Vendedor
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

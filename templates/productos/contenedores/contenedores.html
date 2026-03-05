@@ -20,7 +20,7 @@
             </h1>
             <p class="page-subtitle">Administra contenedores por nombre, proveedor y stock</p>
         </div>
-        <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalCrearContenedor">
+        <button type="button" class="btn btn-primary btn-lg" id="btnCrearContenedor">
             <i class="fas fa-plus"></i> Nuevo Contenedor
         </button>
     </div>
@@ -82,7 +82,7 @@
                             </div>
                         </td>
                         <td>
-                            <span class="badge-stock">{{ contenedor.stock }} unidades</span>
+                            <span class="badge-stock">{{ contenedor.stock_total }} unidades</span>
                         </td>
                         <td class="text-center">
                             {% if contenedor.activo %}
@@ -99,6 +99,13 @@
                             <small>{{ contenedor.fecha_creacion|date:"d/m/y H:i" }}</small>
                         </td>
                         <td class="text-center acciones-col">
+                            <a
+                                href="{% url 'productos_en_contenedor' contenedor.id %}"
+                                class="btn btn-success btn-sm"
+                                title="Ver productos en este contenedor"
+                            >
+                                <i class="fas fa-box"></i>
+                            </a>
                             <button
                                 type="button"
                                 class="btn btn-info btn-sm btn-ver-contenedor"
@@ -147,6 +154,7 @@
 {% endblock %}
 
 {% block scripts_extra %}
+    <script src="{% static 'js/productos/contenedores/debug.js' %}"></script>
     <script src="{% static 'js/productos/contenedores/modals/crea.js' %}"></script>
     <script src="{% static 'js/productos/contenedores/modals/ver.js' %}"></script>
     <script src="{% static 'js/productos/contenedores/modals/edita.js' %}"></script>

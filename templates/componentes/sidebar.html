@@ -106,11 +106,11 @@
             </li>
             {% endif %}
 
-            <!-- Ventas - Vendedores y Administradores (Oculto para Tienda Online) -->
-            {% if user.is_staff or user.groups.filter|length > 0 %}
+            <!-- Ventas - Almacén, Staff y Administradores (Oculto para Tienda Online) -->
+            {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
                 {% if not user.perfil or user.perfil.rol != 'tienda_online' %}
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link" title="Ventas">
+                    <a href="{% url 'ventas:listar_ventas' %}" class="sidebar-link {% if 'ventas' in request.path %}active{% endif %}" title="Ventas">
                         <i class="fas fa-shopping-cart"></i>
                         <span>Ventas</span>
                     </a>
@@ -190,6 +190,16 @@
                 <a href="{% url 'tiendas_virtuales:listar' %}" class="sidebar-link {% if 'tiendas_virtuales' in request.resolver_match.url_name %}active{% endif %}" title="Tiendas Virtuales">
                     <i class="fas fa-globe"></i>
                     <span>Tiendas Virtuales</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- Vendedores - Solo Administradores -->
+            {% if user.is_superuser %}
+            <li class="sidebar-item">
+                <a href="{% url 'listar_vendedores' %}" class="sidebar-link {% if 'vendedores' in request.resolver_match.url_name %}active{% endif %}" title="Vendedores">
+                    <i class="fas fa-handshake"></i>
+                    <span>Vendedores</span>
                 </a>
             </li>
             {% endif %}

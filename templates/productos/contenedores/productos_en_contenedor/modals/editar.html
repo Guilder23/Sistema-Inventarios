@@ -1,0 +1,62 @@
+{% load static %}
+
+<!-- MODAL: EDITAR CANTIDAD EN CONTENEDOR -->
+<div class="modal fade" id="modalEditarProductoContenedor" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 400px;">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title text-white">
+                    <i class="fas fa-edit"></i> Editar Cantidad
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formEditarProductoContenedor" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="pc_id_edit" name="producto_contenedor_id" value="">
+
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-1">Producto</small>
+                        <h6 class="mb-0" id="productoNombreEdit"></h6>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label small text-muted mb-1 d-block">Actual</label>
+                            <div class="text-center py-2 bg-light rounded">
+                                <h6 class="mb-0" id="cantidadActualEdit">0</h6>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label for="cantidadNuevaEdit" class="form-label small text-muted mb-1 d-block">Nueva</label>
+                            <input 
+                                type="number" 
+                                class="form-control form-control-sm text-center" 
+                                id="cantidadNuevaEdit" 
+                                name="cantidad"
+                                min="0" 
+                                value="0"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <div class="text-center py-2">
+                        <small class="text-muted d-block mb-2">Cambio Estimado</small>
+                        <span class="badge badge-cambio-editar badge-cambio-editar-neutral" id="diferenciaEdit">0 unidades</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
