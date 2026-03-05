@@ -152,16 +152,6 @@
                             <tr>
                                 <td>
                                     <strong>{{ detalle.producto.nombre }}</strong>
-                                    {% if venta.vendedor.perfil.rol == 'tienda' and detalle.cantidad > detalle.producto.unidades_por_caja %}
-                                        {% with cajas=detalle.cantidad|divisibleby:detalle.producto.unidades_por_caja mayor=detalle.cantidad|remainder:detalle.producto.unidades_por_caja %}
-                                        <div class="desglose-modalidad">
-                                            {% widthratio detalle.cantidad detalle.producto.unidades_por_caja 1 as cajas %}
-                                            {% with mayoristas=detalle.cantidad|add:0|add:-cajas|add:detalle.producto.unidades_por_caja|add:cajas %}
-                                                {% if cajas > 0 %}{{ cajas }} caja{% if cajas != 1 %}s{% endif %}{% if mayoristas > 0 %} + {% endif %}{% endif %}{% if mayoristas > 0 %}{{ mayoristas }} mayor{% endif %}
-                                            {% endwith %}
-                                        </div>
-                                        {% endwith %}
-                                    {% endif %}
                                 </td>
                                 <td class="text-center">{{ detalle.cantidad }}</td>
                                 <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
@@ -246,6 +236,7 @@
                                 <label for="observaciones">Observaciones:</label>
                                 <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
                             </div>
+
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
@@ -262,11 +253,13 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/componentes/modales.js' %}"></script>
+<script src="{% static 'js/ventas/anulacion_comun.js' %}"></script>
 
 <script>
 function anularVenta(ventaId) {
     if (!confirm('¿Está seguro que desea anular esta venta? El stock será devuelto.')) return;
-    
+
     fetch(`/ventas/${ventaId}/anular/`, {
         method: 'POST',
         headers: {
@@ -289,10 +282,10 @@ function anularVenta(ventaId) {
 {% if venta.tipo_pago == 'credito' %}
 document.getElementById('formAmortizacion').addEventListener('submit', function(e) {
     e.preventDefault();
-    
+
     const monto = document.getElementById('monto').value;
     const observaciones = document.getElementById('observaciones').value;
-    
+
     fetch(`/ventas/{{ venta.id }}/amortizacion/`, {
         method: 'POST',
         headers: {
@@ -318,7 +311,7 @@ document.getElementById('formAmortizacion').addEventListener('submit', function(
 {% endif %}
 
 function getCSRFToken() {
-    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
            document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1] || '';
 }
 </script>
