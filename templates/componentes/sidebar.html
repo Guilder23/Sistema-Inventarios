@@ -30,23 +30,83 @@
 
             <!-- Productos - Almacén y Administradores -->
             {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
+            {% with url_actual=request.resolver_match.url_name %}
+            {% if user.perfil.rol == 'almacen' %}
+            <li class="sidebar-item sidebar-item-with-submenu">
+                <a
+                    href="{% url 'listar_productos' %}"
+                    class="sidebar-link sidebar-link-toggle {% if 'productos' in url_actual or 'categorias' in url_actual or 'contenedores' in url_actual %}active{% endif %}"
+                    title="Productos"
+                    data-submenu-toggle="submenuProductos"
+                    aria-expanded="{% if 'productos' in url_actual or 'categorias' in url_actual or 'contenedores' in url_actual %}true{% else %}false{% endif %}"
+                >
+                    <i class="fas fa-box"></i>
+                    <span>Productos</span>
+                    <i class="fas fa-chevron-down submenu-chevron"></i>
+                </a>
+                <ul id="submenuProductos" class="sidebar-submenu {% if 'productos' in url_actual or 'categorias' in url_actual or 'contenedores' in url_actual %}open{% endif %}">
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'listar_productos' %}" class="sidebar-submenu-link {% if 'productos' in url_actual %}active{% endif %}">
+                            Gestión de Productos
+                        </a>
+                    </li>
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'listar_categorias' %}" class="sidebar-submenu-link {% if 'categorias' in url_actual %}active{% endif %}">
+                            Categorías
+                        </a>
+                    </li>
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'listar_contenedores' %}" class="sidebar-submenu-link {% if 'contenedores' in url_actual %}active{% endif %}">
+                            Contenedores
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            {% else %}
             <li class="sidebar-item">
-                <a href="{% url 'listar_productos' %}" class="sidebar-link {% if 'productos' in request.resolver_match.url_name %}active{% endif %}" title="Productos">
+                <a href="{% url 'listar_productos' %}" class="sidebar-link {% if 'productos' in url_actual %}active{% endif %}" title="Productos">
                     <i class="fas fa-box"></i>
                     <span>Productos</span>
                 </a>
             </li>
             {% endif %}
+            {% endwith %}
+            {% endif %}
 
-            <!-- Inventario - Todos los usuarios incluyendo Tienda Online -->
+            <!-- Devoluciones - Solo Almacén -->
+            {% if user.perfil.rol == 'almacen' %}
+            <li class="sidebar-item">
+                <a href="{% url 'listar_danados' %}" class="sidebar-link {% if request.resolver_match.url_name == 'listar_danados' %}active{% endif %}" title="Devoluciones">
+                    <i class="fas fa-rotate-left"></i>
+                    <span>Devoluciones</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- Inventario -->
+            {% if user.perfil.rol == 'tienda' %}
+            <li class="sidebar-item">
+                <a href="{% url 'ver_inventario' %}" class="sidebar-link {% if request.resolver_match.url_name == 'ver_inventario' %}active{% endif %}" title="Inventario Tienda">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Inventario Tienda</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'ver_inventario_deposito' %}" class="sidebar-link {% if request.resolver_match.url_name == 'ver_inventario_deposito' %}active{% endif %}" title="Inventario Depósito">
+                    <i class="fas fa-boxes-stacked"></i>
+                    <span>Inventario Depósito</span>
+                </a>
+            </li>
+            {% else %}
             <li class="sidebar-item">
                 <a href="{% url 'ver_inventario' %}" class="sidebar-link {% if 'inventario' in request.resolver_match.url_name %}active{% endif %}" title="Inventario">
                     <i class="fas fa-warehouse"></i>
                     <span>Inventario</span>
                 </a>
             </li>
+            {% endif %}
 
-            <!-- Ventas - Almacén, Tienda, Staff y Administradores -->
+            <!-- Ventas - Almacén, Tienda, Staff y Administradores (Oculto para Tienda Online) -->
             {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
                 {% if not user.perfil or user.perfil.rol != 'tienda_online' %}
                 <li class="sidebar-item">
@@ -71,7 +131,7 @@
             <!-- Pedidos - Oculto para Tienda Online -->
             {% if not user.perfil or user.perfil.rol != 'tienda_online' %}
             <li class="sidebar-item">
-                <a href="#" class="sidebar-link" title="Pedidos">
+                <a href="{% url 'listar_pedidos' %}" class="sidebar-link {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}" title="Pedidos">
                     <i class="fas fa-clipboard-list"></i>
                     <span>Pedidos</span>
                 </a>
@@ -79,7 +139,7 @@
             {% endif %}
 
             <!-- Traspasos - Almacén, Tienda y Administradores (Oculto para Tienda Online) -->
-            {% if user.is_superuser or user.perfil.rol == 'almacen' or user.perfil.rol == 'tienda' %}
+            {% if user.is_superuser or user.perfil.rol == 'almacen' or user.perfil.rol == 'tienda' or user.perfil.rol == 'deposito' %}
             <li class="sidebar-item">
                 <a href="{% url 'listar_traspasos' %}" class="sidebar-link {% if 'traspasos' in request.resolver_match.url_name %}active{% endif %}" title="Traspasos">
                     <i class="fas fa-exchange-alt"></i>
@@ -144,9 +204,19 @@
             </li>
             {% endif %}
 
+            <!-- Vendedores - Solo Administradores -->
+            {% if user.is_superuser %}
+            <li class="sidebar-item">
+                <a href="{% url 'listar_vendedores' %}" class="sidebar-link {% if 'vendedores' in request.resolver_match.url_name %}active{% endif %}" title="Vendedores">
+                    <i class="fas fa-handshake"></i>
+                    <span>Vendedores</span>
+                </a>
+            </li>
+            {% endif %}
+
             <!-- Reportes - Staff y Administradores -->
             <li class="sidebar-item">
-                <a href="#" class="sidebar-link" title="Reportes">
+                <a href="{% url 'reportes:historial' %}" class="sidebar-link" title="Reportes">
                     <i class="fas fa-chart-bar"></i>
                     <span>Reportes</span>
                 </a>

@@ -11,5 +11,6 @@ urlpatterns = [
     
     # API endpoints para AJAX
     path('api/productos/', views.obtener_productos_traspaso, name='obtener_productos_traspaso'),
+    path('api/origenes/', views.obtener_origenes_traspaso, name='obtener_origenes_traspaso'),
     path('api/destinos/', views.obtener_destinos_traspaso, name='obtener_destinos_traspaso'),
 ]

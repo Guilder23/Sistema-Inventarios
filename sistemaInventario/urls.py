@@ -34,11 +34,12 @@ urlpatterns = [
     path('ventas/', include('apps.ventas.urls')),
     path('pedidos/', include('apps.pedidos.urls')),
     path('notificaciones/', include('apps.notificaciones.urls')),
-    path('reportes/', include('apps.reportes.urls')),
+    path('reportes/', include('apps.reportes.urls', namespace='reportes')),
     path('almacenes/', include('apps.almacenes.urls')),
     path('tiendas/', include('apps.tiendas.urls')),
     path('depositos/', include('apps.depositos.urls')),
     path('tiendas-virtuales/', include('apps.tiendas_virtuales.urls')),
+    path('vendedores/', include('apps.vendedores.urls')),
 ]
 
 # Servir archivos media en desarrollo

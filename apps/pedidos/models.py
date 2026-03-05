@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from apps.productos.models import Producto
 from apps.usuarios.models import PerfilUsuario
+import uuid
+from datetime import datetime
 
 class Pedido(models.Model):
     """Registro de pedidos entre ubicaciones"""
@@ -29,6 +31,17 @@ class Pedido(models.Model):
     
     def __str__(self):
         return f"{self.codigo} - {self.solicitante} → {self.proveedor}"
+
+    @classmethod
+    def generar_codigo(cls):
+        prefijo = 'PED'
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        aleatorio = str(uuid.uuid4())[:8].upper()
+        return f"{prefijo}-{timestamp}-{aleatorio}"
+
+    @property
+    def total_productos(self):
+        return self.detalles.count()
 
 
 class DetallePedido(models.Model):
