@@ -39,6 +39,7 @@ urlpatterns = [
     path('tiendas/', include('apps.tiendas.urls')),
     path('depositos/', include('apps.depositos.urls')),
     path('tiendas-virtuales/', include('apps.tiendas_virtuales.urls')),
+    path('vendedores/', include('apps.vendedores.urls')),
 ]
 
 # Servir archivos media en desarrollo

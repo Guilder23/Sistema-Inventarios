@@ -45,3 +45,18 @@
 .tabla-inventario .codigo-badge {
     font-size: 0.74rem;
 }
+
+/* Ancho condicional para columna de stock */
+.col-stock-almacen {
+    width: 18% !important;
+}
+
+/* Para tabla sin columna de contenedor (almacén) */
+table.tabla-inventario.almacen-view .col-stock-almacen {
+    width: 18% !important;
+}
+
+/* Para tabla con columna de contenedor (tienda/depósito) */
+table.tabla-inventario.tienda-view .col-stock-almacen {
+    width: 12% !important;
+}

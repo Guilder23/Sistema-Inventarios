@@ -1,0 +1,197 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Gestión de Vendedores{% endblock %}
+
+{% block estilos_extra %}
+    <link rel="stylesheet" href="{% static 'css/vendedores/vendedores.css' %}">
+    <link rel="stylesheet" href="{% static 'css/vendedores/modals/crea.css' %}">
+    <link rel="stylesheet" href="{% static 'css/vendedores/modals/ver.css' %}">
+    <link rel="stylesheet" href="{% static 'css/vendedores/modals/edita.css' %}">
+    <link rel="stylesheet" href="{% static 'css/vendedores/modals/elimina.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+                <!-- HEADER DE LA PÁGINA -->
+                <div class="page-header">
+                    <div class="page-header-content">
+                        <h1 class="page-title">
+                            <i class="fas fa-handshake"></i> Gestión de Vendedores
+                        </h1>
+                        <p class="page-subtitle">Administra los vendedores de almacenes y tiendas</p>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalCrearVendedor">
+                        <i class="fas fa-user-plus"></i> Nuevo Vendedor
+                    </button>
+                </div>
+
+                <!-- FILTROS Y BÚSQUEDA -->
+                <div class="card card-filtros">
+                    <div class="card-body py-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-5">
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-white border-right-0">
+                                            <i class="fas fa-search text-muted"></i>
+                                        </span>
+                                    </div>
+                                    <input 
+                                        type="text" 
+                                        class="form-control form-control-sm border-left-0" 
+                                        id="buscar" 
+                                        name="buscar"
+                                        placeholder="Buscar por nombre, cédula o teléfono..."
+                                        value="{{ buscar }}"
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <select class="form-control form-control-sm" id="estado" name="estado">
+                                    <option value="">Todos los estados</option>
+                                    <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
+                                    <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                                    <option value="suspendido" {% if estado == 'suspendido' %}selected{% endif %}>Suspendidos</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <select class="form-control form-control-sm" id="ubicacion_tipo" name="ubicacion_tipo">
+                                    <option value="">Todas las ubicaciones</option>
+                                    <option value="almacen" {% if ubicacion_tipo == 'almacen' %}selected{% endif %}>Almacenes</option>
+                                    <option value="tienda" {% if ubicacion_tipo == 'tienda' %}selected{% endif %}>Tiendas</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABLA DE VENDEDORES -->
+                <div class="card card-tabla">
+                    <div class="table-responsive">
+                        <table class="table table-sm tabla-vendedores mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">Nombre Completo</th>
+                                    <th style="width: 12%;">Cédula/DNI</th>
+                                    <th style="width: 15%;">Ubicación</th>
+                                    <th style="width: 10%;">Teléfono</th>
+                                    <th style="width: 8%;">Comisión</th>
+                                    <th style="width: 10%;">Estado</th>
+                                    <th style="width: 12%;">Creado por</th>
+                                    <th class="text-center" style="width: 12%;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vendedor in vendedores %}
+                                <tr>
+                                    <td>
+                                        <span class="vendedor-badge">{{ vendedor.nombre_completo }}</span>
+                                    </td>
+                                    <td>
+                                        <code>{{ vendedor.cedula }}</code>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 150px;" title="{{ vendedor.ubicacion }}">
+                                            <span class="badge-tipo" data-tipo="{{ vendedor.tipo_ubicacion }}">
+                                                {% if vendedor.tipo_ubicacion == 'Almacén' %}
+                                                    <i class="fas fa-warehouse"></i>
+                                                {% elif vendedor.tipo_ubicacion == 'Tienda' %}
+                                                    <i class="fas fa-store"></i>
+                                                {% endif %}
+                                                {{ vendedor.tipo_ubicacion }}
+                                            </span>
+                                            {{ vendedor.ubicacion }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {{ vendedor.telefono|default:"—" }}
+                                    </td>
+                                    <td class="text-center">
+                                        {{ vendedor.comision }}%
+                                    </td>
+                                    <td class="text-center">
+                                        {% if vendedor.estado == 'activo' %}
+                                            <span class="badge-estado badge-estado-activo">
+                                                <i class="fas fa-check-circle"></i> Activo
+                                            </span>
+                                        {% elif vendedor.estado == 'inactivo' %}
+                                            <span class="badge-estado badge-estado-inactivo">
+                                                <i class="fas fa-times-circle"></i> Inactivo
+                                            </span>
+                                        {% elif vendedor.estado == 'suspendido' %}
+                                            <span class="badge-estado badge-estado-suspendido">
+                                                <i class="fas fa-exclamation-circle"></i> Suspendido
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ vendedor.creado_por.username|default:"Sistema" }}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-info btn-sm btn-ver-vendedor"
+                                            data-toggle="modal" 
+                                            data-target="#modalVerVendedor"
+                                            data-vendedor-id="{{ vendedor.id }}"
+                                            title="Ver detalles"
+                                        >
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-warning btn-sm btn-editar-vendedor"
+                                            data-toggle="modal" 
+                                            data-target="#modalEditarVendedor"
+                                            data-vendedor-id="{{ vendedor.id }}"
+                                            title="Editar vendedor"
+                                        >
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-danger btn-sm btn-eliminar-vendedor"
+                                            data-toggle="modal" 
+                                            data-target="#modalEliminarVendedor"
+                                            data-vendedor-id="{{ vendedor.id }}"
+                                            data-vendedor-nombre="{{ vendedor.nombre_completo }}"
+                                            title="Eliminar"
+                                        >
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
+                                        <p class="text-muted">No hay vendedores registrados</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- INCLUIR MODALES -->
+                {% include 'vendedores/modals/crea.html' %}
+                {% include 'vendedores/modals/ver.html' %}
+                {% include 'vendedores/modals/edita.html' %}
+                {% include 'vendedores/modals/elimina.html' %}
+            </div>
+{% endblock %}
+
+{% block scripts_extra %}
+    <!-- Scripts de Modals (deben cargar primero) -->
+    <script src="{% static 'js/vendedores/modals/crea.js' %}"></script>
+    <script src="{% static 'js/vendedores/modals/ver.js' %}"></script>
+    <script src="{% static 'js/vendedores/modals/edita.js' %}"></script>
+    <script src="{% static 'js/vendedores/modals/elimina.js' %}"></script>
+    
+    <!-- Script Principal de Vendedores -->
+    <script src="{% static 'js/vendedores/vendedores.js' %}"></script>
+{% endblock %}

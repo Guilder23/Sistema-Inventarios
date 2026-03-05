@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     'apps.tiendas',
     'apps.depositos',
     'apps.tiendas_virtuales',
-    'storages',  # Para almacenamiento en S3 (Blackblaze B2)
+    'apps.vendedores',
 ]
 
 MIDDLEWARE = [

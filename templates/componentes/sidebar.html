@@ -194,6 +194,16 @@
             </li>
             {% endif %}
 
+            <!-- Vendedores - Solo Administradores -->
+            {% if user.is_superuser %}
+            <li class="sidebar-item">
+                <a href="{% url 'listar_vendedores' %}" class="sidebar-link {% if 'vendedores' in request.resolver_match.url_name %}active{% endif %}" title="Vendedores">
+                    <i class="fas fa-handshake"></i>
+                    <span>Vendedores</span>
+                </a>
+            </li>
+            {% endif %}
+
             <!-- Reportes - Staff y Administradores -->
             <li class="sidebar-item">
                 <a href="#" class="sidebar-link" title="Reportes">
