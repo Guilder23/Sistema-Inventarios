@@ -449,9 +449,10 @@
     .user-avatar-large {
         width: 44px;
         height: 44px;
-        font-size: 1.1rem
+        font-size: 1.1rem;
+    }
 }
-}
+
 @media (max-width: 768px) {
     .navbar-container {
         gap: 0.75rem;
