@@ -31,18 +31,21 @@ function inicializarModalAccionStock() {
             cantidadInput.value = max > 0 ? '1' : '0';
             cantidadInput.placeholder = Math.min(5, max) > 0 ? String(Math.min(5, max)) : '1';
             
-            if (accion === 'recuperado') {
+            if (accion === 'devolucion') {
                 labelCantidad.textContent = '¿Cuántas más devoluciones hay de este producto?';
-                helperCantidad.textContent = 'Este número se sumará a las devoluciones actuales';
-                btnConfirmar.textContent = '✓ Agregar devoluciones';
+                helperCantidad.textContent = 'Este número se sumará a las devoluciones actuales (no afecta el stock)';
+                btnConfirmar.textContent = '+ Agregar devoluciones';
+                btnConfirmar.className = 'btn btn-warning';
             } else if (accion === 'repuesto') {
                 labelCantidad.textContent = '¿Cuántas unidades repones al stock?';
-                helperCantidad.textContent = 'Este número se sumará al inventario disponible';
-                btnConfirmar.textContent = '↻ Reponer al inventario';
+                helperCantidad.textContent = 'Productos repuestos que se agregarán al inventario';
+                btnConfirmar.textContent = '↻ Reponer al stock';
+                btnConfirmar.className = 'btn btn-primary';
             } else {
                 labelCantidad.textContent = 'Ingresa la cantidad';
                 helperCantidad.textContent = 'Indica la cantidad a procesar';
                 btnConfirmar.textContent = 'Confirmar';
+                btnConfirmar.className = 'btn btn-primary';
             }
         });
     });

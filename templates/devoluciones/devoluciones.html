@@ -124,12 +124,12 @@
                                 <button class="btn btn-warning btn-sm btn-accion-stock"
                                         data-toggle="modal"
                                         data-target="#modalAccionStock"
-                                        data-url="{% url 'devoluciones:agregar_recuperado' item.id %}"
+                                        data-url="{% url 'devoluciones:agregar_devolucion' item.id %}"
                                         data-producto="{{ item.producto.nombre }}"
-                                        data-maximo="{{ item.cantidad }}"
+                                        data-maximo="1000"
                                         data-titulo="Agregar más devoluciones"
-                                        data-accion="recuperado"
-                                        title="Agregar más devoluciones del mismo producto">
+                                        data-accion="devolucion"
+                                        title="Agregar más productos devueltos">
                                     <i class="fas fa-plus"></i>
                                 </button>
                                 <button class="btn btn-primary btn-sm btn-accion-stock"
@@ -138,9 +138,9 @@
                                         data-url="{% url 'devoluciones:agregar_repuesto' item.id %}"
                                         data-producto="{{ item.producto.nombre }}"
                                         data-maximo="{{ item.cantidad_pendiente }}"
-                                        data-titulo="Reponer unidades al stock"
+                                        data-titulo="Reponer al stock"
                                         data-accion="repuesto"
-                                        title="Reponer unidades al stock">
+                                        title="Reponer productos y agregar al stock">
                                     <i class="fas fa-box-open"></i>
                                 </button>
                             </div>
