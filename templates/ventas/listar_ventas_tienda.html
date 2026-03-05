@@ -85,42 +85,44 @@
     {# Card principal con tabla de ventas #}
     <div class="card card-tabla shadow-sm">
         <div class="card-header bg-white py-3">
-            <div class="row align-items-center">
-                <div class="col">
-                    <h6 class="mb-0 font-weight-bold">
-                        <i class="fas fa-list mr-2"></i>Historial de Ventas
-                    </h6>
-                </div>
-                <div class="col-auto">
-                    <button type="button" class="btn btn-generar-pdf btn-sm" onclick="generarPDF()" {% if not total_ventas %}disabled{% endif %}>
-                        <i class="fas fa-file-pdf mr-1"></i> Descargar PDF
-                    </button>
-                </div>
-            </div>
+            <h6 class="mb-0 font-weight-bold">
+                <i class="fas fa-list mr-2"></i>Historial de Ventas
+            </h6>
         </div>
 
         <div class="card-body p-0">
             {# Filtro rápido #}
             <div class="filtro-bar px-4 py-4 border-bottom">
-                <div class="row align-items-center">
-                    <div class="col-md-6">
-                        <div class="input-group input-group-sm">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fas fa-search"></i></span>
-                            </div>
-                            <input type="text" class="form-control filtro-tabla"
-                                   id="filtroTabla"
-                                   placeholder="Buscar por código o cliente...">
-                        </div>
+                <form method="GET" action="{% url 'ventas:listar_ventas_tienda' %}" class="row align-items-end">
+                    <div class="col-md-3">
+                        <label for="inputClienteTienda" class="small font-weight-bold">Cliente</label>
+                        <input type="text" class="form-control form-control-sm" id="inputClienteTienda"
+                               name="cliente" value="{{ cliente_filtro }}"
+                               placeholder="Buscar cliente...">
                     </div>
-                    <div class="col-md-6">
-                        <select class="form-control form-control-sm filtro-estado" id="filtroEstado">
-                            <option value="">Todos los estados</option>
-                            <option value="completada">Completada</option>
-                            <option value="cancelada">Cancelada</option>
-                        </select>
+                    <div class="col-md-2">
+                        <label for="inputFechaDesde" class="small font-weight-bold">Desde</label>
+                        <input type="date" class="form-control form-control-sm" id="inputFechaDesde"
+                               name="fecha_desde" value="{{ fecha_desde }}">
                     </div>
-                </div>
+                    <div class="col-md-2">
+                        <label for="inputFechaHasta" class="small font-weight-bold">Hasta</label>
+                        <input type="date" class="form-control form-control-sm" id="inputFechaHasta"
+                               name="fecha_hasta" value="{{ fecha_hasta }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary btn-sm btn-block">
+                            <i class="fas fa-filter mr-1"></i>Filtrar
+                        </button>
+                    </div>
+                    {% if cliente_filtro or fecha_desde or fecha_hasta %}
+                    <div class="col-md-2">
+                        <a href="{% url 'ventas:listar_ventas_tienda' %}" class="btn btn-outline-secondary btn-sm btn-block">
+                            <i class="fas fa-redo mr-1"></i>Limpiar
+                        </a>
+                    </div>
+                    {% endif %}
+                </form>
             </div>
 
             <div class="table-responsive">
@@ -168,18 +170,17 @@
                                             title="Ver detalle">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <a href="{% url 'ventas:pdf_venta' venta.id %}"
-                                       class="btn btn-outline-success"
-                                       title="Descargar PDF"
-                                       target="_blank">
-                                        <i class="fas fa-download"></i>
-                                    </a>
-                                    {% if venta.estado != 'cancelada' %}
+                                    <button class="btn btn-outline-info btn-generar-pdf-venta"
+                                            data-venta-id="{{ venta.id }}"
+                                            title="Generar PDF">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </button>
+                                    {% if venta.estado != 'cancelada' and venta.estado != 'anulada' %}
                                     <button class="btn btn-outline-danger btn-anular-venta"
                                             data-venta-id="{{ venta.id }}"
                                             data-venta-codigo="{{ venta.codigo }}"
                                             title="Anular venta">
-                                        <i class="fas fa-ban"></i>
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                     {% endif %}
                                 </div>
@@ -226,84 +227,51 @@
 {% endblock %}
 
 {% block scripts_extra %}
+<script src="{% static 'js/componentes/modales.js' %}"></script>
+<script src="{% static 'js/ventas/ventas.js' %}"></script>
+<script src="{% static 'js/ventas/anulacion_comun.js' %}"></script>
 <script>
-// Filtrado de tabla
-document.getElementById('filtroTabla').addEventListener('keyup', filtrarTabla);
-document.getElementById('filtroEstado').addEventListener('change', filtrarTabla);
+// Esperar a que el DOM esté completamente cargado
+document.addEventListener('DOMContentLoaded', function() {
+    // Función para determinar si el usuario es almacén (en tienda siempre es false)
+    function esAlmacen() {
+        return false;
+    }
 
-function filtrarTabla() {
-    const tabla = document.getElementById('tablaVentas');
-    const filas = tabla.querySelectorAll('tbody tr');
-    const filtroTexto = document.getElementById('filtroTabla').value.toLowerCase();
-    const filtroEstado = document.getElementById('filtroEstado').value.toLowerCase();
-
-    filas.forEach(fila => {
-        const codigo = fila.cells[0].textContent.toLowerCase();
-        const cliente = fila.cells[1].textContent.toLowerCase();
-        const estado = fila.getAttribute('data-estado').toLowerCase();
-
-        const coincideTexto = codigo.includes(filtroTexto) || cliente.includes(filtroTexto);
-        const coincideEstado = !filtroEstado || estado === filtroEstado;
-
-        fila.style.display = (coincideTexto && coincideEstado) ? '' : 'none';
+    // Ver detalle de venta (Modal bootstrap)
+    document.querySelectorAll('.btn-ver-detalle').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const ventaId = this.getAttribute('data-venta-id');
+            
+            fetch(`/ventas/${ventaId}/ver/`)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('modalDetalleContenido').innerHTML = html;
+                    const modal = new (window.bootstrap ? window.bootstrap.Modal : function(el) {
+                        $(el).modal('show');
+                    })(document.getElementById('modalDetalleVenta'));
+                })
+                .catch(error => {
+                    ModalSistema.notificar('Error', 'No se pudo cargar el detalle de la venta.', 'danger');
+                });
+        });
     });
-}
 
-// Ver detalle de venta (Modal)
-document.querySelectorAll('.btn-ver-detalle').forEach(btn => {
-    btn.addEventListener('click', function () {
-        const ventaId = this.getAttribute('data-venta-id');
-        
-        fetch(`/ventas/${ventaId}/ver/`)
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('modalDetalleContenido').innerHTML = html;
-                const modal = new (window.bootstrap ? window.bootstrap.Modal : function(el) {
-                    $(el).modal('show');
-                })(document.getElementById('modalDetalleVenta'));
-            })
-            .catch(error => {
-                alert('Error al cargar el detalle de la venta: ' + error);
-            });
-    });
-});
-
-// Anular venta
-document.querySelectorAll('.btn-anular-venta').forEach(btn => {
-    btn.addEventListener('click', function () {
-        const ventaId = this.getAttribute('data-venta-id');
-        const ventaCodigo = this.getAttribute('data-venta-codigo');
-        
-        if (confirm(`¿Deseas anular la venta ${ventaCodigo}? Esta acción no se puede deshacer.`)) {
-            fetch(`/ventas/${ventaId}/anular/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Venta anulada correctamente.');
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            })
-            .catch(error => {
-                alert('Error al anular la venta: ' + error);
-            });
-        }
+    // Integración de botones anular con modales personalizados
+    document.querySelectorAll('.btn-anular-venta').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const ventaId = this.getAttribute('data-venta-id');
+            const ventaCodigo = this.getAttribute('data-venta-codigo');
+            
+            // Para tienda: siempre false (se enviará solicitud)
+            const esAlmacenUser = false;
+            
+            abrirModalAnularVenta(ventaId, ventaCodigo, esAlmacenUser);
+        });
     });
 });
 
-// Generar PDF
-function generarPDF() {
-    window.location.href = '{% url "ventas:listar_ventas" %}?pdf=true&tipo_pago=contado';
-}
-
-// Utilidad: CSRF Token
+// Utilidad: CSRF Token (por compatibilidad)
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
