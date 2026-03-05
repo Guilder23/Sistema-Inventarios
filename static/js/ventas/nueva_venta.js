@@ -34,7 +34,6 @@ $(document).ready(function () {
     initSelectorTipoPago();
     initSelectorUsuarioVendedor();
     initSelectorTipoPrecio();
-    initInputDescuento();
     initBuscadorProductos();
     initBtnLimpiarCarrito();
     initBtnGuardarVenta();
@@ -110,13 +109,6 @@ function initSelectorTipoPrecio() {
         }
 
         $('#helpTipoPrecio').html(helpText);
-    });
-}
-
-// INPUT DESCUENTO
-function initInputDescuento() {
-    $('#inputDescuento').on('change input', function () {
-        actualizarResumen();
     });
 }
 
@@ -410,19 +402,9 @@ function actualizarResumen() {
         totalPrecio += item.precioUnitario * item.cantidad;
     });
 
-    // Obtener descuento
-    const descuento = parseFloat($('#inputDescuento').val()) || 0;
-    const totalFinal = Math.max(totalPrecio - descuento, 0); // No permitir negativos
-
     $('#resumenCantItems').text(totalItems);
     $('#resumenSubtotal').text('Bs. ' + totalPrecio.toFixed(2));
-    
-    // Mostrar descuento si es mayor a 0
-    if (descuento > 0) {
-        $('#resumenTotal').html(`<del class="text-muted">Bs. ${totalPrecio.toFixed(2)}</del><br><strong>Bs. ${totalFinal.toFixed(2)}</strong>`);
-    } else {
-        $('#resumenTotal').text('Bs. ' + totalFinal.toFixed(2));
-    }
+    $('#resumenTotal').text('Bs. ' + totalPrecio.toFixed(2));
 }
 
 // CARRITO: LIMPIAR TODO
@@ -583,3 +565,21 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
             $btn.prop('disabled', false).html('<i class="fas fa-check-circle mr-2"></i>Registrar Venta');
         });
 }
+
+// Validar que teléfono solo acepte números
+document.addEventListener('DOMContentLoaded', function() {
+    const inputTelefono = document.getElementById('inputTelefono');
+    if (inputTelefono) {
+        inputTelefono.addEventListener('keypress', function(e) {
+            if (!/[0-9]/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+        inputTelefono.addEventListener('paste', function(e) {
+            const text = e.clipboardData.getData('text');
+            if (!/^[0-9]*$/.test(text)) {
+                e.preventDefault();
+            }
+        });
+    }
+});
