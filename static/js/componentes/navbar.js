@@ -57,24 +57,8 @@ function inicializarNavbar() {
         });
     }
 
-    // Toggle sidebar en móvil
-    if (sidebarToggle && sidebar) {
-        sidebarToggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            sidebar.classList.toggle('active');
-            if (sidebarOverlay) {
-                sidebarOverlay.classList.toggle('active');
-            }
-        });
-    }
-
-    // Cerrar sidebar al hacer click en el overlay
-    if (sidebarOverlay && sidebar) {
-        sidebarOverlay.addEventListener('click', function() {
-            sidebar.classList.remove('active');
-            sidebarOverlay.classList.remove('active');
-        });
-    }
+    // NOTA: La funcionalidad del sidebar está manejada por sidebar.js
+    // No se debe duplicar el código aquí para evitar conflictos
 
     // Cerrar dropdowns al hacer click fuera
     document.addEventListener('click', function(e) {

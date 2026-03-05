@@ -27,12 +27,11 @@ function inicializarModalCrear() {
 
 function validarFormularioCrear() {
     const nombre = document.getElementById('crearNombre')?.value.trim();
-    const codigo = document.getElementById('crearCodigo')?.value.trim();
     const direccion = document.getElementById('crearDireccion')?.value.trim();
     const ciudad = document.getElementById('crearCiudad')?.value.trim();
     const departamento = document.getElementById('crearDepartamento')?.value.trim();
 
-    if (!nombre || !codigo || !direccion || !ciudad || !departamento) {
+    if (!nombre || !direccion || !ciudad || !departamento) {
         alert('Todos los campos requeridos deben estar completos');
         return false;
     }

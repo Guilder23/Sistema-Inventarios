@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'apps.reportes',
     'apps.almacenes',
     'apps.tiendas',
+    'apps.depositos',
     'apps.tiendas_virtuales',
 ]
 
