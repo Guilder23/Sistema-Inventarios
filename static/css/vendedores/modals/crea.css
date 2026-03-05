@@ -1,0 +1,95 @@
+/* ============================================================================
+   ESTILOS PARA MODAL CREAR VENDEDOR
+   ============================================================================ */
+
+#modalCrearVendedor .modal-header {
+    background: #1e3a8a;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-bottom: 3px solid #065f46;
+}
+
+#modalCrearVendedor .modal-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+#modalCrearVendedor .modal-body {
+    padding: 1.25rem 1.5rem;
+}
+
+#modalCrearVendedor .form-group {
+    margin-bottom: 0.875rem;
+}
+
+#modalCrearVendedor .form-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.25rem;
+}
+
+#modalCrearVendedor .form-control {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+}
+
+#modalCrearVendedor .form-control:focus {
+    border-color: #1e3a8a;
+    box-shadow: 0 0 0 0.15rem rgba(30, 58, 138, 0.15);
+}
+
+#modalCrearVendedor .modal-footer {
+    background: #f8f9fa;
+    border: none;
+    padding: 0.875rem 1.5rem;
+    border-radius: 0 0 12px 12px;
+}
+
+#modalCrearVendedor .modal-footer .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.25rem;
+    transition: all 0.3s;
+}
+
+#modalCrearVendedor .modal-footer .btn-primary {
+    background: #1e3a8a;
+    border-color: #1e3a8a;
+}
+
+#modalCrearVendedor .modal-footer .btn-primary:hover {
+    background: #1e40af;
+    border-color: #1e40af;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(30, 58, 138, 0.3);
+}
+
+#modalCrearVendedor .modal-footer .btn-secondary {
+    background: #6b7280;
+    border-color: #6b7280;
+    color: #fff;
+}
+
+#modalCrearVendedor .modal-footer .btn-secondary:hover {
+    background: #4b5563;
+    border-color: #4b5563;
+}
+
+/* RESPONSIVE */
+@media (max-width: 576px) {
+    #modalCrearVendedor .modal-body {
+        padding: 1.5rem;
+    }
+
+    #modalCrearVendedor .modal-footer {
+        flex-direction: column;
+    }
+
+    #modalCrearVendedor .modal-footer .btn {
+        width: 100%;
+    }
+}

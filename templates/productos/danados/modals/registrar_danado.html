@@ -1,0 +1,57 @@
+<!-- Modal Registrar Dañado -->
+<div class="modal fade" id="modalRegistrarDanado" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" enctype="multipart/form-data" action="{% url 'listar_danados' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-triangle-exclamation text-warning"></i> Registrar Producto Dañado</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-8">
+                            <label>Producto <span class="text-danger">*</span></label>
+                            <select class="form-control" name="producto" required>
+                                <option value="">Seleccione un producto...</option>
+                                {% for producto in productos %}
+                                <option value="{{ producto.id }}">{{ producto.codigo }} - {{ producto.nombre }} (Stock: {{ producto.stock_disponible }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Unidades Dañadas <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" name="cantidad" min="1" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Comentario</label>
+                        <textarea class="form-control" name="comentario" rows="3" placeholder="Detalle del daño, causa o referencia..."></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-8">
+                            <label>Foto del producto dañado (opcional)</label>
+                            <input type="file" class="form-control-file" name="foto" id="fotoDanado" accept="image/*">
+                            <small class="form-text text-muted">Adjunta una imagen del producto dañado para referencia</small>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label class="d-block">Vista previa</label>
+                            <div id="previewFotoDanado" class="preview-foto-container" style="display: none;">
+                                <img id="imgPreviewDanado" src="" alt="Vista previa" class="img-thumbnail" style="max-width: 120px; max-height: 120px;">
+                            </div>
+                            <div id="placeholderFotoDanado" class="preview-placeholder" style="width: 120px; height: 120px; border: 2px dashed #ddd; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                                <i class="fas fa-image fa-2x text-muted"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Registrar Dañado</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

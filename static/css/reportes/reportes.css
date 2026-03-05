@@ -1,0 +1,121 @@
+/* ================================================================
+   HISTORIAL.CSS
+   ================================================================ */
+
+/* Pestañas */
+.historial-tabs {
+    border-bottom: 2px solid #dee2e6;
+    margin-bottom: 0;
+}
+
+.historial-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 0.75rem 1.25rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.historial-tabs .nav-link:hover {
+    color: #1a3a6e;
+    border-bottom-color: #adb5bd;
+    background: transparent;
+}
+
+.historial-tabs .nav-link.active {
+    color: #1a3a6e;
+    border-bottom: 3px solid #1a3a6e;
+    background: transparent;
+    font-weight: 600;
+}
+
+/* Filtros */
+.card-filtros {
+    border-radius: 0 0 8px 8px;
+    border-top: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 1rem;
+}
+
+/* Tabla */
+.card-tabla {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+}
+
+.tabla-historial thead th {
+    background: #1a3a6e;
+    color: white;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.65rem 0.75rem;
+    border: none;
+    white-space: nowrap;
+}
+
+.tabla-historial tbody tr {
+    transition: background 0.15s;
+}
+
+.tabla-historial tbody tr:hover {
+    background: #f0f4ff;
+}
+
+.tabla-historial tbody td {
+    vertical-align: middle;
+    font-size: 0.875rem;
+    padding: 0.6rem 0.75rem;
+}
+
+/* Badges de estado */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.3em 0.65em;
+    border-radius: 4px;
+}
+
+.badge-warning  { background: #fff3cd; color: #856404; }
+.badge-success  { background: #d1e7dd; color: #0a5c36; }
+.badge-danger   { background: #f8d7da; color: #842029; }
+.badge-info     { background: #cff4fc; color: #055160; }
+.badge-secondary{ background: #e2e3e5; color: #41464b; }
+.badge-light    { background: #f8f9fa; color: #495057; border: 1px solid #dee2e6; }
+
+/* Paginación */
+.card-footer {
+    border-top: 1px solid #dee2e6;
+    font-size: 0.85rem;
+}
+
+.pagination .page-link {
+    color: #1a3a6e;
+    border-color: #dee2e6;
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #adb5bd;
+}
+
+/* Botón detalle */
+.btn-detalle {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Modal */
+.modal-header {
+    background: #1a3a6e;
+    color: white;
+}
+
+.modal-header .close {
+    color: white;
+    opacity: 0.8;
+}
+
+.modal-header .close:hover {
+    opacity: 1;
+}

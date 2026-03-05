@@ -73,11 +73,21 @@
             {% endwith %}
             {% endif %}
 
-            <!-- Devoluciones - Solo Almacén -->
-            {% if user.perfil.rol == 'almacen' %}
+            <!-- Productos Dañados - Almacén y Tienda -->
+            {% if user.perfil.rol == 'almacen' or user.perfil.rol == 'tienda' %}
             <li class="sidebar-item">
-                <a href="{% url 'listar_danados' %}" class="sidebar-link {% if request.resolver_match.url_name == 'listar_danados' %}active{% endif %}" title="Devoluciones">
-                    <i class="fas fa-rotate-left"></i>
+                <a href="{% url 'listar_danados' %}" class="sidebar-link {% if request.resolver_match.url_name == 'listar_danados' %}active{% endif %}" title="Productos Dañados">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Productos Dañados</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- Devoluciones - Almacén y Tienda -->
+            {% if user.perfil.rol == 'almacen' or user.perfil.rol == 'tienda' %}
+            <li class="sidebar-item">
+                <a href="{% url 'devoluciones:listar' %}" class="sidebar-link {% if request.resolver_match.url_name == 'devoluciones:listar' or 'devoluciones' in request.resolver_match.url_name %}active{% endif %}" title="Devoluciones">
+                    <i class="fas fa-undo"></i>
                     <span>Devoluciones</span>
                 </a>
             </li>
@@ -194,9 +204,19 @@
             </li>
             {% endif %}
 
+            <!-- Vendedores - Solo Administradores -->
+            {% if user.is_superuser %}
+            <li class="sidebar-item">
+                <a href="{% url 'listar_vendedores' %}" class="sidebar-link {% if 'vendedores' in request.resolver_match.url_name %}active{% endif %}" title="Vendedores">
+                    <i class="fas fa-handshake"></i>
+                    <span>Vendedores</span>
+                </a>
+            </li>
+            {% endif %}
+
             <!-- Reportes - Staff y Administradores -->
             <li class="sidebar-item">
-                <a href="#" class="sidebar-link" title="Reportes">
+                <a href="{% url 'reportes:historial' %}" class="sidebar-link" title="Reportes">
                     <i class="fas fa-chart-bar"></i>
                     <span>Reportes</span>
                 </a>

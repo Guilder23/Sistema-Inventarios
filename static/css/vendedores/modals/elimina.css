@@ -1,0 +1,88 @@
+/* ============================================================================
+   ESTILOS PARA MODAL ELIMINAR VENDEDOR
+   ============================================================================ */
+
+#modalEliminarVendedor .modal-header {
+    background: #dc2626;
+    color: white;
+    padding: 1rem 1.5rem;
+}
+
+#modalEliminarVendedor .modal-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+#modalEliminarVendedor .modal-body {
+    padding: 1.5rem;
+}
+
+#modalEliminarVendedor .alert {
+    font-size: 0.875rem;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+#modalEliminarVendedor p {
+    font-size: 0.938rem;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+#modalEliminarVendedor p strong {
+    color: #dc2626;
+}
+
+#modalEliminarVendedor .text-muted {
+    font-size: 0.813rem;
+    color: #6b7280 !important;
+}
+
+#modalEliminarVendedor .modal-footer {
+    padding: 0.875rem 1.5rem;
+    background-color: #fee2e2;
+    border-top: 1px solid #fecaca;
+}
+
+#modalEliminarVendedor .btn {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+#modalEliminarVendedor .btn-danger {
+    background-color: #dc2626;
+    border-color: #dc2626;
+}
+
+#modalEliminarVendedor .btn-danger:hover {
+    background-color: #b91c1c;
+    border-color: #b91c1c;
+    transform: translateY(-1px);
+}
+
+#modalEliminarVendedor .btn-secondary {
+    background-color: #6b7280;
+    border-color: #6b7280;
+}
+
+#modalEliminarVendedor .btn-secondary:hover {
+    background-color: #4b5563;
+    border-color: #4b5563;
+    transform: translateY(-1px);
+}
+
+/* RESPONSIVE */
+@media (max-width: 576px) {
+    #modalEliminarVendedor .modal-body {
+        padding: 1.5rem;
+    }
+
+    #modalEliminarVendedor .modal-footer {
+        flex-direction: column;
+    }
+
+    #modalEliminarVendedor .modal-footer .btn {
+        width: 100%;
+    }
+}
