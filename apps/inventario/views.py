@@ -215,7 +215,7 @@ def ver_inventario_ubicacion(request, ubicacion_id):
         'buscar': '',
         'estado': '',
     }
-    return render(request, 'inventario/ver.html', context)
+    return render(request, 'inventario/ver_inventario.html', context)
 
 @login_required
 def asignar_precio(request, producto_id):
