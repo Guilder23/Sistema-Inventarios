@@ -1,0 +1,42 @@
+<!-- Modal Acción Stock -->
+<div class="modal fade" id="modalAccionStock" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" id="formAccionStock" action="">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloAccionStock">Procesar Devolución</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="card card-body bg-light mb-3">
+                        <div class="mb-1">
+                            <small class="text-muted d-block mb-1">Producto: <strong id="nombreProductoAccion" class="text-dark">-</strong></small>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <small class="text-muted">Devoluciones:</small>
+                            <span id="maximoAccion" class="badge-cantidad-registro"> 0</span>
+                            <span class="texto-unidades"> unidades</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cantidadAccion"><strong id="labelCantidad">Ingresa la cantidad</strong> <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control form-control-lg" id="cantidadAccion" name="cantidad" min="1" placeholder="Ej: 5" required>
+                        <small class="form-text text-muted d-block mt-2" id="helperCantidad">Indica la cantidad a procesar</small>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label for="comentarioAccion">Notas (opcional)</label>
+                        <textarea class="form-control" id="comentarioAccion" name="comentario" rows="2" placeholder="Ej: Inspeccionado, solicitado reemplazo al cliente..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnConfirmarAccion">Procesando...</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

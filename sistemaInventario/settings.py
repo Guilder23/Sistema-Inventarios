@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'apps.depositos',
     'apps.tiendas_virtuales',
     'apps.vendedores',
+    'apps.devoluciones',
 ]
 
 MIDDLEWARE = [

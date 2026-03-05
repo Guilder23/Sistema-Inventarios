@@ -1,13 +1,13 @@
 {% extends 'base/base.html' %}
 {% load static %}
 
-{% block titulo %}Devoluciones y Dañados{% endblock %}
+{% block titulo %}Devoluciones{% endblock %}
 
 {% block estilos_extra %}
     <link rel="stylesheet" href="{% static 'css/productos/productos.css' %}">
-    <link rel="stylesheet" href="{% static 'css/productos/devoluciones/devoluciones.css' %}">
-    <link rel="stylesheet" href="{% static 'css/productos/devoluciones/modals/registrar_danado.css' %}">
-    <link rel="stylesheet" href="{% static 'css/productos/devoluciones/modals/accion_stock.css' %}">
+    <link rel="stylesheet" href="{% static 'css/devoluciones/devoluciones.css' %}">
+    <link rel="stylesheet" href="{% static 'css/devoluciones/modals/registrar_devolucion.css' %}">
+    <link rel="stylesheet" href="{% static 'css/devoluciones/modals/accion_stock.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -15,12 +15,12 @@
     <div class="page-header">
         <div class="page-header-content">
             <h1 class="page-title">
-                <i class="fas fa-rotate-left"></i> Devoluciones
+                <i class="fas fa-undo"></i> Devoluciones
             </h1>
-            <p class="page-subtitle">Registra productos dañados y restáuralos al inventario</p>
+            <p class="page-subtitle">Gestiona productos devueltos por clientes</p>
         </div>
-        <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalRegistrarDanado">
-            <i class="fas fa-plus"></i> Registrar Dañado
+        <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalRegistrarDevolucion">
+            <i class="fas fa-plus"></i> Registrar Devolución
         </button>
     </div>
 
@@ -77,7 +77,7 @@
                     <tr>
                         <th style="width: 10%;">Código</th>
                         <th style="width: 18%;">Producto</th>
-                        <th style="width: 8%;" class="text-center">Dañadas</th>
+                        <th style="width: 8%;" class="text-center">Devueltas</th>
                         <th style="width: 8%;" class="text-center">Recuperadas</th>
                         <th style="width: 8%;" class="text-center">Repuestas</th>
                         <th style="width: 8%;" class="text-center">Pendiente</th>
@@ -88,7 +88,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in danados %}
+                    {% for item in devoluciones %}
                     <tr>
                         <td><span class="codigo-badge">{{ item.producto.codigo }}</span></td>
                         <td>
@@ -124,23 +124,23 @@
                                 <button class="btn btn-warning btn-sm btn-accion-stock"
                                         data-toggle="modal"
                                         data-target="#modalAccionStock"
-                                        data-url="{% url 'agregar_mas_danado' item.id %}"
+                                        data-url="{% url 'devoluciones:agregar_recuperado' item.id %}"
                                         data-producto="{{ item.producto.nombre }}"
-                                        data-maximo="{{ item.producto.stock }}"
-                                        data-titulo="Agregar más dañados"
-                                        data-accion="danado"
-                                        title="Agregar más productos dañados">
-                                    <i class="fas fa-triangle-exclamation"></i>
+                                        data-maximo="{{ item.cantidad }}"
+                                        data-titulo="Agregar más devoluciones"
+                                        data-accion="recuperado"
+                                        title="Agregar más devoluciones del mismo producto">
+                                    <i class="fas fa-plus"></i>
                                 </button>
                                 <button class="btn btn-primary btn-sm btn-accion-stock"
                                         data-toggle="modal"
                                         data-target="#modalAccionStock"
-                                        data-url="{% url 'reponer_stock_danado' item.id %}"
+                                        data-url="{% url 'devoluciones:agregar_repuesto' item.id %}"
                                         data-producto="{{ item.producto.nombre }}"
                                         data-maximo="{{ item.cantidad_pendiente }}"
-                                        data-titulo="Reponer y agregar al stock"
-                                        data-accion="reponer"
-                                        title="Reponer y agregar al stock">
+                                        data-titulo="Reponer unidades al stock"
+                                        data-accion="repuesto"
+                                        title="Reponer unidades al stock">
                                     <i class="fas fa-box-open"></i>
                                 </button>
                             </div>
@@ -163,11 +163,11 @@
     </div>
 </div>
 
-{% include 'productos/devoluciones/modals/registrar_danado.html' %}
-{% include 'productos/devoluciones/modals/accion_stock.html' %}
+{% include 'devoluciones/modals/registrar_devolucion.html' %}
+{% include 'devoluciones/modals/accion_stock.html' %}
 {% endblock %}
 
 {% block scripts_extra %}
-    <script src="{% static 'js/productos/devoluciones/modals/accion_stock.js' %}"></script>
-    <script src="{% static 'js/productos/devoluciones/devoluciones.js' %}"></script>
+    <script src="{% static 'js/devoluciones/modals/accion_stock.js' %}"></script>
+    <script src="{% static 'js/devoluciones/devoluciones.js' %}"></script>
 {% endblock %}

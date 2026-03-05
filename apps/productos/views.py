@@ -757,7 +757,7 @@ def listar_danados(request):
         'total_registros': total_registros,
         'total_pendientes': total_pendientes,
     }
-    return render(request, 'productos/devoluciones/devoluciones.html', context)
+    return render(request, 'productos/danados/danados.html', context)
 
 @login_required
 def registrar_danado(request):
