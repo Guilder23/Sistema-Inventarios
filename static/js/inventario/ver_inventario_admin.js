@@ -69,9 +69,8 @@ document.addEventListener("DOMContentLoaded", function () {
             fila.innerHTML = `
                 <td class="text-center align-middle"><img src="${fotoSrc}" width="45" height="45" style="object-fit:cover; border-radius:5px;" onerror="this.src='${imgGrisBase64}'"></td>
                 <td class="align-middle"><strong>${item.codigo}</strong></td>
-                <td class="align-middle">${item.nombre}</td>
+                <td class="align-middle">${item.descripcion || 'N/A'}</td>
                 <td class="badge-stock-inventario">${item.stock}</td>
-                <td class="align-middle">${item.cajas || 0}</td>
                 <td class="align-middle">${item.unidad_operativa || 'N/A'}</td>
                 <td class="text-center align-middle">
                     <button class="btn btn-info btn-sm btn-ver-producto" 
@@ -109,7 +108,38 @@ document.addEventListener("DOMContentLoaded", function () {
     btnSiguiente.addEventListener('click', (e) => {
         e.preventDefault();
         if (paginaNext) cargarDatos(paginaNext);
-    });
+    });    //FILTROS DE ALMACEN
+    async function cargarFiltroUnidades() {
+        try {
+            const { data } = await axios.get('/inventario/api/roles/');
 
+            filtroUnidad.innerHTML = '<option value="">Todas las unidades Operativas</option>';
+
+            const opciones = [
+                ...(data.almacenes || []).map(x => ({ value: x.nombre, label: x.nombre })),
+                ...(data.tiendas || []).map(x => ({ value: x.nombre, label: x.nombre })),
+                ...(data.depositos || []).map(x => ({ value: x.nombre, label: x.etiqueta || x.nombre })),
+            ].filter(x => x.value);
+
+            const vistos = new Set();
+            opciones.forEach(({ value, label }) => {
+                const clave = `${value}::${label}`;
+                if (vistos.has(clave)) return;
+                vistos.add(clave);
+
+                const opt = document.createElement('option');
+                opt.value = value; // se envia a ?unidad_operativa=
+                opt.textContent = label;
+                filtroUnidad.appendChild(opt);
+            });
+        } catch (error) {
+            console.error('Error cargando unidades operativas:', error);
+        }
+    }
+
+    (async () => {
+    await cargarFiltroUnidades();
     cargarDatos();
+})();
+
 });
