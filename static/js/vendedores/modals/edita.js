@@ -6,8 +6,6 @@
     'use strict';
     
     function inicializarModalEditar() {
-        console.log('✓ Inicializando Modal Editar Vendedor');
-        
         $(document).on('click', '.btn-editar-vendedor', function(e) {
             e.preventDefault();
             const vendedorId = $(this).data('vendedor-id');
@@ -28,7 +26,7 @@
             const formData = new FormData(this);
             
             $.ajax({
-                url: `/vendedores/editar/${vendedorId}/`,
+                url: '/vendedores/editar/' + vendedorId + '/',
                 type: 'POST',
                 data: formData,
                 processData: false,
@@ -36,15 +34,11 @@
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        alert('Vendedor actualizado exitosamente');
                         $('#modalEditarVendedor').modal('hide');
                         location.reload();
-                    } else {
-                        alert('Error: ' + response.error);
                     }
                 },
                 error: function() {
-                    alert('Error al actualizar vendedor');
                 }
             });
         });
@@ -52,7 +46,7 @@
     
     function cargarVendedorParaEditar(vendedorId) {
         $.ajax({
-            url: `/vendedores/obtener/${vendedorId}/`,
+            url: '/vendedores/obtener/' + vendedorId + '/',
             type: 'GET',
             dataType: 'json',
             success: function(data) {
@@ -92,14 +86,11 @@
                 $('#modalEditarVendedor').modal('show');
             },
             error: function() {
-                alert('Error al cargar los datos del vendedor');
             }
         });
     }
     
     function mostrarOcultarUbicacion(tipo) {
-        console.log('→ mostrarOcultarUbicacion(' + tipo + ')');
-        
         const $grupoAlmacen = $('#editarGrupoAlmacen');
         const $grupoTienda = $('#editarGrupoTienda');
         const $selectAlmacen = $('#editarAlmacen');
@@ -117,15 +108,12 @@
         
         // Mostrar según tipo
         if (tipo === 'almacen') {
-            console.log('  ✓ Mostrando selector de ALMACÉN');
             $grupoAlmacen.show();
             $selectAlmacen.attr('required', 'required');
         } else if (tipo === 'tienda') {
-            console.log('  ✓ Mostrando selector de TIENDA');
             $grupoTienda.show();
             $selectTienda.attr('required', 'required');
         } else {
-            console.log('  ✓ Ocultando todos los selectores');
         }
     }
     

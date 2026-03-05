@@ -6,8 +6,6 @@
     'use strict';
     
     function inicializarModalVer() {
-        console.log('✓ Inicializando Modal Ver Vendedor');
-        
         $(document).on('click', '.btn-ver-vendedor', function(e) {
             e.preventDefault();
             const vendedorId = $(this).data('vendedor-id');
@@ -17,7 +15,7 @@
     
     function cargarYMostrarVendedor(vendedorId) {
         $.ajax({
-            url: `/vendedores/obtener/${vendedorId}/`,
+            url: '/vendedores/obtener/' + vendedorId + '/',
             type: 'GET',
             dataType: 'json',
             success: function(data) {
@@ -52,7 +50,6 @@
                 $('#modalVerVendedor').modal('show');
             },
             error: function() {
-                alert('Error al cargar los datos del vendedor');
             }
         });
     }
