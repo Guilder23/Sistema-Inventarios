@@ -74,7 +74,6 @@ def listar_devoluciones(request):
         })
     
     devoluciones = Devolucion.objects.filter(ubicacion=perfil).select_related('producto', 'registrado_por')
-    productos = Producto.objects.filter(activo=True).order_by('nombre')
     
     # Filtros
     busqueda = request.GET.get('busqueda', '').strip()
@@ -88,6 +87,29 @@ def listar_devoluciones(request):
     estado_filter = request.GET.get('estado', '').strip()
     if estado_filter:
         devoluciones = devoluciones.filter(estado=estado_filter)
+    
+    # Agregar stock disponible a cada producto en la lista de devoluciones
+    for item in devoluciones:
+        item.producto.stock_disponible = _obtener_stock_disponible(item.producto, perfil)
+    
+    # Obtener productos según el rol
+    if perfil.rol == 'almacen':
+        # ALMACÉN: mostrar todos los productos activos con stock global
+        productos = Producto.objects.filter(activo=True).order_by('nombre')
+        # Agregar stock_disponible como atributo
+        for p in productos:
+            p.stock_disponible = p.stock
+    else:
+        # TIENDA: mostrar productos con inventario local (incluye stock 0 para devoluciones)
+        inventarios = Inventario.objects.filter(
+            ubicacion=perfil
+        ).select_related('producto').order_by('producto__nombre')
+        
+        productos = []
+        for inv in inventarios:
+            if inv.producto.activo:
+                inv.producto.stock_disponible = inv.cantidad
+                productos.append(inv.producto)
     
     # Estadísticas
     total_registros = devoluciones.count()

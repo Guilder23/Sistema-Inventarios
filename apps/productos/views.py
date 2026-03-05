@@ -798,12 +798,36 @@ def listar_danados(request):
 
     danados = danados.order_by('-fecha_registro')
 
+    # Agregar stock disponible a cada producto en la lista de danados
+    for item in danados:
+        item.producto.stock_disponible = _obtener_stock_disponible(item.producto, perfil)
+
     total_registros = danados.count()
     total_pendientes = sum(item.cantidad_pendiente for item in danados)
 
+    # Obtener productos según el rol
+    if perfil.rol == 'almacen':
+        # ALMACÉN: mostrar todos los productos activos con stock global
+        productos = Producto.objects.filter(activo=True).order_by('nombre')
+        # Agregar stock_disponible como atributo
+        for p in productos:
+            p.stock_disponible = p.stock
+    else:
+        # TIENDA: mostrar solo productos con inventario local
+        inventarios = Inventario.objects.filter(
+            ubicacion=perfil,
+            cantidad__gt=0
+        ).select_related('producto').order_by('producto__nombre')
+        
+        productos = []
+        for inv in inventarios:
+            if inv.producto.activo:
+                inv.producto.stock_disponible = inv.cantidad
+                productos.append(inv.producto)
+
     context = {
         'danados': danados,
-        'productos': Producto.objects.filter(activo=True).order_by('nombre'),
+        'productos': productos,
         'buscar': buscar,
         'estado': estado,
         'total_registros': total_registros,

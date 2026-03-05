@@ -17,7 +17,7 @@
                             <select class="form-control" name="producto" required>
                                 <option value="">Seleccione un producto...</option>
                                 {% for producto in productos %}
-                                <option value="{{ producto.id }}">{{ producto.codigo }} - {{ producto.nombre }} (Stock: {{ producto.stock }})</option>
+                                <option value="{{ producto.id }}">{{ producto.codigo }} - {{ producto.nombre }} (Stock: {{ producto.stock_disponible }})</option>
                                 {% endfor %}
                             </select>
                         </div>
