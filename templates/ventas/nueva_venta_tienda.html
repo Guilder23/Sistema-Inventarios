@@ -31,6 +31,11 @@
             </h2>
             <p class="text-muted mb-0">
                 Venta de Tienda &mdash; Código: <strong>{{ codigo_sugerido }}</strong>
+                {% if es_tienda_principal %}
+                <span class="badge badge-info ml-2">Tienda Principal</span>
+                {% else %}
+                <span class="badge badge-warning ml-2">Sucursal</span>
+                {% endif %}
             </p>
         </div>
         <a href="{% url 'ventas:listar_ventas_tienda' %}" class="btn btn-outline-secondary">
@@ -41,7 +46,7 @@
     <div class="row">
 
 {# COLUMNA IZQUIERDA: DATOS DEL CLIENTE Y BUSCADOR#}
-        <div class="col-lg-5 mb-4">
+        <div class="col-lg-6 mb-4">
 
             {# Card Datos de la Venta #}
             <div class="card card-datos-venta shadow-sm mb-4">
@@ -63,8 +68,8 @@
                         <label for="inputTelefono" class="label-campo">
                             Teléfono <small class="text-muted">(opcional)</small>
                         </label>
-                        <input type="text" class="form-control" id="inputTelefono"
-                               placeholder="Ej: 70012345" autocomplete="off">
+                        <input type="tel" class="form-control" id="inputTelefono"
+                               placeholder="Ej: 70012345" autocomplete="off" inputmode="numeric" pattern="[0-9]*">
                     </div>
 
                     <div class="form-group">
@@ -89,6 +94,32 @@
                 </div>
             </div>
 
+{# Card Tipo de Vendedor #}
+            <div class="card card-tipo-vendedor shadow-sm mb-4" id="cardTipoVendedor">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 font-weight-bold">
+                        <i class="fas fa-store mr-2 text-primary"></i>Tipo de Vendedor
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-0">
+                        <label for="selectTipoVendedor" class="label-campo">
+                            Seleccionar Tipo <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-control form-control-sm" id="selectTipoVendedor" required>
+                            <option value="">-- Selecciona tipo de vendedor --</option>
+                            <option value="tienda">Tienda</option>
+                            <option value="deposito">Depósito</option>
+                        </select>
+                        <small class="form-text text-muted mt-1">
+                            <strong>Tienda:</strong> Modalidades de venta (Unidad, Caja, Mayor)
+                            <br>
+                            <strong>Depósito:</strong> Venta simplificada
+                        </small>
+                    </div>
+                </div>
+            </div>
+
 {# Card Buscador de Productos#}
             <div class="card card-buscador shadow-sm">
                 <div class="card-header bg-white">
@@ -110,19 +141,16 @@
                         </div>
                     </div>
 
-                    <div id="resultadosBusqueda" class="list-group" style="display: none;">
-                    </div>
-
-                    <div id="buscandoIndicador" class="spinner-border spinner-border-sm text-primary" role="status" style="display: none;">
-                        <span class="sr-only">Buscando...</span>
+                    <div id="resultadosBusqueda" style="display: none; max-height: 600px; overflow-y: auto;">
+                        <!-- Los productos se renderizan aquí con opciones inline -->
                     </div>
                 </div>
             </div>
 
-        </div>{# /col-lg-5 #}
+        </div>{# /col-lg-6 #}
 
 {# COLUMNA DERECHA: CARRITO #}
-        <div class="col-lg-7 mb-4">
+        <div class="col-lg-6 mb-4">
             <div class="card card-carrito shadow-sm">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
@@ -137,9 +165,10 @@
                             <thead>
                                 <tr>
                                     <th class="pl-3">Producto</th>
-                                    <th class="text-center" style="width: 90px;">Modalidad</th>
-                                    <th class="text-center" style="width: 90px;">Cantidad</th>
-                                    <th class="text-right" style="width: 100px;">Subtotal</th>
+                                    <th class="text-center" style="width: 80px;">Modalidad</th>
+                                    <th class="text-center" style="width: 110px;">Precio Unit.</th>
+                                    <th class="text-center" style="width: 70px;">Cantidad</th>
+                                    <th class="text-right" style="width: 180px;">Subtotal</th>
                                     <th class="text-center pr-3" style="width: 50px;"></th>
                                 </tr>
                             </thead>
@@ -158,6 +187,20 @@
                             <span class="font-weight-bold" id="resumenSubtotal">Bs. 0.00</span>
                         </div>
 
+                        <div class="form-group my-3 pb-3 border-bottom">
+                            <label for="inputDescuento" class="label-campo">
+                                <i class="fas fa-percentage text-success mr-1"></i>Descuento (opcional)
+                            </label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" class="form-control" id="inputDescuento"
+                                       placeholder="0.00" step="0.01" min="0" value="0">
+                                <div class="input-group-append">
+                                    <span class="input-group-text bg-light">Bs.</span>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Descuento en valor monetario (máx: subtotal)</small>
+                        </div>
+
                         <hr class="my-2">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="total-label">TOTAL A PAGAR:</span>
@@ -169,6 +212,10 @@
                         <i class="fas fa-check-circle mr-2"></i>
                         Registrar Venta
                     </button>
+                    <button type="button" class="btn btn-outline-danger btn-block btn-sm mt-2" id="btnLimpiarCarrito">
+                        <i class="fas fa-trash mr-1"></i>
+                        Limpiar Carrito
+                    </button>
                 </div>
 
             </div>{# /card-carrito #}
@@ -178,79 +225,6 @@
     </div>{# /row #}
 
 </div>{# /container-fluid #}
-
-<!-- Modal para agregar producto al carrito -->
-<div class="modal fade" id="modalAgregarProducto" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalLabel">Agregar Producto al Carrito</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form id="formAgregarProducto">
-                <div class="modal-body">
-                    <input type="hidden" id="modalProductoId">
-                    <input type="hidden" id="modalUnidadesPorCaja">
-                    
-                    <p class="mb-3">
-                        <strong id="modalNombreProducto" style="font-size: 1.1rem; color: #667eea;"></strong>
-                    </p>
-
-                    <div class="form-group">
-                        <label for="modalModalidad" class="label-campo">
-                            Modalidad de Venta <span class="text-danger">*</span>
-                        </label>
-                        <select class="form-control form-control-sm" id="modalModalidad" required>
-                            <option value="">-- Selecciona modalidad --</option>
-                            <option value="unidad">Unidad (1-2 productos)</option>
-                            <option value="caja">Caja (múltiplos de unidades/caja)</option>
-                            <option value="mayor">Mayor (3 a N-1 unidades)</option>
-                        </select>
-                        <small class="form-text text-muted mt-1" id="modalAvisoModalidad"></small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="modalCantidad" class="label-campo">
-                            Cantidad <span class="text-danger">*</span>
-                        </label>
-                        <input type="number" class="form-control form-control-sm" id="modalCantidad"
-                               placeholder="Ej: 10" min="1" required>
-                        <small class="form-text text-muted mt-1">Cantidad de items a vender</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="modalPrecioUnitario" class="label-campo">
-                            Precio Unitario <span class="text-danger">*</span>
-                        </label>
-                        <div class="input-group input-group-sm">
-                            <input type="number" class="form-control" id="modalPrecioUnitario"
-                                   placeholder="0.00" step="0.01" required>
-                            <div class="input-group-append">
-                                <span class="input-group-text bg-light">Bs.</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="modalDesglose" class="desglose-info" style="display:none;">
-                        <strong><i class="fas fa-boxes mr-2"></i>Desglose de Stock:</strong>
-                        <div id="modalDesgloseTexto" style="margin-top: 0.5rem;"></div>
-                    </div>
-
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        <i class="fas fa-times mr-1"></i>Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-plus mr-1"></i>Agregar al Carrito
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 {# URLs para AJAX#}
 <script>
@@ -263,5 +237,5 @@
 {% endblock %}
 
 {% block scripts_extra %}
-<script src="{% static 'js/ventas/tienda.js' %}"></script>
+<script src="{% static 'js/ventas/tienda_nuevo.js' %}"></script>
 {% endblock %}
