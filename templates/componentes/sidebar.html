@@ -107,6 +107,43 @@
                     <span>Inventario Depósito</span>
                 </a>
             </li>
+            {% elif user.perfil.rol == 'almacen' %}
+            <!-- Inventario con submenú solo para almacen -->
+            {% with url_actual=request.resolver_match.url_name %}
+            <li class="sidebar-item sidebar-item-with-submenu">
+                <a
+                    href="{% url 'ver_inventario' %}"
+                    class="sidebar-link sidebar-link-toggle {% if 'inventario' in url_actual %}active{% endif %}"
+                    title="Inventario"
+                    data-submenu-toggle="submenuInventario"
+                    aria-expanded="{% if 'inventario' in url_actual %}true{% else %}false{% endif %}"
+                >
+                    <i class="fas fa-warehouse"></i>
+                    <span>Inventario</span>
+                    <i class="fas fa-chevron-down submenu-chevron"></i>
+                </a>
+                <ul id="submenuInventario" class="sidebar-submenu {% if 'inventario' in url_actual %}open{% endif %}">
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'ver_inventario' %}" class="sidebar-submenu-link {% if url_actual == 'ver_inventario' %}active{% endif %}">
+                            Mi Inventario
+                        </a>
+                    </li>
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'ver_inventario_general' %}" class="sidebar-submenu-link {% if url_actual == 'ver_inventario_general' %}active{% endif %}">
+                            Inventario General
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            {% endwith %}
+            {% elif user.perfil.rol == 'administrador' or user.perfil.rol == 'tienda_online' %}
+            <!-- Inventario General directo para admin y tienda_online -->
+            <li class="sidebar-item">
+                <a href="{% url 'ver_inventario_general' %}" class="sidebar-link {% if request.resolver_match.url_name == 'ver_inventario_general' %}active{% endif %}" title="Inventario General">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Inventario General</span>
+                </a>
+            </li>
             {% else %}
             <li class="sidebar-item">
                 <a href="{% url 'ver_inventario' %}" class="sidebar-link {% if 'inventario' in request.resolver_match.url_name %}active{% endif %}" title="Inventario">

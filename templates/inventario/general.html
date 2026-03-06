@@ -1,0 +1,369 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Inventario General{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/productos/productos.css' %}">
+<link rel="stylesheet" href="{% static 'css/inventario/ver.css' %}">
+<link rel="stylesheet" href="{% static 'css/inventario/general.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="fas fa-warehouse"></i>
+                Inventario General Consolidado
+            </h1>
+            <p class="page-subtitle">
+                Vista completa del inventario de todas las ubicaciones del sistema
+            </p>
+        </div>
+    </div>
+
+    <!-- Resumen por ubicaciones -->
+    <div class="row mb-3">
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="resumen-ubicacion" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="ubicacion-nombre">ALMACÉN</div>
+                <div class="ubicacion-valor">{{ total_almacen|default:0 }}</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="resumen-ubicacion" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="ubicacion-nombre">DEPÓSITOS</div>
+                <div class="ubicacion-valor">{{ total_depositos|default:0 }}</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="resumen-ubicacion" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="ubicacion-nombre">TIENDAS</div>
+                <div class="ubicacion-valor">{{ total_tiendas|default:0 }}</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="resumen-ubicacion" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="ubicacion-nombre">TIENDAS ONLINE</div>
+                <div class="ubicacion-valor">{{ total_tiendas_virtuales|default:0 }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen general -->
+    <div class="row resumen-row">
+        <div class="col-md-6 mb-2">
+            <div class="resumen-card">
+                <span class="resumen-label">Total Productos</span>
+                <strong class="resumen-value">{{ total_items }}</strong>
+            </div>
+        </div>
+        <div class="col-md-6 mb-2">
+            <div class="resumen-card">
+                <span class="resumen-label">Total Unidades (Consolidado)</span>
+                <strong class="resumen-value">{{ total_unidades }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros con Pestañas -->
+    <div class="card card-filtros mb-3">
+        <div class="card-body py-3">
+            <!-- Pestañas con Botones -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <ul class="nav nav-tabs tabs-filtros mb-0" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link {% if vista_normal %}active{% endif %}" id="filtros-normales-tab" data-toggle="tab" href="#filtros-normales" role="tab">
+                            <i class="fas fa-filter"></i> Filtros Normales
+                            {% if filtros_activos > 0 and vista_normal %}
+                            <span class="badge-filtros-count">{{ filtros_activos }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if not vista_normal %}active{% endif %}" id="filtros-avanzados-tab" data-toggle="tab" href="#filtros-avanzados" role="tab">
+                            <i class="fas fa-sliders-h"></i> Filtros Avanzados
+                            {% if filtros_activos > 0 and not vista_normal %}
+                            <span class="badge-filtros-count">{{ filtros_activos }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                </ul>
+                <div class="botones-accion">
+                    <button type="button" class="btn-accion btn-limpiar" onclick="limpiarFiltros()" title="Limpiar Filtros">
+                        <i class="fas fa-eraser"></i>
+                    </button>
+                    <button type="button" class="btn-accion btn-exportar" onclick="exportarTabla()" title="Exportar a Excel">
+                        <i class="fas fa-file-excel"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contenido de Pestañas -->
+            <div class="tab-content">
+                <!-- FILTROS NORMALES -->
+                <div class="tab-pane fade {% if vista_normal %}show active{% endif %}" id="filtros-normales" role="tabpanel">
+                    <form method="GET" id="filtrosFormNormal">
+                        <input type="hidden" name="vista_tipo" value="normal">
+                        <div class="row mb-2">
+                            <div class="col-md-4 mb-2">
+                                <label class="small text-muted mb-1"><i class="fas fa-filter"></i> Filtrar por Rol</label>
+                                <select class="form-control form-control-sm" name="rol_filtro" id="rolFiltro">
+                                    <option value="" {% if not rol_filtro %}selected{% endif %}>Todos los roles</option>
+                                    <option value="almacen" {% if rol_filtro == 'almacen' %}selected{% endif %}>Almacén</option>
+                                    <option value="deposito" {% if rol_filtro == 'deposito' %}selected{% endif %}>Depósito</option>
+                                    <option value="tienda" {% if rol_filtro == 'tienda' %}selected{% endif %}>Tienda</option>
+                                    <option value="tienda_online" {% if rol_filtro == 'tienda_online' %}selected{% endif %}>Tienda Online</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="small text-muted mb-1"><i class="fas fa-building"></i> Ubicación Específica</label>
+                                <select class="form-control form-control-sm" name="ubicacion_filtro" id="ubicacionFiltro" {% if not rol_filtro %}disabled{% endif %}>
+                                    <option value="">Seleccione primero un rol</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- FILTROS AVANZADOS -->
+                <div class="tab-pane fade {% if not vista_normal %}show active{% endif %}" id="filtros-avanzados" role="tabpanel">
+                    <form method="GET" id="filtrosFormAvanzado">
+                        <input type="hidden" name="vista_tipo" value="avanzada">
+                        <!-- Primera fila de filtros -->
+                        <div class="row mb-2">
+                            <div class="col-md-4 mb-2">
+                                <label class="small text-muted mb-1"><i class="fas fa-search"></i> Buscar</label>
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-white border-right-0">
+                                            <i class="fas fa-search text-muted"></i>
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        class="form-control form-control-sm border-left-0"
+                                        name="buscar"
+                                        placeholder="Código, nombre o categoría..."
+                                        value="{{ buscar }}"
+                                    >
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <label class="small text-muted mb-1"><i class="fas fa-tag"></i> Categoría</label>
+                                <select class="form-control form-control-sm" name="categoria">
+                                    <option value="">Todas</option>
+                                    {% for cat in categorias %}
+                                    <option value="{{ cat.id }}" {% if categoria_id == cat.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ cat.nombre }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <label class="small text-muted mb-1"><i class="fas fa-info-circle"></i> Estado Stock</label>
+                                <select class="form-control form-control-sm" name="estado">
+                                    <option value="">Todos</option>
+                                    <option value="normal" {% if estado == 'normal' %}selected{% endif %}>Normal</option>
+                                    <option value="bajo" {% if estado == 'bajo' %}selected{% endif %}>Bajo</option>
+                                    <option value="critico" {% if estado == 'critico' %}selected{% endif %}>Crítico</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <label class="small text-muted mb-1"><i class="fas fa-hashtag"></i> Stock Mínimo</label>
+                                <input
+                                    type="number"
+                                    class="form-control form-control-sm"
+                                    name="stock_minimo"
+                                    placeholder="0"
+                                    min="0"
+                                    value="{{ stock_minimo }}"
+                                >
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <label class="small text-muted mb-1"><i class="fas fa-sort"></i> Ordenar por</label>
+                                <select class="form-control form-control-sm" name="ordenar">
+                                    <option value="nombre" {% if ordenar_por == 'nombre' or not ordenar_por %}selected{% endif %}>Nombre (A-Z)</option>
+                                    <option value="codigo" {% if ordenar_por == 'codigo' %}selected{% endif %}>Código</option>
+                                    <option value="stock_desc" {% if ordenar_por == 'stock_desc' %}selected{% endif %}>Stock (Mayor a Menor)</option>
+                                    <option value="stock_asc" {% if ordenar_por == 'stock_asc' %}selected{% endif %}>Stock (Menor a Mayor)</option>
+                                    <option value="estado" {% if ordenar_por == 'estado' %}selected{% endif %}>Estado (Crítico primero)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de inventario consolidado -->
+    <div class="card card-tabla">
+        <!-- TABLA EXPANDIDA - Vista Normal (Filtros Normales) -->
+        <div id="tabla-normal" class="table-responsive {% if vista_normal %}tabla-visible{% else %}tabla-oculta{% endif %}">
+            <table class="table table-sm tabla-simplificada mb-0" id="tablaInventarioNormal">
+                <thead>
+                    <tr>
+                        <th style="width: 6%;" class="text-center">FOTO</th>
+                        <th style="width: 9%;">CÓDIGO</th>
+                        <th style="width: 18%;">PRODUCTO</th>
+                        <th style="width: 12%;">CATEGORÍA</th>
+                        <th style="width: 9%;">ROL</th>
+                        <th style="width: 13%;">NOMBRE DEL ROL</th>
+                        <th style="width: 10%;" class="text-center">STOCK</th>
+                        <th style="width: 10%;" class="text-center">ESTADO</th>
+                        <th style="width: 13%;" class="text-center">ACTUALIZADO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in inventario_expandido %}
+                    <tr>
+                        <td class="text-center">
+                            {% if item.producto.foto %}
+                                <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="producto-imagen-tabla">
+                            {% else %}
+                                <div class="producto-sin-imagen">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td><span class="codigo-badge">{{ item.producto.codigo }}</span></td>
+                        <td><strong>{{ item.producto.nombre }}</strong></td>
+                        <td>{{ item.producto.categoria.nombre|default:'Sin categoría' }}</td>
+                        <td>{{ item.tipo_rol }}</td>
+                        <td>{{ item.nombre_ubicacion }}</td>
+                        <td class="text-center">
+                            <span class="badge-stock-normal">{{ item.stock }} unidades</span>
+                        </td>
+                        <td class="text-center">
+                            {% if item.estado == 'normal' %}
+                                <span class="badge-estado badge-estado-activo">Normal</span>
+                            {% elif item.estado == 'bajo' %}
+                                <span class="badge-estado badge-estado-bajo">Bajo</span>
+                            {% else %}
+                                <span class="badge-estado badge-estado-inactivo">Crítico</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center text-muted">
+                            <small>{{ item.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4">
+                            <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">No hay productos con stock en las ubicaciones</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- TABLA COMPLETA - Vista Avanzada (Filtros Avanzados) -->
+        <div id="tabla-avanzada" class="table-responsive {% if vista_normal %}tabla-oculta{% else %}tabla-visible{% endif %}">
+            <table class="table table-sm inventario-general-table mb-0" id="tablaInventarioAvanzado">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="width: 5%;" class="text-center">Foto</th>
+                        <th rowspan="2" style="width: 7%;">Código</th>
+                        <th rowspan="2" style="width: 13%;">Producto</th>
+                        <th rowspan="2" style="width: 9%;">Categoría</th>
+                        <th colspan="2" class="ubicaciones-header">Almacén</th>
+                        <th rowspan="2" class="ubicaciones-header" style="width: 8%;">Depósitos</th>
+                        <th rowspan="2" class="ubicaciones-header" style="width: 8%;">Tiendas</th>
+                        <th rowspan="2" class="ubicaciones-header" style="width: 8%;">T. Online</th>
+                        <th rowspan="2" style="width: 9%;">Total</th>
+                        <th rowspan="2" style="width: 7%;">Estado</th>
+                        <th rowspan="2" style="width: 5%;">Detalle</th>
+                    </tr>
+                    <tr>
+                        <th class="ubicaciones-header" style="width: 12%;">Nombre</th>
+                        <th class="ubicaciones-header" style="width: 6%;">Stock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in inventario_consolidado %}
+                    <tr>
+                        <td class="text-center">
+                            {% if item.producto.foto %}
+                                <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="producto-imagen-tabla">
+                            {% else %}
+                                <div class="producto-sin-imagen">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="codigo-badge">{{ item.producto.codigo }}</span>
+                        </td>
+                        <td>{{ item.producto.nombre }}</td>
+                        <td>{{ item.producto.categoria.nombre|default:'Sin categoría' }}</td>
+                        <td><small>{{ item.nombre_almacenes }}</small></td>
+                        <td class="stock-cell">{{ item.stock_almacen }}</td>
+                        <td class="stock-cell">{{ item.stock_depositos }}</td>
+                        <td class="stock-cell">{{ item.stock_tiendas }}</td>
+                        <td class="stock-cell">{{ item.stock_tiendas_virtuales }}</td>
+                        <td class="stock-cell stock-total">
+                            <strong>{{ item.total_stock }}</strong>
+                        </td>
+                        <td class="text-center">
+                            {% if item.estado_stock == 'normal' %}
+                                <span class="badge-estado badge-estado-activo">Normal</span>
+                            {% elif item.estado_stock == 'bajo' %}
+                                <span class="badge-estado badge-estado-bajo">Bajo</span>
+                            {% else %}
+                                <span class="badge-estado badge-estado-inactivo">Crítico</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if item.ubicaciones_detalle %}
+                            <button class="btn btn-sm btn-outline-info" type="button" data-toggle="collapse" 
+                                    data-target="#detalle-{{ item.producto.id }}" aria-expanded="false">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if item.ubicaciones_detalle %}
+                    <tr class="collapse" id="detalle-{{ item.producto.id }}">
+                        <td colspan="12" style="background-color: #f8f9fa; padding: 1rem;">
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="mb-3"><i class="fas fa-map-marker-alt"></i> Detalle por Ubicación</h6>
+                                </div>
+                            </div>
+                            <div class="row">
+                                {% for ubicacion in item.ubicaciones_detalle %}
+                                <div class="col-md-3 col-sm-6 mb-2">
+                                    <div class="card {% if ubicacion.rol == 'almacen' %}ubicacion-card-almacen{% elif ubicacion.rol == 'deposito' %}ubicacion-card-deposito{% elif ubicacion.rol == 'tienda' %}ubicacion-card-tienda{% elif ubicacion.rol == 'tienda_online' %}ubicacion-card-online{% else %}ubicacion-card-default{% endif %}">
+                                        <div class="card-body py-2 px-3">
+                                            <small class="text-muted d-block">{{ ubicacion.nombre }}</small>
+                                            <strong class="d-block" style="font-size: 1.1rem;">{{ ubicacion.cantidad }} unidades</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="12" class="text-center py-4">
+                            <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">No hay productos en el inventario</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/inventario/general.js' %}"></script>
+{% endblock %}
