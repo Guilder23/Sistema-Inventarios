@@ -91,7 +91,7 @@ function cargarDetalleVenta(ventaId) {
     const $body = $('#detalleVentaBody');
     const $codigo = $('#detalleVentaCodigo');
 
-// Mostrar loading
+    // Mostrar loading
     $body.html(`
         <div class="text-center py-4">
             <i class="fas fa-spinner fa-spin fa-2x"></i>
@@ -101,97 +101,78 @@ function cargarDetalleVenta(ventaId) {
     $codigo.text('...');
     $modal.modal('show');
 
-// NOTA: URL usa el patrón /ventas/<id>/ver/ de tu urls.py
-    fetch(`/ventas/${ventaId}/ver/`)
-        .then(res => res.json())
-        .then(data => {
-            $codigo.text(data.venta.codigo);
-            $body.html(renderDetalleVenta(data));
+    // Usar el nuevo endpoint API que retorna JSON
+    fetch(`/ventas/api/venta/${ventaId}/detalle/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include'  // ⬅️ Incluir cookies de sesión
+    })
+        .then(res => {
+            // Leer JSON y verificar status
+            return res.json().then(data => ({
+                status: res.status,
+                data: data
+            }));
+        })
+        .then(({ status, data }) => {
+            if (status === 401) {
+                throw new Error('Sesión expirada. Por favor, recarga la página.');
+            }
+            if (data.success) {
+                $codigo.text(data.data.venta_codigo);
+                $body.html(renderDetalleVenta(data.data));
+            } else {
+                throw new Error(data.error || 'Error desconocido del servidor');
+            }
         })
         .catch(err => {
+            console.error('Error cargando detalle:', err);
             $body.html(`
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-triangle mr-2"></i>
-                    Error al cargar el detalle de la venta.
+                    Error al cargar el detalle de la venta: ${err.message}
                 </div>
             `);
-            console.error('Error cargando detalle:', err);
         });
 }
 
 function renderDetalleVenta(data) {
-    const v = data.venta;
-
-// Badge de estado
+    // Badge de estado
     let badgeEstado = '';
-    if (v.estado_raw === 'completada') {
-        badgeEstado = '<span class="badge badge-estado badge-completada"><i class="fas fa-check-circle mr-1"></i>' + v.estado + '</span>';
-    } else if (v.estado_raw === 'pendiente') {
-        badgeEstado = '<span class="badge badge-estado badge-pendiente"><i class="fas fa-clock mr-1"></i>' + v.estado + '</span>';
+    if (data.estado === 'completada') {
+        badgeEstado = '<span class="badge badge-estado badge-completada"><i class="fas fa-check-circle mr-1"></i>Completada</span>';
+    } else if (data.estado === 'pendiente') {
+        badgeEstado = '<span class="badge badge-estado badge-pendiente"><i class="fas fa-clock mr-1"></i>Pendiente</span>';
+    } else if (data.estado === 'anulada') {
+        badgeEstado = '<span class="badge badge-estado badge-cancelada"><i class="fas fa-times-circle mr-1"></i>Anulada</span>';
     } else {
-        badgeEstado = '<span class="badge badge-estado badge-cancelada"><i class="fas fa-times-circle mr-1"></i>' + v.estado + '</span>';
+        badgeEstado = `<span class="badge badge-secondary">${data.estado}</span>`;
     }
 
-// Info grid
+    // Info grid
     let html = `
         <div class="detalle-info-grid">
             <div class="detalle-info-item">
                 <div class="label">Cliente</div>
-                <div class="value">${v.cliente}</div>
+                <div class="value">${data.cliente || 'N/A'}</div>
             </div>
             <div class="detalle-info-item">
                 <div class="label">Tipo de Pago</div>
-                <div class="value">${v.tipo_pago}</div>
+                <div class="value">${data.tipo_pago === 'credito' ? 'Crédito' : 'Contado'}</div>
             </div>
             <div class="detalle-info-item">
-                <div class="label">Fecha</div>
-                <div class="value">${v.fecha}</div>
+                <div class="label">Total</div>
+                <div class="value"><span class="font-weight-bold">Bs. ${parseFloat(data.total).toFixed(2)}</span></div>
             </div>
             <div class="detalle-info-item">
                 <div class="label">Estado</div>
                 <div class="value">${badgeEstado}</div>
             </div>
+        </div>
     `;
 
-// Mostrar teléfono, razón social y dirección si existen
-    if (v.telefono) {
-        html += `
-            <div class="detalle-info-item">
-                <div class="label">Teléfono</div>
-                <div class="value">${v.telefono}</div>
-            </div>
-        `;
-    }
-    if (v.razon_social) {
-        html += `
-            <div class="detalle-info-item">
-                <div class="label">Razón Social</div>
-                <div class="value">${v.razon_social}</div>
-            </div>
-        `;
-    }
-
-    html += `</div>`;
-
-    if (v.direccion) {
-        html += `
-            <div class="mb-3">
-                <small class="text-muted text-uppercase font-weight-bold">Dirección</small>
-                <p class="mb-0">${v.direccion}</p>
-            </div>
-        `;
-    }
-
-    if (v.vendedor) {
-        html += `
-            <div class="mb-3">
-                <small class="text-muted text-uppercase font-weight-bold">Vendedor</small>
-                <p class="mb-0">${v.vendedor}</p>
-            </div>
-        `;
-    }
-
-// Tabla de items
+    // Tabla de items
     html += `
         <h6 class="font-weight-bold mt-3 mb-2">
             <i class="fas fa-list mr-1"></i> Productos vendidos
@@ -209,38 +190,37 @@ function renderDetalleVenta(data) {
                 <tbody>
     `;
 
-    data.items.forEach(item => {
-        html += `
-            <tr>
-                <td>
-                    <strong>${item.producto_nombre}</strong>
-                    <br><small class="text-muted">${item.producto_codigo}</small>
-                </td>
-                <td class="text-center">${item.cantidad}</td>
-                <td class="text-right">Bs. ${parseFloat(item.precio_unitario).toFixed(2)}</td>
-                <td class="text-right font-weight-bold">Bs. ${parseFloat(item.subtotal).toFixed(2)}</td>
-            </tr>
-        `;
-    });
+    if (data.detalles && data.detalles.length > 0) {
+        data.detalles.forEach(item => {
+            html += `
+                <tr>
+                    <td><strong>${item.producto}</strong></td>
+                    <td class="text-center">${item.cantidad}</td>
+                    <td class="text-right">Bs. ${parseFloat(item.precio_unitario).toFixed(2)}</td>
+                    <td class="text-right font-weight-bold">Bs. ${parseFloat(item.subtotal).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+    }
 
     html += `
                     <tr class="total-row">
-                        <td colspan="3" class="text-right">TOTAL:</td>
-                        <td class="text-right">Bs. ${parseFloat(v.total).toFixed(2)}</td>
+                        <td colspan="3" class="text-right"><strong>TOTAL:</strong></td>
+                        <td class="text-right"><strong>Bs. ${parseFloat(data.total).toFixed(2)}</strong></td>
                     </tr>
                 </tbody>
             </table>
         </div>
     `;
 
-// Sección de amortizaciones (solo crédito)
-    if (v.tipo_pago_raw === 'credito') {
+    // Sección de amortizaciones (solo crédito)
+    if (data.tipo_pago === 'credito') {
         html += `
             <div class="seccion-amortizaciones">
                 <h6><i class="fas fa-hand-holding-usd mr-1"></i> Amortizaciones</h6>
         `;
 
-        if (data.amortizaciones.length > 0) {
+        if (data.amortizaciones && data.amortizaciones.length > 0) {
             html += `
                 <table class="table table-sm mb-2">
                     <thead>
