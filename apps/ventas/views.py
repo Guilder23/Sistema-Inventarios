@@ -19,7 +19,77 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 from datetime import datetime
 
 from apps.ventas.models import Venta, DetalleVenta, AmortizacionCredito, SolicitudAnulacionVenta
-from apps.productos.models import Producto
+from apps.productos.models import Producto, ProductoContenedor
+
+def descontar_stock_desde_contenedores(producto, cantidad):
+    """
+    Descuenta stock de un producto restando la cantidad desde ProductoContenedor.
+    Usa estrategia FIFO: descuenta del contenedor más antiguo primero.
+    
+    Args:
+        producto: Instancia de Producto
+        cantidad: Cantidad a descontar
+    
+    Raises:
+        ValueError: Si no hay suficiente stock
+    """
+    stock_actual = producto.stock
+    if stock_actual < cantidad:
+        raise ValueError(
+            f'Stock insuficiente para "{producto.nombre}". '
+            f'Disponible: {stock_actual}, Solicitado: {cantidad}.'
+        )
+    
+    # Obtener ProductoContenedor ordenados por fecha (FIFO)
+    contenedores = ProductoContenedor.objects.filter(
+        producto=producto,
+        cantidad__gt=0
+    ).order_by('fecha_creacion').select_for_update()
+    
+    cantidad_a_descontar = cantidad
+    for pc in contenedores:
+        if cantidad_a_descontar <= 0:
+            break
+        
+        if pc.cantidad >= cantidad_a_descontar:
+            # Este contenedor tiene suficiente, descontar todo aquí
+            pc.cantidad -= cantidad_a_descontar
+            pc.save()
+            cantidad_a_descontar = 0
+        else:
+            # Este contenedor no tiene suficiente, descontar todo
+            cantidad_a_descontar -= pc.cantidad
+            pc.cantidad = 0
+            pc.save()
+
+
+def restaurar_stock_a_contenedores(producto, cantidad):
+    """
+    Restaura stock de un producto sumando la cantidad al ProductoContenedor.
+    Agrega al contenedor más reciente (LIFO para devoluciones).
+    
+    Args:
+        producto: Instancia de Producto
+        cantidad: Cantidad a restaurar
+    """
+    # Obtener el contenedor más reciente del producto
+    # Si no existe, crear uno por defecto
+    contenedor_pc = ProductoContenedor.objects.filter(
+        producto=producto
+    ).order_by('-fecha_creacion').first()
+    
+    if contenedor_pc:
+        # Sumar al contenedor más reciente
+        contenedor_pc.cantidad += cantidad
+        contenedor_pc.save()
+    else:
+        # Si no hay contenedores, no podemos restaurar sin un contenedor
+        # Esto no debería suceder en un estado coherente, pero lo documentamos
+        raise ValueError(
+            f'No hay contenedores registrados para el producto "{producto.nombre}". '
+            f'No se puede restaurar stock.'
+        )
+
 
 def generar_codigo_venta():
     """Genera un código único para la venta: VTA-0001, VTA-0002, etc."""
@@ -242,8 +312,7 @@ def guardar_venta(request):
                     precio_unitario=precio_unitario,
                     subtotal=subtotal_item,
                 )
-                producto.stock -= cantidad
-                producto.save()
+                descontar_stock_desde_contenedores(producto, cantidad)
 
                 total_venta += subtotal_item
 
@@ -258,7 +327,7 @@ def guardar_venta(request):
             'venta_codigo': venta.codigo,
             'total': str(venta.total),
             'message': f'Venta {venta.codigo} registrada exitosamente.',
-            'redireccionar_a': reverse('ventas:listar_ventas_tienda'),
+            'redireccionar_a': reverse('ventas:listar_ventas'),
         })
 
     except Producto.DoesNotExist:
@@ -281,12 +350,14 @@ def buscar_productos(request):
 
     productos = Producto.objects.filter(
         Q(nombre__icontains=query) | Q(codigo__icontains=query),
-        stock__gt=0,
         activo=True,
-    )[:10]
+    )[:20]  # Aumentar límite ya que filtraremos por stock en Python
 
     resultado = []
     for p in productos:
+        # Filtrar solo productos con stock disponible
+        if p.stock < 1:
+            continue
         resultado.append({
             'id': p.id,
             'codigo': p.codigo,
@@ -299,6 +370,70 @@ def buscar_productos(request):
         })
 
     return JsonResponse({'productos': resultado})
+
+
+@login_required
+def obtener_detalle_venta(request, id):
+    """
+    API AJAX para obtener detalles de una venta en formato JSON
+    """
+    # Validar autenticación (sin redirigir, retornar JSON)
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'No autenticado'}, status=401)
+    
+    try:
+        venta = Venta.objects.get(id=id)
+        detalles = DetalleVenta.objects.filter(venta=venta).select_related('producto')
+        
+        # Amortizaciones (si es con crédito)
+        amortizaciones = []
+        total_amortizado = Decimal('0.00')
+        
+        if venta.tipo_pago == 'credito':
+            amorts = AmortizacionCredito.objects.filter(venta=venta).order_by('-fecha')
+            for a in amorts:
+                amortizaciones.append({
+                    'id': a.id,
+                    'monto': str(a.monto),
+                    'fecha': a.fecha.strftime('%d/%m/%Y %H:%M') if a.fecha else '',
+                    'observaciones': a.observaciones or '',
+                })
+                total_amortizado += a.monto
+        
+        saldo_pendiente = venta.total - total_amortizado
+        
+        datos = {
+            'venta_id': venta.id,
+            'venta_codigo': venta.codigo,
+            'cliente': venta.cliente,
+            'tipo_pago': venta.tipo_pago,
+            'estado': venta.estado,
+            'subtotal': str(venta.subtotal),
+            'descuento': str(venta.descuento) if hasattr(venta, 'descuento') else '0.00',
+            'total': str(venta.total),
+            'detalles': [
+                {
+                    'producto': d.producto.nombre,
+                    'cantidad': d.cantidad,
+                    'precio_unitario': str(d.precio_unitario),
+                    'subtotal': str(d.subtotal)
+                }
+                for d in detalles
+            ],
+            'amortizaciones': amortizaciones,
+            'total_amortizado': str(total_amortizado),
+            'saldo_pendiente': str(saldo_pendiente),
+        }
+        
+        return JsonResponse({'success': True, 'data': datos})
+    
+    except Venta.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Venta no encontrada'}, status=404)
+    except Exception as e:
+        import traceback
+        print(f"ERROR en obtener_detalle_venta: {str(e)}")
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': f'Error: {str(e)}'}, status=500)
 
 
 @login_required
@@ -649,8 +784,7 @@ def anular_venta(request, id):
                 detalles = DetalleVenta.objects.filter(venta=venta).select_related('producto')
                 for detalle in detalles:
                     producto = Producto.objects.select_for_update().get(id=detalle.producto.id)
-                    producto.stock += detalle.cantidad
-                    producto.save()
+                    restaurar_stock_a_contenedores(producto, detalle.cantidad)
 
                 venta.estado = 'anulada'
                 venta.save()
@@ -811,8 +945,7 @@ def responder_solicitud_anulacion(request, id):
                 detalles = DetalleVenta.objects.filter(venta=venta).select_related('producto')
                 for detalle in detalles:
                     producto = Producto.objects.select_for_update().get(id=detalle.producto.id)
-                    producto.stock += detalle.cantidad
-                    producto.save()
+                    restaurar_stock_a_contenedores(producto, detalle.cantidad)
 
                 venta.estado = 'anulada'
                 venta.save()
@@ -1071,14 +1204,8 @@ def guardar_venta_tienda(request):
                     subtotal=subtotal_item,
                 )
 
-                # Descontar stock por cajas + unidades
-                # Ejemplo: cantidad=18, unidades=10 → descuenta 1 caja (10) + 8 unidades
-                cajas_a_descontar = cantidad // producto.unidades_por_caja
-                unidades_a_descontar = cantidad % producto.unidades_por_caja
-                total_a_descontar = (cajas_a_descontar * producto.unidades_por_caja) + unidades_a_descontar
-
-                producto.stock -= total_a_descontar
-                producto.save()
+                # Descontar stock desde contenedores
+                descontar_stock_desde_contenedores(producto, cantidad)
 
                 total_venta += subtotal_item
 
