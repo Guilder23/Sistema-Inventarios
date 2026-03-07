@@ -539,7 +539,7 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
                 Swal.fire({
                     icon: 'success',
                     title: 'Venta Registrada',
-                    html: `<p>${data.message}</p><p>Código: <strong>${data.codigo}</strong></p>`,
+                    html: `<p>${data.message}</p><p>Código: <strong>${data.venta_codigo}</strong></p>`,
                     confirmButtonColor: '#28a745',
                     confirmButtonText: 'Ir al listado',
                 }).then(() => {
