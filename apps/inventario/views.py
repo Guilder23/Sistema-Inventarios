@@ -53,8 +53,7 @@ class InventarioAPIViewSet(viewsets.ReadOnlyModelViewSet):
         if unidad:
             queryset = queryset.filter(
                 Q(ubicacion__tienda__nombre__icontains=unidad) |
-                Q(ubicacion__almacen__nombre__icontains=unidad) |
-                Q(ubicacion__rol='deposito', ubicacion__nombre_ubicacion__icontains=unidad)  # Para depósitos, buscar por nombre_ubicacion
+                Q(ubicacion__almacen__nombre__icontains=unidad)
             )
 
         # ── FILTRO STOCK: ?stock_estado=critico/bajo/normal ──────
@@ -264,4 +263,3 @@ def listar_movimientos(request):
     )[:200]
 
     return render(request, 'inventario/movimientos.html', {'movimientos': movimientos})
-
