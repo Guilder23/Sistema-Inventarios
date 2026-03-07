@@ -348,28 +348,45 @@ def buscar_productos(request):
     if len(query) < 2:
         return JsonResponse({'productos': []})
 
-    productos = Producto.objects.filter(
-        Q(nombre__icontains=query) | Q(codigo__icontains=query),
-        activo=True,
-    )[:20]  # Aumentar límite ya que filtraremos por stock en Python
+    try:
+        # Buscar productos por nombre o código, activos
+        productos = Producto.objects.filter(
+            Q(nombre__icontains=query) | Q(codigo__icontains=query),
+            activo=True,
+        ).select_related('categoria')[:20]
 
-    resultado = []
-    for p in productos:
-        # Filtrar solo productos con stock disponible
-        if p.stock < 1:
-            continue
-        resultado.append({
-            'id': p.id,
-            'codigo': p.codigo,
-            'nombre': p.nombre,
-            'stock': p.stock,
-            'unidades_por_caja': p.unidades_por_caja or 1,
-            'precio_unidad': str(p.precio_unidad),
-            'precio_mayor': str(p.precio_mayor),
-            'precio_caja': str(p.precio_caja),
-        })
+        resultado = []
+        for p in productos:
+            # Calcular stock de forma segura (ahora es @property que suma ProductoContenedor)
+            try:
+                stock = p.stock if p.stock else 0
+            except Exception as e:
+                print(f"Error calculando stock para {p.codigo}: {e}")
+                stock = 0
+            
+            # Filtrar solo productos con stock disponible
+            if stock < 1:
+                continue
+                
+            resultado.append({
+                'id': p.id,
+                'codigo': p.codigo,
+                'nombre': p.nombre,
+                'categoria': p.categoria.nombre if p.categoria else 'Sin categoría',
+                'stock': int(stock),
+                'unidades_por_caja': int(p.unidades_por_caja) if p.unidades_por_caja else 1,
+                'precio_unidad': float(p.precio_unidad or 0),
+                'precio_mayor': float(p.precio_mayor or 0),
+                'precio_caja': float(p.precio_caja or 0),
+            })
 
-    return JsonResponse({'productos': resultado})
+        print(f"Búsqueda '{query}': encontrados {len(resultado)} productos")
+        return JsonResponse({'productos': resultado})
+    except Exception as e:
+        print(f"Error en buscar_productos: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': f'Error al buscar: {str(e)}'}, status=500)
 
 
 @login_required
