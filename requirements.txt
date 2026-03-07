@@ -10,17 +10,8 @@ Pillow==10.2.0
 
 # Generación de PDFs
 reportlab==4.0.9
-<<<<<<< HEAD
-=======
-
->>>>>>> b8fd3de730fdc637eb2744c4147770d0c085e571
-# API REST
-djangorestframework==3.14.0
 
 # Almacenamiento en Blackblaze B2
 django-storages==1.14.2
-<<<<<<< HEAD
 boto3==1.42.58
-=======
-boto3==1.42.58
->>>>>>> b8fd3de730fdc637eb2744c4147770d0c085e571
+djangorestframework==3.14.0
