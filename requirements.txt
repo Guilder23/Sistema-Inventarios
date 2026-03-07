@@ -6,7 +6,7 @@ python-decouple==3.8
 psycopg2-binary==2.9.9
 
 # Manejo de imágenes (fotos de productos)
-Pillow==10.2.0
+Pillow==11.0.0
 
 # Generación de PDFs (solo cuando lo necesites, descomenta)
-# reportlab==4.0.9
+reportlab==4.0.9
