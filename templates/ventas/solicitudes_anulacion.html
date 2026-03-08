@@ -1,0 +1,155 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Solicitudes de Anulación de Ventas{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/ventas/solicitudes_anulacion.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid py-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="page-title mb-1">
+                <i class="fas fa-check-circle mr-2"></i>Solicitudes de Anulación
+            </h2>
+            <p class="text-muted mb-0">Gestiona las solicitudes de anulación enviadas por las tiendas</p>
+        </div>
+        <a href="{% url 'ventas:listar_ventas' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left mr-1"></i> Volver
+        </a>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="card card-filtros mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="form-group mb-0">
+                        <label>Filtrar por estado:</label>
+                        <select class="form-control" id="filtroEstado" onchange="filtrarSolicitudes()">
+                            <option value="">Todos</option>
+                            <option value="pendiente" {% if estado_filtro == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                            <option value="aceptada" {% if estado_filtro == 'aceptada' %}selected{% endif %}>Aceptada</option>
+                            <option value="rechazada" {% if estado_filtro == 'rechazada' %}selected{% endif %}>Rechazada</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-right">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            Total: <strong id="totalSolicitudes">{{ solicitudes|length }}</strong>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA DE SOLICITUDES -->
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0" id="tablaSolicitudes">
+                <thead class="bg-light">
+                    <tr>
+                        <th style="width: 12%;">Código Venta</th>
+                        <th style="width: 18%;">Cliente</th>
+                        <th style="width: 14%;">Solicitado por</th>
+                        <th style="width: 12%;">Fecha Solicitud</th>
+                        <th style="width: 12%;">Estado</th>
+                        <th style="width: 12%;">Respondido por</th>
+                        <th style="width: 20%;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if solicitudes %}
+                        {% for solicitud in solicitudes %}
+                        <tr class="solicitud-row" data-id="{{ solicitud.id }}" data-estado="{{ solicitud.estado }}">
+                            <td>
+                                <strong>{{ solicitud.venta.codigo }}</strong>
+                            </td>
+                            <td>{{ solicitud.venta.cliente }}</td>
+                            <td>
+                                <small>
+                                    {% if solicitud.solicitado_por.get_full_name %}
+                                        {{ solicitud.solicitado_por.get_full_name }}
+                                    {% else %}
+                                        {{ solicitud.solicitado_por.username }}
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                <small>{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</small>
+                            </td>
+                            <td>
+                                {% if solicitud.estado == 'pendiente' %}
+                                    <span class="badge badge-warning">Pendiente</span>
+                                {% elif solicitud.estado == 'aceptada' %}
+                                    <span class="badge badge-success">Aceptada</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Rechazada</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if solicitud.respondido_por %}
+                                    <small>
+                                        {% if solicitud.respondido_por.get_full_name %}
+                                            {{ solicitud.respondido_por.get_full_name }}
+                                        {% else %}
+                                            {{ solicitud.respondido_por.username }}
+                                        {% endif %}
+                                        <br>
+                                        <em>({{ solicitud.fecha_respuesta|date:"d/m/Y H:i" }})</em>
+                                    </small>
+                                {% else %}
+                                    <small class="text-muted">—</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="abrirDetalle({{ solicitud.id }})">
+                                    <i class="fas fa-eye"></i> Ver
+                                </button>
+                                {% if solicitud.estado == 'pendiente' %}
+                                    <button class="btn btn-sm btn-success" onclick="aceptarSolicitud({{ solicitud.id }})">
+                                        <i class="fas fa-check"></i> Aceptar
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="rechazarSolicitud({{ solicitud.id }})">
+                                        <i class="fas fa-times"></i> Rechazar
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox mr-2"></i>No hay solicitudes
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL DETALLE SOLICITUD -->
+<div id="modalDetalleSolicitud" style="display: none;">
+    <!-- Contenido cargado dinámicamente -->
+</div>
+
+<script>
+// Definir URLs antes de cargar el script externo
+// Las URLs se construyen dinámicamente con el id real
+const URLS = {
+    detalle: '/ventas/solicitudes/',
+    responder: '/ventas/solicitudes/'
+};
+</script>
+<script src="{% static 'js/ventas/solicitudes_anulacion.js' %}"></script>
+{% endblock %}

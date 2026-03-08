@@ -8,5 +8,10 @@ psycopg2-binary==2.9.9
 # Manejo de imágenes (fotos de productos)
 Pillow==10.2.0
 
-# Generación de PDFs (solo cuando lo necesites, descomenta)
-# reportlab==4.0.9
+# Generación de PDFs
+reportlab==4.0.9
+
+# Almacenamiento en Blackblaze B2
+django-storages==1.14.2
+boto3==1.42.58
+djangorestframework==3.14.0
