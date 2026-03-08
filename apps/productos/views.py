@@ -1251,36 +1251,62 @@ def editar_producto_contenedor(request, producto_contenedor_id):
     
     if request.method == 'POST':
         try:
-            nueva_cantidad = request.POST.get('cantidad', '0')
+            cantidad_cambio_str = request.POST.get('cantidad_cambio', '0')
+            operacion = request.POST.get('operacion', 'sumar')
             
             try:
-                nueva_cantidad = int(nueva_cantidad)
-                if nueva_cantidad < 0:
-                    error_msg = 'La cantidad no puede ser negativa'
+                cantidad_cambio = int(cantidad_cambio_str)
+                if cantidad_cambio <= 0:
+                    error_msg = 'La cantidad debe ser mayor a 0'
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return JsonResponse({'error': error_msg}, status=400)
                     messages.error(request, error_msg)
-                    return redirect('listar_contenedores_producto', 
-                                  producto_id=producto_contenedor.producto_id)
+                    return redirect('productos_en_contenedor', 
+                                  contenedor_id=producto_contenedor.contenedor_id)
             except ValueError:
                 error_msg = 'La cantidad debe ser un número válido'
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'error': error_msg}, status=400)
                 messages.error(request, error_msg)
-                return redirect('listar_contenedores_producto', 
-                              producto_id=producto_contenedor.producto_id)
+                return redirect('productos_en_contenedor', 
+                              contenedor_id=producto_contenedor.contenedor_id)
             
+            # Guardar valores anteriores
             cantidad_anterior = producto_contenedor.cantidad
-            producto_contenedor.cantidad = nueva_cantidad
-            producto_contenedor.save()
+            cantidad_recibida_anterior = producto_contenedor.cantidad_recibida
             
-            cambio = nueva_cantidad - cantidad_anterior
-            if cambio > 0:
-                cambio_texto = f'+{cambio}'
-            else:
-                cambio_texto = str(cambio)
+            # Aplicar operación
+            if operacion == 'sumar':
+                producto_contenedor.cantidad_recibida += cantidad_cambio
+                producto_contenedor.cantidad += cantidad_cambio
+                cambio_texto = f'+{cantidad_cambio}'
+                operacion_texto = 'Suma'
+            else:  # restar
+                # Validar que no quede negativo
+                if producto_contenedor.cantidad < cantidad_cambio:
+                    error_msg = f'No se puede restar {cantidad_cambio}. Solo hay {producto_contenedor.cantidad} disponibles'
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({'error': error_msg}, status=400)
+                    messages.error(request, error_msg)
+                    return redirect('productos_en_contenedor', 
+                                  contenedor_id=producto_contenedor.contenedor_id)
+                
+                if producto_contenedor.cantidad_recibida < cantidad_cambio:
+                    error_msg = f'No se puede restar {cantidad_cambio}. Solo hay {producto_contenedor.cantidad_recibida} recibidas'
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({'error': error_msg}, status=400)
+                    messages.error(request, error_msg)
+                    return redirect('productos_en_contenedor', 
+                                  contenedor_id=producto_contenedor.contenedor_id)
+                
+                producto_contenedor.cantidad_recibida -= cantidad_cambio
+                producto_contenedor.cantidad -= cantidad_cambio
+                cambio_texto = f'-{cantidad_cambio}'
+                operacion_texto = 'Resta'
             
-            mensaje = f'Cantidad actualizada: {cambio_texto} unidades'
+            producto_contenedor.save(update_fields=['cantidad_recibida', 'cantidad', 'fecha_actualizacion'])
+            
+            mensaje = f'{operacion_texto} aplicada: {cambio_texto} unidades'
             messages.success(request, mensaje)
             
             # Registrar en historial
@@ -1288,7 +1314,11 @@ def editar_producto_contenedor(request, producto_contenedor_id):
                 producto=producto_contenedor.producto,
                 accion='edicion',
                 usuario=request.user,
-                detalles=f'Cantidad en "{producto_contenedor.contenedor.nombre}" modificada: {cantidad_anterior} → {nueva_cantidad}'
+                detalles=(
+                    f'{operacion_texto} en "{producto_contenedor.contenedor.nombre}": {cambio_texto} unidades. '
+                    f'Recibida: {cantidad_recibida_anterior} → {producto_contenedor.cantidad_recibida}, '
+                    f'Disponible: {cantidad_anterior} → {producto_contenedor.cantidad}'
+                )
             )
             
             # Responder a AJAX
@@ -1301,8 +1331,8 @@ def editar_producto_contenedor(request, producto_contenedor_id):
                 return JsonResponse({'error': error_msg}, status=500)
             messages.error(request, error_msg)
         
-        return redirect('listar_contenedores_producto', 
-                      producto_id=producto_contenedor.producto_id)
+        return redirect('productos_en_contenedor', 
+                      contenedor_id=producto_contenedor.contenedor_id)
     
     # GET - Mostrar form
     context = {
