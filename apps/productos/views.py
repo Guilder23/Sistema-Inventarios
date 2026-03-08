@@ -1197,11 +1197,12 @@ def agregar_producto_contenedor(request, producto_id):
             producto_contenedor, creado = ProductoContenedor.objects.get_or_create(
                 producto=producto,
                 contenedor=contenedor,
-                defaults={'cantidad': cantidad, 'creado_por': request.user}
+                defaults={'cantidad_recibida': cantidad, 'cantidad': cantidad, 'creado_por': request.user}
             )
             
             if not creado:
-                # Si ya existe, actualizar la cantidad
+                # Si ya existe, actualizar ambas cantidades
+                producto_contenedor.cantidad_recibida += cantidad
                 producto_contenedor.cantidad += cantidad
                 producto_contenedor.save()
                 mensaje = f'Cantidad de "{producto.nombre}" en "{contenedor.nombre}" actualizada: +{cantidad} unidades'
@@ -1515,6 +1516,7 @@ def agregar_producto_a_contenedor(request, contenedor_id):
                 ProductoContenedor.objects.create(
                     producto=producto,
                     contenedor=contenedor,
+                    cantidad_recibida=cantidad,
                     cantidad=cantidad,
                     creado_por=request.user
                 )
@@ -1572,10 +1574,11 @@ def agregar_producto_a_contenedor(request, contenedor_id):
                 pc, creado = ProductoContenedor.objects.get_or_create(
                     producto=producto,
                     contenedor=contenedor,
-                    defaults={'cantidad': cantidad, 'creado_por': request.user}
+                    defaults={'cantidad_recibida': cantidad, 'cantidad': cantidad, 'creado_por': request.user}
                 )
                 
                 if not creado:
+                    pc.cantidad_recibida += cantidad
                     pc.cantidad += cantidad
                     pc.save()
                     mensaje = f'Cantidad de "{producto.nombre}" incrementada en {cantidad} unidades'
