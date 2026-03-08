@@ -150,6 +150,17 @@
     font-family: 'Courier New', monospace;
 }
 
+.badge-recibida {
+    display: inline-block;
+    padding: 0.3rem 0.55rem;
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+    border-radius: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
 .badge-stock {
     display: inline-block;
     padding: 0.3rem 0.55rem;
@@ -297,6 +308,11 @@
     .codigo-badge {
         font-size: 0.7rem;
         padding: 0.25rem 0.5rem;
+    }
+
+    .badge-recibida {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
     }
 
     .badge-stock {

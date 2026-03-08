@@ -23,7 +23,7 @@
                 </h1>
                 <p class="page-subtitle">
                     Proveedor: <strong>{{ contenedor.proveedor }}</strong> | 
-                    Stock Total: <strong>{{ contenedor.stock }} unidades</strong>
+                    Stock Disponible: <strong>{{ contenedor.stock }} unidades</strong>
                 </p>
             </div>
         </div>
@@ -44,9 +44,10 @@
             <table class="table table-sm tabla-productos mb-0">
                 <thead>
                     <tr>
-                        <th style="width: 35%;">Producto</th>
-                        <th style="width: 25%;">Código</th>
-                        <th style="width: 20%;">Cantidad</th>
+                        <th style="width: 30%;">Producto</th>
+                        <th style="width: 20%;">Código</th>
+                        <th style="width: 15%;">Cantidad Recibida</th>
+                        <th style="width: 15%;">Cantidad Disponible</th>
                         <th class="text-center" style="width: 20%;">Acciones</th>
                     </tr>
                 </thead>
@@ -54,12 +55,15 @@
                     {% for pc in productos_contenedor %}
                     <tr>
                         <td>
-                            <div class="text-truncate" style="max-width: 350px;" title="{{ pc.producto.nombre }}">
+                            <div class="text-truncate" style="max-width: 300px;" title="{{ pc.producto.nombre }}">
                                 {{ pc.producto.nombre }}
                             </div>
                         </td>
                         <td>
                             <span class="codigo-badge">{{ pc.producto.codigo }}</span>
+                        </td>
+                        <td>
+                            <span class="badge-recibida">{{ pc.cantidad_recibida }} unidades</span>
                         </td>
                         <td>
                             <span class="badge-stock">{{ pc.cantidad }} unidades</span>
@@ -68,6 +72,7 @@
                             <button type="button" class="btn btn-info btn-sm btn-ver-producto-contenedor" 
                                     data-pc-id="{{ pc.id }}" 
                                     data-cantidad="{{ pc.cantidad }}" 
+                                    data-cantidad-recibida="{{ pc.cantidad_recibida }}"
                                     data-codigo="{{ pc.producto.codigo }}" 
                                     data-nombre="{{ pc.producto.nombre }}"
                                     title="Ver detalles">
@@ -76,6 +81,7 @@
                             <button type="button" class="btn btn-warning btn-sm btn-editar-producto-contenedor" 
                                     data-pc-id="{{ pc.id }}" 
                                     data-cantidad="{{ pc.cantidad }}" 
+                                    data-cantidad-recibida="{{ pc.cantidad_recibida }}"
                                     data-codigo="{{ pc.producto.codigo }}" 
                                     data-nombre="{{ pc.producto.nombre }}"
                                     title="Editar cantidad">

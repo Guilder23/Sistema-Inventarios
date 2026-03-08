@@ -42,3 +42,40 @@
     color: #1f2937;
     font-size: 0.95rem;
 }
+
+/* Badges personalizados para el modal */
+#modalVerProductoContenedor .badge-modal-recibida {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+    border-radius: 0.375rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#modalVerProductoContenedor .badge-modal-disponible {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+    border-radius: 0.375rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#modalVerProductoContenedor .badge-modal-movida {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+    border-radius: 0.375rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
