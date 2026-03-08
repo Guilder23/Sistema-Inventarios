@@ -120,6 +120,88 @@ class Producto(models.Model):
         return self.productos_contenedores.values(
             'contenedor__nombre', 'cantidad', 'id'
         ).order_by('contenedor__nombre')
+    
+    def reducir_stock(self, cantidad, usuario=None):
+        """
+        Reduce el stock del producto restando de los ProductoContenedor disponibles.
+        Retorna True si se pudo reducir completamente, False en caso contrario.
+        """
+        if cantidad <= 0:
+            return False
+        
+        # Verificar que hay stock suficiente
+        if self.stock < cantidad:
+            return False
+        
+        # Restar de los contenedores con stock disponible (FIFO - primeros en entrar)
+        cantidad_restante = cantidad
+        contenedores_con_stock = self.productos_contenedores.filter(
+            cantidad__gt=0
+        ).order_by('fecha_creacion')
+        
+        for pc in contenedores_con_stock:
+            if cantidad_restante <= 0:
+                break
+            
+            if pc.cantidad >= cantidad_restante:
+                # Este contenedor tiene suficiente
+                pc.cantidad -= cantidad_restante
+                cantidad_restante = 0
+                pc.save(update_fields=['cantidad', 'fecha_actualizacion'])
+            else:
+                # Este contenedor no tiene suficiente, usar todo y continuar
+                cantidad_restante -= pc.cantidad
+                pc.cantidad = 0
+                pc.save(update_fields=['cantidad', 'fecha_actualizacion'])
+        
+        return cantidad_restante == 0
+    
+    def aumentar_stock(self, cantidad, usuario=None, contenedor=None):
+        """
+        Aumenta el stock del producto agregando a un ProductoContenedor.
+        Si no se especifica contenedor, usa el más reciente o crea uno genérico.
+        Retorna True si se pudo aumentar, False en caso contrario.
+        """
+        if cantidad <= 0:
+            return False
+        
+        # Si no se especifica contenedor, usar el más reciente o crear uno genérico
+        if contenedor is None:
+            # Buscar el contenedor más reciente de este producto
+            ultimo_pc = self.productos_contenedores.order_by('-fecha_creacion').first()
+            if ultimo_pc:
+                ultimo_pc.cantidad += cantidad
+                ultimo_pc.save(update_fields=['cantidad', 'fecha_actualizacion'])
+                return True
+            else:
+                # No hay contenedores, buscar/crear uno genérico llamado "Stock General"
+                from django.contrib.auth.models import User
+                contenedor_general, creado = Contenedor.objects.get_or_create(
+                    nombre='Stock General',
+                    defaults={
+                        'proveedor': 'Sistema',
+                        'creado_por': usuario,
+                        'activo': True
+                    }
+                )
+                ProductoContenedor.objects.create(
+                    producto=self,
+                    contenedor=contenedor_general,
+                    cantidad=cantidad,
+                    creado_por=usuario
+                )
+                return True
+        else:
+            # Usar el contenedor especificado
+            pc, creado = ProductoContenedor.objects.get_or_create(
+                producto=self,
+                contenedor=contenedor,
+                defaults={'cantidad': cantidad, 'creado_por': usuario}
+            )
+            if not creado:
+                pc.cantidad += cantidad
+                pc.save(update_fields=['cantidad', 'fecha_actualizacion'])
+            return True
 
 
 class HistorialProducto(models.Model):

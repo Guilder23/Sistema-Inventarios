@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'storages',  # Para almacenamiento en S3 (Blackblaze B2)
     'rest_framework',  # Para la API REST
     'apps.vendedores',
+    'apps.devoluciones',
 ]
 
 MIDDLEWARE = [
