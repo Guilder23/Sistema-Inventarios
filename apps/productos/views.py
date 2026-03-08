@@ -1480,6 +1480,15 @@ def agregar_producto_a_contenedor(request, contenedor_id):
     if request.method == 'POST':
         tipo = request.POST.get('tipo')  # 'nuevo' o 'existente'
         
+        # DEBUG: Log de datos recibidos
+        print(f"\n{'='*60}")
+        print(f"DEBUG: agregar_producto_a_contenedor POST recibido")
+        print(f"  contenedor_id (URL): {contenedor_id}")
+        print(f"  tipo: '{tipo}'")
+        print(f"  POST data: {dict(request.POST)}")
+        print(f"  FILES: {dict(request.FILES)}")
+        print(f"{'='*60}\n")
+        
         if tipo == 'nuevo':
             # Crear nuevo producto con todos los campos
             try:

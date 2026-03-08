@@ -1,0 +1,165 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Historial{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/reportes/reportes.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+
+    <!-- HEADER -->
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="fas fa-history"></i> Historial de Registros
+            </h1>
+            <p class="page-subtitle">Consulta ventas, traspasos y movimientos de inventario</p>
+        </div>
+    </div>
+
+    <!-- PESTAÑAS -->
+    <ul class="nav nav-tabs historial-tabs" id="historialTabs">
+        <li class="nav-item">
+            <a class="nav-link active" data-tab="ventas" href="#">
+                <i class="fas fa-shopping-cart mr-1"></i> Ventas
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-tab="traspasos" href="#">
+                <i class="fas fa-exchange-alt mr-1"></i> Traspasos
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-tab="movimientos" href="#">
+                <i class="fas fa-boxes mr-1"></i> Movimientos
+            </a>
+        </li>
+    </ul>
+
+    <!-- FILTROS (compartidos) -->
+    <div class="card card-filtros mt-0">
+        <div class="card-body py-3">
+            <div class="row align-items-center g-2">
+
+                <!-- Buscador -->
+                <div class="col-md-3">
+                    <div class="input-group input-group-sm">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-white border-right-0">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                        </div>
+                        <input type="text" class="form-control form-control-sm border-left-0"
+                               id="filtroBuscar" placeholder="Buscar...">
+                    </div>
+                </div>
+
+                <!-- Estado -->
+                <div class="col-md-2">
+                    <select class="form-control form-control-sm" id="filtroEstado">
+                        <option value="">Todos los estados</option>
+                    </select>
+                </div>
+
+                <!-- Filtro extra (tipo_pago / tipo traspaso / tipo movimiento) -->
+                <div class="col-md-2">
+                    <select class="form-control form-control-sm" id="filtroExtra">
+                        <option value="">Todos los tipos</option>
+                    </select>
+                </div>
+
+                <!-- Fecha desde -->
+                <div class="col-md-2">
+                    <input type="date" class="form-control form-control-sm" id="filtroFechaDesde"
+                           placeholder="Desde">
+                </div>
+
+                <!-- Fecha hasta -->
+                <div class="col-md-2">
+                    <input type="date" class="form-control form-control-sm" id="filtroFechaHasta"
+                           placeholder="Hasta">
+                </div>
+
+                <!-- Botón limpiar -->
+                <div class="col-md-1">
+                    <button class="btn btn-sm btn-outline-secondary w-100" id="btnLimpiar">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="card card-tabla">
+        <div class="table-responsive">
+            <table class="table table-sm tabla-historial mb-0">
+                <thead id="tablaHead">
+                    <!-- Se genera dinámicamente -->
+                </thead>
+                <tbody id="tablaBody">
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            <i class="fas fa-spinner fa-spin mr-2"></i> Cargando...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINACIÓN -->
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
+            <div class="text-muted small">
+                Mostrando <span id="mostrandoDesde">0</span> –
+                <span id="mostrandoHasta">0</span> de
+                <span id="totalRegistros">0</span> registros
+            </div>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" id="btnAnterior">
+                        <a class="page-link" href="#">&laquo;</a>
+                    </li>
+                    <li class="page-item" id="btnSiguiente">
+                        <a class="page-link" href="#">&raquo;</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <!-- MODAL DETALLE -->
+    <div class="modal fade" id="modalDetalle" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <span id="modalTitulo">Detalle</span>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modalCuerpo">
+                    <!-- Se llena dinámicamente -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="{% static 'js/reportes/reportes.js' %}"></script>
+{% endblock %}
