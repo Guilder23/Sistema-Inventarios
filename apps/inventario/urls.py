@@ -1,16 +1,7 @@
-from django.urls import path, include
+from django.urls import path
 from . import views
-from rest_framework.routers import DefaultRouter
-from .views import InventarioAPIViewSet
-
-
-router = DefaultRouter()
-router.register(r'inventario', InventarioAPIViewSet, basename='inventario_api')
 
 urlpatterns = [
-    # 1. Ponemos la API bajo el prefijo /api/
-    path('api/', include(router.urls)),
-    path('api/roles/', views.RolesAPIView.as_view(), name='roles_api'),
     # Inventario
     path('', views.ver_inventario, name='ver_inventario'),
     path('general/', views.ver_inventario_general, name='ver_inventario_general'), #Para inventario general consolidado
