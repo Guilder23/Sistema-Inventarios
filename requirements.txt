@@ -3,15 +3,28 @@ Django==5.1.1
 python-decouple==3.8
 
 # Base de datos PostgreSQL
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.10
+dj-database-url==2.2.0
+
+# Servidor para producción
+gunicorn==23.0.0
+
+# Archivos estáticos en producción
+whitenoise==6.8.2
 
 # Manejo de imágenes (fotos de productos)
-Pillow==10.2.0
+Pillow==11.0.0
 
 # Generación de PDFs
 reportlab==4.0.9
 
+# API REST
+# djangorestframework==3.14.0
+
 # Almacenamiento en Blackblaze B2
 django-storages==1.14.2
 boto3==1.42.58
-djangorestframework==3.14.0
+
+# Generación de PDFs
+reportlab==4.0.9
+
