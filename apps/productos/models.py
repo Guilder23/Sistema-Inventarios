@@ -55,8 +55,10 @@ class ProductoContenedor(models.Model):
     contenedor = models.ForeignKey('Contenedor', on_delete=models.CASCADE,
                                   related_name='productos_contenedores',
                                   verbose_name='Contenedor')
-    cantidad = models.IntegerField(default=0, verbose_name='Cantidad en este contenedor',
-                                  help_text='Cantidad de este producto que llegó en este contenedor')
+    cantidad_recibida = models.IntegerField(default=0, verbose_name='Cantidad recibida',
+                                  help_text='Cantidad original que llegó en este contenedor (registro histórico)')
+    cantidad = models.IntegerField(default=0, verbose_name='Cantidad disponible',
+                                  help_text='Cantidad actualmente disponible en este contenedor')
     
     # Metadata
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
@@ -95,9 +97,7 @@ class Producto(models.Model):
     poliza = models.DecimalField(max_digits=10, decimal_places=2, default=0, blank=True, null=True)
     gastos = models.DecimalField(max_digits=10, decimal_places=2, default=0, blank=True, null=True)
     
-    # Control de stock 
-    # Cuando no hay ProductoContenedor, usar este valor como stock principal
-    stock = models.IntegerField(default=0, help_text='Stock principal del producto')
+    # Control de stock (se calcula automáticamente desde ProductoContenedor)
     stock_critico = models.IntegerField(default=10)
     stock_bajo = models.IntegerField(default=30)
     
@@ -114,6 +114,13 @@ class Producto(models.Model):
     
     def __str__(self):
         return f"{self.codigo} - {self.nombre}"
+    
+    @property
+    def stock(self):
+        """Calcula el stock total sumando todos los productos en contenedores"""
+        return self.productos_contenedores.aggregate(
+            total_stock=models.Sum('cantidad')
+        )['total_stock'] or 0
     
     def obtener_stock_por_contenedor(self):
         """Retorna un diccionario con el stock del producto en cada contenedor"""
@@ -187,6 +194,7 @@ class Producto(models.Model):
                 ProductoContenedor.objects.create(
                     producto=self,
                     contenedor=contenedor_general,
+                    cantidad_recibida=cantidad,
                     cantidad=cantidad,
                     creado_por=usuario
                 )
@@ -196,11 +204,12 @@ class Producto(models.Model):
             pc, creado = ProductoContenedor.objects.get_or_create(
                 producto=self,
                 contenedor=contenedor,
-                defaults={'cantidad': cantidad, 'creado_por': usuario}
+                defaults={'cantidad_recibida': cantidad, 'cantidad': cantidad, 'creado_por': usuario}
             )
             if not creado:
+                pc.cantidad_recibida += cantidad
                 pc.cantidad += cantidad
-                pc.save(update_fields=['cantidad', 'fecha_actualizacion'])
+                pc.save(update_fields=['cantidad_recibida', 'cantidad', 'fecha_actualizacion'])
             return True
 
 
