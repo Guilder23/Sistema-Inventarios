@@ -3,6 +3,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" href="data:,">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Sistema de Gestión de Inventario">
     <title>{% block titulo %}Sistema de Inventario{% endblock %}</title>
@@ -23,10 +24,12 @@
     <link rel="stylesheet" href="{% static 'css/componentes/navbar.css' %}">
     <link rel="stylesheet" href="{% static 'css/componentes/sidebar.css' %}">
     <link rel="stylesheet" href="{% static 'css/componentes/footer.css' %}">
+    <link rel="stylesheet" href="{% static 'css/componentes/modales.css' %}">
     
     <!-- Estilos de Notificaciones -->
     <link rel="stylesheet" href="{% static 'css/notificaciones/badge.css' %}">
-    
+    <link rel="stylesheet" href="{% static 'css/notificaciones/toast.css' %}">
+
     <!-- Estilos Extra por página -->
     {% block estilos_extra %}{% endblock %}
 </head>
@@ -37,6 +40,9 @@
         
         <!-- INCLUIR SIDEBAR -->
         {% include 'componentes/sidebar.html' %}
+        
+        <!-- CONTENEDOR PARA MODALES DEL SISTEMA -->
+        <div id="modalContainer"></div>
         
         <!-- CONTENIDO PRINCIPAL -->
         <div class="main-container">
@@ -72,15 +78,23 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.1/dist/sweetalert2.all.min.js"></script>
 
     <!-- Scripts de Componentes -->
+    <script src="{% static 'js/componentes/modales.js' %}"></script>
     <script src="{% static 'js/componentes/navbar.js' %}"></script>
     <script src="{% static 'js/componentes/sidebar.js' %}"></script>
     <script src="{% static 'js/componentes/footer.js' %}"></script>
     
     <!-- Scripts de Notificaciones -->
     <script src="{% static 'js/notificaciones/badge.js' %}"></script>
+    <script src="{% static 'js/notificaciones/toast.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toastManager = new ToastManager();
+        });
+    </script>
     
     <!-- Scripts Extra por página -->
-    {% block scripts_extra %}{% endblock %}
+    {% block scripts_extra %}
+    {% endblock %}
 </body>
 </html>
 

@@ -153,16 +153,26 @@
             </li>
             {% endif %}
 
-            <!-- Ventas - Vendedores y Administradores (Oculto para Tienda Online) -->
-            {% if user.is_staff or user.groups.filter|length > 0 %}
+            <!-- Ventas - Almacén, Tienda, Staff y Administradores (Oculto para Tienda Online) -->
+            {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
                 {% if not user.perfil or user.perfil.rol != 'tienda_online' %}
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link" title="Ventas">
+                    <a href="{% url 'ventas:listar_ventas' %}" class="sidebar-link {% if 'ventas' in request.path %}active{% endif %}" title="Ventas">
                         <i class="fas fa-shopping-cart"></i>
                         <span>Ventas</span>
                     </a>
                 </li>
                 {% endif %}
+            {% endif %}
+
+            <!-- Ventas - Solo para rol tienda -->
+            {% if user.perfil.rol == 'tienda' %}
+            <li class="sidebar-item">
+                <a href="{% url 'ventas:listar_ventas_tienda' %}" class="sidebar-link {% if 'tienda' in request.path %}active{% endif %}" title="Ventas">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Ventas</span>
+                </a>
+            </li>
             {% endif %}
 
             <!-- Pedidos - Oculto para Tienda Online -->
@@ -221,12 +231,12 @@
             </li>
             {% endif %}
 
-            <!-- Depósitos - Solo Administradores -->
+            <!-- Almacenes - Solo Administradores -->
             {% if user.is_superuser %}
             <li class="sidebar-item">
-                <a href="{% url 'depositos:listar' %}" class="sidebar-link {% if 'depositos' in request.resolver_match.url_name %}active{% endif %}" title="Depósitos">
+                <a href="{% url 'almacenes:listar' %}" class="sidebar-link {% if 'almacenes' in request.resolver_match.url_name %}active{% endif %}" title="Almacenes">
                     <i class="fas fa-warehouse"></i>
-                    <span>Depósitos</span>
+                    <span>Almacenes</span>
                 </a>
             </li>
             {% endif %}
@@ -253,7 +263,7 @@
 
             <!-- Reportes - Staff y Administradores -->
             <li class="sidebar-item">
-                <a href="#" class="sidebar-link" title="Reportes">
+                <a href="{% url 'reportes:historial' %}" class="sidebar-link" title="Reportes">
                     <i class="fas fa-chart-bar"></i>
                     <span>Reportes</span>
                 </a>

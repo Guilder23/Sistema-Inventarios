@@ -124,6 +124,13 @@ body.sidebar-collapsed .footer {
     margin-left: 60px;
 }
 
+
+/* Tu CSS (sí puedes editarlo) */
+.footer-logo {
+    width: 30px;   /* Esto sobrescribe el width: 100% */
+    height: auto;
+}
+
 /* RESPONSIVE FOOTER */
 @media (max-width: 992px) {
     .footer {
