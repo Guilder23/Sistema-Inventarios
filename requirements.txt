@@ -25,8 +25,5 @@ reportlab==4.0.9
 django-storages==1.14.2
 boto3==1.42.58
 
-# Generación de PDFs
-reportlab==4.0.9
-
 # API
 djangorestframework==3.15.2
