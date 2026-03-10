@@ -55,3 +55,62 @@
     background-color: #fdecea;
     color: #b71c1c;
 }
+
+/* === ESTILOS ÚNICOS PARA LA TABLA DE MONEDAS === */
+
+.tabla-moneda-personalizada {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 10px !important; /* Espacio entre filas */
+}
+
+/* Encabezado Azul */
+.tabla-moneda-personalizada thead th {
+    background-color: #007bff !important;
+    color: white !important;
+    text-align: center !important;
+    padding: 15px !important;
+    border: none !important;
+    text-transform: uppercase;
+}
+
+/* Celdas Blancas tipo Tarjeta */
+.tabla-moneda-personalizada tbody td {
+    background-color: white !important;
+    text-align: center !important;    /* Centrado Horizontal */
+    vertical-align: middle !important;  /* Centrado Vertical */
+    padding: 15px !important;
+    border-top: 1px solid #dee2e6 !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    position: relative !important;
+}
+
+/* ARREGLO PARA EL BADGE QUE VOLABA A LA DERECHA */
+.tabla-moneda-personalizada .badge-moneda-texto {
+    position: static !important; /* Anula el absoluto de categorias.css */
+    float: none !important;      /* Anula el float de categorias.css */
+    display: inline-block !important;
+    margin: 0 auto !important;
+    padding: 8px 12px !important;
+}
+
+/* Redondeado de esquinas por fila */
+.tabla-moneda-personalizada tbody tr td:first-child {
+    border-left: 1px solid #dee2e6 !important;
+    border-top-left-radius: 10px !important;
+    border-bottom-left-radius: 10px !important;
+}
+
+.tabla-moneda-personalizada tbody tr td:last-child {
+    border-right: 1px solid #dee2e6 !important;
+    border-top-right-radius: 10px !important;
+    border-bottom-right-radius: 10px !important;
+}
+
+/* Alineación de botones */
+.acciones-col {
+    display: flex !important;
+    justify-content: center !important;
+    gap: 10px;
+    border: none !important;
+}
