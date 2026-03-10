@@ -231,12 +231,12 @@
             </li>
             {% endif %}
 
-            <!-- Almacenes - Solo Administradores -->
+            <!-- Depósitos - Solo Administradores -->
             {% if user.is_superuser %}
             <li class="sidebar-item">
-                <a href="{% url 'almacenes:listar' %}" class="sidebar-link {% if 'almacenes' in request.resolver_match.url_name %}active{% endif %}" title="Almacenes">
+                <a href="{% url 'depositos:listar' %}" class="sidebar-link {% if 'depositos' in request.resolver_match.url_name %}active{% endif %}" title="Depósitos">
                     <i class="fas fa-warehouse"></i>
-                    <span>Almacenes</span>
+                    <span>Depósitos</span>
                 </a>
             </li>
             {% endif %}
