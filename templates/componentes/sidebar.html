@@ -27,16 +27,7 @@
             <li class="sidebar-section">
                 <span class="sidebar-section-title">OPERACIONES</span>
             </li>
-{% if user.is_superuser or user.perfil.rol == 'almacen' %}
-<li class="sidebar-item">
-    <a href="{% url 'listar_monedas' %}" 
-       class="sidebar-link {% if request.resolver_match.url_name == 'listar_monedas' %}active{% endif %}" 
-       title="Gestión de Monedas">
-        <i class="fas fa-money-bill-wave"></i>
-        <span>Tipo de Cambio</span>
-    </a>
-</li>
-{% endif %}
+
             <!-- Productos - Almacén y Administradores -->
             {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
             {% with url_actual=request.resolver_match.url_name %}
@@ -240,12 +231,12 @@
             </li>
             {% endif %}
 
-            <!-- Almacenes - Solo Administradores -->
+            <!-- Depósitos - Solo Administradores -->
             {% if user.is_superuser %}
             <li class="sidebar-item">
-                <a href="{% url 'almacenes:listar' %}" class="sidebar-link {% if 'almacenes' in request.resolver_match.url_name %}active{% endif %}" title="Almacenes">
+                <a href="{% url 'depositos:listar' %}" class="sidebar-link {% if 'depositos' in request.resolver_match.url_name %}active{% endif %}" title="Depósitos">
                     <i class="fas fa-warehouse"></i>
-                    <span>Almacenes</span>
+                    <span>Depósitos</span>
                 </a>
             </li>
             {% endif %}
