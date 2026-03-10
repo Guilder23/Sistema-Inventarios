@@ -17,6 +17,14 @@
 
         <!-- DERECHA: Notificaciones y Usuario -->
         <div class="navbar-right">
+            <div class="navbar-tc">
+                <i class="fas fa-money-bill-wave"></i>
+                {% if navbar_moneda_actual %}
+                    <span>{{ navbar_moneda_actual.moneda }} - Bs {{ navbar_moneda_actual.valor|stringformat:"0.2f" }}</span>
+                {% else %}
+                    <span>Sin tipo de cambio</span>
+                {% endif %}
+            </div>
             <!-- Notificaciones -->
             <div class="navbar-notificaciones">
                 <button class="navbar-icon-btn" id="notificacionesBtn" title="Notificaciones">
