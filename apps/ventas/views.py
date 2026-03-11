@@ -20,6 +20,54 @@ from datetime import datetime
 
 from apps.ventas.models import Venta, DetalleVenta, AmortizacionCredito, SolicitudAnulacionVenta
 from apps.productos.models import Producto, ProductoContenedor
+from apps.moneda.utils import obtener_tasa_cambio_actual
+from apps.inventario.models import Inventario
+
+def descontar_stock_desde_inventario(producto, cantidad, tipo_venta):
+    """
+    Descuenta stock de un producto desde la tabla Inventario según el rol de ubicación.
+    
+    Args:
+        producto: Instancia de Producto
+        cantidad: Cantidad a descontar
+        tipo_venta: 'tienda' o 'deposito' (rol de ubicación)
+    
+    Raises:
+        ValueError: Si no hay suficiente stock
+    """
+    if tipo_venta not in ['tienda', 'deposito']:
+        raise ValueError(f"tipo_venta inválido: {tipo_venta}")
+    
+    # Obtener inventarios del tipo de ubicación solicitado, ORDENADOS ANTES de select_for_update
+    inventarios = list(Inventario.objects.filter(
+        producto=producto,
+        ubicacion__rol=tipo_venta
+    ).order_by('fecha_actualizacion').select_for_update())
+    
+    # Calcular stock total disponible
+    stock_total = sum(inv.cantidad for inv in inventarios)
+    
+    if stock_total < cantidad:
+        raise ValueError(
+            f'Stock insuficiente en {tipo_venta} para "{producto.nombre}". '
+            f'Disponible: {stock_total}, Solicitado: {cantidad}.'
+        )
+    
+    # Descontar del primero que tenga stock (FIFO)
+    cantidad_a_descontar = cantidad
+    for inv in inventarios:
+        if cantidad_a_descontar <= 0:
+            break
+        
+        if inv.cantidad >= cantidad_a_descontar:
+            inv.cantidad -= cantidad_a_descontar
+            inv.save()
+            cantidad_a_descontar = 0
+        else:
+            cantidad_a_descontar -= inv.cantidad
+            inv.cantidad = 0
+            inv.save()
+
 
 def descontar_stock_desde_contenedores(producto, cantidad):
     """
@@ -228,9 +276,14 @@ def crear_venta(request):
         return redirect('dashboard')
     
     codigo_sugerido = generar_codigo_venta()
+    
+    # Obtener tipo de cambio actual
+    tipo_cambio_actual = obtener_tasa_cambio_actual() or 1
+    
     context = {
         'codigo_sugerido': codigo_sugerido,
         'perfil': perfil,
+        'tipo_cambio_actual': float(tipo_cambio_actual),
     }
     return render(request, 'ventas/nueva_venta.html', context)
 
@@ -257,6 +310,9 @@ def guardar_venta(request):
     razon_social = data.get('razon_social', '').strip()
     direccion = data.get('direccion', '').strip()
     tipo_pago = data.get('tipo_pago', 'contado')
+    tipo_venta = data.get('tipo_venta', '').strip().lower()  # 'tienda' o 'deposito'
+    moneda = data.get('moneda', 'BOB').upper()
+    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tasa_cambio_actual() or 1)))
     items = data.get('items', [])
 
 #Validaciones
@@ -264,6 +320,12 @@ def guardar_venta(request):
         return JsonResponse({'success': False, 'error': 'El nombre del cliente es obligatorio.'})
     if tipo_pago not in ['contado', 'credito']:
         return JsonResponse({'success': False, 'error': 'Tipo de pago inválido.'})
+    if moneda not in ['BOB', 'USD']:
+        return JsonResponse({'success': False, 'error': 'Moneda inválida.'})
+    if tipo_cambio <= 0:
+        return JsonResponse({'success': False, 'error': 'Tipo de cambio inválido.'})
+    if tipo_venta and tipo_venta not in ['tienda', 'deposito']:
+        return JsonResponse({'success': False, 'error': 'Tipo de venta inválido.'})
     if not items:
         return JsonResponse({'success': False, 'error': 'Debe agregar al menos un producto.'})
 
@@ -282,6 +344,8 @@ def guardar_venta(request):
                 razon_social=razon_social if razon_social else None,
                 direccion=direccion if direccion else None,
                 tipo_pago=tipo_pago,
+                moneda=moneda,
+                tipo_cambio=tipo_cambio,
                 estado='completada' if tipo_pago == 'contado' else 'pendiente',
                 vendedor=request.user,
                 subtotal=Decimal('0.00'),
@@ -296,12 +360,18 @@ def guardar_venta(request):
                 precio_unitario = Decimal(str(item.get('precio_unitario', '0')))
                 if cantidad <= 0:
                     raise ValueError(f'Cantidad inválida para el producto ID {producto_id}.')
-                producto = Producto.objects.select_for_update().get(id=producto_id)
-                if producto.stock < cantidad:
+                producto = Producto.objects.get(id=producto_id)
+                
+                # Validar stock usando ProductoContenedor
+                stock_disponible = producto.stock
+                if stock_disponible < cantidad:
                     raise ValueError(
                         f'Stock insuficiente para "{producto.nombre}". '
-                        f'Disponible: {producto.stock}, Solicitado: {cantidad}.'
+                        f'Disponible: {stock_disponible}, Solicitado: {cantidad}.'
                     )
+                
+                # Ahora bloquear el producto para la actualización
+                producto = Producto.objects.select_for_update().get(id=producto_id)
 
                 subtotal_item = precio_unitario * cantidad
 
@@ -312,6 +382,10 @@ def guardar_venta(request):
                     precio_unitario=precio_unitario,
                     subtotal=subtotal_item,
                 )
+                # Si es venta tienda o deposito, descontar del Inventario según tipo_venta
+                if tipo_venta in ['tienda', 'deposito']:
+                    descontar_stock_desde_inventario(producto, cantidad, tipo_venta)
+                # También descontar del stock universal (ProductoContenedor)
                 descontar_stock_desde_contenedores(producto, cantidad)
 
                 total_venta += subtotal_item
@@ -344,11 +418,22 @@ def guardar_venta(request):
 #Retorna JSON con lista de productos que tengan stock > 0 y estén activos
 @login_required
 def buscar_productos(request):
+    """
+    API AJAX para buscar productos con respecto a disponibilidad de stock.
+    """
     query = request.GET.get('q', '').strip()
+    tipo_venta = request.GET.get('tipo_venta', '').strip().lower()  # 'tienda' o 'deposito'
+    
     if len(query) < 2:
         return JsonResponse({'productos': []})
 
     try:
+        # Obtener el perfil del usuario actual
+        try:
+            user_perfil = request.user.perfil
+        except:
+            user_perfil = None
+        
         # Buscar productos por nombre o código, activos
         productos = Producto.objects.filter(
             Q(nombre__icontains=query) | Q(codigo__icontains=query),
@@ -356,13 +441,34 @@ def buscar_productos(request):
         ).select_related('categoria')[:20]
 
         resultado = []
+        
         for p in productos:
-            # Calcular stock de forma segura (ahora es @property que suma ProductoContenedor)
-            try:
-                stock = p.stock if p.stock else 0
-            except Exception as e:
-                print(f"Error calculando stock para {p.codigo}: {e}")
-                stock = 0
+            # Obtener stock basado en tipo_venta
+            stock = None
+            
+            if tipo_venta in ['tienda', 'deposito']:
+                # BÚSQUEDA POR TIPO DE UBICACIÓN: filtrar Inventario por rol
+                try:
+                    # Filtrar directo por rol de ubicación (tienda o deposito)
+                    inventarios = Inventario.objects.filter(
+                        producto=p,
+                        ubicacion__rol=tipo_venta
+                    )
+                    
+                    stock = sum(inv.cantidad for inv in inventarios)
+                
+                except Exception as e:
+                    stock = None
+            
+            # Si no se usó ubicación específica o hubo error, usar stock universal
+            if stock is None:
+                try:
+                    stock = p.stock if p.stock else 0
+                except Exception as e:
+                    stock = 0
+            
+            # Asegurar que stock es entero y >= 0
+            stock = max(0, int(stock))
             
             # Filtrar solo productos con stock disponible
             if stock < 1:
@@ -373,19 +479,155 @@ def buscar_productos(request):
                 'codigo': p.codigo,
                 'nombre': p.nombre,
                 'categoria': p.categoria.nombre if p.categoria else 'Sin categoría',
-                'stock': int(stock),
+                'stock': stock,
                 'unidades_por_caja': int(p.unidades_por_caja) if p.unidades_por_caja else 1,
                 'precio_unidad': float(p.precio_unidad or 0),
                 'precio_mayor': float(p.precio_mayor or 0),
                 'precio_caja': float(p.precio_caja or 0),
             })
 
-        print(f"Búsqueda '{query}': encontrados {len(resultado)} productos")
         return JsonResponse({'productos': resultado})
+        
     except Exception as e:
-        print(f"Error en buscar_productos: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        return JsonResponse({'error': f'Error al buscar: {str(e)}'}, status=500)
+
+    try:
+        # Buscar productos por nombre o código, activos
+        productos = Producto.objects.filter(
+            Q(nombre__icontains=query) | Q(codigo__icontains=query),
+            activo=True,
+        ).select_related('categoria')[:20]
+
+        resultado = []
+        
+        # Obtener el perfil del usuario actual
+        try:
+            user_perfil = request.user.perfil
+        except:
+            user_perfil = None
+        
+        for p in productos:
+            # Obtener stock basado en tipo_venta
+            stock = None
+            debug_info = f"Producto: {p.codigo}"
+            
+            if tipo_venta in ['tienda', 'deposito'] and user_perfil:
+                # BÚSQUEDA POR UBICACIÓN: usar modelo Inventario
+                try:
+                    from django.db.models import Q as DjangoQ
+                    
+                    if tipo_venta == 'tienda':
+                        # Si usuario es tienda: su tienda + depósitos asociados
+                        # Si usuario es depósito: su tienda padre + otros depósitos del mismo padre
+                        if user_perfil.rol == 'tienda':
+                            # Usuario es tienda: buscar su tienda + sus depósitos
+                            ubicaciones_ids = [user_perfil.id]
+                            # Agregar todos los depósitos asociados a esta tienda
+                            depositos_asociados = PerfilUsuario.objects.filter(
+                                rol='deposito',
+                                ubicacion_relacionada=user_perfil
+                            ).values_list('id', flat=True)
+                            ubicaciones_ids.extend(depositos_asociados)
+                            debug_info += f" | tipo=tienda, user.rol=tienda | ubicaciones_ids={ubicaciones_ids}"
+                            
+                            inventarios = Inventario.objects.filter(
+                                producto=p,
+                                ubicacion_id__in=ubicaciones_ids
+                            )
+                        elif user_perfil.rol == 'deposito' and user_perfil.ubicacion_relacionada:
+                            # Usuario es depósito: buscar su tienda padre + otros depósitos del padre
+                            tienda_padre = user_perfil.ubicacion_relacionada
+                            ubicaciones_ids = [tienda_padre.id]
+                            # Agregar todos los depósitos de la misma tienda padre
+                            depositos_asociados = PerfilUsuario.objects.filter(
+                                rol='deposito',
+                                ubicacion_relacionada=tienda_padre
+                            ).values_list('id', flat=True)
+                            ubicaciones_ids.extend(depositos_asociados)
+                            debug_info += f" | tipo=tienda, user.rol=deposito | ubicaciones_ids={ubicaciones_ids}"
+                            
+                            inventarios = Inventario.objects.filter(
+                                producto=p,
+                                ubicacion_id__in=ubicaciones_ids
+                            )
+                        else:
+                            # Usuario almacén u otro: buscar todas las tiendas
+                            debug_info += f" | tipo=tienda, user.rol={user_perfil.rol} (busca todas tiendas)"
+                            inventarios = Inventario.objects.filter(
+                                producto=p,
+                                ubicacion__rol='tienda'
+                            )
+                        
+                        stock = sum(inv.cantidad for inv in inventarios)
+                        debug_info += f" | stock_filtrado={stock}"
+                    
+                    elif tipo_venta == 'deposito':
+                        # Buscar SOLO depósitos
+                        if user_perfil.rol == 'tienda':
+                            # Usuario tienda: busca depósitos asociados a su tienda
+                            depositos_asociados = PerfilUsuario.objects.filter(
+                                rol='deposito',
+                                ubicacion_relacionada=user_perfil
+                            ).values_list('id', flat=True)
+                            debug_info += f" | tipo=deposito, user.rol=tienda | depositos_ids={list(depositos_asociados)}"
+                        elif user_perfil.rol == 'deposito' and user_perfil.ubicacion_relacionada:
+                            # Usuario depósito: busca depósitos del mismo padre
+                            tienda_padre = user_perfil.ubicacion_relacionada
+                            depositos_asociados = PerfilUsuario.objects.filter(
+                                rol='deposito',
+                                ubicacion_relacionada=tienda_padre
+                            ).values_list('id', flat=True)
+                            debug_info += f" | tipo=deposito, user.rol=deposito | depositos_ids={list(depositos_asociados)}"
+                        else:
+                            # Usuario almacén: busca todos los depósitos
+                            debug_info += f" | tipo=deposito, user.rol={user_perfil.rol} (busca todos depositos)"
+                            depositos_asociados = PerfilUsuario.objects.filter(
+                                rol='deposito'
+                            ).values_list('id', flat=True)
+                        
+                        if depositos_asociados:
+                            inventarios = Inventario.objects.filter(
+                                producto=p,
+                                ubicacion_id__in=depositos_asociados
+                            )
+                            stock = sum(inv.cantidad for inv in inventarios)
+                            debug_info += f" | stock_filtrado={stock}"
+                        else:
+                            stock = 0
+                            debug_info += f" | NO_DEPOSITOS"
+                
+                except Exception as e:
+                    stock = None
+            
+            # Si no se usó ubicación específica o hubo error, usar stock universal
+            if stock is None:
+                try:
+                    stock = p.stock if p.stock else 0
+                except Exception as e:
+                    stock = 0
+            
+            # Asegurar que stock es entero y >= 0
+            stock = max(0, int(stock))
+            
+            # Filtrar solo productos con stock disponible
+            if stock < 1:
+                continue
+                
+            resultado.append({
+                'id': p.id,
+                'codigo': p.codigo,
+                'nombre': p.nombre,
+                'categoria': p.categoria.nombre if p.categoria else 'Sin categoría',
+                'stock': stock,
+                'unidades_por_caja': int(p.unidades_por_caja) if p.unidades_por_caja else 1,
+                'precio_unidad': float(p.precio_unidad or 0),
+                'precio_mayor': float(p.precio_mayor or 0),
+                'precio_caja': float(p.precio_caja or 0),
+            })
+
+        return JsonResponse({'productos': resultado})
+        
+    except Exception as e:
         return JsonResponse({'error': f'Error al buscar: {str(e)}'}, status=500)
 
 
@@ -447,12 +689,10 @@ def obtener_detalle_venta(request, id):
     except Venta.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Venta no encontrada'}, status=404)
     except Exception as e:
-        import traceback
-        print(f"ERROR en obtener_detalle_venta: {str(e)}")
-        traceback.print_exc()
         return JsonResponse({'success': False, 'error': f'Error: {str(e)}'}, status=500)
 
 
+@login_required
 @login_required
 def ver_venta(request, id):
     venta = get_object_or_404(Venta, id=id)
@@ -474,6 +714,18 @@ def ver_venta(request, id):
             })
             total_amortizado += a.monto
         saldo_pendiente = venta.total - total_amortizado
+    
+    # Si es AJAX, retornar JSON
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'id': venta.id,
+            'codigo': venta.codigo,
+            'moneda': venta.moneda,
+            'total': str(venta.total),
+            'tipo_pago': venta.tipo_pago,
+            'total_amortizado': str(total_amortizado),
+            'saldo_pendiente': str(saldo_pendiente),
+        })
 
     context = {
         'venta': venta,
@@ -868,23 +1120,14 @@ def detalle_solicitud_anulacion(request, id):
     """
     Ver detalle de una solicitud de anulación
     """
-    print(f"DEBUG: detalle_solicitud_anulacion called with id={id}")
-    print(f"DEBUG: user={request.user}, is_authenticated={request.user.is_authenticated}")
-    
     if not es_almacen(request):
-        print(f"DEBUG: User {request.user.username} is not almacen")
         return JsonResponse({'success': False, 'error': 'Sin permisos'}, status=403)
-
-    print(f"DEBUG: User {request.user.username} is almacen, fetching solicitud id={id}")
     
     try:
         solicitud = SolicitudAnulacionVenta.objects.get(id=id)
-        print(f"DEBUG: Found solicitud: {solicitud}")
     except SolicitudAnulacionVenta.DoesNotExist:
-        print(f"DEBUG: Solicitud with id={id} not found")
         return JsonResponse({'success': False, 'error': 'Solicitud no encontrada'}, status=404)
-
-    # Obtener datos de la venta
+    
     venta = solicitud.venta
     detalles = DetalleVenta.objects.filter(venta=venta).select_related('producto')
     amortizaciones = AmortizacionCredito.objects.filter(venta=venta)
@@ -919,7 +1162,6 @@ def detalle_solicitud_anulacion(request, id):
         ]
     }
 
-    print(f"DEBUG: Returning datos with keys: {datos.keys()}")
     return JsonResponse(datos)
 
 
@@ -1132,6 +1374,9 @@ def guardar_venta_tienda(request):
     razon_social = data.get('razon_social', '').strip()
     direccion = data.get('direccion', '').strip()
     tipo_pago = data.get('tipo_pago', 'contado')
+    tipo_venta = data.get('tipo_venta', '').strip().lower()  # 'tienda' o 'deposito'
+    moneda = data.get('moneda', 'BOB').upper()
+    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tasa_cambio_actual() or 1)))
     descuento = Decimal(str(data.get('descuento', '0')))
     items = data.get('items', [])
 
@@ -1140,6 +1385,10 @@ def guardar_venta_tienda(request):
         return JsonResponse({'success': False, 'error': 'El nombre del cliente es obligatorio.'})
     if tipo_pago not in ['contado', 'credito']:
         return JsonResponse({'success': False, 'error': 'Tipo de pago inválido.'})
+    if moneda not in ['BOB', 'USD']:
+        return JsonResponse({'success': False, 'error': 'Moneda inválida.'})
+    if tipo_cambio <= 0:
+        return JsonResponse({'success': False, 'error': 'Tipo de cambio inválido.'})
     
     # Validar tipo de tienda
     perfil = request.user.perfil
@@ -1169,6 +1418,8 @@ def guardar_venta_tienda(request):
                 razon_social=razon_social if razon_social else None,
                 direccion=direccion if direccion else None,
                 tipo_pago=tipo_pago,
+                moneda=moneda,
+                tipo_cambio=tipo_cambio,
                 estado='completada' if tipo_pago == 'contado' else 'pendiente',
                 vendedor=request.user,
                 subtotal=Decimal('0.00'),
@@ -1186,29 +1437,48 @@ def guardar_venta_tienda(request):
                 if cantidad <= 0:
                     raise ValueError(f'Cantidad inválida para el producto ID {producto_id}.')
 
-                producto = Producto.objects.select_for_update().get(id=producto_id)
+                producto = Producto.objects.get(id=producto_id)
 
-                # VALIDAR MODALIDAD MATEMÁTICAMENTE
-                if modalidad == 'mayor':
-                    if cantidad < 3 or cantidad >= producto.unidades_por_caja:
-                        raise ValueError(
-                            f'Venta por mayor debe estar entre 3 y {producto.unidades_por_caja - 1} unidades. '
-                            f'Recibido: {cantidad}.'
-                        )
-                elif modalidad == 'caja':
-                    if cantidad % producto.unidades_por_caja != 0:
-                        raise ValueError(
-                            f'Venta por caja debe ser múltiplo de {producto.unidades_por_caja}. '
-                            f'Recibido: {cantidad}.'
-                        )
-                # modalidad == 'unidad' acepta cualquier cantidad >= 1
+                # VALIDAR MODALIDAD MATEMÁTICAMENTE (solo para tienda)
+                # Para depósito, permitir cualquier cantidad entre 1 y stock disponible
+                if tipo_venta == 'tienda':
+                    if modalidad == 'mayor':
+                        if cantidad < 3 or cantidad >= producto.unidades_por_caja:
+                            raise ValueError(
+                                f'Venta por mayor debe estar entre 3 y {producto.unidades_por_caja - 1} unidades. '
+                                f'Recibido: {cantidad}.'
+                            )
+                    elif modalidad == 'caja':
+                        if cantidad % producto.unidades_por_caja != 0:
+                            raise ValueError(
+                                f'Venta por caja debe ser múltiplo de {producto.unidades_por_caja}. '
+                                f'Recibido: {cantidad}.'
+                            )
+                    # modalidad == 'unidad' acepta cualquier cantidad >= 1
+                else:
+                    # Para depósito: validación simple, cualquier cantidad >= 1
+                    pass
 
-                # Validar stock
-                if producto.stock < cantidad:
-                    raise ValueError(
-                        f'Stock insuficiente para "{producto.nombre}". '
-                        f'Disponible: {producto.stock}, Solicitado: {cantidad}.'
+                # Validar stock ANTES de bloquear
+                # Para tienda/deposito: validar contra el inventario específico
+                if tipo_venta in ['tienda', 'deposito']:
+                    inventarios = Inventario.objects.filter(
+                        producto=producto,
+                        ubicacion__rol=tipo_venta
                     )
+                    stock_disponible = sum(inv.cantidad for inv in inventarios)
+                else:
+                    # Fallback: usar stock universal
+                    stock_disponible = producto.stock
+                
+                if stock_disponible < cantidad:
+                    raise ValueError(
+                        f'Stock insuficiente en {tipo_venta} para "{producto.nombre}". '
+                        f'Disponible: {stock_disponible}, Solicitado: {cantidad}.'
+                    )
+                
+                # Ahora bloquear el producto
+                producto = Producto.objects.select_for_update().get(id=producto_id)
 
                 subtotal_item = precio_unitario * cantidad
 
@@ -1221,7 +1491,10 @@ def guardar_venta_tienda(request):
                     subtotal=subtotal_item,
                 )
 
-                # Descontar stock desde contenedores
+                # Si es venta tienda o deposito, descontar del Inventario según tipo_venta
+                if tipo_venta in ['tienda', 'deposito']:
+                    descontar_stock_desde_inventario(producto, cantidad, tipo_venta)
+                # También descontar del stock universal (ProductoContenedor)
                 descontar_stock_desde_contenedores(producto, cantidad)
 
                 total_venta += subtotal_item
