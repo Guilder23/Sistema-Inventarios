@@ -125,9 +125,25 @@
                         </p>
                     </div>
                     <div class="col-md-3">
-                        <p><strong>Estado:</strong> {{ venta.get_estado_display }}</p>
+                        <p><strong>Moneda:</strong> 
+                            {% if venta.moneda == 'USD' %}
+                                <span class="badge badge-success">USD ($)</span>
+                            {% else %}
+                                <span class="badge badge-primary">BOB (Bs.)</span>
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
+                
+                <!-- Mostrar tipo de cambio si es USD -->
+                {% if venta.moneda == 'USD' %}
+                <div class="row mt-2 pt-2 border-top">
+                    <div class="col-md-12">
+                        <p class="mb-0"><strong>Tipo de Cambio Registrado:</strong> 1 USD = Bs. {{ venta.tipo_cambio|floatformat:4 }}</p>
+                        <small class="text-muted">Este tipo de cambio fue registrado al momento de la venta para fines de auditoría</small>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -154,8 +170,8 @@
                                     <strong>{{ detalle.producto.nombre }}</strong>
                                 </td>
                                 <td class="text-center">{{ detalle.cantidad }}</td>
-                                <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
-                                <td class="text-right"><strong>${{ detalle.subtotal|floatformat:2 }}</strong></td>
+                                <td class="text-right">{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ detalle.precio_unitario|floatformat:2 }}</td>
+                                <td class="text-right"><strong>{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ detalle.subtotal|floatformat:2 }}</strong></td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -172,17 +188,17 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between mb-2">
                             <span>Subtotal:</span>
-                            <span>${{ venta.subtotal|floatformat:2 }}</span>
+                            <span>{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.subtotal|floatformat:2 }}</span>
                         </div>
                         {% if venta.total < venta.subtotal %}
                         <div class="d-flex justify-content-between mb-2">
                             <span>Descuento:</span>
-                            <span class="text-danger">-${{ venta.subtotal|add:venta.total|floatformat:2 }}</span>
+                            <span class="text-danger">-{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.subtotal|add:venta.total|floatformat:2 }}</span>
                         </div>
                         {% endif %}
                         <div class="d-flex justify-content-between total-row border-top pt-2">
                             <span>TOTAL:</span>
-                            <span>${{ venta.total|floatformat:2 }}</span>
+                            <span>{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}</span>
                         </div>
                     </div>
                 </div>
@@ -226,7 +242,7 @@
                     <form id="formAmortizacion">
                         <div class="modal-body">
                             <div class="form-group">
-                                <label><strong>Saldo Pendiente:</strong> ${{ venta.total|floatformat:2 }}</label>
+                                <label><strong>Saldo Pendiente:</strong> <span id="amortMonedaLabel">Bs.</span> {{ venta.total|floatformat:2 }}</label>
                             </div>
                             <div class="form-group">
                                 <label for="monto">Monto a Abonar:</label>
