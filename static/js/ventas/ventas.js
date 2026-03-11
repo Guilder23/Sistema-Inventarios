@@ -285,16 +285,29 @@ function initBotonesAmortizacion() {
 }
 
 function cargarDatosAmortizacion(ventaId) {
-//OJO: URL usa /ventas/<id>/ver/ para obtener datos de amortización
-    fetch(`/ventas/${ventaId}/ver/`)
+//OJO: URL usa /ventas/<id>/ver/ para obtener datos de amortización (con AJAX header)
+    fetch(`/ventas/${ventaId}/ver/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
         .then(res => res.json())
         .then(data => {
-            $('#amortTotalPagado').text('Bs. ' + parseFloat(data.total_amortizado).toFixed(2));
-            $('#amortSaldoPendiente').text('Bs. ' + parseFloat(data.saldo_pendiente).toFixed(2));
+            const etiqueta = data.moneda === 'USD' ? '$' : 'Bs.';
+            const tipoCambio = parseFloat(data.tipo_cambio) || 1;
+            
+            // Actualizar labels de moneda en ambos lugares
+            $('#amortMonedaLabel').text(etiqueta);
+            $('#amortMonedaLabel2').text(etiqueta);
+            
+            const totalAmortizado = parseFloat(data.total_amortizado);
+            const saldoPendiente = parseFloat(data.saldo_pendiente);
+            
+            $('#amortTotalPagado').text(etiqueta + ' ' + totalAmortizado.toFixed(2));
+            $('#amortSaldoPendiente').text(saldoPendiente.toFixed(2));
 
 // Establecer max del input
-            const saldo = parseFloat(data.saldo_pendiente);
-            $('#amortMonto').attr('max', saldo);
+            $('#amortMonto').attr('max', saldoPendiente);
         })
         .catch(err => {
             console.error('Error cargando datos de amortización:', err);
