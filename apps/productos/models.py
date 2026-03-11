@@ -43,6 +43,13 @@ class Contenedor(models.Model):
         return self.productos_contenedores.aggregate(
             total=models.Sum('cantidad')
         )['total'] or 0
+    
+    @property
+    def total_recibido(self):
+        """Calcula el total de cantidad recibida de este contenedor"""
+        return self.productos_contenedores.aggregate(
+            total=models.Sum('cantidad_recibida')
+        )['total'] or 0
 
 
 class ProductoContenedor(models.Model):
