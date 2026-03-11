@@ -146,7 +146,7 @@
                             <td>{{ venta.cliente }}</td>
                             <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
                             <td class="text-right font-weight-bold">
-                                Bs. {{ venta.total|floatformat:2 }}
+                                {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}
                             </td>
                             <td class="text-center">
                                 {% if venta.estado == 'completada' %}
