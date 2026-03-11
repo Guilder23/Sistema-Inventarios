@@ -27,7 +27,16 @@
             <li class="sidebar-section">
                 <span class="sidebar-section-title">OPERACIONES</span>
             </li>
-
+{% if user.is_superuser or user.perfil.rol == 'almacen' %}
+<li class="sidebar-item">
+    <a href="{% url 'listar_monedas' %}" 
+       class="sidebar-link {% if request.resolver_match.url_name == 'listar_monedas' %}active{% endif %}" 
+       title="Gestión de Monedas">
+        <i class="fas fa-money-bill-wave"></i>
+        <span>Tipo de Cambio</span>
+    </a>
+</li>
+{% endif %}
             <!-- Productos - Almacén y Administradores -->
             {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
             {% with url_actual=request.resolver_match.url_name %}
@@ -153,16 +162,26 @@
             </li>
             {% endif %}
 
-            <!-- Ventas - Vendedores y Administradores (Oculto para Tienda Online) -->
-            {% if user.is_staff or user.groups.filter|length > 0 %}
+            <!-- Ventas - Almacén, Tienda, Staff y Administradores (Oculto para Tienda Online) -->
+            {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
                 {% if not user.perfil or user.perfil.rol != 'tienda_online' %}
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link" title="Ventas">
+                    <a href="{% url 'ventas:listar_ventas' %}" class="sidebar-link {% if 'ventas' in request.path %}active{% endif %}" title="Ventas">
                         <i class="fas fa-shopping-cart"></i>
                         <span>Ventas</span>
                     </a>
                 </li>
                 {% endif %}
+            {% endif %}
+
+            <!-- Ventas - Solo para rol tienda -->
+            {% if user.perfil.rol == 'tienda' %}
+            <li class="sidebar-item">
+                <a href="{% url 'ventas:listar_ventas_tienda' %}" class="sidebar-link {% if 'tienda' in request.path %}active{% endif %}" title="Ventas">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Ventas</span>
+                </a>
+            </li>
             {% endif %}
 
             <!-- Pedidos - Oculto para Tienda Online -->
@@ -253,7 +272,7 @@
 
             <!-- Reportes - Staff y Administradores -->
             <li class="sidebar-item">
-                <a href="#" class="sidebar-link" title="Reportes">
+                <a href="{% url 'reportes:historial' %}" class="sidebar-link" title="Reportes">
                     <i class="fas fa-chart-bar"></i>
                     <span>Reportes</span>
                 </a>
