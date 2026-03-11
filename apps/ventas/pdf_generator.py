@@ -14,6 +14,7 @@ from datetime import datetime
 from decimal import Decimal
 import os
 from django.conf import settings
+from apps.moneda.utils import obtener_etiqueta_moneda
 
 
 def generar_pdf_venta_completo(venta):
@@ -126,6 +127,9 @@ def generar_pdf_venta_completo(venta):
     elements.append(header_table)
     elements.append(Spacer(1, 0.2*inch))
     
+    # Obtener etiqueta de moneda
+    etiqueta_moneda = obtener_etiqueta_moneda(venta.moneda)
+    
     # ===== SECCIÓN 1: CABECERA =====
     
     # Título (inferir de rol del vendedor)
@@ -163,8 +167,8 @@ def generar_pdf_venta_completo(venta):
         datos_tabla.append([
             detalle.producto.nombre[:40],
             str(cantidad),
-            f'${precio:,.2f}',
-            f'${subtotal_valor:,.2f}'
+            f'{etiqueta_moneda} {precio:,.2f}',
+            f'{etiqueta_moneda} {subtotal_valor:,.2f}'
         ])
     
     # Calcular desglose si es tienda con cantidad > unidades_por_caja
@@ -228,13 +232,13 @@ def generar_pdf_venta_completo(venta):
     total = subtotal - monto_descuento
     
     datos_totales = [
-        ['', '', 'Subtotal:', f'${subtotal:,.2f}'],
+        ['', '', 'Subtotal:', f'{etiqueta_moneda} {subtotal:,.2f}'],
     ]
     
     if monto_descuento > 0:
-        datos_totales.append(['', '', 'Descuento:', f'-${monto_descuento:,.2f}'])
+        datos_totales.append(['', '', 'Descuento:', f'-{etiqueta_moneda} {monto_descuento:,.2f}'])
     
-    datos_totales.append(['', '', 'TOTAL:', f'${total:,.2f}'])
+    datos_totales.append(['', '', 'TOTAL:', f'{etiqueta_moneda} {total:,.2f}'])
     
     tabla_totales = Table(datos_totales, colWidths=[2.5*inch, 1*inch, 1.2*inch, 1.3*inch])
     tabla_totales.setStyle(TableStyle([
