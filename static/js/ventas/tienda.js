@@ -630,6 +630,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 razon_social: document.getElementById('inputRazonSocial').value.trim(),
                 direccion: document.getElementById('inputDireccion').value.trim(),
                 tipo_pago: 'contado',  // Siempre es contado para tienda
+                tipo_venta: tipoVendedorActual,
                 descuento: descuentoAplicado,
                 items: carrito.map(item => ({
                     producto_id: item.producto.id,
