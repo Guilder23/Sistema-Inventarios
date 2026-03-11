@@ -32,6 +32,7 @@ let debounceTimer = null;
 // INICIALIZACIÓN
 $(document).ready(function () {
     initSelectorTipoPago();
+    initSelectorMoneda();
     initSelectorUsuarioVendedor();
     initSelectorTipoPrecio();
     initBuscadorProductos();
@@ -44,7 +45,23 @@ function initSelectorTipoPago() {
     $('.tipo-pago-option').on('click', function () {
         $('.tipo-pago-option').removeClass('active');
         $(this).addClass('active');
-        $('#inputTipoPago').val($(this).data('tipo'));
+        
+        // Diferenciar entre tipo de pago y moneda
+        if ($(this).data('tipo')) {
+            $('#inputTipoPago').val($(this).data('tipo'));
+        }
+    });
+}
+
+// SELECTOR MONEDA
+function initSelectorMoneda() {
+    // Manejar cambio de moneda via dropdown #selectMoneda
+    $('#selectMoneda').on('change', function () {
+        const monedaSeleccionada = $(this).val();
+        $('#inputMoneda').val(monedaSeleccionada);
+        
+        // Actualizar resumen (convertir totales si es USD)
+        actualizarResumen();
     });
 }
 
@@ -393,6 +410,24 @@ function eliminarDelCarrito(index) {
 }
 
 // CARRITO: ACTUALIZAR RESUMEN
+function actualizarEtiquetasMoneda() {
+    const tipoCambioElement = document.getElementById('tipoCambioActual');
+    const monedaElement = document.getElementById('inputMoneda');
+    
+    if (!tipoCambioElement || !monedaElement) return;
+    
+    const tipoCambio = parseFloat(tipoCambioElement.value) || 1;
+    const moneda = monedaElement.value || 'BOB';
+    
+    // Actualizar todos los labels de moneda
+    document.querySelectorAll('.moneda-label').forEach(el => {
+        el.textContent = moneda === 'USD' ? '$' : 'Bs.';
+    });
+    
+    // Actualizar resumen
+    actualizarResumen();
+}
+
 function actualizarResumen() {
     let totalItems = 0;
     let totalPrecio = 0;
@@ -402,9 +437,17 @@ function actualizarResumen() {
         totalPrecio += item.precioUnitario * item.cantidad;
     });
 
+    const monedaElement = document.getElementById('inputMoneda');
+    const tipoCambioElement = document.getElementById('tipoCambioActual');
+    const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
+    const tipoCambio = tipoCambioElement ? (parseFloat(tipoCambioElement.value) || 1) : 1;
+    
+    const etiqueta = moneda === 'USD' ? '$' : 'Bs.';
+    const totalDisplay = moneda === 'USD' ? (totalPrecio / tipoCambio).toFixed(2) : totalPrecio.toFixed(2);
+
     $('#resumenCantItems').text(totalItems);
-    $('#resumenSubtotal').text('Bs. ' + totalPrecio.toFixed(2));
-    $('#resumenTotal').text('Bs. ' + totalPrecio.toFixed(2));
+    $('#resumenSubtotal').text(etiqueta + ' ' + totalDisplay);
+    $('#resumenTotal').text(etiqueta + ' ' + totalDisplay);
 }
 
 // CARRITO: LIMPIAR TODO
@@ -475,6 +518,13 @@ function guardarVenta() {
     carrito.forEach(item => {
         totalFinal += item.precioUnitario * item.cantidad;
     });
+    
+    const monedaElement = document.getElementById('inputMoneda');
+    const tipoCambioElement = document.getElementById('tipoCambioActual');
+    const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
+    const tipoCambio = tipoCambioElement ? (parseFloat(tipoCambioElement.value) || 1) : 1;
+    const etiqueta = moneda === 'USD' ? '$' : 'Bs.';
+    const totalDisplay = moneda === 'USD' ? (totalFinal / tipoCambio).toFixed(2) : totalFinal.toFixed(2);
 
     const tipoPagoTexto = tipoPago === 'contado' ? 'Al Contado' : 'A Crédito';
 
@@ -485,9 +535,10 @@ function guardarVenta() {
                 <p><strong>Cliente:</strong> ${cliente}</p>
                 ${telefono ? `<p><strong>Teléfono:</strong> ${telefono}</p>` : ''}
                 <p><strong>Tipo de pago:</strong> ${tipoPagoTexto}</p>
+                <p><strong>Moneda:</strong> ${moneda}</p>
                 <p><strong>Productos:</strong> ${carrito.length} item(s)</p>
                 <hr>
-                <p style="font-size:1.2rem;"><strong>Total: Bs. ${totalFinal.toFixed(2)}</strong></p>
+                <p style="font-size:1.2rem;"><strong>Total: ${etiqueta} ${totalDisplay}</strong></p>
             </div>
         `,
         icon: 'question',
@@ -512,14 +563,21 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
         cantidad: item.cantidad,
         precio_unitario: item.precioUnitario.toFixed(2),
     }));
+    
+    const monedaElement = document.getElementById('inputMoneda');
+    const tipoCambioElement = document.getElementById('tipoCambioActual');
+    const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
+    const tipoCambio = tipoCambioElement ? parseFloat(tipoCambioElement.value) : 1;
 
-    //OJO: Incluye telefono, razon_social y direccion (campos reales de tu modelo Venta)
+    //OJO: Incluye telefono, razon_social, direccion y moneda/tipo_cambio
     const payload = {
         cliente: cliente,
         telefono: telefono,
         razon_social: razonSocial,
         direccion: direccion,
         tipo_pago: tipoPago,
+        moneda: moneda,
+        tipo_cambio: tipoCambio,
         items: items,
     };
 
