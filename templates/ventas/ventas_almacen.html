@@ -178,7 +178,7 @@
                                     <td>{{ venta.cliente }}</td>
                                     <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
                                     <td class="text-right font-weight-bold">
-                                        Bs. {{ venta.total|floatformat:2 }}
+                                        {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}
                                     </td>
                                     <td class="text-center">
                                         {% if venta.estado == 'completada' %}
@@ -290,7 +290,7 @@
                                     <td>{{ venta.cliente }}</td>
                                     <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
                                     <td class="text-right font-weight-bold">
-                                        Bs. {{ venta.total|floatformat:2 }}
+                                        {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}
                                     </td>
                                     <td class="text-center">
                                         {% if venta.estado == 'completada' %}
@@ -425,14 +425,14 @@
                             </div>
                             <div class="col-6 text-right">
                                 <small class="text-muted">Saldo pendiente:</small>
-                                <p class="font-weight-bold text-danger mb-0" id="amortSaldoPendiente"></p>
+                                <p class="font-weight-bold text-danger mb-0"><span id="amortMonedaLabel">Bs.</span> <span id="amortSaldoPendiente">0.00</span></p>
                             </div>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="amortMonto" class="font-weight-bold">
-                            <i class="fas fa-dollar-sign mr-1"></i>Monto a abonar (Bs.)
+                            <i class="fas fa-dollar-sign mr-1"></i>Monto a abonar (<span id="amortMonedaLabel2">Bs.</span>)
                         </label>
                         <input type="number" class="form-control" id="amortMonto"
                                step="0.01" min="0.01" required
