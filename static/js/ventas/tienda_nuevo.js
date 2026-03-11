@@ -24,12 +24,21 @@ function validarTelefono(input) {
     });
 }
 
-function validarCantidad(cantidad, modalidad, unidadesPorCaja) {
+function validarCantidad(cantidad, modalidad, unidadesPorCaja, tipoVendedor) {
     const cant = parseInt(cantidad);
     
+    // Para depósito: permitir cualquier cantidad >= 1 sin restricciones
+    if (tipoVendedor === 'deposito') {
+        if (cant < 1) {
+            return { valido: false, mensaje: 'Cantidad debe ser al menos 1' };
+        }
+        return { valido: true, mensaje: 'Válido' };
+    }
+    
+    // Para tienda: validar según modalidad
     switch(modalidad) {
         case 'unidad':
-            return { valido: (cant >= 0 && cant <= 2), mensaje: 'Debe ser 0-2 unidades' };
+            return { valido: (cant >= 1 && cant <= 2), mensaje: 'Modalidad Unidad: debe ser 1-2 unidades' };
         
         case 'caja':
             if (cant < 0) {
@@ -38,11 +47,8 @@ function validarCantidad(cantidad, modalidad, unidadesPorCaja) {
             return { valido: true, mensaje: 'Válido' };
         
         case 'mayor':
-            if (cant < 0) {
-                return { valido: false, mensaje: 'Cantidad no puede ser negativa' };
-            }
-            if (cant >= unidadesPorCaja) {
-                return { valido: false, mensaje: `Debe ser menor a ${unidadesPorCaja}` };
+            if (cant < 3 || cant >= unidadesPorCaja) {
+                return { valido: false, mensaje: `Modalidad Mayor: debe ser entre 3 y ${unidadesPorCaja - 1} unidades` };
             }
             return { valido: true, mensaje: 'Válido' };
         
@@ -52,7 +58,7 @@ function validarCantidad(cantidad, modalidad, unidadesPorCaja) {
 }
 
 function agregarAlCarrito(producto, cantidad, modalidad, precioUnitario) {
-    const validacion = validarCantidad(cantidad, modalidad, producto.unidades_por_caja);
+    const validacion = validarCantidad(cantidad, modalidad, producto.unidades_por_caja, tipoVendedorActual);
     
     if (!validacion.valido) {
         alert(validacion.mensaje);
@@ -160,6 +166,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Selector Tipo Vendedor
     const selectTipoVendedor = document.getElementById('selectTipoVendedor');
     if (selectTipoVendedor) {
+        // INICIALIZAR con el valor actual del selector (importante!)
+        const valorInicial = selectTipoVendedor.value;
+        
+        if (valorInicial === 'tienda') {
+            tipoVendedorActual = 'tienda';
+        } else if (valorInicial === 'deposito') {
+            tipoVendedorActual = 'deposito';
+        } else {
+            tipoVendedorActual = null;
+        }
+        
+        // Listener para cambios posteriores
         selectTipoVendedor.addEventListener('change', function() {
             const tipo = this.value;
             if (tipo === 'tienda') {
@@ -192,7 +210,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            fetch(URLS.buscarProductos + `?q=${encodeURIComponent(query)}`)
+            const url = URLS.buscarProductos + `?q=${encodeURIComponent(query)}&tipo_venta=${encodeURIComponent(tipoVendedorActual || '')}`;
+            
+            fetch(url)
                 .then(response => response.json())
                 .then(data => {
                     const resultados = document.getElementById('resultadosBusqueda');
@@ -333,6 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 razon_social: document.getElementById('inputRazonSocial').value.trim(),
                 direccion: document.getElementById('inputDireccion').value.trim(),
                 tipo_pago: 'contado',
+                tipo_venta: tipoVendedorActual,
                 descuento: descuentoAplicado,
                 items: carrito.map(item => ({
                     producto_id: item.producto.id,
