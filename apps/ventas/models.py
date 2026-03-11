@@ -1,3 +1,5 @@
+# The above classes define models for managing sales transactions, including details of sales, credit
+# amortizations, and sale cancellation requests.
 from django.db import models
 from django.contrib.auth.models import User
 from apps.productos.models import Producto
@@ -26,6 +28,9 @@ class Venta(models.Model):
     
     tipo_pago = models.CharField(max_length=20, choices=TIPOS_PAGO, default='contado')
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
+    
+    moneda = models.CharField(max_length=10, choices=[('BOB', 'Bolivianos'), ('USD', 'Dólares')], default='BOB', help_text='Moneda en la que se realizó la venta')
+    tipo_cambio = models.DecimalField(max_digits=10, decimal_places=4, default=1.0, help_text='Tipo de cambio USD/BOB usado en la venta')
     
     vendedor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='ventas')
     fecha_elaboracion = models.DateTimeField(auto_now_add=True)
@@ -65,6 +70,7 @@ class AmortizacionCredito(models.Model):
     """Amortizaciones para ventas a crédito"""
     venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name='amortizaciones')
     monto = models.DecimalField(max_digits=10, decimal_places=2)
+    moneda = models.CharField(max_length=10, choices=[('BOB', 'Bolivianos'), ('USD', 'Dólares')], default='BOB', help_text='Moneda en la que se realiza la amortización')
     fecha = models.DateTimeField(auto_now_add=True)
     comprobante = models.ImageField(upload_to='comprobantes/', null=False, blank=False, help_text='Fotografía del comprobante de amortización (obligatoria)')
     observaciones = models.TextField(blank=True, null=True)
