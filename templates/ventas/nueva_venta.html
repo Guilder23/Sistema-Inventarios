@@ -97,6 +97,23 @@
                         <input type="hidden" id="inputTipoPago" value="contado">
                     </div>
 
+                    <!-- SELECTOR DE MONEDA -->
+                    <div class="form-group mt-3">
+                        <label class="label-campo">Moneda de Venta</label>
+                        <select id="selectMoneda" class="form-control">
+                            <option value="BOB" selected>Bolivianos (Bs.)</option>
+                            <option value="USD">Dólares (USD)</option>
+                        </select>
+                        <input type="hidden" id="inputMoneda" value="BOB">
+                        <input type="hidden" id="tipoCambioActual" value="{{ tipo_cambio_actual }}">
+                        
+                        <!-- Mostrar tipo de cambio actual -->
+                        <div class="alert alert-info mt-2 mb-0" style="font-size: 0.9rem;">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <strong>Tipo de Cambio Actual:</strong> 1 USD = Bs. <span id="tipoCambioDisplay">{{ tipo_cambio_actual|floatformat:2 }}</span>
+                        </div>
+                    </div>
+
                     <!-- SELECTOR USUARIO VENDEDOR (Depósito/Tienda) - Solo visible para tiendas -->
                     {% if user.perfil.rol == 'tienda' %}
                     <div class="form-group mt-3 mb-0">
