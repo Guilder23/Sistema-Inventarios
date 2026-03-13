@@ -1,0 +1,64 @@
+/* ============================================================================
+   ESTILOS PARA MODAL VER PEDIDO
+   ============================================================================ */
+
+#modalVerPedido .modal-header {
+    background: #1e3a8a;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-bottom: 3px solid #065f46;
+}
+
+#modalVerPedido .modal-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+#modalVerPedido .modal-body {
+    padding: 1.5rem;
+    background: #f8f9fa;
+}
+
+#modalVerPedido .info-section {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+#modalVerPedido .section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e3a8a;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #dbeafe;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#modalVerPedido .info-item {
+    margin-bottom: 0.75rem;
+}
+
+#modalVerPedido .info-item label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#modalVerPedido .info-item p {
+    font-size: 0.875rem;
+    color: #111827;
+    margin-bottom: 0;
+}
+
+#modalVerPedido .acciones-pedido .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+}

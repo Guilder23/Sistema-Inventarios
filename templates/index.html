@@ -1,0 +1,136 @@
+<!-- <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Inventarios - Gestión de Almacenes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="stylesheet" href="/static/css/modal.css">
+</head>
+<body>
+    <div class="landing-page">
+        <nav class="landing-navbar">
+            <div class="navbar-container">
+                <div class="navbar-logo">
+                    <i class="fas fa-boxes"></i>
+                    <span>Sistema de Inventarios</span>
+                </div>
+                <div class="navbar-buttons">
+                    <button class="btn-loginmodal" onclick="openLoginModal()">
+                        <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <section class="hero-section">
+            <div class="hero-content">
+                <h1><i class="fas fa-warehouse"></i> Sistema de Inventarios</h1>
+                <p>Control completo de tus almacenes y movimientos de inventario</p>
+                <button class="btn-primary-large" onclick="openLoginModal()">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </button>
+            </div>
+            <div class="hero-image">
+                <i class="fas fa-boxes fa-10x"></i>
+            </div>
+        </section>
+
+        <section class="features-section">
+            <h2>Características</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-cube"></i>
+                    </div>
+                    <h3>Gestión de Productos</h3>
+                    <p>Registra y administra todos tus productos con facilidad</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Control de Stock</h3>
+                    <p>Monitorea el inventario en tiempo real</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <h3>Traspasos</h3>
+                    <p>Transfiere productos entre almacenes</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <h3>Gestión de Pedidos</h3>
+                    <p>Crea y gestiona pedidos entre áreas</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <h3>Notas de Venta</h3>
+                    <p>Registra y actualiza tus ventas</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h3>Kardex Histórico</h3>
+                    <p>Consulta el historial completo de movimientos</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal de Login -->
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</h2>
+                <button class="modal-close" onclick="closeLoginModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="loginForm" class="login-form">
+                {% csrf_token %}
+
+                <div id="loginError" class="alert alert-error" style="display:none;"></div>
+
+                <div class="form-group">
+                    <label for="loginEmail">Correo Electrónico</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="loginEmail" name="email" required 
+                               placeholder="tu@correo.com">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="loginPassword">Contraseña</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="loginPassword" name="password" required 
+                               placeholder="••••••••">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary btn-block">
+                    <i class="fas fa-sign-in-alt"></i> Ingresar
+                </button>
+            </form>
+
+            <div class="modal-footer">
+                <p>¿Problemas para acceder? Contacta al administrador</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/index.js"></script>
+    <script src="/static/js/modal.js"></script>
+</body>
+</html> -->

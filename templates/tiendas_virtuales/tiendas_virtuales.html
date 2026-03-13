@@ -1,0 +1,269 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Gestión de Tiendas Virtuales{% endblock %}
+
+{% block estilos_extra %}
+    <link rel="stylesheet" href="{% static 'css/tiendas_virtuales/tiendas_virtuales.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tiendas_virtuales/modals/crea.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tiendas_virtuales/modals/ver.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tiendas_virtuales/modals/edita.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tiendas_virtuales/modals/elimina.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+                <!-- HEADER DE LA PÁGINA -->
+                <div class="page-header">
+                    <div class="page-header-content">
+                        <h1 class="page-title">
+                            <i class="fas fa-globe"></i> Gestión de Tiendas Virtuales
+                        </h1>
+                        <p class="page-subtitle">Administra las tiendas online del sistema</p>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalCrearTiendaVirtual">
+                        <i class="fas fa-plus-circle"></i> Nueva Tienda Virtual
+                    </button>
+                </div>
+
+                <!-- FILTROS Y BÚSQUEDA -->
+                <div class="card card-filtros">
+                    <div class="card-body py-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-white border-right-0">
+                                            <i class="fas fa-search text-muted"></i>
+                                        </span>
+                                    </div>
+                                    <input 
+                                        type="text" 
+                                        class="form-control form-control-sm border-left-0" 
+                                        id="buscar" 
+                                        name="buscar"
+                                        placeholder="Buscar por nombre, código o dominio..."
+                                        value="{{ buscar }}"
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <select class="form-control form-control-sm" id="estado" name="estado">
+                                    <option value="">Todos los estados</option>
+                                    <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
+                                    <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                                    <option value="mantenimiento" {% if estado == 'mantenimiento' %}selected{% endif %}>En Mantenimiento</option>
+                                    <option value="desarrollo" {% if estado == 'desarrollo' %}selected{% endif %}>En Desarrollo</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <select class="form-control form-control-sm" id="plataforma" name="plataforma">
+                                    <option value="">Todas las plataformas</option>
+                                    <option value="propia" {% if plataforma == 'propia' %}selected{% endif %}>Plataforma Propia</option>
+                                    <option value="shopify" {% if plataforma == 'shopify' %}selected{% endif %}>Shopify</option>
+                                    <option value="woocommerce" {% if plataforma == 'woocommerce' %}selected{% endif %}>WooCommerce</option>
+                                    <option value="magento" {% if plataforma == 'magento' %}selected{% endif %}>Magento</option>
+                                    <option value="prestashop" {% if plataforma == 'prestashop' %}selected{% endif %}>PrestaShop</option>
+                                    <option value="otra" {% if plataforma == 'otra' %}selected{% endif %}>Otra</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABLA DE TIENDAS VIRTUALES -->
+                <div class="card card-tabla">
+                    <div class="card-header py-2">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-globe"></i> Listado de Tiendas Virtuales
+                        </h6>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm tabla-tiendas_virtuales mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">Código</th>
+                                    <th style="width: 16%;">Nombre</th>
+                                    <th style="width: 18%;">Dominio/URL</th>
+                                    <th style="width: 12%;">Plataforma</th>
+                                    <th style="width: 8%;">SSL</th>
+                                    <th style="width: 10%;">Estado</th>
+                                    <th class="text-center" style="width: 14%;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tienda_virtual in tiendas_virtuales %}
+                                <tr>
+                                    <td>
+                                        <span class="usuario-badge">{{ tienda_virtual.codigo }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 160px;" title="{{ tienda_virtual.nombre }}">
+                                            {{ tienda_virtual.nombre }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="{{ tienda_virtual.url }}" target="_blank" rel="noopener noreferrer" title="Abrir tienda" class="text-truncate d-inline-block" style="max-width: 180px;">
+                                            <i class="fas fa-external-link-alt"></i> {{ tienda_virtual.dominio }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if tienda_virtual.plataforma == 'propia' %}
+                                            <span class="badge badge-primary">
+                                                <i class="fas fa-code"></i> Propia
+                                            </span>
+                                        {% elif tienda_virtual.plataforma == 'shopify' %}
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-shopping-bag"></i> Shopify
+                                            </span>
+                                        {% elif tienda_virtual.plataforma == 'woocommerce' %}
+                                            <span class="badge badge-warning">
+                                                <i class="fab fa-wordpress"></i> WooCommerce
+                                            </span>
+                                        {% elif tienda_virtual.plataforma == 'magento' %}
+                                            <span class="badge badge-danger">
+                                                <i class="fas fa-cube"></i> Magento
+                                            </span>
+                                        {% elif tienda_virtual.plataforma == 'prestashop' %}
+                                            <span class="badge badge-info">
+                                                <i class="fas fa-shopping-cart"></i> PrestaShop
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">
+                                                <i class="fas fa-question"></i> {{ tienda_virtual.get_plataforma_display }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if tienda_virtual.certificado_ssl %}
+                                            <span class="text-success" title="SSL Activo">
+                                                <i class="fas fa-check-circle"></i>
+                                            </span>
+                                        {% else %}
+                                            <span class="text-danger" title="Sin SSL">
+                                                <i class="fas fa-times-circle"></i>
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if tienda_virtual.estado == 'activo' %}
+                                            <span class="badge-estado badge-estado-activo">
+                                                <i class="fas fa-check-circle"></i> Activo
+                                            </span>
+                                        {% elif tienda_virtual.estado == 'inactivo' %}
+                                            <span class="badge-estado badge-estado-inactivo">
+                                                <i class="fas fa-times-circle"></i> Inactivo
+                                            </span>
+                                        {% elif tienda_virtual.estado == 'mantenimiento' %}
+                                            <span class="badge-estado badge-estado-mantenimiento">
+                                                <i class="fas fa-wrench"></i> Mantenimiento
+                                            </span>
+                                        {% elif tienda_virtual.estado == 'desarrollo' %}
+                                            <span class="badge-estado badge-estado-desarrollo">
+                                                <i class="fas fa-hammer"></i> Desarrollo
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-info btn-sm btn-ver-tienda-virtual"
+                                            data-toggle="modal" 
+                                            data-target="#modalVerTiendaVirtual"
+                                            data-tienda-virtual-id="{{ tienda_virtual.id }}"
+                                            title="Ver detalles"
+                                        >
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-warning btn-sm btn-editar-tienda-virtual"
+                                            data-toggle="modal" 
+                                            data-target="#modalEditarTiendaVirtual"
+                                            data-tienda-virtual-id="{{ tienda_virtual.id }}"
+                                            title="Editar tienda"
+                                        >
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-danger btn-sm btn-eliminar-tienda-virtual"
+                                            data-toggle="modal" 
+                                            data-target="#modalEliminarTiendaVirtual"
+                                            data-tienda-virtual-id="{{ tienda_virtual.id }}"
+                                            data-tienda-virtual-nombre="{{ tienda_virtual.nombre }}"
+                                            title="Cambiar Estado"
+                                        >
+                                            <i class="fas fa-power-off"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
+                                        <p class="text-muted">No hay tiendas virtuales registradas</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {% if is_paginated %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">Primera</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                <!-- INCLUIR MODALES -->
+                {% include 'tiendas_virtuales/modals/crea.html' %}
+                {% include 'tiendas_virtuales/modals/ver.html' %}
+                {% include 'tiendas_virtuales/modals/edita.html' %}
+                {% include 'tiendas_virtuales/modals/elimina.html' %}
+            </div>
+{% endblock %}
+
+{% block scripts_extra %}
+    <!-- Scripts de Tiendas Virtuales -->
+    <script src="{% static 'js/tiendas_virtuales/tiendas_virtuales.js' %}"></script>
+    
+    <!-- Scripts de Modals -->
+    <script src="{% static 'js/tiendas_virtuales/modals/crea.js' %}"></script>
+    <script src="{% static 'js/tiendas_virtuales/modals/ver.js' %}"></script>
+    <script src="{% static 'js/tiendas_virtuales/modals/edita.js' %}"></script>
+    <script src="{% static 'js/tiendas_virtuales/modals/elimina.js' %}"></script>
+{% endblock %}

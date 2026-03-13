@@ -1,0 +1,240 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Dashboard - Sistema de Inventario{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/dashboard/dashboard.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<!-- Page Header -->
+<div class="page-header mb-4">
+    <div class="page-header-content">
+        <h1 class="page-title">
+            <i class="fas fa-th-large"></i> Dashboard
+        </h1>
+        <p class="page-subtitle">Bienvenido de nuevo, <strong>{{ user.username|title }}</strong></p>
+    </div>
+    <div class="page-header-actions">
+        <span class="badge-time">
+            <i class="fas fa-clock"></i>
+            <span id="currentDateTime"></span>
+        </span>
+    </div>
+</div>
+
+<!-- Tarjetas de Estadísticas -->
+<div class="stats-grid mb-4">
+    <div class="stat-card stat-card-primary">
+        <div class="stat-card-icon">
+            <i class="fas fa-box"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-card-label">Total Productos</div>
+            <div class="stat-card-value">1,247</div>
+            <div class="stat-card-trend positive">
+                <i class="fas fa-arrow-up"></i> 12% vs mes anterior
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-card-success">
+        <div class="stat-card-icon">
+            <i class="fas fa-warehouse"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-card-label">En Stock</div>
+            <div class="stat-card-value">892</div>
+            <div class="stat-card-trend positive">
+                <i class="fas fa-arrow-up"></i> 8% del total
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-card-warning">
+        <div class="stat-card-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-card-label">Stock Bajo</div>
+            <div class="stat-card-value">45</div>
+            <div class="stat-card-trend negative">
+                <i class="fas fa-arrow-down"></i> Requiere atención
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-card-info">
+        <div class="stat-card-icon">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-card-label">Ventas del Mes</div>
+            <div class="stat-card-value">$48,520</div>
+            <div class="stat-card-trend positive">
+                <i class="fas fa-arrow-up"></i> 15% vs mes anterior
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contenido Principal -->
+<div class="dashboard-grid">
+    <!-- Gráfico de Inventario -->
+    <div class="dashboard-card full-width">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-chart-line"></i> Movimientos de Inventario
+            </h3>
+            <div class="card-actions">
+                <button class="btn-icon" title="Actualizar">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="chart-placeholder">
+                <i class="fas fa-chart-area"></i>
+                <p>Gráfico de movimientos de inventario</p>
+                <small>Próximamente: Visualización de datos en tiempo real</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accesos Rápidos -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-rocket"></i> Accesos Rápidos
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="quick-actions">
+                <a href="{% url 'listar_productos' %}" class="quick-action-btn">
+                    <div class="quick-action-icon bg-primary">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="quick-action-content">
+                        <strong>Productos</strong>
+                        <small>Gestionar catálogo</small>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+
+                <a href="{% url 'ver_inventario' %}" class="quick-action-btn">
+                    <div class="quick-action-icon bg-success">
+                        <i class="fas fa-warehouse"></i>
+                    </div>
+                    <div class="quick-action-content">
+                        <strong>Inventario</strong>
+                        <small>Ver stock disponible</small>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+
+                <a href="#" class="quick-action-btn">
+                    <div class="quick-action-icon bg-warning">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div class="quick-action-content">
+                        <strong>Pedidos</strong>
+                        <small>Administrar pedidos</small>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+
+                <a href="#" class="quick-action-btn">
+                    <div class="quick-action-icon bg-info">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <div class="quick-action-content">
+                        <strong>Traspasos</strong>
+                        <small>Gestionar traspasos</small>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actividad Reciente -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-history"></i> Actividad Reciente
+            </h3>
+            <a href="#" class="card-link">Ver todo</a>
+        </div>
+        <div class="card-body">
+            <div class="activity-timeline">
+                <div class="activity-item">
+                    <div class="activity-icon bg-success">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="activity-content">
+                        <strong>Producto agregado</strong>
+                        <p>Se agregó "Laptop Dell XPS 15" al inventario</p>
+                        <small>Hace 10 minutos</small>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon bg-info">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="activity-content">
+                        <strong>Stock actualizado</strong>
+                        <p>Se actualizó el stock de "Mouse Logitech" a 150 unidades</p>
+                        <small>Hace 1 hora</small>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon bg-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="activity-content">
+                        <strong>Alerta de stock bajo</strong>
+                        <p>El producto "Teclado Mecánico" tiene solo 5 unidades</p>
+                        <small>Hace 2 horas</small>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon bg-primary">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="activity-content">
+                        <strong>Venta registrada</strong>
+                        <p>Venta #1234 por $1,500 completada</p>
+                        <small>Hace 3 horas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Actualizar fecha y hora
+function updateDateTime() {
+    const now = new Date();
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    };
+    const dateTimeElement = document.getElementById('currentDateTime');
+    if (dateTimeElement) {
+        dateTimeElement.textContent = now.toLocaleDateString('es-ES', options);
+    }
+}
+
+updateDateTime();
+setInterval(updateDateTime, 60000); // Actualizar cada minuto
+</script>
+{% endblock %}

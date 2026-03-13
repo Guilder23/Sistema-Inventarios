@@ -1,0 +1,103 @@
+/* ============================================================================
+   ESTILOS PARA MODAL VER USUARIO
+   ============================================================================ */
+
+#modalVerUsuario .modal-header {
+    background: #1e3a8a;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-bottom: 3px solid #065f46;
+}
+
+#modalVerUsuario .modal-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+#modalVerUsuario .modal-body {
+    padding: 1.25rem 1.5rem;
+}
+
+#modalVerUsuario h6 {
+    font-size: 0.938rem;
+    font-weight: 600;
+    color: #1e3a8a;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 2px solid #dbeafe;
+}
+
+#modalVerUsuario .info-group {
+    margin-bottom: 0.75rem;
+}
+
+#modalVerUsuario .info-label {
+    font-size: 0.813rem;
+    font-weight: 600;
+    color: #6b7280;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+#modalVerUsuario .info-value {
+    font-size: 0.875rem;
+    color: #111827;
+}
+
+#modalVerUsuario .modal-footer {
+    padding: 0.875rem 1.5rem;
+    background-color: #f8f9fa;
+    border-top: 1px solid #d1d5db;
+}
+
+#modalVerUsuario .btn {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+#modalVerUsuario .modal-content {
+    border: none;
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#modalVerUsuario .modal-body .form-group {
+    margin-bottom: 1.5rem;
+}
+
+#modalVerUsuario .modal-body .form-control-plaintext {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    color: #333;
+    word-break: break-word;
+}
+
+#modalVerUsuario .btn-secondary {
+    background: #6b7280;
+    border-color: #6b7280;
+    color: #fff;
+}
+
+#modalVerUsuario .btn-secondary:hover {
+    background: #4b5563;
+    border-color: #4b5563;
+    transform: translateY(-1px);
+}
+
+/* RESPONSIVE */
+@media (max-width: 576px) {
+    #modalVerUsuario .modal-body {
+        padding: 1.5rem;
+    }
+
+    #modalVerUsuario .modal-footer {
+        flex-direction: column;
+    }
+
+    #modalVerUsuario .modal-footer .btn {
+        width: 100%;
+    }
+}
+    }
+}

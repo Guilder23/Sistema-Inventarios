@@ -1,0 +1,64 @@
+<div class="modal fade" id="modalVerProductoContenedor" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye"></i> Detalles del Producto
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3 border-bottom pb-2">
+                            <i class="fas fa-box"></i> Información del Producto
+                        </h6>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Nombre:</strong></label>
+                            <p id="verNombre" class="mb-0 font-weight-bold"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Código:</strong></label>
+                            <p id="verCodigo" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Cantidad Recibida:</strong></label>
+                            <p id="verCantidadRecibida" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Cantidad Disponible:</strong></label>
+                            <p id="verCantidad" class="mb-0"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>Cantidad Movida:</strong></label>
+                            <p id="verCantidadMovida" class="mb-0"></p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3 border-bottom pb-2">
+                            <i class="fas fa-info-circle"></i> Información Adicional
+                        </h6>
+
+                        <div class="mb-3">
+                            <label class="text-muted small mb-1"><strong>ID Producto-Contenedor:</strong></label>
+                            <p id="verPCId" class="mb-0 text-muted small"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

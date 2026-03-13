@@ -1,0 +1,62 @@
+.resumen-row {
+    margin-bottom: 1rem;
+}
+
+.resumen-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5rem;
+    background: #fff;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.resumen-label {
+    font-size: 0.82rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.resumen-value {
+    font-size: 1.1rem;
+    color: #1e3a8a;
+}
+
+.btn-filtrar {
+    height: 31px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.tabla-inventario tbody td {
+    vertical-align: middle;
+    font-size: 0.78rem;
+}
+
+.badge-estado-bajo {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+.tabla-inventario .codigo-badge {
+    font-size: 0.74rem;
+}
+
+/* Ancho condicional para columna de stock */
+.col-stock-almacen {
+    width: 18% !important;
+}
+
+/* Para tabla sin columna de contenedor (almacén) */
+table.tabla-inventario.almacen-view .col-stock-almacen {
+    width: 18% !important;
+}
+
+/* Para tabla con columna de contenedor (tienda/depósito) */
+table.tabla-inventario.tienda-view .col-stock-almacen {
+    width: 12% !important;
+}

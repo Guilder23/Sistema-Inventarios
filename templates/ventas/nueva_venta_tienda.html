@@ -1,0 +1,240 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Nueva Venta{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/ventas/nueva_venta.css' %}">
+<style>
+    .badge-modalidad {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
+    }
+    .desglose-info {
+        background: #f0f8ff;
+        border-left: 4px solid #667eea;
+        padding: 0.75rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid py-4">
+
+{#Header#}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="page-title mb-1">
+                <i class="fas fa-shopping-cart mr-2"></i>Nueva Venta
+            </h2>
+            <p class="text-muted mb-0">
+                Venta de Tienda &mdash; Código: <strong>{{ codigo_sugerido }}</strong>
+                {% if es_tienda_principal %}
+                <span class="badge badge-info ml-2">Tienda Principal</span>
+                {% else %}
+                <span class="badge badge-warning ml-2">Sucursal</span>
+                {% endif %}
+            </p>
+        </div>
+        <a href="{% url 'ventas:listar_ventas_tienda' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left mr-1"></i> Volver al Listado
+        </a>
+    </div>
+
+    <div class="row">
+
+{# COLUMNA IZQUIERDA: DATOS DEL CLIENTE Y BUSCADOR#}
+        <div class="col-lg-6 mb-4">
+
+            {# Card Datos de la Venta #}
+            <div class="card card-datos-venta shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 font-weight-bold">
+                        <i class="fas fa-user mr-2 text-primary"></i>Datos de la Venta
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="inputCliente" class="label-campo">
+                            Nombre del Cliente <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="inputCliente"
+                               placeholder="Ej: Juan Pérez" required autocomplete="off">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inputTelefono" class="label-campo">
+                            Teléfono <small class="text-muted">(opcional)</small>
+                        </label>
+                        <input type="tel" class="form-control" id="inputTelefono"
+                               placeholder="Ej: 70012345" autocomplete="off" inputmode="numeric" pattern="[0-9]*">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inputRazonSocial" class="label-campo">
+                            Razón Social <small class="text-muted">(opcional)</small>
+                        </label>
+                        <input type="text" class="form-control" id="inputRazonSocial"
+                               placeholder="Ej: Empresa S.A." autocomplete="off">
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label for="inputDireccion" class="label-campo">
+                            Dirección <small class="text-muted">(opcional)</small>
+                        </label>
+                        <input type="text" class="form-control" id="inputDireccion"
+                               placeholder="Ej: Av. Principal #123" autocomplete="off">
+                    </div>
+
+                    {# Tipo de pago fijo a contado para tienda #}
+                    <input type="hidden" id="inputTipoPago" value="contado">
+
+                </div>
+            </div>
+
+{# Card Tipo de Vendedor #}
+            <div class="card card-tipo-vendedor shadow-sm mb-4" id="cardTipoVendedor">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 font-weight-bold">
+                        <i class="fas fa-store mr-2 text-primary"></i>Tipo de Vendedor
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-0">
+                        <label for="selectTipoVendedor" class="label-campo">
+                            Seleccionar Tipo <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-control form-control-sm" id="selectTipoVendedor" required>
+                            <option value="tienda" selected>Tienda</option>
+                            <option value="deposito">Depósito</option>
+                        </select>
+                        <small class="form-text text-muted mt-1">
+                            <strong>Tienda:</strong> Modalidades de venta (Unidad, Caja, Mayor)
+                            <br>
+                            <strong>Depósito:</strong> Venta simplificada
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+{# Card Buscador de Productos#}
+            <div class="card card-buscador shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 font-weight-bold">
+                        <i class="fas fa-search mr-2 text-primary"></i>Buscar Producto
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-2">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="inputBuscarProducto"
+                                   placeholder="Escriba nombre o código del producto..."
+                                   autocomplete="off">
+                            <div class="input-group-append">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="resultadosBusqueda" style="display: none; max-height: 600px; overflow-y: auto;">
+                        <!-- Los productos se renderizan aquí con opciones inline -->
+                    </div>
+                </div>
+            </div>
+
+        </div>{# /col-lg-6 #}
+
+{# COLUMNA DERECHA: CARRITO #}
+        <div class="col-lg-6 mb-4">
+            <div class="card card-carrito shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 font-weight-bold">
+                        <i class="fas fa-shopping-bag mr-2 text-primary"></i>Carrito de Compras
+                    </h6>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0" id="tablaCarrito">
+                            <thead>
+                                <tr>
+                                    <th class="pl-3">Producto</th>
+                                    <th class="text-center" style="width: 80px;">Modalidad</th>
+                                    <th class="text-center" style="width: 110px;">Precio Unit.</th>
+                                    <th class="text-center" style="width: 70px;">Cantidad</th>
+                                    <th class="text-right" style="width: 180px;">Subtotal</th>
+                                    <th class="text-center pr-3" style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="carritoBody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+
+{# Resumen y botón de guardar #}
+                <div class="card-footer bg-white" id="carritoFooter" style="display:none;">
+                    <div class="resumen-carrito">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">Subtotal (<span id="resumenCantItems">0</span> items):</span>
+                            <span class="font-weight-bold" id="resumenSubtotal">Bs. 0.00</span>
+                        </div>
+
+                        <div class="form-group my-3 pb-3 border-bottom">
+                            <label for="inputDescuento" class="label-campo">
+                                <i class="fas fa-percentage text-success mr-1"></i>Descuento (opcional)
+                            </label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" class="form-control" id="inputDescuento"
+                                       placeholder="0.00" step="0.01" min="0" value="0">
+                                <div class="input-group-append">
+                                    <span class="input-group-text bg-light">Bs.</span>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Descuento en valor monetario (máx: subtotal)</small>
+                        </div>
+
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="total-label">TOTAL A PAGAR:</span>
+                            <span class="total-valor" id="resumenTotal">Bs. 0.00</span>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-success btn-block btn-lg mt-3" id="btnGuardarVenta">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Registrar Venta
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-block btn-sm mt-2" id="btnLimpiarCarrito">
+                        <i class="fas fa-trash mr-1"></i>
+                        Limpiar Carrito
+                    </button>
+                </div>
+
+            </div>{# /card-carrito #}
+
+        </div>{# /col-lg-7 #}
+
+    </div>{# /row #}
+
+</div>{# /container-fluid #}
+
+{# URLs para AJAX#}
+<script>
+    const URLS = {
+        buscarProductos: "{% url 'ventas:buscar_productos' %}",
+        guardarVentaTienda: "{% url 'ventas:guardar_venta_tienda' %}",
+        listaTienda: "{% url 'ventas:listar_ventas_tienda' %}",
+    };
+</script>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/ventas/tienda_nuevo.js' %}"></script>
+{% endblock %}

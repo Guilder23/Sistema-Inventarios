@@ -1,0 +1,46 @@
+<div class="modal fade" id="modalEditarContenedor" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> Editar Contenedor
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formEditarContenedor" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="editarContenedorId" name="contenedor_id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editNombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editNombre" name="nombre" required maxlength="120">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editProveedor" class="form-label">Proveedor <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editProveedor" name="proveedor" required maxlength="150">
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="editActivo" name="activo">
+                            <label class="custom-control-label" for="editActivo">
+                                <strong>Contenedor Activo</strong>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

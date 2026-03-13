@@ -1,0 +1,129 @@
+/* ============================================================================
+   ESTILOS PARA MODAL EDITAR PRODUCTO
+   ============================================================================ */
+
+#modalEditarProducto .modal-header {
+    background: #1e3a8a;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-bottom: 3px solid #065f46;
+}
+
+#modalEditarProducto .modal-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+#modalEditarProducto .modal-body {
+    padding: 1.25rem 1.5rem;
+}
+
+#modalEditarProducto .form-group {
+    margin-bottom: 0.875rem;
+}
+
+#modalEditarProducto .form-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.25rem;
+}
+
+#modalEditarProducto .form-control {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+}
+
+#modalEditarProducto .form-control:focus {
+    border-color: #1e3a8a;
+    box-shadow: 0 0 0 0.15rem rgba(30, 58, 138, 0.15);
+}
+
+#modalEditarProducto h6 {
+    font-size: 0.938rem;
+    font-weight: 600;
+    color: #1e3a8a;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 2px solid #dbeafe;
+}
+
+#modalEditarProducto .modal-footer {
+    padding: 0.875rem 1.5rem;
+    background-color: #f8f9fa;
+    border-top: 1px solid #d1d5db;
+}
+
+#modalEditarProducto .btn {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+}
+
+#modalEditarProducto .btn-warning {
+    background-color: #1e3a8a;
+    border-color: #1e3a8a;
+    color: white;
+}
+
+#modalEditarProducto .btn-warning:hover {
+    background-color: #1e40af;
+    border-color: #1e40af;
+    transform: translateY(-1px);
+}
+
+#modalEditarProducto .btn-secondary {
+    background: #6b7280;
+    border-color: #6b7280;
+    color: #fff;
+}
+
+#modalEditarProducto .btn-secondary:hover {
+    background: #4b5563;
+    border-color: #4b5563;
+}
+
+#modalEditarProducto .modal-content {
+    border: none;
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#modalEditarProducto .form-control:disabled {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+#modalEditarProducto #previewFotoEditar {
+    min-height: 60px;
+}
+
+#modalEditarProducto #previewFotoEditar img {
+    max-width: 100%;
+    max-height: 250px;
+    object-fit: cover;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.375rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: block;
+    margin: 0 auto;
+}
+
+/* RESPONSIVE */
+@media (max-width: 576px) {
+    #modalEditarProducto .modal-body {
+        padding: 1.5rem;
+    }
+
+    #modalEditarProducto .modal-footer {
+        flex-direction: column;
+    }
+
+    #modalEditarProducto .modal-footer .btn {
+        width: 100%;
+    }
+}
+

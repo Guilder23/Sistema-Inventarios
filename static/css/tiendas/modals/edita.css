@@ -1,0 +1,82 @@
+/* ============================================================================
+   ESTILOS PARA MODAL EDITAR TIENDA
+   ============================================================================ */
+
+#modalEditarTienda .modal-header {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    border-bottom: 2px solid #e0a800;
+    color: #333;
+}
+
+#modalEditarTienda .modal-header .modal-title {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #333;
+}
+
+#modalEditarTienda .form-label {
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+#modalEditarTienda .form-control {
+    border-radius: 0.375rem;
+    border: 1px solid #ddd;
+    transition: all 0.2s;
+}
+
+#modalEditarTienda .form-control:focus {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+#modalEditarTienda .modal-body h6 {
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 0.75rem;
+}
+
+#modalEditarTienda .modal-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+
+#modalEditarTienda .btn-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    border: none;
+    color: #333;
+    font-weight: 500;
+}
+
+#modalEditarTienda .btn-warning:hover {
+    background: linear-gradient(135deg, #e0a800 0%, #c39200 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+    color: #333;
+}
+
+#modalEditarTienda .btn-secondary {
+    background-color: #6c757d;
+    border: none;
+}
+
+#modalEditarTienda .btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Media queries para móviles */
+@media (max-width: 768px) {
+    #modalEditarTienda .modal-body {
+        padding: 1rem;
+    }
+    
+    #modalEditarTienda .col-md-6 {
+        margin-bottom: 1rem;
+    }
+    
+    #modalEditarTienda .form-group {
+        margin-bottom: 0.75rem;
+    }
+}
