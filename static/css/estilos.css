@@ -1,0 +1,65 @@
+/* ==========================================
+   ESTILOS GENERALES - SOLO VARIABLES Y RESET
+   ========================================== */
+
+/* Variables CSS Globales */
+:root {
+    /* Colores principales - Azul oscuro y Verde oscuro profesional */
+    --color-primario: #1e3a8a;
+    --color-primario-hover: #1e40af;
+    --color-secundario: #065f46;
+    --color-secundario-hover: #047857;
+    --color-exito: #059669;
+    --color-peligro: #dc2626;
+    --color-advertencia: #d97706;
+    --color-info: #0891b2;
+    --color-fondo: #f9fafb;
+    --color-texto: #1f2937;
+    --color-texto-secundario: #6b7280;
+    --color-blanco: #ffffff;
+    --color-gris-claro: #e5e7eb;
+    --color-gris-oscuro: #4b5563;
+    --color-borde: #e5e7eb;
+    
+    --fuente-principal: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --radio-borde: 6px;
+    --radio-sm: 4px;
+    --radio-md: 6px;
+    --radio-lg: 8px;
+    --sombra: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --sombra-hover: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --transicion: all 0.2s ease;
+}
+
+/* Reset Básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--fuente-principal);
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+/* Utilidades Globales Mínimas */
+.texto-centro { text-align: center; }
+.texto-derecha { text-align: right; }
+.texto-izquierda { text-align: left; }
+
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+.mb-4 { margin-bottom: 2rem; }
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.mt-4 { margin-top: 2rem; }
+.p-1 { padding: 0.5rem; }
+.p-2 { padding: 1rem; }
+.p-3 { padding: 1.5rem; }
+.p-4 { padding: 2rem; }

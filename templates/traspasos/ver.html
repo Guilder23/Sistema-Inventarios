@@ -1,0 +1,195 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block titulo %}Detalle Traspaso{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/traspasos/ver.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="fas fa-exchange-alt"></i> Detalle del Traspaso</h1>
+        </div>
+        <div class="col-md-4 text-right">
+            <a href="{% url 'listar_traspasos' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-info-circle"></i> Información del Traspaso
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-group">
+                        <label class="font-weight-bold">Código:</label>
+                        <p>{{ traspaso.codigo }}</p>
+                    </div>
+                    <div class="info-group">
+                        <label class="font-weight-bold">Tipo:</label>
+                        <p>
+                            {% if traspaso.tipo == 'normal' %}
+                                <span class="traspaso-tipo traspaso-tipo-normal">Transferencia Normal</span>
+                            {% else %}
+                                <span class="traspaso-tipo traspaso-tipo-devolucion">Devolución</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="info-group">
+                        <label class="font-weight-bold">Estado:</label>
+                        <p>
+                            <span class="traspaso-estado traspaso-estado-{{ traspaso.estado }}">
+                                {{ traspaso.get_estado_display }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-group">
+                        <label class="font-weight-bold">Origen:</label>
+                        <p>{{ traspaso.origen }}</p>
+                    </div>
+                    <div class="info-group">
+                        <label class="font-weight-bold">Destino:</label>
+                        <p>{{ traspaso.destino }}</p>
+                    </div>
+                    <div class="info-group">
+                        <label class="font-weight-bold">Fecha de Creación:</label>
+                        <p>{{ traspaso.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {% if traspaso.comentario %}
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="info-group">
+                        <label class="font-weight-bold">Comentario:</label>
+                        <p>{{ traspaso.comentario }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if traspaso.fecha_envio %}
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="info-group">
+                        <label class="font-weight-bold">Fecha de Envío:</label>
+                        <p>{{ traspaso.fecha_envio|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if traspaso.fecha_recepcion %}
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="info-group">
+                        <label class="font-weight-bold">Fecha de Recepción:</label>
+                        <p>{{ traspaso.fecha_recepcion|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-group">
+                        <label class="font-weight-bold">Recibido por:</label>
+                        <p>{{ traspaso.aceptado_por.username|default:"N/A" }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-boxes"></i> Productos
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unit.</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in detalles %}
+                        <tr>
+                            <td>{{ detalle.producto.codigo }}</td>
+                            <td>{{ detalle.producto.nombre }}</td>
+                            <td>{{ detalle.cantidad }}</td>
+                            <td>Bs. {{ detalle.producto.precio_unidad|floatformat:2 }}</td>
+                            <td>Bs. {{ detalle.subtotal|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No hay productos en este traspaso</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="font-weight-bold">
+                            <td colspan="4" class="text-right">Total:</td>
+                            <td>Bs. {{ traspaso.total|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <a href="{% url 'generar_pdf_traspaso' traspaso.id %}" class="btn btn-danger" target="_blank">
+                        <i class="fas fa-file-pdf"></i> Generar PDF
+                    </a>
+
+                    {% if es_origen and traspaso.estado == 'pendiente' %}
+                    <button type="button" class="btn btn-primary cambiar-estado" data-id="{{ traspaso.id }}" data-estado="transito">
+                        <i class="fas fa-truck"></i> Enviar a Tránsito
+                    </button>
+                    {% endif %}
+
+                    {% if es_destino and traspaso.estado == 'transito' %}
+                    <button type="button" class="btn btn-success cambiar-estado" data-id="{{ traspaso.id }}" data-estado="recibido">
+                        <i class="fas fa-check"></i> Recibir Traspaso
+                    </button>
+                    <button type="button" class="btn btn-danger cambiar-estado" data-id="{{ traspaso.id }}" data-estado="rechazado">
+                        <i class="fas fa-times"></i> Rechazar
+                    </button>
+                    {% endif %}
+
+                    {% if traspaso.estado == 'pendiente' %}
+                    <button type="button" class="btn btn-secondary cambiar-estado" data-id="{{ traspaso.id }}" data-estado="cancelado">
+                        <i class="fas fa-ban"></i> Cancelar Traspaso
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/traspasos/traspasos.js' %}"></script>
+{% endblock %}

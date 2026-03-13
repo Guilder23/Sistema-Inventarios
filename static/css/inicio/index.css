@@ -1,0 +1,12 @@
+/* 
+    Estilos para index.html
+    Página principal del sistema de inventario
+*/
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Si el usuario está autenticado, la redirección se maneja con JavaScript */

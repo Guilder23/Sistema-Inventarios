@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Kardex de Movimientos - Sistema de Inventario{% endblock %}
+
+{% block breadcrumb %}
+<span><i class="fas fa-history"></i> Kardex</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Kardex de Movimientos</h2>
+</div>
+
+<div class="filter-section">
+    <form method="GET" class="filter-form">
+        <div class="form-group">
+            <label for="producto">Producto</label>
+            <select name="producto" id="producto">
+                <option value="">Todos</option>
+                {% for producto in productos %}
+                <option value="{{ producto.id }}" {% if producto.id|stringformat:'s' == producto_seleccionado %}selected{% endif %}>
+                    {{ producto.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="almacen">Almacén</label>
+            <select name="almacen" id="almacen">
+                <option value="">Todos</option>
+                {% for almacen in almacenes %}
+                <option value="{{ almacen.id }}" {% if almacen.id|stringformat:'s' == almacen_seleccionado %}selected{% endif %}>
+                    {{ almacen.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <button type="submit" class="btn-secondary">
+            <i class="fas fa-search"></i> Filtrar
+        </button>
+    </form>
+</div>
+
+<div class="table-container">
+    <table class="table kardex-table">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Producto</th>
+                <th>Almacén</th>
+                <th>Tipo Movimiento</th>
+                <th>Cantidad Anterior</th>
+                <th>Movimiento</th>
+                <th>Cantidad Posterior</th>
+                <th>Usuario</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in kardex %}
+            <tr>
+                <td>{{ item.fecha|date:"d/m/Y H:i" }}</td>
+                <td>
+                    <strong>{{ item.producto.nombre }}</strong><br>
+                    <small>{{ item.producto.codigo }}</small>
+                </td>
+                <td>{{ item.almacen.nombre }}</td>
+                <td><span class="badge">{{ item.tipo_movimiento }}</span></td>
+                <td class="text-center">{{ item.cantidad_anterior }}</td>
+                <td class="text-center">{{ item.cantidad_movimiento }}</td>
+                <td class="text-center"><strong>{{ item.cantidad_posterior }}</strong></td>
+                <td>{{ item.usuario.first_name|default:"Sistema" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="empty-message">No hay registros en kardex</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
