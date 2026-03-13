@@ -7,7 +7,7 @@ psycopg2-binary==2.9.10
 dj-database-url==2.2.0
 
 # Servidor para producción (COMENTADO - solo para producción)
-# gunicorn==23.0.0
+ gunicorn==23.0.0
 
 # Archivos estáticos en producción (COMENTADO - solo para producción)
 # whitenoise==6.8.2
