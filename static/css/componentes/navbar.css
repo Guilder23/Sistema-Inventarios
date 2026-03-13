@@ -84,6 +84,25 @@
     margin-left: auto;
 }
 
+.navbar-tc {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radio-md);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
+}
+
+.navbar-tc i {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
 /* Botón de notificaciones */
 .navbar-notificaciones {
     position: relative;

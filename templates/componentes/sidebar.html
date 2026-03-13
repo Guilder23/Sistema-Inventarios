@@ -27,6 +27,17 @@
             <li class="sidebar-section">
                 <span class="sidebar-section-title">OPERACIONES</span>
             </li>
+            
+            {% if user.is_superuser or user.perfil.rol == 'almacen' %}
+            <li class="sidebar-item">
+                <a href="{% url 'listar_monedas' %}" 
+                class="sidebar-link {% if request.resolver_match.url_name == 'listar_monedas' %}active{% endif %}" 
+                title="Gestión de Monedas">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Tipo de Cambio</span>
+                </a>
+            </li>
+            {% endif %}
 
             <!-- Productos - Almacén y Administradores -->
             {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
