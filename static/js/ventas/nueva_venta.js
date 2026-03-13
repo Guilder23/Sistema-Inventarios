@@ -33,6 +33,7 @@ let debounceTimer = null;
 $(document).ready(function () {
     initSelectorTipoPago();
     initSelectorMoneda();
+    initSelectorvendedor();  // Cargar vendedores para almacén
     initSelectorUsuarioVendedor();
     initSelectorTipoPrecio();
     initBuscadorProductos();
@@ -63,6 +64,50 @@ function initSelectorMoneda() {
         // Actualizar resumen (convertir totales si es USD)
         actualizarResumen();
     });
+}
+
+// SELECTOR VENDEDOR - Solo para usuarios de almacén
+function initSelectorvendedor() {
+    const selectVendedor = $('#selectVendedor');
+    
+    // Solo inicializar si el elemento existe (usuarios almacén)
+    if (selectVendedor.length === 0) {
+        return;
+    }
+    
+    // Cargar vendedores desde la API
+    cargarVendedores();
+    
+    // Manejar cambio de vendedor
+    selectVendedor.on('change', function () {
+        const vendedorId = $(this).val();
+        $('#inputVendedorId').val(vendedorId);
+    });
+}
+
+// FUNCIÓN PARA CARGAR VENDEDORES VÍA AJAX
+function cargarVendedores() {
+    const selectVendedor = $('#selectVendedor');
+    
+    fetch(URLS.obtenerVendedores || '/ventas/api/obtener-vendedores/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.vendedores && data.vendedores.length > 0) {
+                let html = '<option value="">-- Selecciona vendedor --</option>';
+                
+                data.vendedores.forEach(vendor => {
+                    const display = `${vendor.nombre_completo} - ${vendor.lugar}`;
+                    html += `<option value="${vendor.id}">${display}</option>`;
+                });
+                
+                selectVendedor.html(html);
+            } else {
+                selectVendedor.html('<option value="">No hay vendedores disponibles</option>');
+            }
+        })
+        .catch(err => {
+            selectVendedor.html('<option value="">Error al cargar vendedores</option>');
+        });
 }
 
 // SELECTOR USUARIO VENDEDOR (Depósito/Tienda) - Solo para usuarios tienda
@@ -186,7 +231,6 @@ function buscarProductos(query) {
                     <p>Error al buscar productos.</p>
                 </div>
             `).show();
-            console.error('Error buscando productos:', err);
         });
 }
 
@@ -204,12 +248,20 @@ function renderResultadosBusqueda(productos) {
         return;
     }
 
+    // Obtener tipo de cambio del formulario
+    const tipoCambioElement = document.getElementById('tipoCambioActual');
+    const tipoCambio = tipoCambioElement ? parseFloat(tipoCambioElement.value) || 1 : 1;
+
     productos.forEach(p => {
         // Verificar si ya está en el carrito
         const enCarrito = carrito.find(item => item.productoId === p.id);
         const btnTexto = enCarrito ? 'Ya agregado' : '<i class="fas fa-plus mr-1"></i>Agregar';
         const btnDisabled = enCarrito ? 'disabled' : '';
         const btnClass = enCarrito ? 'btn-secondary' : 'btn-success';
+        
+        // Calcular precio en dólares
+        const precioUnitario = parseFloat(p.precio_unidad);
+        const precioDolares = (precioUnitario / tipoCambio).toFixed(2);
 
         const item = $(`
             <div class="resultado-item">
@@ -218,7 +270,10 @@ function renderResultadosBusqueda(productos) {
                     <div class="producto-codigo">${p.codigo}</div>
                 </div>
                 <div class="producto-meta">
-                    <div class="producto-precio">Bs. ${parseFloat(p.precio_unidad).toFixed(2)}</div>
+                    <div class="producto-precio">
+                        <div style="font-weight: bold; color: #28a745; font-size: 1rem;">Bs. ${precioUnitario.toFixed(2)}</div>
+                        <div style="font-size: 0.85rem; color: #666;">$ ${precioDolares}</div>
+                    </div>
                     <div class="producto-stock">Stock: ${p.stock} uds.</div>
                 </div>
                 <button class="btn btn-sm ${btnClass} btn-agregar-producto"
@@ -302,7 +357,10 @@ function renderCarrito() {
     $btnLimpiar.show();
 
     carrito.forEach((item, index) => {
+        const tipoCambio = parseFloat($('#tipoCambioActual').val() || 1);
         const subtotal = (item.precioUnitario * item.cantidad).toFixed(2);
+        const precioEnDolares = (item.precioUnitario / tipoCambio).toFixed(2);
+        const subtotalEnDolares = (parseFloat(subtotal) / tipoCambio).toFixed(2);
 
         const $row = $(`
             <tr class="carrito-row-nueva" data-index="${index}">
@@ -311,7 +369,10 @@ function renderCarrito() {
                     <div class="carrito-producto-codigo">${item.codigo}</div>
                 </td>
                 <td class="text-center">
-                    Bs. ${item.precioUnitario.toFixed(2)}
+                    <div class="precio-dual">
+                        <div>Bs. ${item.precioUnitario.toFixed(2)}</div>
+                        <div style="font-size: 0.85rem; color: #666;">$ ${precioEnDolares}</div>
+                    </div>
                 </td>
                 <td class="text-center">
                     <div class="input-cantidad-wrapper">
@@ -327,7 +388,10 @@ function renderCarrito() {
                     <small class="text-muted d-block mt-1">Stock: ${item.stock}</small>
                 </td>
                 <td class="text-right carrito-subtotal">
-                    Bs. ${subtotal}
+                    <div class="subtotal-dual">
+                        <div>Bs. ${subtotal}</div>
+                        <div style="font-size: 0.85rem; color: #666;">$ ${subtotalEnDolares}</div>
+                    </div>
                 </td>
                 <td class="text-center pr-3">
                     <button class="btn-eliminar-item" data-index="${index}" title="Eliminar">
@@ -566,10 +630,12 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
     
     const monedaElement = document.getElementById('inputMoneda');
     const tipoCambioElement = document.getElementById('tipoCambioActual');
+    const vendedorIdElement = document.getElementById('inputVendedorId');
     const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
     const tipoCambio = tipoCambioElement ? parseFloat(tipoCambioElement.value) : 1;
+    const vendedorId = vendedorIdElement ? (vendedorIdElement.value || null) : null;
 
-    //OJO: Incluye telefono, razon_social, direccion y moneda/tipo_cambio
+    //OJO: Incluye telefono, razon_social, direccion, moneda/tipo_cambio y vendedor_id
     const payload = {
         cliente: cliente,
         telefono: telefono,
@@ -578,6 +644,7 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
         tipo_pago: tipoPago,
         moneda: moneda,
         tipo_cambio: tipoCambio,
+        vendedor_id: vendedorId,
         items: items,
     };
 
@@ -617,7 +684,6 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
                 title: 'Error de conexión',
                 text: 'No se pudo conectar con el servidor.',
             });
-            console.error('Error guardando venta:', err);
         })
         .finally(() => {
             $btn.prop('disabled', false).html('<i class="fas fa-check-circle mr-2"></i>Registrar Venta');

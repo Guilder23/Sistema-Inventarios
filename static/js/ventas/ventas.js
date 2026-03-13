@@ -127,7 +127,6 @@ function cargarDetalleVenta(ventaId) {
             }
         })
         .catch(err => {
-            console.error('Error cargando detalle:', err);
             $body.html(`
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-triangle mr-2"></i>
@@ -310,7 +309,6 @@ function cargarDatosAmortizacion(ventaId) {
             $('#amortMonto').attr('max', saldoPendiente);
         })
         .catch(err => {
-            console.error('Error cargando datos de amortización:', err);
         });
 }
 
@@ -394,7 +392,6 @@ function guardarAmortizacion() {
                 title: 'Error de conexión',
                 text: 'No se pudo conectar con el servidor.',
             });
-            console.error('Error guardando amortización:', err);
         })
         .finally(() => {
             $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Registrar Pago');
@@ -446,6 +443,5 @@ function anularVenta(ventaId) {
                 title: 'Error de conexión',
                 text: 'No se pudo conectar con el servidor.',
             });
-            console.error('Error anulando venta:', err);
         });
 }

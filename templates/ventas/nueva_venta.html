@@ -7,6 +7,19 @@
 <link rel="stylesheet" href="{% static 'css/ventas/nueva_venta.css' %}">
 {% endblock %}
 
+{% block scripts_globales %}
+<script>
+    console.log('📝 [nueva_venta] Definiendo URLs globales...');
+    const URLS = {
+        buscarProductos: "{% url 'ventas:buscar_productos' %}",
+        guardarVenta: "{% url 'ventas:guardar_venta' %}",
+        listaVentas: "{% url 'ventas:listar_ventas' %}",
+        obtenerVendedores: "{% url 'ventas:obtener_vendedores' %}",
+    };
+    console.log('✅ [nueva_venta] URLs definidas:', URLS);
+</script>
+{% endblock %}
+
 {% block contenido %}
 <div class="container-fluid py-4">
 
@@ -69,6 +82,23 @@
                         <input type="text" class="form-control" id="inputDireccion"
                                placeholder="Ej: Av. Principal #123" autocomplete="off">
                     </div>
+
+                    <!-- SELECTOR VENDEDOR - Solo para almacén -->
+                    {% if user.perfil.rol == 'almacen' %}
+                    <div class="form-group">
+                        <label for="selectVendedor" class="label-campo">
+                            Vendedor <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-control" id="selectVendedor" required>
+                            <option value="">-- Cargando vendedores... --</option>
+                        </select>
+                        <small class="form-text text-muted mt-1">
+                            <i class="fas fa-info-circle"></i>
+                            Se muestran vendedores del almacén y sus tiendas asociadas
+                        </small>
+                        <input type="hidden" id="inputVendedorId" value="">
+                    </div>
+                    {% endif %}
 
                     <div class="form-group mb-0">
                         <label class="label-campo">Tipo de Pago</label>
@@ -264,14 +294,6 @@
 
 </div>{# /container-fluid #}
 
-{# URLs para AJAX#}
-<script>
-    const URLS = {
-        buscarProductos: "{% url 'ventas:buscar_productos' %}",
-        guardarVenta: "{% url 'ventas:guardar_venta' %}",
-        listaVentas: "{% url 'ventas:listar_ventas' %}",
-    };
-</script>
 {% endblock %}
 
 {% block scripts_extra %}

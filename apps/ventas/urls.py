@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from .views import generar_pdf_venta
+from django.views.generic import TemplateView
 
 app_name = 'ventas'
 
@@ -10,6 +11,8 @@ urlpatterns = [
     path('crear/', views.crear_venta, name='crear_venta'),
     path('guardar/', views.guardar_venta, name='guardar_venta'),
     path('api/buscar-productos/', views.buscar_productos, name='buscar_productos'),
+    path('api/obtener-vendedores/', views.obtener_vendedores_almacen, name='obtener_vendedores'),
+    path('api/saldo-pendiente/<int:id>/', views.obtener_saldo_pendiente, name='obtener_saldo_pendiente'),
     path('api/venta/<int:id>/detalle/', views.obtener_detalle_venta, name='obtener_detalle_venta'),
     path('<int:id>/ver/', views.ver_venta, name='ver_venta'),
     path('<int:id>/pdf/', generar_pdf_venta, name='pdf_venta'),
@@ -17,6 +20,7 @@ urlpatterns = [
     path('tienda/guardar/', views.guardar_venta_tienda, name='guardar_venta_tienda'),
     path('tienda/listar/', views.listar_ventas_tienda, name='listar_ventas_tienda'),
     path('<int:id>/anular/', views.anular_venta, name='anular_venta'),
+    path('<int:id>/registrar-amortizacion/', views.registrar_amortizacion_tienda, name='registrar_amortizacion_tienda'),
     
     # Solicitudes de anulación
     path('solicitudes/anulacion/', views.validar_solicitudes_anulacion, name='solicitudes_anulacion'),
@@ -25,4 +29,7 @@ urlpatterns = [
         
     # Amortizaciones
     path('<int:venta_id>/amortizacion/', views.registrar_amortizacion, name='registrar_amortizacion'),
+    
+    # Debug
+    path('debug/buscar/', TemplateView.as_view(template_name='debug_search.html'), name='debug_buscar'),
 ]

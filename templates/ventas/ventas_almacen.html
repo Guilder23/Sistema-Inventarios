@@ -470,16 +470,128 @@
     </div>
 </div>
 
+{# Modal: Anular Venta - Almacén #}
+<div class="modal fade" id="modalAnularVenta" tabindex="-1" role="dialog" aria-labelledby="modalAnularVentaLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                <h5 class="modal-title" id="modalAnularVentaLabel" style="color: white; font-weight: 600;">
+                    <i class="fas fa-ban mr-2"></i>Anular Venta
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white; opacity: 0.8;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="info-section mb-3">
+                    <small class="text-muted">Venta a Anular:</small>
+                    <p class="font-weight-bold mb-0" id="anularVentaCodigo"></p>
+                </div>
+                <div class="form-group">
+                    <label for="inputMotivoAnulacion" class="font-weight-600">Motivo de Anulación</label>
+                    <textarea class="form-control" id="inputMotivoAnulacion" rows="4" placeholder="Explica por qué se anula esta venta..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger btn-sm" id="btnConfirmarAnulacion">
+                    <i class="fas fa-trash mr-2"></i>Anular Venta
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts_extra %}
-<script src="{% static 'js/ventas/anulacion_comun.js' %}"></script>
+<script src="{% static 'js/componentes/modales.js' %}"></script>
 <script src="{% static 'js/ventas/ventas.js' %}"></script>
 <script>
+// Utilidad: Obtener CSRF Token
+function getCsrfToken() {
+    const name = 'csrftoken';
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue || document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+}
 
-// Integración de botones anular con modales personalizados
+// Variables para anulación
+let ventaIdActual = null;
+let ventaCodigoActual = null;
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Activar la pestaña correcta según parámetro ?tab= en la URL
+    
+    // Delegar eventos para botones de anulación
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-anular-venta')) {
+            const btn = e.target.closest('.btn-anular-venta');
+            ventaIdActual = btn.dataset.ventaId;
+            ventaCodigoActual = btn.dataset.ventaCodigo;
+            
+            // Llenar el modal con los datos
+            document.getElementById('anularVentaCodigo').textContent = ventaCodigoActual;
+            document.getElementById('inputMotivoAnulacion').value = '';
+            
+            // Mostrar modal
+            $('#modalAnularVenta').modal('show');
+        }
+    });
+
+    // Confirmar anulación
+    const btnConfirmar = document.getElementById('btnConfirmarAnulacion');
+    if (btnConfirmar) {
+        btnConfirmar.addEventListener('click', function() {
+            const motivo = document.getElementById('inputMotivoAnulacion').value.trim();
+            
+            if (!motivo) {
+                alert('Por favor, ingresa un motivo para la anulación.');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('comentario', motivo);
+            formData.append('csrfmiddlewaretoken', getCsrfToken());
+            
+            this.disabled = true;
+            const btnText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+            
+            fetch(`/ventas/${ventaIdActual}/anular/`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Venta anulada correctamente.');
+                    $('#modalAnularVenta').modal('hide');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    alert('Error: ' + (data.error || 'No se pudo procesar la solicitud'));
+                    this.disabled = false;
+                    this.innerHTML = btnText;
+                }
+            })
+            .catch(error => {
+                alert('Error de conexión: No se pudo procesar la solicitud.');
+                console.error('Error:', error);
+                this.disabled = false;
+                this.innerHTML = btnText;
+            });
+        });
+    }
+    
+    // Resto del código original de gestión de pestañas
     const urlParams = new URLSearchParams(window.location.search);
     const tabActivo = urlParams.get('tab');
     
@@ -496,20 +608,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('credito-tab').classList.add('active');
         document.getElementById('tabCredito').classList.add('show', 'active');
     }
-    
-    // Delegar eventos para botones de anulación
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.btn-anular-venta')) {
-            const btn = e.target.closest('.btn-anular-venta');
-            const ventaId = btn.dataset.ventaId;
-            const ventaCodigo = btn.dataset.ventaCodigo;
-            
-            // Para almacén: siempre true
-            const esAlmacen = true;
-            
-            abrirModalAnularVenta(ventaId, ventaCodigo, esAlmacen);
-        }
-    });
 });
 </script>
 {% endblock %}

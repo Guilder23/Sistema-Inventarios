@@ -20,6 +20,17 @@
 </style>
 {% endblock %}
 
+{% block scripts_globales %}
+<script>
+    const URLS = {
+        buscarProductos: "{% url 'ventas:buscar_productos' %}",
+        guardarVentaTienda: "{% url 'ventas:guardar_venta_tienda' %}",
+        listaTienda: "{% url 'ventas:listar_ventas_tienda' %}",
+    };
+    const tipoCambioActual = {{ tipo_cambio_actual|default:1 }};
+</script>
+{% endblock %}
+
 {% block contenido %}
 <div class="container-fluid py-4">
 
@@ -88,8 +99,38 @@
                                placeholder="Ej: Av. Principal #123" autocomplete="off">
                     </div>
 
-                    {# Tipo de pago fijo a contado para tienda #}
+                    {% if es_tienda_principal %}
+                    {# Tipo de Pago para Tienda Principal (Al Contado / A Crédito) #}
+                    <div class="form-group mt-3 mb-0">
+                        <label class="label-campo">Tipo de Pago</label>
+                        <div class="tipo-pago-selector">
+                            <div class="tipo-pago-option active" data-tipo="contado">
+                                <div class="tipo-pago-icon">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <div>
+                                    <strong>Al Contado</strong>
+                                    <small class="d-block text-muted">Pago completo ahora</small>
+                                </div>
+                                <i class="fas fa-check-circle check-icon"></i>
+                            </div>
+                            <div class="tipo-pago-option" data-tipo="credito">
+                                <div class="tipo-pago-icon tipo-pago-icon--credito">
+                                    <i class="fas fa-credit-card"></i>
+                                </div>
+                                <div>
+                                    <strong>A Crédito</strong>
+                                    <small class="d-block text-muted">Pago en cuotas</small>
+                                </div>
+                                <i class="fas fa-check-circle check-icon"></i>
+                            </div>
+                        </div>
+                        <input type="hidden" id="inputTipoPago" value="contado">
+                    </div>
+                    {% else %}
+                    {# Tipo de pago fijo a contado para tiendas sucursales #}
                     <input type="hidden" id="inputTipoPago" value="contado">
+                    {% endif %}
 
                 </div>
             </div>
@@ -187,23 +228,46 @@
                         </div>
 
                         <div class="form-group my-3 pb-3 border-bottom">
-                            <label for="inputDescuento" class="label-campo">
+                            <label class="label-campo">
                                 <i class="fas fa-percentage text-success mr-1"></i>Descuento (opcional)
                             </label>
-                            <div class="input-group input-group-sm">
-                                <input type="number" class="form-control" id="inputDescuento"
-                                       placeholder="0.00" step="0.01" min="0" value="0">
-                                <div class="input-group-append">
-                                    <span class="input-group-text bg-light">Bs.</span>
+                            
+                            {# Toggle para tipo de descuento #}
+                            <div class="mb-3 d-flex align-items-center justify-content-between">
+                                <label style="margin-bottom: 0; font-weight: 600;">Tipo de Descuento:</label>
+                                <div class="btn-group btn-group-sm" role="group" style="box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                    <input type="radio" class="btn-check" name="tipoDescuento" id="descuentoFijo" value="fijo" checked>
+                                    <label class="btn btn-outline-success" for="descuentoFijo" style="font-size: 0.9rem; font-weight: 500; padding: 0.5rem 1rem;">
+                                        <i class="fas fa-coins mr-1"></i>Monto (Bs.)
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="tipoDescuento" id="descuentoPorcentaje" value="porcentaje">
+                                    <label class="btn btn-outline-success" for="descuentoPorcentaje" style="font-size: 0.9rem; font-weight: 500; padding: 0.5rem 1rem;">
+                                        <i class="fas fa-percent mr-1"></i>Porcentaje (%)
+                                    </label>
                                 </div>
                             </div>
-                            <small class="form-text text-muted">Descuento en valor monetario (máx: subtotal)</small>
+                            
+                            {# Campo de descuento #}
+                            <div class="input-group input-group-sm">
+                                <input type="number" class="form-control" id="inputDescuento"
+                                       placeholder="0.00" step="0.01" min="0" value="0" max="100" style="border-color: #28a745;">
+
+                                <div class="input-group-append">
+                                    <span class="input-group-text bg-success text-white" id="tipoDescuentoUnidad" style="font-weight: 600;">Bs.</span>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted d-block mt-2">💡 Máximo: subtotal (en monto) o 100% (en porcentaje)</small>
                         </div>
 
                         <hr class="my-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="total-label">TOTAL A PAGAR:</span>
-                            <span class="total-valor" id="resumenTotal">Bs. 0.00</span>
+                        <div class="d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 1.5rem; border-radius: 0.5rem; margin-top: 1rem; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);">
+                            <div>
+                                <span style="font-size: 1rem; font-weight: 600;">TOTAL A PAGAR:</span>
+                            </div>
+                            <div id="resumenTotal" style="text-align: right;">
+                                <strong style="font-size: 1.5rem; display: block;">Bs. 0.00</strong>
+                            </div>
                         </div>
                     </div>
 
@@ -225,14 +289,6 @@
 
 </div>{# /container-fluid #}
 
-{# URLs para AJAX#}
-<script>
-    const URLS = {
-        buscarProductos: "{% url 'ventas:buscar_productos' %}",
-        guardarVentaTienda: "{% url 'ventas:guardar_venta_tienda' %}",
-        listaTienda: "{% url 'ventas:listar_ventas_tienda' %}",
-    };
-</script>
 {% endblock %}
 
 {% block scripts_extra %}

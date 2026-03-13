@@ -11,6 +11,33 @@ Estilos adicionales para el modal de detalle de venta.
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
+/* Header del modal */
+#modalDetalleVenta .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 1.5rem;
+}
+
+#modalDetalleVenta .modal-title {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+/* Botón de cerrar (×) */
+#modalDetalleVenta .close {
+    color: white;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+#modalDetalleVenta .close:hover,
+#modalDetalleVenta .close:focus {
+    opacity: 1;
+    color: white;
+    text-decoration: none;
+}
+
 /* Tabla dentro del modal */
 #modalDetalleVenta .table {
     margin-bottom: 0;
@@ -32,4 +59,204 @@ Estilos adicionales para el modal de detalle de venta.
 #modalDetalleVenta .modal-footer {
     border-top: 1px solid #e9ecef;
     padding: 0.75rem 1.25rem;
+}
+
+/* Información del cliente - sección gris */
+#modalDetalleVenta .info-section {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+#modalDetalleVenta .info-section h6 {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: #2d3748;
+}
+
+#modalDetalleVenta .info-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+#modalDetalleVenta .info-item {
+    font-size: 0.85rem;
+}
+
+#modalDetalleVenta .info-item label {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+#modalDetalleVenta .info-item p {
+    margin: 0.25rem 0 0 0;
+    color: #2d3748;
+    font-weight: 500;
+}
+
+/* ===========================
+   NAVBAR DE TABS - VENTAS
+   =========================== */
+
+.nav-tabs-ventas {
+    border-bottom: 2px solid #dee2e6 !important;
+    background-color: #f8f9fa;
+}
+
+.nav-tabs-ventas .nav-link {
+    color: #6c757d;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-weight: 500;
+    padding: 1rem 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs-ventas .nav-link:hover {
+    color: #495057;
+    border-bottom-color: #e2e8f0;
+}
+
+.nav-tabs-ventas .nav-link.active {
+    color: #667eea;
+    border-bottom-color: #667eea !important;
+    background-color: white;
+}
+
+.nav-tabs-ventas .nav-link.active i {
+    color: #667eea;
+}
+
+.nav-tabs-ventas .nav-link i {
+    color: #6c757d;
+}
+
+/* Tab Content Styling */
+.tab-content .tab-pane {
+    padding: 1.5rem 0;
+}
+
+/* ===========================
+   ESTILOS DE TABLE RESPONSIVE
+   =========================== */
+
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tabla-productos {
+    font-size: 0.9rem;
+}
+
+.tabla-productos thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.75rem;
+}
+
+.tabla-productos tbody tr {
+    border-bottom: 1px solid #dee2e6;
+    transition: background-color 0.2s ease;
+}
+
+.tabla-productos tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.codigo-venta {
+    font-weight: 600;
+    color: #667eea;
+}
+
+.badge-estado {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.badge-completada {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.badge-cancelada {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.badge-pendiente {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* ===========================
+   BOTONES DE ACCIÓN
+   =========================== */
+
+.btn-group-sm .btn {
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-primary:hover {
+    background-color: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+.btn-outline-info:hover {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
+}
+
+.btn-outline-success:hover {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+/* ===========================
+   MODAL BACKDROP/OVERLAY
+   =========================== */
+
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    opacity: 1 !important;
+}
+
+.modal-backdrop.fade {
+    opacity: 0;
+}
+
+.modal-backdrop.show {
+    opacity: 0.5;
+}
+
+/* Oscurecer fondo cuando modal está abierto */
+body.modal-open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    z-index: 1040;
 }

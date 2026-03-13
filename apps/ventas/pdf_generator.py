@@ -142,13 +142,18 @@ def generar_pdf_venta_completo(venta):
     fecha_str = venta.fecha_elaboracion.strftime('%d/%m/%Y %H:%M') if hasattr(venta, 'fecha_elaboracion') else datetime.now().strftime('%d/%m/%Y %H:%M')
     codigo_venta_str = getattr(venta, 'codigo', f'VENTA-{venta.id}')
     vendedor_nombre = venta.vendedor.get_full_name() or venta.vendedor.username
+    
+    # MEJORADO: Obtener ubicación del vendedor (almacén o tienda)
+    lugar_venta = venta.ubicacion.nombre_ubicacion if hasattr(venta.ubicacion, 'nombre_ubicacion') else 'Sin ubicación'
+    vendedor_con_lugar = f"{vendedor_nombre} - {lugar_venta}"
+    
     tipo_pago = venta.get_tipo_pago_display() if hasattr(venta, 'get_tipo_pago_display') else venta.tipo_pago
     
     info_general = f"""
     <b>Código:</b> {codigo_venta_str}<br/>
     <b>Fecha:</b> {fecha_str}<br/>
     <b>Cliente:</b> {venta.cliente}<br/>
-    <b>Vendedor:</b> {vendedor_nombre}<br/>
+    <b>Vendedor:</b> {vendedor_con_lugar}<br/>
     <b>Tipo Pago:</b> {tipo_pago}
     """
     elements.append(Paragraph(info_general, style_encabezado))
