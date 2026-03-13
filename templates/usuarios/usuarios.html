@@ -1,0 +1,251 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Gestión de Usuarios{% endblock %}
+
+{% block estilos_extra %}
+    <link rel="stylesheet" href="{% static 'css/usuarios/usuarios.css' %}">
+    <link rel="stylesheet" href="{% static 'css/usuarios/modals/crea.css' %}">
+    <link rel="stylesheet" href="{% static 'css/usuarios/modals/ver.css' %}">
+    <link rel="stylesheet" href="{% static 'css/usuarios/modals/edita.css' %}">
+    <link rel="stylesheet" href="{% static 'css/usuarios/modals/elimina.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+                <!-- HEADER DE LA PÁGINA -->
+                <div class="page-header">
+                    <div class="page-header-content">
+                        <h1 class="page-title">
+                            <i class="fas fa-users"></i> Gestión de Usuarios
+                        </h1>
+                        <p class="page-subtitle">Administra los usuarios del sistema</p>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalCrearUsuario">
+                        <i class="fas fa-user-plus"></i> Nuevo Usuario
+                    </button>
+                </div>
+
+                <!-- FILTROS Y BÚSQUEDA -->
+                <div class="card card-filtros">
+                    <div class="card-body py-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-5">
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-white border-right-0">
+                                            <i class="fas fa-search text-muted"></i>
+                                        </span>
+                                    </div>
+                                    <input 
+                                        type="text" 
+                                        class="form-control form-control-sm border-left-0" 
+                                        id="buscar" 
+                                        name="buscar"
+                                        placeholder="Buscar por usuario, nombre o correo..."
+                                        value="{{ buscar }}"
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <select class="form-control form-control-sm" id="estado" name="estado">
+                                    <option value="">Todos los estados</option>
+                                    <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
+                                    <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <select class="form-control form-control-sm" id="rol" name="rol">
+                                    <option value="">Todos los roles</option>
+                                    <option value="administrador" {% if rol == 'administrador' %}selected{% endif %}>Administrador</option>
+                                    <option value="almacen" {% if rol == 'almacen' %}selected{% endif %}>Almacén</option>
+                                    <option value="tienda" {% if rol == 'tienda' %}selected{% endif %}>Tienda</option>
+                                    <option value="deposito" {% if rol == 'deposito' %}selected{% endif %}>Depósito</option>
+                                    <option value="tienda_online" {% if rol == 'tienda_online' %}selected{% endif %}>Tienda Virtual</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABLA DE USUARIOS -->
+                <div class="card card-tabla">
+                    <div class="table-responsive">
+                        <table class="table table-sm tabla-usuarios mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">Usuario</th>
+                                    <th style="width: 15%;">Nombre</th>
+                                    <th style="width: 18%;">Correo</th>
+                                    <th style="width: 13%;">Rol</th>
+                                    <th style="width: 10%;">Estado</th>
+                                    <th style="width: 12%;">Último Acceso</th>
+                                    <th class="text-center" style="width: 12%;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usuario in usuarios %}
+                                <tr>
+                                    <td>
+                                        <span class="usuario-badge">{{ usuario.username }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 150px;" title="{{ usuario.get_full_name|default:'Sin nombre' }}">
+                                            {{ usuario.get_full_name|default:"Sin nombre" }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 180px;" title="{{ usuario.email }}">
+                                            {{ usuario.email }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if usuario.perfil %}
+                                            {% if usuario.perfil.rol == 'administrador' %}
+                                                <span class="badge-rol badge-rol-admin" data-rol="administrador">
+                                                    <i class="fas fa-shield-alt"></i> Administrador
+                                                </span>
+                                            {% elif usuario.perfil.rol == 'almacen' %}
+                                                <span class="badge-rol badge-rol-almacen" data-rol="almacen">
+                                                    <i class="fas fa-warehouse"></i> Almacén
+                                                </span>
+                                            {% elif usuario.perfil.rol == 'tienda' %}
+                                                <span class="badge-rol badge-rol-tienda" data-rol="tienda">
+                                                    <i class="fas fa-store"></i> Tienda
+                                                </span>
+                                            {% elif usuario.perfil.rol == 'deposito' %}
+                                                <span class="badge-rol badge-rol-deposito" data-rol="deposito">
+                                                    <i class="fas fa-boxes-stacked"></i> Depósito
+                                                </span>
+                                            {% elif usuario.perfil.rol == 'tienda_online' %}
+                                                <span class="badge-rol badge-rol-online" data-rol="tienda_online">
+                                                    <i class="fas fa-shopping-cart"></i> Tienda Virtual
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge-rol badge-rol-sinrol" data-rol="">Sin rol</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if usuario.is_active %}
+                                            <span class="badge-estado badge-estado-activo">
+                                                <i class="fas fa-check-circle"></i> Activo
+                                            </span>
+                                        {% else %}
+                                            <span class="badge-estado badge-estado-inactivo">
+                                                <i class="fas fa-times-circle"></i> Inactivo
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>
+                                            {% if usuario.last_login %}
+                                                {{ usuario.last_login|date:"d/m/y H:i" }}
+                                            {% else %}
+                                                <span class="text-muted">Nunca</span>
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td class="text-center">
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-info btn-sm btn-ver-usuario"
+                                            data-toggle="modal" 
+                                            data-target="#modalVerUsuario"
+                                            data-usuario-id="{{ usuario.id }}"
+                                            title="Ver detalles"
+                                        >
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-warning btn-sm btn-editar-usuario"
+                                            data-toggle="modal" 
+                                            data-target="#modalEditarUsuario"
+                                            data-usuario-id="{{ usuario.id }}"
+                                            title="Editar usuario"
+                                        >
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-danger btn-sm btn-eliminar-usuario"
+                                            data-toggle="modal" 
+                                            data-target="#modalEliminarUsuario"
+                                            data-usuario-id="{{ usuario.id }}"
+                                            data-usuario-nombre="{{ usuario.get_full_name }}"
+                                            title="Bloquear/Activar"
+                                        >
+                                            <i class="fas fa-lock"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
+                                        <p class="text-muted">No hay usuarios registrados</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {% if is_paginated %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">Primera</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                <!-- INCLUIR MODALES -->
+                {% include 'usuarios/modals/crea.html' %}
+                {% include 'usuarios/modals/ver.html' %}
+                {% include 'usuarios/modals/edita.html' %}
+                {% include 'usuarios/modals/elimina.html' %}
+            </div>
+{% endblock %}
+
+{% block scripts_extra %}
+    <!-- Scripts de Modals (deben cargar primero) -->
+    <script src="{% static 'js/usuarios/modals/crea.js' %}"></script>
+    <script src="{% static 'js/usuarios/modals/ver.js' %}"></script>
+    <script src="{% static 'js/usuarios/modals/edita.js' %}"></script>
+    <script src="{% static 'js/usuarios/modals/elimina.js' %}"></script>
+    
+    <!-- Script Principal de Usuarios -->
+    <script src="{% static 'js/usuarios/usuarios.js' %}"></script>
+{% endblock %}

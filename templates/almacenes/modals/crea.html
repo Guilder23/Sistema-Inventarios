@@ -1,0 +1,133 @@
+﻿<!-- MODAL: CREAR ALMACÉN -->
+<div class="modal fade" id="modalCrearAlmacen" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-warehouse"></i> Crear Nuevo Almacén
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formCrearAlmacen" method="post" action="{% url 'almacenes:crear' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- COLUMNA IZQUIERDA -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-info-circle"></i> Información Básica
+                            </h6>
+                            
+                            <div class="form-group">
+                                <label for="crearNombre" class="form-label">Nombre del Almacén <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="crearNombre" 
+                                    name="nombre" 
+                                    required
+                                    placeholder="Ej: Almacén Principal"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crearDescripcion" class="form-label">Descripción</label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="crearDescripcion" 
+                                    name="descripcion" 
+                                    rows="2"
+                                    placeholder="Descripción del almacén"
+                                ></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crearDireccion" class="form-label">Dirección <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="crearDireccion" 
+                                    name="direccion" 
+                                    required
+                                    placeholder="Calle y número"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crearCiudad" class="form-label">Ciudad <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="crearCiudad" 
+                                    name="ciudad" 
+                                    required
+                                    placeholder="Ej: Bogotá"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- COLUMNA DERECHA -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-map"></i> Ubicación y Contacto
+                            </h6>
+
+                            <div class="form-group">
+                                <label for="crearDepartamento" class="form-label">Departamento <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="crearDepartamento" 
+                                    name="departamento" 
+                                    required
+                                    placeholder="Ej: Cundinamarca"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crearTelefono" class="form-label">Teléfono</label>
+                                <input 
+                                    type="tel" 
+                                    class="form-control" 
+                                    id="crearTelefono" 
+                                    name="telefono" 
+                                    placeholder="Ej: (1) 2345678"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crearEmail" class="form-label">Correo Electrónico</label>
+                                <input 
+                                    type="email" 
+                                    class="form-control" 
+                                    id="crearEmail" 
+                                    name="email" 
+                                    placeholder="almacen@empresa.com"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crearEstado" class="form-label">Estado <span class="text-danger">*</span></label>
+                                <select class="form-control" id="crearEstado" name="estado" required>
+                                    <option value="activo">Activo</option>
+                                    <option value="inactivo">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Crear Almacén
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

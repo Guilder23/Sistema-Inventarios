@@ -1,0 +1,96 @@
+<!-- MODAL: VER PEDIDO -->
+<div class="modal fade" id="modalVerPedido" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye"></i> Detalle del Pedido
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="info-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-info-circle"></i> Resumen
+                            </h6>
+                            <div class="info-item">
+                                <label>Código</label>
+                                <p id="verPedidoCodigo"></p>
+                            </div>
+                            <div class="info-item">
+                                <label>Estado</label>
+                                <p id="verPedidoEstado"></p>
+                            </div>
+                            <div class="info-item">
+                                <label>Fecha</label>
+                                <p id="verPedidoFecha"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="info-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-map-marker-alt"></i> Ubicaciones
+                            </h6>
+                            <div class="info-item">
+                                <label>Tienda</label>
+                                <p id="verPedidoTienda"></p>
+                            </div>
+                            <div class="info-item">
+                                <label>Almacén</label>
+                                <p id="verPedidoAlmacen"></p>
+                            </div>
+                            <div class="info-item">
+                                <label>Comentario</label>
+                                <p id="verPedidoComentario" class="text-muted"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="info-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-cogs"></i> Acciones
+                            </h6>
+                            <div id="accionesPedido" class="acciones-pedido">
+                                <!-- Botones dinámicos -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section mt-3">
+                    <h6 class="section-title">
+                        <i class="fas fa-boxes"></i> Productos del Pedido
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">Código</th>
+                                    <th style="width: 60%;">Producto</th>
+                                    <th style="width: 20%;">Cantidad</th>
+                                </tr>
+                            </thead>
+                            <tbody id="verPedidoItems">
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">Cargando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

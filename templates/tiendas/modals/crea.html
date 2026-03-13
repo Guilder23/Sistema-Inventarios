@@ -1,0 +1,141 @@
+﻿<!-- MODAL: CREAR TIENDA -->
+<div class="modal fade" id="modalCrearTienda" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-store"></i> Crear Nueva Tienda
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formCrearTienda" method="post" action="{% url 'tiendas:crear' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- COLUMNA IZQUIERDA -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-info-circle"></i> Información Básica
+                            </h6>
+                            
+                            <div class="form-group">
+                                <label for="crearNombre" class="form-label">Nombre de la Tienda <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="crearNombre" 
+                                    name="nombre" 
+                                    required
+                                    placeholder="Ej: Tienda Principal"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crearDescripcion" class="form-label">Descripción</label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="crearDescripcion" 
+                                    name="descripcion" 
+                                    rows="2"
+                                    placeholder="Descripción de la tienda"
+                                ></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crearTipo" class="form-label">Tipo de Tienda <span class="text-danger">*</span></label>
+                                <select class="form-control" id="crearTipo" name="tipo" required>
+                                    <option value="">Seleccionar tipo...</option>
+                                    <option value="principal">Principal</option>
+                                    <option value="sucursal">Sucursal</option>
+                                    <option value="punto_venta">Punto de Venta</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crearAlmacen" class="form-label">Almacén <span class="text-danger">*</span></label>
+                                <select class="form-control" id="crearAlmacen" name="almacen" required>
+                                    <option value="">Seleccionar almacén...</option>
+                                    {% for almacen in almacenes %}
+                                        <option value="{{ almacen.id }}">{{ almacen.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crearEstado" class="form-label">Estado <span class="text-danger">*</span></label>
+                                <select class="form-control" id="crearEstado" name="estado" required>
+                                    <option value="activo">Activo</option>
+                                    <option value="inactivo">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- COLUMNA DERECHA -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-map"></i> Ubicación
+                            </h6>
+
+                            <div class="form-group">
+                                <label for="crearDireccion" class="form-label">Dirección <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="crearDireccion" 
+                                    name="direccion" 
+                                    required
+                                    placeholder="Calle y número"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crearCiudad" class="form-label">Ciudad <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="crearCiudad" 
+                                    name="ciudad" 
+                                    required
+                                    placeholder="Ej: Bogotá"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crearDepartamento" class="form-label">Departamento <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="crearDepartamento" 
+                                    name="departamento" 
+                                    required
+                                    placeholder="Ej: Cundinamarca"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crearCoordenadas" class="form-label">Coordenadas GPS</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="crearCoordenadas" 
+                                    name="coordenadas" 
+                                    placeholder="Ej: 4.6097,-74.0817"
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Crear Tienda
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

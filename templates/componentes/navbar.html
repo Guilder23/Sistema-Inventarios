@@ -1,0 +1,130 @@
+{% load static %}
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-principal">
+    <div class="navbar-container">
+        <!-- IZQUIERDA: Toggle Sidebar y Logo -->
+        <div class="navbar-left">
+            <button class="sidebar-toggle-btn" id="sidebarToggle" title="Alternar menú">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <div class="navbar-logo">
+                <a href="{% url 'dashboard' %}">
+                    <i class="fas fa-store"></i>
+                    <span class="navbar-brand-text">Sistema Inventario</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- DERECHA: Notificaciones y Usuario -->
+        <div class="navbar-right">
+            <!-- Moneda actual: -->
+            <div class="navbar-tc">
+                <i class="fas fa-money-bill-wave"></i>
+                {% if navbar_moneda_actual %}
+                    <span>{{ navbar_moneda_actual.moneda }} - Bs {{ navbar_moneda_actual.valor|stringformat:"0.2f" }}</span>
+                {% else %}
+                    <span>Sin tipo de cambio</span>
+                {% endif %}
+            </div>
+            <!-- Notificaciones -->
+            <div class="navbar-notificaciones">
+                <button class="navbar-icon-btn" id="notificacionesBtn" title="Notificaciones">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge" id="notificacionesBadge">0</span>
+                </button>
+                <div class="navbar-dropdown notificaciones-dropdown" id="notificacionesDropdown">
+                    <div class="dropdown-header">
+                        <span>Notificaciones</span>
+                        <small class="text-muted" id="notificacionesContador">0 nuevas</small>
+                    </div>
+                    <div class="dropdown-items" id="notificacionesLista">
+                        <div class="text-center py-3 text-muted">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando...
+                        </div>
+                    </div>
+                    <div class="dropdown-footer">
+                        <button id="marcarTodasBtn" type="button" class="btn-marcar-todas">Marcar todas como leídas</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usuario -->
+            <div class="navbar-usuario">
+                <button class="navbar-user-btn" id="usuarioBtn" title="Mi cuenta">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">{{ user.username|title }}</span>
+                        <span class="user-role">
+                            {% if user.perfil %}
+                                {% if user.perfil.rol == 'administrador' %}
+                                    Administrador
+                                {% elif user.perfil.rol == 'almacen' %}
+                                    Almacén
+                                {% elif user.perfil.rol == 'tienda' %}
+                                    Tienda
+                                {% elif user.perfil.rol == 'tienda_online' %}
+                                    Tienda Virtual
+                                {% else %}
+                                    {{ user.perfil.rol }}
+                                {% endif %}
+                            {% elif user.is_superuser %}
+                                Administrador
+                            {% else %}
+                                Usuario
+                            {% endif %}
+                        </span>
+                    </div>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="navbar-dropdown usuario-dropdown" id="usuarioDropdown">
+                    <div class="dropdown-user-header">
+                        <div class="user-avatar-large">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-header-text">
+                            <strong class="user-header-name">{{ user.username|title }}</strong>
+                            <p class="user-header-email">{{ user.email }}</p>
+                        <span class="user-header-role">
+                            {% if user.perfil %}
+                                {% if user.perfil.rol == 'administrador' %}
+                                    <i class="fas fa-shield-alt"></i> Administrador
+                                {% elif user.perfil.rol == 'almacen' %}
+                                    <i class="fas fa-warehouse"></i> Almacén
+                                {% elif user.perfil.rol == 'tienda' %}
+                                    <i class="fas fa-store"></i> Tienda
+                                {% elif user.perfil.rol == 'tienda_online' %}
+                                    <i class="fas fa-shopping-cart"></i> Tienda Virtual
+                                {% else %}
+                                    {{ user.perfil.rol }}
+                                {% endif %}
+                            {% elif user.is_superuser %}
+                                <i class="fas fa-shield-alt"></i> Administrador
+                            {% else %}
+                                <i class="fas fa-user"></i> Usuario
+                            {% endif %}
+                        </span>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item">
+                        <i class="fas fa-user-circle"></i> Mi Perfil
+                    </a>
+                    <a href="#" class="dropdown-item">
+                        <i class="fas fa-cog"></i> Configuración
+                    </a>
+                    <a href="#" class="dropdown-item">
+                        <i class="fas fa-question-circle"></i> Ayuda
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'logout' %}" class="dropdown-item dropdown-item-logout">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>

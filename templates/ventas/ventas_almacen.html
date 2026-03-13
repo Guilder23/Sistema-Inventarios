@@ -1,0 +1,515 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Ventas - Almacén{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/ventas/ventas.css' %}">
+<link rel="stylesheet" href="{% static 'css/ventas/modals/detalle_venta.css' %}">
+<link rel="stylesheet" href="{% static 'css/ventas/modals/registrar_amortizacion.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid py-4">
+
+{#Header + Botón para nueva venta#}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="page-title mb-1">
+                <i class="fas fa-shopping-cart mr-2"></i>Ventas del Almacén
+            </h2>
+            <p class="text-muted mb-0">
+                Gestión de ventas &mdash; {{ perfil }}
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'ventas:solicitudes_anulacion' %}" class="btn btn-warning btn-sm mr-2">
+                <i class="fas fa-file-invoice mr-1"></i>Solicitudes de Anulación
+            </a>
+            <a href="{% url 'ventas:crear_venta' %}" class="btn btn-primary btn-nueva-venta">
+                <i class="fas fa-plus-circle mr-1"></i> Nueva Venta
+            </a>
+        </div>
+    </div>
+
+{#Tarjetas de resumen#}
+
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card card-stat card-stat--total">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-primary-light">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="stat-label mb-0">Total Ventas</p>
+                        <h4 class="stat-value mb-0">{{ total_ventas }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card card-stat card-stat--contado">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-success-light">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="stat-label mb-0">Total Contado</p>
+                        <h4 class="stat-value mb-0">Bs. {{ total_contado|floatformat:2 }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card card-stat card-stat--credito">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-warning-light">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="stat-label mb-0">Total Crédito</p>
+                        <h4 class="stat-value mb-0">Bs. {{ total_credito|floatformat:2 }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card card-stat card-stat--general">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-info-light">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="stat-label mb-0">Total General</p>
+                        <h4 class="stat-value mb-0">Bs. {{ total_general|floatformat:2 }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Card principal con tabs#}
+    <div class="card card-tabla shadow-sm">
+        <div class="card-header bg-white py-3">
+            <ul class="nav nav-tabs card-header-tabs" id="ventasTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="contado-tab" data-toggle="tab"
+                       href="#tabContado" role="tab" aria-controls="tabContado" aria-selected="true">
+                        <i class="fas fa-money-bill-wave mr-1"></i>
+                        Al Contado
+                        <span class="badge badge-success ml-1">{{ ventas_contado|length }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="credito-tab" data-toggle="tab"
+                       href="#tabCredito" role="tab" aria-controls="tabCredito" aria-selected="false">
+                        <i class="fas fa-credit-card mr-1"></i>
+                        A Crédito
+                        {% if creditos_pendientes > 0 %}
+                        <span class="badge badge-warning ml-1">{{ creditos_pendientes }} pendientes</span>
+                        {% else %}
+                        <span class="badge badge-secondary ml-1">{{ ventas_credito|length }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="tab-content" id="ventasTabContent">
+
+{#TAB: AL CONTADO#}
+                <div class="tab-pane fade show active" id="tabContado" role="tabpanel" aria-labelledby="contado-tab">
+
+                    {# Filtro rápido + Botón PDF #}
+                    <div class="filtro-bar px-4 py-4">
+                        <form method="GET" action="{% url 'ventas:listar_ventas' %}" class="row align-items-end">
+                            <div class="col-md-2">
+                                <label for="inputClienteFiltro" class="small font-weight-bold">Cliente</label>
+                                <input type="text" class="form-control form-control-sm" id="inputClienteFiltro"
+                                       name="cliente" value="{{ cliente_filtro }}"
+                                       placeholder="Buscar cliente...">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="inputFechaDesde" class="small font-weight-bold">Desde</label>
+                                <input type="date" class="form-control form-control-sm" id="inputFechaDesde"
+                                       name="fecha_desde" value="{{ fecha_desde }}">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="inputFechaHasta" class="small font-weight-bold">Hasta</label>
+                                <input type="date" class="form-control form-control-sm" id="inputFechaHasta"
+                                       name="fecha_hasta" value="{{ fecha_hasta }}">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary btn-sm btn-block">
+                                    <i class="fas fa-filter mr-1"></i>Filtrar
+                                </button>
+                            </div>
+                            {% if cliente_filtro or fecha_desde or fecha_hasta %}
+                            <div class="col-md-2">
+                                <a href="{% url 'ventas:listar_ventas' %}" class="btn btn-outline-secondary btn-sm btn-block">
+                                    <i class="fas fa-redo mr-1"></i>Limpiar
+                                </a>
+                            </div>
+                            {% endif %}
+                        </form>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover tabla-productos mb-0" id="tablaContado">
+                            <thead>
+                                <tr>
+                                    <th class="pl-3">Código</th>
+                                    <th>Cliente</th>
+                                    <th>Fecha</th>
+                                    <th class="text-right">Total</th>
+                                    <th class="text-center">Estado</th>
+                                    <th class="text-center pr-3">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for venta in ventas_contado %}
+                                <tr data-estado="{{ venta.estado }}">
+                                    <td class="pl-3">
+                                        <span class="codigo-venta">{{ venta.codigo }}</span>
+                                    </td>
+                                    <td>{{ venta.cliente }}</td>
+                                    <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-right font-weight-bold">
+                                        {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if venta.estado == 'completada' %}
+                                        <span class="badge badge-estado badge-completada">
+                                            <i class="fas fa-check-circle mr-1"></i>Completada
+                                        </span>
+                                        {% elif venta.estado == 'cancelada' %}
+                                        <span class="badge badge-estado badge-cancelada">
+                                            <i class="fas fa-times-circle mr-1"></i>Cancelada
+                                        </span>
+                                        {% else %}
+                                        <span class="badge badge-estado badge-pendiente">
+                                            <i class="fas fa-clock mr-1"></i>Pendiente
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center pr-3">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary btn-ver-detalle"
+                                                    data-venta-id="{{ venta.id }}"
+                                                    title="Ver detalle">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-info btn-generar-pdf-venta"
+                                                    data-venta-id="{{ venta.id }}"
+                                                    title="Generar PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </button>
+                                            {% if venta.estado != 'cancelada' and venta.estado != 'anulada' %}
+                                            <button class="btn btn-outline-danger btn-anular-venta"
+                                                    data-venta-id="{{ venta.id }}"
+                                                    data-venta-codigo="{{ venta.codigo }}"
+                                                    title="Anular venta">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                        No hay ventas al contado registradas.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+{# TAB: A CRÉDITO#}
+                <div class="tab-pane fade" id="tabCredito" role="tabpanel" aria-labelledby="credito-tab">
+
+                    {# Filtro rápido + Botón PDF #}
+                    <div class="filtro-bar px-4 py-4">
+                        <form method="GET" action="{% url 'ventas:listar_ventas' %}" class="row align-items-end">
+                            <input type="hidden" name="tab" value="credito">
+                            <div class="col-md-2">
+                                <label for="inputClienteFiltroCredito" class="small font-weight-bold">Cliente</label>
+                                <input type="text" class="form-control form-control-sm" id="inputClienteFiltroCredito"
+                                       name="cliente" value="{{ cliente_filtro }}"
+                                       placeholder="Buscar cliente...">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="inputFechaDesdeCredito" class="small font-weight-bold">Desde</label>
+                                <input type="date" class="form-control form-control-sm" id="inputFechaDesdeCredito"
+                                       name="fecha_desde" value="{{ fecha_desde }}">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="inputFechaHastaCredito" class="small font-weight-bold">Hasta</label>
+                                <input type="date" class="form-control form-control-sm" id="inputFechaHastaCredito"
+                                       name="fecha_hasta" value="{{ fecha_hasta }}">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary btn-sm btn-block">
+                                    <i class="fas fa-filter mr-1"></i>Filtrar
+                                </button>
+                            </div>
+                            {% if cliente_filtro or fecha_desde or fecha_hasta %}
+                            <div class="col-md-2">
+                                <a href="{% url 'ventas:listar_ventas' %}" class="btn btn-outline-secondary btn-sm btn-block">
+                                    <i class="fas fa-redo mr-1"></i>Limpiar
+                                </a>
+                            </div>
+                            {% endif %}
+                        </form>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover tabla-productos mb-0" id="tablaCredito">
+                            <thead>
+                                <tr>
+                                    <th class="pl-3">Código</th>
+                                    <th>Cliente</th>
+                                    <th>Fecha</th>
+                                    <th class="text-right">Total</th>
+                                    <th class="text-center">Estado</th>
+                                    <th class="text-center pr-3">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for venta in ventas_credito %}
+                                <tr data-estado="{{ venta.estado }}">
+                                    <td class="pl-3">
+                                        <span class="codigo-venta">{{ venta.codigo }}</span>
+                                    </td>
+                                    <td>{{ venta.cliente }}</td>
+                                    <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-right font-weight-bold">
+                                        {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if venta.estado == 'completada' %}
+                                        <span class="badge badge-estado badge-completada">
+                                            <i class="fas fa-check-circle mr-1"></i>Completada
+                                        </span>
+                                        {% elif venta.estado == 'cancelada' %}
+                                        <span class="badge badge-estado badge-cancelada">
+                                            <i class="fas fa-times-circle mr-1"></i>Cancelada
+                                        </span>
+                                        {% elif venta.estado == 'pendiente' %}
+                                        <span class="badge badge-estado badge-pendiente">
+                                            <i class="fas fa-clock mr-1"></i>Pendiente
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center pr-3">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary btn-ver-detalle"
+                                                    data-venta-id="{{ venta.id }}"
+                                                    title="Ver detalle">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-info btn-generar-pdf-venta"
+                                                    data-venta-id="{{ venta.id }}"
+                                                    title="Generar PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </button>
+                                            {% if venta.estado == 'pendiente' %}
+                                            <button class="btn btn-outline-success btn-registrar-amortizacion"
+                                                    data-venta-id="{{ venta.id }}"
+                                                    data-venta-codigo="{{ venta.codigo }}"
+                                                    data-venta-total="{{ venta.total }}"
+                                                    title="Registrar amortización">
+                                                <i class="fas fa-hand-holding-usd"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if venta.estado != 'cancelada' and venta.estado != 'anulada' %}
+                                            <button class="btn btn-outline-danger btn-anular-venta"
+                                                    data-venta-id="{{ venta.id }}"
+                                                    data-venta-codigo="{{ venta.codigo }}"
+                                                    title="Anular venta">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                        No hay ventas a crédito registradas.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>{# /tab-content #}
+        </div>{# /card-body #}
+    </div>{# /card #}
+
+</div>{# /container-fluid #}
+
+
+{# MODAL: detalle de venta#}
+<div class="modal fade" id="modalDetalleVenta" tabindex="-1" role="dialog"
+     aria-labelledby="modalDetalleVentaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header modal-header-detalle">
+                <h5 class="modal-title" id="modalDetalleVentaLabel">
+                    <i class="fas fa-file-invoice mr-2"></i>
+                    Detalle de Venta: <span id="detalleVentaCodigo"></span>
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="detalleVentaBody">
+                {# Cargado dinámicamente por JS #}
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p class="mt-2 text-muted">Cargando detalle...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{# MODAL: resgistro de amortización#}
+<div class="modal fade" id="modalAmortizacion" tabindex="-1" role="dialog"
+     aria-labelledby="modalAmortizacionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header modal-header-amortizacion">
+                <h5 class="modal-title" id="modalAmortizacionLabel">
+                    <i class="fas fa-hand-holding-usd mr-2"></i>
+                    Registrar Amortización
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formAmortizacion">
+                    <input type="hidden" id="amortVentaId" value="">
+
+                    <div class="info-venta-amort mb-3">
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Venta:</small>
+                                <p class="font-weight-bold mb-0" id="amortVentaCodigo"></p>
+                            </div>
+                            <div class="col-6 text-right">
+                                <small class="text-muted">Total de la venta:</small>
+                                <p class="font-weight-bold mb-0" id="amortVentaTotal"></p>
+                            </div>
+                        </div>
+                        <hr class="my-2">
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Ya amortizado:</small>
+                                <p class="font-weight-bold text-success mb-0" id="amortTotalPagado">Bs. 0.00</p>
+                            </div>
+                            <div class="col-6 text-right">
+                                <small class="text-muted">Saldo pendiente:</small>
+                                <p class="font-weight-bold text-danger mb-0"><span id="amortMonedaLabel">Bs.</span> <span id="amortSaldoPendiente">0.00</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="amortMonto" class="font-weight-bold">
+                            <i class="fas fa-dollar-sign mr-1"></i>Monto a abonar (<span id="amortMonedaLabel2">Bs.</span>)
+                        </label>
+                        <input type="number" class="form-control" id="amortMonto"
+                               step="0.01" min="0.01" required
+                               placeholder="Ingrese el monto...">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="amortObservaciones" class="font-weight-bold">
+                            <i class="fas fa-comment mr-1"></i>Observaciones (opcional)
+                        </label>
+                        <textarea class="form-control" id="amortObservaciones" rows="2"
+                                  placeholder="Ej: Pago parcial, abono semanal..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="amortComprobante" class="font-weight-bold text-danger">
+                            <i class="fas fa-image mr-1"></i>Fotografía de Comprobante <span class="badge badge-danger ml-1">Obligatoria</span>
+                        </label>
+                        <input type="file" class="form-control" id="amortComprobante"
+                               accept="image/*" required
+                               placeholder="Selecciona una foto...">
+                        <small class="form-text text-muted">
+                            Sube una fotografía como evidencia del cobro. Formatos: JPG, PNG, etc.
+                        </small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" id="btnGuardarAmortizacion">
+                    <i class="fas fa-save mr-1"></i>Registrar Pago
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/ventas/anulacion_comun.js' %}"></script>
+<script src="{% static 'js/ventas/ventas.js' %}"></script>
+<script>
+
+// Integración de botones anular con modales personalizados
+document.addEventListener('DOMContentLoaded', function() {
+    // Activar la pestaña correcta según parámetro ?tab= en la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabActivo = urlParams.get('tab');
+    
+    if (tabActivo === 'credito') {
+        // Desactivar todas las pestañas
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('show', 'active');
+        });
+        
+        // Activar pestaña de crédito
+        document.getElementById('credito-tab').classList.add('active');
+        document.getElementById('tabCredito').classList.add('show', 'active');
+    }
+    
+    // Delegar eventos para botones de anulación
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-anular-venta')) {
+            const btn = e.target.closest('.btn-anular-venta');
+            const ventaId = btn.dataset.ventaId;
+            const ventaCodigo = btn.dataset.ventaCodigo;
+            
+            // Para almacén: siempre true
+            const esAlmacen = true;
+            
+            abrirModalAnularVenta(ventaId, ventaCodigo, esAlmacen);
+        }
+    });
+});
+</script>
+{% endblock %}

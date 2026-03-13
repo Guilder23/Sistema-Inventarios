@@ -1,0 +1,132 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Productos en Contenedor - {{ contenedor.nombre }}{% endblock %}
+
+{% block estilos_extra %}
+    <link rel="stylesheet" href="{% static 'css/productos/contenedores/productos_en_contenedor/productos_en_contenedor.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/contenedores/productos_en_contenedor/modals/agregar_nuevo.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/contenedores/productos_en_contenedor/modals/agregar_existente.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/contenedores/productos_en_contenedor/modals/editar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/contenedores/productos_en_contenedor/modals/ver.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos/contenedores/productos_en_contenedor/modals/elimina.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <div class="page-header-content">
+            <div>
+                <h1 class="page-title">
+                    <i class="fas fa-boxes"></i> Productos en {{ contenedor.nombre }}
+                </h1>
+                <p class="page-subtitle">
+                    Proveedor: <strong>{{ contenedor.proveedor }}</strong> | 
+                    Stock Disponible: <strong>{{ contenedor.stock }} unidades</strong>
+                </p>
+            </div>
+        </div>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-primary btn-lg" data-contenedor-id="{{ contenedor.id }}" id="btnAgregarNuevo">
+                <i class="fas fa-plus"></i> Nuevo Producto
+            </button>
+            <button type="button" class="btn btn-success btn-lg" data-contenedor-id="{{ contenedor.id }}" id="btnAgregarExistente">
+                <i class="fas fa-arrow-right"></i> Producto Existente
+            </button>
+        </div>
+    </div>
+
+    <!-- TABLA DE PRODUCTOS -->
+    <div class="card card-tabla">
+        <div class="table-responsive">
+            {% if productos_contenedor %}
+            <table class="table table-sm tabla-productos mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Producto</th>
+                        <th style="width: 20%;">Código</th>
+                        <th style="width: 15%;">Cantidad Recibida</th>
+                        <th style="width: 15%;">Cantidad Disponible</th>
+                        <th class="text-center" style="width: 20%;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pc in productos_contenedor %}
+                    <tr>
+                        <td>
+                            <div class="text-truncate" style="max-width: 300px;" title="{{ pc.producto.nombre }}">
+                                {{ pc.producto.nombre }}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="codigo-badge">{{ pc.producto.codigo }}</span>
+                        </td>
+                        <td>
+                            <span class="badge-recibida">{{ pc.cantidad_recibida }} unidades</span>
+                        </td>
+                        <td>
+                            <span class="badge-stock">{{ pc.cantidad }} unidades</span>
+                        </td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-info btn-sm btn-ver-producto-contenedor" 
+                                    data-pc-id="{{ pc.id }}" 
+                                    data-cantidad="{{ pc.cantidad }}" 
+                                    data-cantidad-recibida="{{ pc.cantidad_recibida }}"
+                                    data-codigo="{{ pc.producto.codigo }}" 
+                                    data-nombre="{{ pc.producto.nombre }}"
+                                    title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm btn-editar-producto-contenedor" 
+                                    data-pc-id="{{ pc.id }}" 
+                                    data-cantidad="{{ pc.cantidad }}" 
+                                    data-cantidad-recibida="{{ pc.cantidad_recibida }}"
+                                    data-codigo="{{ pc.producto.codigo }}" 
+                                    data-nombre="{{ pc.producto.nombre }}"
+                                    title="Editar cantidad">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm btn-eliminar-producto-contenedor" 
+                                    data-pc-id="{{ pc.id }}"
+                                    data-nombre="{{ pc.producto.nombre }}"
+                                    title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <p class="text-muted mb-0">Este contenedor aún no tiene productos agregados</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- BACK BUTTON -->
+    <div class="mt-4 mb-4">
+        <a href="{% url 'listar_contenedores' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Volver a Contenedores
+        </a>
+    </div>
+</div>
+
+<!-- MODALS -->
+{% include 'productos/contenedores/productos_en_contenedor/modals/agregar_nuevo.html' %}
+{% include 'productos/contenedores/productos_en_contenedor/modals/agregar_existente.html' %}
+{% include 'productos/contenedores/productos_en_contenedor/modals/ver.html' %}
+{% include 'productos/contenedores/productos_en_contenedor/modals/editar.html' %}
+{% include 'productos/contenedores/productos_en_contenedor/modals/elimina.html' %}
+{% endblock %}
+
+{% block scripts_extra %}
+    <script src="{% static 'js/productos/contenedores/productos_en_contenedor/modals/agregar_nuevo.js' %}"></script>
+    <script src="{% static 'js/productos/contenedores/productos_en_contenedor/modals/agregar_existente.js' %}"></script>
+    <script src="{% static 'js/productos/contenedores/productos_en_contenedor/modals/ver.js' %}"></script>
+    <script src="{% static 'js/productos/contenedores/productos_en_contenedor/modals/editar.js' %}"></script>
+    <script src="{% static 'js/productos/contenedores/productos_en_contenedor/modals/elimina.js' %}"></script>
+{% endblock %}
