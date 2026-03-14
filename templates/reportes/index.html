@@ -3,15 +3,19 @@
 
 {% block titulo %}Reportes{% endblock %}
 
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/reportes/index.css' %}">
+{% endblock %}
+
 {% block contenido %}
-<div class="container-fluid" style="padding-top: 0;">
-    <div class="page-header" style="margin-top: 0.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem;">
-        <div class="page-header-content" style="color: white;">
-            <h1 style="font-size: 1.5rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.75rem;">
-                <i class="fas fa-chart-bar" style="font-size: 1.6rem;"></i>
+<div class="container-fluid reportes-container">
+    <div class="reportes-header">
+        <div class="reportes-header-content">
+            <h1 class="reportes-title">
+                <i class="fas fa-chart-bar"></i>
                 Centro de Reportes
             </h1>
-            <p style="margin: 0.4rem 0 0 0; font-size: 0.875rem; opacity: 0.95;">
+            <p class="reportes-subtitle">
                 Accede a todos los reportes y análisis del sistema
             </p>
         </div>
@@ -21,21 +25,21 @@
     <div class="row">
         <!-- Reporte de Contenedores -->
         <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card report-card h-100" style="border: none; border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); transition: all 0.3s ease;">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="report-icon" style="width: 50px; height: 50px; border-radius: 10px; background: linear-gradient(135deg, #4e73df 0%, #224abe 100%); display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
-                            <i class="fas fa-box-open" style="font-size: 1.5rem; color: white;"></i>
+            <div class="report-card">
+                <div class="report-card-body">
+                    <div class="report-card-header">
+                        <div class="report-icon report-icon-contenedores">
+                            <i class="fas fa-box-open"></i>
                         </div>
-                        <div>
-                            <h5 class="mb-1" style="font-weight: 700; color: #2c3e50;">Contenedores</h5>
-                            <p class="mb-0 text-muted" style="font-size: 0.85rem;">Productos por contenedor</p>
+                        <div class="report-info">
+                            <h5 class="report-title">Contenedores</h5>
+                            <p class="report-label">Productos por contenedor</p>
                         </div>
                     </div>
-                    <p class="text-muted" style="font-size: 0.9rem; line-height: 1.5;">
+                    <p class="report-description">
                         Vista completa de productos organizados por contenedor con información de stock, precios y estado.
                     </p>
-                    <a href="{% url 'reporte_contenedores' %}" class="btn btn-primary btn-block mt-3" style="border-radius: 8px; font-weight: 600;">
+                    <a href="{% url 'reporte_contenedores' %}" class="report-btn btn-contenedores">
                         <i class="fas fa-eye"></i> Ver Reporte
                     </a>
                 </div>
@@ -44,21 +48,21 @@
 
         <!-- Reporte de Inventario -->
         <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card report-card h-100" style="border: none; border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); transition: all 0.3s ease;">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="report-icon" style="width: 50px; height: 50px; border-radius: 10px; background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%); display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
-                            <i class="fas fa-warehouse" style="font-size: 1.5rem; color: white;"></i>
+            <div class="report-card">
+                <div class="report-card-body">
+                    <div class="report-card-header">
+                        <div class="report-icon report-icon-inventario">
+                            <i class="fas fa-warehouse"></i>
                         </div>
-                        <div>
-                            <h5 class="mb-1" style="font-weight: 700; color: #2c3e50;">Inventario</h5>
-                            <p class="mb-0 text-muted" style="font-size: 0.85rem;">Stock general</p>
+                        <div class="report-info">
+                            <h5 class="report-title">Inventario</h5>
+                            <p class="report-label">Stock general</p>
                         </div>
                     </div>
-                    <p class="text-muted" style="font-size: 0.9rem; line-height: 1.5;">
+                    <p class="report-description">
                         Reporte general del inventario con niveles de stock, alertas y valorización de productos.
                     </p>
-                    <a href="{% url 'reporte_inventario' %}" class="btn btn-success btn-block mt-3" style="border-radius: 8px; font-weight: 600;">
+                    <a href="{% url 'ver_inventario_general' %}" class="report-btn btn-inventario">
                         <i class="fas fa-eye"></i> Ver Reporte
                     </a>
                 </div>
@@ -67,21 +71,21 @@
 
         <!-- Reporte de Ventas -->
         <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card report-card h-100" style="border: none; border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); transition: all 0.3s ease;">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="report-icon" style="width: 50px; height: 50px; border-radius: 10px; background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%); display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
-                            <i class="fas fa-shopping-cart" style="font-size: 1.5rem; color: white;"></i>
+            <div class="report-card">
+                <div class="report-card-body">
+                    <div class="report-card-header">
+                        <div class="report-icon report-icon-ventas">
+                            <i class="fas fa-shopping-cart"></i>
                         </div>
-                        <div>
-                            <h5 class="mb-1" style="font-weight: 700; color: #2c3e50;">Ventas</h5>
-                            <p class="mb-0 text-muted" style="font-size: 0.85rem;">Análisis de ventas</p>
+                        <div class="report-info">
+                            <h5 class="report-title">Ventas</h5>
+                            <p class="report-label">Análisis de ventas</p>
                         </div>
                     </div>
-                    <p class="text-muted" style="font-size: 0.9rem; line-height: 1.5;">
+                    <p class="report-description">
                         Análisis detallado de ventas por período, productos más vendidos y tendencias.
                     </p>
-                    <a href="{% url 'reporte_ventas' %}" class="btn btn-warning btn-block mt-3" style="border-radius: 8px; font-weight: 600; color: white;">
+                    <a href="{% url 'reporte_ventas' %}" class="report-btn btn-ventas">
                         <i class="fas fa-eye"></i> Ver Reporte
                     </a>
                 </div>
@@ -90,21 +94,21 @@
 
         <!-- Reporte de Traspasos -->
         <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card report-card h-100" style="border: none; border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); transition: all 0.3s ease;">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="report-icon" style="width: 50px; height: 50px; border-radius: 10px; background: linear-gradient(135deg, #e74a3b 0%, #be2617 100%); display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
-                            <i class="fas fa-exchange-alt" style="font-size: 1.5rem; color: white;"></i>
+            <div class="report-card">
+                <div class="report-card-body">
+                    <div class="report-card-header">
+                        <div class="report-icon report-icon-traspasos">
+                            <i class="fas fa-exchange-alt"></i>
                         </div>
-                        <div>
-                            <h5 class="mb-1" style="font-weight: 700; color: #2c3e50;">Traspasos</h5>
-                            <p class="mb-0 text-muted" style="font-size: 0.85rem;">Movimientos entre ubicaciones</p>
+                        <div class="report-info">
+                            <h5 class="report-title">Traspasos</h5>
+                            <p class="report-label">Movimientos entre ubicaciones</p>
                         </div>
                     </div>
-                    <p class="text-muted" style="font-size: 0.9rem; line-height: 1.5;">
+                    <p class="report-description">
                         Historial de traspasos entre almacenes, tiendas y depósitos con trazabilidad completa.
                     </p>
-                    <a href="{% url 'reporte_traspasos' %}" class="btn btn-danger btn-block mt-3" style="border-radius: 8px; font-weight: 600;">
+                    <a href="{% url 'reporte_traspasos' %}" class="report-btn btn-traspasos">
                         <i class="fas fa-eye"></i> Ver Reporte
                     </a>
                 </div>
@@ -113,14 +117,14 @@
     </div>
 
     <!-- Información adicional -->
-    <div class="row mt-4">
+    <div class="row">
         <div class="col-12">
-            <div class="alert" style="background-color: #e7f3ff; border-left: 4px solid #4e73df; border-radius: 8px; padding: 1rem 1.25rem;">
-                <div class="d-flex align-items-start">
-                    <i class="fas fa-info-circle" style="font-size: 1.25rem; color: #4e73df; margin-right: 1rem; margin-top: 0.25rem;"></i>
+            <div class="reportes-info-alert">
+                <div class="reportes-info-content">
+                    <i class="fas fa-info-circle reportes-info-icon"></i>
                     <div>
-                        <strong style="color: #1e3a8a;">Información sobre reportes</strong>
-                        <p class="mb-0" style="color: #4b5563; margin-top: 0.25rem;">
+                        <h6 class="reportes-info-title">Información sobre reportes</h6>
+                        <p class="reportes-info-text">
                             Todos los reportes se pueden filtrar, ordenar y exportar a Excel o PDF. 
                             Utiliza los filtros disponibles para obtener información específica según tus necesidades.
                         </p>
@@ -130,20 +134,4 @@
         </div>
     </div>
 </div>
-
-<style>
-.report-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
-}
-
-.report-card .btn {
-    transition: all 0.3s ease;
-}
-
-.report-card .btn:hover {
-    transform: scale(1.02);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-</style>
 {% endblock %}
