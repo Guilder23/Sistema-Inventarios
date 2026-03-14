@@ -1,0 +1,558 @@
+/* Estilos específicos para Reporte de Contenedores */
+
+/* ===== ENCABEZADO DE PÁGINA ===== */
+.page-header {
+    background: #1e3a8a;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(78, 115, 223, 0.2);
+}
+
+.page-header-content {
+    color: white;
+}
+
+.page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.page-title i {
+    font-size: 1.6rem;
+}
+
+.page-subtitle {
+    margin: 0.4rem 0 0 0;
+    font-size: 0.875rem;
+    opacity: 0.95;
+}
+
+/* ===== TARJETAS DE RESUMEN ===== */
+.resumen-row {
+    margin-bottom: 1.5rem;
+}
+
+.resumen-card {
+    padding: 0.75rem;
+    border-radius: 8px;
+    background-color: #f8f9fc;
+    border: 1px solid #e3e6f0;
+    text-align: center;
+    transition: all 0.2s ease;
+    height: 100%;
+}
+
+.resumen-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.resumen-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #858796;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.resumen-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #5a5c69;
+    line-height: 1;
+}
+
+/* ===== TARJETA DE FILTROS ===== */
+.card-filtros {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.card-filtros h5 {
+    color: #4e73df;
+    font-weight: 700;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.badge-filtros-count {
+    display: inline-block;
+    min-width: 20px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #6b5b3a;
+    text-align: center;
+    white-space: nowrap;
+    background-color: #ffeaa7;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(255, 234, 167, 0.4);
+}
+
+.botones-accion {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-accion {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: #f8f9fc;
+    color: #5a5c69;
+}
+
+.btn-accion:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-accion:active {
+    transform: translateY(0);
+}
+
+.btn-limpiar {
+    border-color: #e3e6f0;
+    background-color: #dfe6e9;
+    color: #636e72;
+}
+
+.btn-limpiar:hover {
+    background-color: #b2bec3;
+    color: #2d3436;
+    border-color: #b2bec3;
+}
+
+.btn-exportar {
+    border-color: #e3e6f0;
+    background-color: #d5f4e6;
+    color: #27ae60;
+}
+
+.btn-exportar:hover {
+    background-color: #a8e6cf;
+    color: #1e8449;
+    border-color: #a8e6cf;
+}
+
+.btn-pdf {
+    border-color: #e3e6f0;
+    background-color: #fadbd8;
+    color: #c0392b;
+}
+
+.btn-pdf:hover {
+    background-color: #f1948a;
+    color: #922b21;
+    border-color: #f1948a;
+}
+
+/* ===== ESTILOS DE FORMULARIOS ===== */
+.form-control-sm {
+    border-radius: 6px;
+    border: 1px solid #d1d3e2;
+    transition: all 0.2s ease;
+}
+
+.form-control-sm:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+.input-group-text {
+    border-radius: 6px 0 0 6px;
+    border: 1px solid #d1d3e2;
+}
+
+/* ===== TARJETA DE TABLA ===== */
+.card-tabla {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+/* ===== TABLA DE CONTENEDORES ===== */
+.tabla-contenedores {
+    font-size: 0.85rem;
+    margin-bottom: 0;
+}
+
+.tabla-contenedores thead {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    color: white;
+}
+
+.tabla-contenedores thead th {
+    border: none;
+    font-weight: 700;
+    padding: 0.75rem 0.5rem;
+    vertical-align: middle;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.tabla-contenedores tbody tr {
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.tabla-contenedores tbody tr:hover {
+    background-color: #f8f9fc;
+    border-left: 3px solid #4e73df;
+    box-shadow: 0 2px 8px rgba(78, 115, 223, 0.1);
+}
+
+.tabla-contenedores tbody td {
+    padding: 0.6rem 0.5rem;
+    vertical-align: middle;
+    border-top: 1px solid #e3e6f0;
+    font-size: 0.85rem;
+}
+
+/* ===== IMÁGENES DE PRODUCTOS ===== */
+.producto-imagen-tabla {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 2px solid #e3e6f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.producto-sin-imagen {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f1f3f5;
+    border-radius: 6px;
+    border: 2px dashed #dee2e6;
+    color: #adb5bd;
+    font-size: 1rem;
+}
+
+/* ===== BADGES Y ETIQUETAS ===== */
+.codigo-badge {
+    background-color: #e9ecef;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #495057;
+    display: inline-block;
+}
+
+.contenedor-info {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.contenedor-info i {
+    font-size: 1rem;
+    color: #4e73df;
+}
+
+.proveedor-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.proveedor-tag i {
+    font-size: 0.9rem;
+}
+
+.badge-stock-normal {
+    background-color: rgba(54, 185, 204, 0.15);
+    color: #16697a;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 12px;
+    display: inline-block;
+    border: 1px solid rgba(54, 185, 204, 0.3);
+}
+
+.badge-recibido {
+    background-color: rgba(54, 185, 204, 0.1);
+    color: #0c5460;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 12px;
+    display: inline-block;
+    border: 1px solid rgba(54, 185, 204, 0.2);
+}
+
+.precio-tag {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: #2e7d32;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 12px;
+    display: inline-block;
+    border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+/* ===== BADGES DE ESTADO ===== */
+.badge-estado {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 12px;
+    display: inline-block;
+    border: 1px solid transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    min-width: 70px;
+    text-align: center;
+}
+
+.badge-estado-activo {
+    background-color: rgba(28, 200, 138, 0.15);
+    color: #065f46;
+    border-color: rgba(28, 200, 138, 0.3);
+}
+
+.badge-estado-bajo {
+    background-color: rgba(246, 185, 59, 0.15);
+    color: #92400e;
+    border-color: rgba(246, 185, 59, 0.3);
+}
+
+.badge-estado-inactivo {
+    background-color: rgba(231, 74, 59, 0.15);
+    color: #991b1b;
+    border-color: rgba(231, 74, 59, 0.3);
+}
+
+/* ===== TABLA VACÍA ===== */
+.tabla-vacia {
+    padding: 2rem 0;
+}
+
+.tabla-vacia i {
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+.tabla-vacia p {
+    font-size: 0.95rem;
+}
+
+/* ===== PAGINACIÓN ===== */
+.pagination {
+    margin: 0;
+}
+
+.pagination .page-item .page-link {
+    color: #4e73df;
+    border: 1px solid #d1d3e2;
+    padding: 0.375rem 0.75rem;
+    margin: 0 2px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.pagination .page-item .page-link:hover {
+    background-color: #eaecf4;
+    color: #224abe;
+    border-color: #4e73df;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #4e73df;
+    border-color: #4e73df;
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(78, 115, 223, 0.3);
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #858796;
+    background-color: #f8f9fc;
+    border-color: #e3e6f0;
+    cursor: not-allowed;
+}
+
+.pagination .page-link i {
+    font-size: 0.75rem;
+}
+
+/* ===== ESTILOS RESPONSIVE ===== */
+@media (max-width: 1200px) {
+    .page-title {
+        font-size: 1.35rem;
+    }
+    
+    .page-title i {
+        font-size: 1.5rem;
+    }
+    
+    .resumen-value {
+        font-size: 1.35rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .page-header {
+        padding: 1.25rem;
+    }
+    
+    .page-title {
+        font-size: 1.25rem;
+    }
+    
+    .resumen-card {
+        padding: 0.65rem;
+    }
+    
+    .resumen-value {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 1.1rem;
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .page-subtitle {
+        font-size: 0.8rem;
+    }
+    
+    /* Paginación en móviles */
+    .pagination .page-item .page-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        margin: 0 1px;
+    }
+    
+    .pagination .page-link i {
+        font-size: 0.7rem;
+    }
+    
+    .resumen-value {
+        font-size: 1.1rem;
+    }
+    
+    .tabla-contenedores {
+        font-size: 0.75rem;
+    }
+    
+    .tabla-contenedores thead th {
+        padding: 0.6rem 0.4rem;
+        font-size: 0.7rem;
+    }
+    
+    .tabla-contenedores tbody td {
+        padding: 0.6rem 0.4rem;
+        font-size: 0.75rem;
+    }
+    
+    .producto-imagen-tabla,
+    .producto-sin-imagen {
+        width: 35px;
+        height: 35px;
+    }
+}
+
+@media (max-width: 576px) {
+    .table-responsive {
+        font-size: 0.75rem;
+    }
+    
+    .badge-estado,
+    .badge-stock-normal,
+    .codigo-badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .btn-accion {
+        width: 34px;
+        height: 34px;
+        font-size: 0.9rem;
+    }
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tabla-contenedores tbody tr {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* ===== ESTILOS PARA IMPRESIÓN ===== */
+@media print {
+    .page-header {
+        background: none !important;
+        color: black !important;
+        box-shadow: none !important;
+    }
+    
+    .card-filtros,
+    .botones-accion,
+    .btn-accion,
+    .pagination,
+    nav[aria-label="Paginación del reporte"] {
+        display: none !important;
+    }
+    
+    .tabla-contenedores {
+        font-size: 10pt;
+    }
+    
+    .tabla-contenedores thead {
+        background: #333 !important;
+        color: white !important;
+    }
+    
+    .producto-imagen-tabla {
+        width: 30px;
+        height: 30px;
+    }
+}

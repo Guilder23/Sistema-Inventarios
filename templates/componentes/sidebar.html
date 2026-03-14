@@ -273,12 +273,43 @@
             {% endif %}
 
             <!-- Reportes - Staff y Administradores -->
-            <li class="sidebar-item">
-                <a href="#" class="sidebar-link" title="Reportes">
+            {% with url_actual=request.resolver_match.url_name %}
+            <li class="sidebar-item sidebar-item-with-submenu">
+                <a
+                    href="{% url 'index_reportes' %}"
+                    class="sidebar-link sidebar-link-toggle {% if 'reporte' in url_actual %}active{% endif %}"
+                    title="Reportes"
+                    data-submenu-toggle="submenuReportes"
+                    aria-expanded="{% if 'reporte' in url_actual %}true{% else %}false{% endif %}"
+                >
                     <i class="fas fa-chart-bar"></i>
                     <span>Reportes</span>
+                    <i class="fas fa-chevron-down submenu-chevron"></i>
                 </a>
+                <ul id="submenuReportes" class="sidebar-submenu {% if 'reporte' in url_actual %}open{% endif %}">
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'reporte_inventario' %}" class="sidebar-submenu-link {% if url_actual == 'reporte_inventario' %}active{% endif %}">
+                            Reporte de Inventario
+                        </a>
+                    </li>
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'reporte_contenedores' %}" class="sidebar-submenu-link {% if url_actual == 'reporte_contenedores' %}active{% endif %}">
+                            Reporte de Contenedores
+                        </a>
+                    </li>
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'reporte_ventas' %}" class="sidebar-submenu-link {% if url_actual == 'reporte_ventas' %}active{% endif %}">
+                            Reporte de Ventas
+                        </a>
+                    </li>
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'reporte_traspasos' %}" class="sidebar-submenu-link {% if url_actual == 'reporte_traspasos' %}active{% endif %}">
+                            Reporte de Traspasos
+                        </a>
+                    </li>
+                </ul>
             </li>
+            {% endwith %}
 
             <!-- Configuración - Solo Administradores -->
             {% if user.is_superuser %}
