@@ -5,6 +5,7 @@ from django.db.models import Q, Sum, Count
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from apps.productos.models import Producto, ProductoContenedor, Contenedor, Categoria
 from apps.ventas.models import Venta, DetalleVenta
+from apps.usuarios.models import PerfilUsuario
 from django.contrib.auth.models import User
 from datetime import datetime
 
@@ -182,7 +183,148 @@ def reporte_ventas(request):
 
 @login_required
 def reporte_traspasos(request):
-    return HttpResponse('Reporte de Traspasos PDF')
+    """Vista para reporte de traspasos entre ubicaciones"""
+    from apps.traspasos.models import Traspaso, DetalleTraspaso
+    
+    # Obtener todos los traspasos con sus relaciones
+    traspasos = Traspaso.objects.select_related(
+        'origen', 'destino', 'creado_por', 'aceptado_por'
+    ).prefetch_related('detalles').all()
+    
+    # Obtener filtros de la petición
+    buscar = request.GET.get('buscar', '').strip()
+    fecha_desde = request.GET.get('fecha_desde', '').strip()
+    fecha_hasta = request.GET.get('fecha_hasta', '').strip()
+    estado = request.GET.get('estado', '').strip()
+    tipo = request.GET.get('tipo', '').strip()
+    origen_id = request.GET.get('origen', '').strip()
+    destino_id = request.GET.get('destino', '').strip()
+    creado_por_id = request.GET.get('creado_por', '').strip()
+    ordenar_por = request.GET.get('ordenar', 'fecha_desc').strip()
+    
+    # Aplicar filtros
+    if buscar:
+        traspasos = traspasos.filter(
+            Q(codigo__icontains=buscar) |
+            Q(comentario__icontains=buscar) |
+            Q(origen__nombre_ubicacion__icontains=buscar) |
+            Q(destino__nombre_ubicacion__icontains=buscar)
+        )
+    
+    if fecha_desde:
+        traspasos = traspasos.filter(fecha_creacion__gte=fecha_desde)
+    
+    if fecha_hasta:
+        # Incluir todo el día hasta las 23:59:59
+        from datetime import datetime, timedelta
+        fecha_hasta_obj = datetime.strptime(fecha_hasta, '%Y-%m-%d')
+        fecha_hasta_final = fecha_hasta_obj + timedelta(days=1)
+        traspasos = traspasos.filter(fecha_creacion__lt=fecha_hasta_final)
+    
+    if estado:
+        traspasos = traspasos.filter(estado=estado)
+    
+    if tipo:
+        traspasos = traspasos.filter(tipo=tipo)
+    
+    if origen_id:
+        traspasos = traspasos.filter(origen_id=origen_id)
+    
+    if destino_id:
+        traspasos = traspasos.filter(destino_id=destino_id)
+    
+    if creado_por_id:
+        traspasos = traspasos.filter(creado_por_id=creado_por_id)
+    
+    # Aplicar ordenamiento
+    if ordenar_por == 'fecha_desc':
+        traspasos = traspasos.order_by('-fecha_creacion')
+    elif ordenar_por == 'fecha_asc':
+        traspasos = traspasos.order_by('fecha_creacion')
+    elif ordenar_por == 'codigo':
+        traspasos = traspasos.order_by('codigo')
+    elif ordenar_por == 'estado':
+        traspasos = traspasos.order_by('estado')
+    elif ordenar_por == 'tipo':
+        traspasos = traspasos.order_by('tipo')
+    
+    # Calcular estadísticas antes de paginar
+    total_traspasos = traspasos.count()
+    
+    # Calcular totales por estado
+    traspasos_pendientes = traspasos.filter(estado='pendiente').count()
+    traspasos_transito = traspasos.filter(estado='transito').count()
+    traspasos_recibidos = traspasos.filter(estado='recibido').count()
+    traspasos_rechazados = traspasos.filter(estado='rechazado').count()
+    traspasos_cancelados = traspasos.filter(estado='cancelado').count()
+    
+    # Calcular totales por tipo
+    traspasos_normales = traspasos.filter(tipo='normal').count()
+    traspasos_devolucion = traspasos.filter(tipo='devolucion').count()
+    
+    # Obtener datos para los selectores
+    ubicaciones_origen = PerfilUsuario.objects.filter(
+        traspasos_enviados__isnull=False
+    ).distinct().order_by('nombre_ubicacion')
+    
+    ubicaciones_destino = PerfilUsuario.objects.filter(
+        traspasos_recibidos__isnull=False
+    ).distinct().order_by('nombre_ubicacion')
+    
+    usuarios_creadores = User.objects.filter(
+        traspasos_creados__isnull=False
+    ).distinct().order_by('first_name', 'username')
+    
+    # Contar filtros activos
+    filtros_activos = sum([
+        bool(buscar),
+        bool(fecha_desde),
+        bool(fecha_hasta),
+        bool(estado),
+        bool(tipo),
+        bool(origen_id),
+        bool(destino_id),
+        bool(creado_por_id),
+    ])
+    
+    # Configurar paginación (20 items por página)
+    paginator = Paginator(traspasos, 20)
+    page = request.GET.get('page', 1)
+    
+    try:
+        traspasos_paginados = paginator.page(page)
+    except PageNotAnInteger:
+        traspasos_paginados = paginator.page(1)
+    except EmptyPage:
+        traspasos_paginados = paginator.page(paginator.num_pages)
+    
+    context = {
+        'traspasos': traspasos_paginados,
+        'ubicaciones_origen': ubicaciones_origen,
+        'ubicaciones_destino': ubicaciones_destino,
+        'usuarios_creadores': usuarios_creadores,
+        'total_traspasos': total_traspasos,
+        'traspasos_pendientes': traspasos_pendientes,
+        'traspasos_transito': traspasos_transito,
+        'traspasos_recibidos': traspasos_recibidos,
+        'traspasos_rechazados': traspasos_rechazados,
+        'traspasos_cancelados': traspasos_cancelados,
+        'traspasos_normales': traspasos_normales,
+        'traspasos_devolucion': traspasos_devolucion,
+        'filtros_activos': filtros_activos,
+        # Mantener valores de filtros
+        'buscar': buscar,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+        'estado': estado,
+        'tipo': tipo,
+        'origen_id': origen_id,
+        'destino_id': destino_id,
+        'creado_por_id': creado_por_id,
+        'ordenar_por': ordenar_por,
+    }
+    
+    return render(request, 'reportes/traspasos.html', context)
 
 @login_required
 def reporte_contenedores(request):

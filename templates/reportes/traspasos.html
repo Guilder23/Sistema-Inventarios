@@ -1,0 +1,435 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Reporte de Traspasos{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/reportes/traspasos.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid" style="padding-top: 0;">
+    <div class="page-header" style="margin-top: 0.5rem;">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="fas fa-exchange-alt"></i>
+                Reporte de Traspasos
+            </h1>
+            <p class="page-subtitle">
+                Gestión y seguimiento de traspasos entre ubicaciones con filtros avanzados
+            </p>
+        </div>
+    </div>
+
+    <!-- Resumen general -->
+    <div class="row resumen-row mb-3">
+        <div class="col-md-2 mb-2">
+            <div class="resumen-card" style="border-left-color: #4e73df;">
+                <span class="resumen-label">Total Traspasos</span>
+                <strong class="resumen-value">{{ total_traspasos }}</strong>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="resumen-card" style="border-left-color: #f6c23e;">
+                <span class="resumen-label">Pendientes</span>
+                <strong class="resumen-value" style="color: #f6c23e;">{{ traspasos_pendientes }}</strong>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="resumen-card" style="border-left-color: #36b9cc;">
+                <span class="resumen-label">En Tránsito</span>
+                <strong class="resumen-value" style="color: #36b9cc;">{{ traspasos_transito }}</strong>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="resumen-card" style="border-left-color: #1cc88a;">
+                <span class="resumen-label">Recibidos</span>
+                <strong class="resumen-value" style="color: #1cc88a;">{{ traspasos_recibidos }}</strong>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="resumen-card" style="border-left-color: #e74a3b;">
+                <span class="resumen-label">Rechazados</span>
+                <strong class="resumen-value" style="color: #e74a3b;">{{ traspasos_rechazados }}</strong>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="resumen-card" style="border-left-color: #858796;">
+                <span class="resumen-label">Cancelados</span>
+                <strong class="resumen-value" style="color: #858796;">{{ traspasos_cancelados }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card card-filtros mb-3">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter"></i> Filtros
+                    {% if filtros_activos > 0 %}
+                    <span class="badge-filtros-count">{{ filtros_activos }}</span>
+                    {% endif %}
+                </h5>
+            </div>
+
+            <form method="GET" id="filtrosForm">
+                <!-- Primera fila de filtros -->
+                <div class="row mb-2">
+                    <div class="col-md-3 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-search"></i> Buscar
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-white border-right-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                            </div>
+                            <input
+                                type="text"
+                                class="form-control form-control-sm border-left-0"
+                                name="buscar"
+                                id="buscarInput"
+                                placeholder="Código, comentario..."
+                                value="{{ buscar }}"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-calendar-alt"></i> Fecha Desde
+                        </label>
+                        <input
+                            type="date"
+                            class="form-control form-control-sm"
+                            name="fecha_desde"
+                            id="fechaDesdeInput"
+                            value="{{ fecha_desde }}"
+                        >
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-calendar-alt"></i> Fecha Hasta
+                        </label>
+                        <input
+                            type="date"
+                            class="form-control form-control-sm"
+                            name="fecha_hasta"
+                            id="fechaHastaInput"
+                            value="{{ fecha_hasta }}"
+                        >
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-info-circle"></i> Estado
+                        </label>
+                        <select class="form-control form-control-sm" name="estado" id="estadoFiltro">
+                            <option value="">Todos</option>
+                            <option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                            <option value="transito" {% if estado == 'transito' %}selected{% endif %}>En Tránsito</option>
+                            <option value="recibido" {% if estado == 'recibido' %}selected{% endif %}>Recibido</option>
+                            <option value="rechazado" {% if estado == 'rechazado' %}selected{% endif %}>Rechazado</option>
+                            <option value="cancelado" {% if estado == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-tag"></i> Tipo
+                        </label>
+                        <select class="form-control form-control-sm" name="tipo" id="tipoFiltro">
+                            <option value="">Todos</option>
+                            <option value="normal" {% if tipo == 'normal' %}selected{% endif %}>Normal</option>
+                            <option value="devolucion" {% if tipo == 'devolucion' %}selected{% endif %}>Devolución</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-1 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-sort"></i> Orden
+                        </label>
+                        <select class="form-control form-control-sm" name="ordenar" id="ordenarFiltro">
+                            <option value="fecha_desc" {% if ordenar_por == 'fecha_desc' %}selected{% endif %}>Recientes</option>
+                            <option value="fecha_asc" {% if ordenar_por == 'fecha_asc' %}selected{% endif %}>Antiguos</option>
+                            <option value="codigo" {% if ordenar_por == 'codigo' %}selected{% endif %}>Código</option>
+                            <option value="estado" {% if ordenar_por == 'estado' %}selected{% endif %}>Estado</option>
+                            <option value="tipo" {% if ordenar_por == 'tipo' %}selected{% endif %}>Tipo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Segunda fila de filtros -->
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-map-marker-alt"></i> Origen
+                        </label>
+                        <select class="form-control form-control-sm" name="origen" id="origenFiltro">
+                            <option value="">Todas las ubicaciones</option>
+                            {% for ubicacion in ubicaciones_origen %}
+                            <option value="{{ ubicacion.id }}" {% if origen_id == ubicacion.id|stringformat:"s" %}selected{% endif %}>
+                                {{ ubicacion.nombre_ubicacion }} ({{ ubicacion.get_rol_display }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-map-marker-alt"></i> Destino
+                        </label>
+                        <select class="form-control form-control-sm" name="destino" id="destinoFiltro">
+                            <option value="">Todas las ubicaciones</option>
+                            {% for ubicacion in ubicaciones_destino %}
+                            <option value="{{ ubicacion.id }}" {% if destino_id == ubicacion.id|stringformat:"s" %}selected{% endif %}>
+                                {{ ubicacion.nombre_ubicacion }} ({{ ubicacion.get_rol_display }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-user"></i> Creado por
+                        </label>
+                        <select class="form-control form-control-sm" name="creado_por" id="creadoPorFiltro">
+                            <option value="">Todos</option>
+                            {% for usuario in usuarios_creadores %}
+                            <option value="{{ usuario.id }}" {% if creado_por_id == usuario.id|stringformat:"s" %}selected{% endif %}>
+                                {% if usuario.first_name %}{{ usuario.first_name }}{% else %}{{ usuario.username }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1 d-block">&nbsp;</label>
+                        <div class="d-flex" style="gap: 8px;">
+                            <button type="button" class="btn-accion btn-limpiar" onclick="limpiarFiltros()" title="Limpiar Filtros">
+                                <i class="fas fa-eraser"></i>
+                            </button>
+                            <button type="button" class="btn-accion btn-exportar" onclick="exportarTabla()" title="Exportar a Excel">
+                                <i class="fas fa-file-excel"></i>
+                            </button>
+                            <button type="button" class="btn-accion btn-pdf" onclick="alert('Funcionalidad PDF próximamente')" title="Exportar a PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de reporte -->
+    <div class="card card-tabla">
+        <div class="table-responsive">
+            <table class="table table-hover tabla-traspasos mb-0" id="tablaTraspasos">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">CÓDIGO</th>
+                        <th style="width: 8%;" class="text-center">TIPO</th>
+                        <th style="width: 15%;">ORIGEN</th>
+                        <th style="width: 15%;">DESTINO</th>
+                        <th style="width: 8%;" class="text-center">ESTADO</th>
+                        <th style="width: 10%;" class="text-center">FECHA CREACIÓN</th>
+                        <th style="width: 10%;">CREADO POR</th>
+                        <th style="width: 8%;" class="text-center">PRODUCTOS</th>
+                        <th style="width: 16%;">COMENTARIO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for traspaso in traspasos %}
+                    <tr>
+                        <td>
+                            <small><strong class="text-primary">{{ traspaso.codigo }}</strong></small>
+                        </td>
+                        <td class="text-center">
+                            {% if traspaso.tipo == 'normal' %}
+                                <small><span class="badge-tipo badge-normal">
+                                    <i class="fas fa-exchange-alt"></i> Normal
+                                </span></small>
+                            {% else %}
+                                <small><span class="badge-tipo badge-devolucion">
+                                    <i class="fas fa-undo"></i> Devolución
+                                </span></small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="ubicacion-info">
+                                {% if traspaso.origen.rol == 'almacen' %}
+                                    <span class="badge-ubicacion badge-almacen">
+                                        <i class="fas fa-warehouse"></i> Almacén
+                                    </span>
+                                {% elif traspaso.origen.rol == 'tienda' %}
+                                    <span class="badge-ubicacion badge-tienda">
+                                        <i class="fas fa-store"></i> Tienda
+                                    </span>
+                                {% elif traspaso.origen.rol == 'tienda_online' %}
+                                    <span class="badge-ubicacion badge-online">
+                                        <i class="fas fa-globe"></i> Online
+                                    </span>
+                                {% else %}
+                                    <span class="badge-ubicacion badge-deposito">
+                                        <i class="fas fa-box"></i> Depósito
+                                    </span>
+                                {% endif %}
+                                <br>
+                                <small class="text-muted">{{ traspaso.origen.nombre_ubicacion|default:'-' }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="ubicacion-info">
+                                {% if traspaso.destino.rol == 'almacen' %}
+                                    <span class="badge-ubicacion badge-almacen">
+                                        <i class="fas fa-warehouse"></i> Almacén
+                                    </span>
+                                {% elif traspaso.destino.rol == 'tienda' %}
+                                    <span class="badge-ubicacion badge-tienda">
+                                        <i class="fas fa-store"></i> Tienda
+                                    </span>
+                                {% elif traspaso.destino.rol == 'tienda_online' %}
+                                    <span class="badge-ubicacion badge-online">
+                                        <i class="fas fa-globe"></i> Online
+                                    </span>
+                                {% else %}
+                                    <span class="badge-ubicacion badge-deposito">
+                                        <i class="fas fa-box"></i> Depósito
+                                    </span>
+                                {% endif %}
+                                <br>
+                                <small class="text-muted">{{ traspaso.destino.nombre_ubicacion|default:'-' }}</small>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            {% if traspaso.estado == 'pendiente' %}
+                                <span class="badge-estado badge-pendiente">Pendiente</span>
+                            {% elif traspaso.estado == 'transito' %}
+                                <span class="badge-estado badge-transito">En Tránsito</span>
+                            {% elif traspaso.estado == 'recibido' %}
+                                <span class="badge-estado badge-recibido">Recibido</span>
+                            {% elif traspaso.estado == 'rechazado' %}
+                                <span class="badge-estado badge-rechazado">Rechazado</span>
+                            {% else %}
+                                <span class="badge-estado badge-cancelado">Cancelado</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <small>{{ traspaso.fecha_creacion|date:"d/m/Y" }}</small>
+                            <br>
+                            <small class="text-muted">{{ traspaso.fecha_creacion|date:"H:i" }}</small>
+                        </td>
+                        <td>
+                            <div class="usuario-info">
+                                <div class="usuario-avatar">
+                                    {% if traspaso.creado_por.first_name %}
+                                        {{ traspaso.creado_por.first_name|slice:":1"|upper }}
+                                    {% else %}
+                                        {{ traspaso.creado_por.username|slice:":1"|upper }}
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <small>
+                                        {% if traspaso.creado_por.first_name %}
+                                            {{ traspaso.creado_por.first_name }}
+                                        {% else %}
+                                            {{ traspaso.creado_por.username }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge-cantidad">
+                                <i class="fas fa-box"></i> {{ traspaso.detalles.count }}
+                            </span>
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                {% if traspaso.comentario %}
+                                    {{ traspaso.comentario|truncatewords:10 }}
+                                {% else %}
+                                    <em>Sin comentario</em>
+                                {% endif %}
+                            </small>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4">
+                            <div class="tabla-vacia">
+                                <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">No se encontraron traspasos</p>
+                                {% if filtros_activos > 0 %}
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="limpiarFiltros()">
+                                    <i class="fas fa-eraser"></i> Limpiar filtros
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Paginación -->
+    {% if traspasos.has_other_pages %}
+    <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+        <div class="text-muted">
+            <small>Mostrando {{ traspasos.start_index }}-{{ traspasos.end_index }} de {{ total_traspasos }} registros</small>
+        </div>
+        
+        <nav aria-label="Paginación del reporte">
+            <ul class="pagination pagination-sm mb-0">
+                <!-- Botón Anterior -->
+                {% if traspasos.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ traspasos.previous_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if origen_id %}&origen={{ origen_id }}{% endif %}{% if destino_id %}&destino={{ destino_id }}{% endif %}{% if creado_por_id %}&creado_por={{ creado_por_id }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}" aria-label="Anterior">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                </li>
+                {% endif %}
+                
+                <!-- Números de página -->
+                {% for num in traspasos.paginator.page_range %}
+                    {% if traspasos.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > traspasos.number|add:'-3' and num < traspasos.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if origen_id %}&origen={{ origen_id }}{% endif %}{% if destino_id %}&destino={{ destino_id }}{% endif %}{% if creado_por_id %}&creado_por={{ creado_por_id }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Botón Siguiente -->
+                {% if traspasos.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ traspasos.next_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if origen_id %}&origen={{ origen_id }}{% endif %}{% if destino_id %}&destino={{ destino_id }}{% endif %}{% if creado_por_id %}&creado_por={{ creado_por_id }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}" aria-label="Siguiente">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/reportes/traspasos.js' %}"></script>
+{% endblock %}
