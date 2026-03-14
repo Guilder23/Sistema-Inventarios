@@ -72,6 +72,7 @@
                         <th style="width: 9%;">Código</th>
                         <th style="width: 14%;">Nombre</th>
                         <th style="width: 12%;">Categoría</th>
+                        <th style="width: 12%;">Precio USD</th>
                         <th style="width: 12%;">Contenedores</th>
                         <th style="width: 10%;">Stock</th>
                         <th style="width: 9%;">Unid/Caja</th>
@@ -103,6 +104,11 @@
                         <td>
                             <div class="text-truncate" style="max-width: 170px;" title="{{ producto.categoria.nombre|default:'Sin categoría' }}">
                                 {{ producto.categoria.nombre|default:'Sin categoría' }}
+                            </div>
+                        </td>
+                        <td>
+                             <div class="text-truncate" style="max-width: 200px;" title="{{ producto.nombre }}">
+                                USD {{ producto.precio_usd|floatformat:2 }}                     
                             </div>
                         </td>
                         <td>
