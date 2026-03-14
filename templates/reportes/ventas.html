@@ -1,0 +1,444 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Reporte de Ventas{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/reportes/ventas.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid" style="padding-top: 0;">
+    <div class="page-header" style="margin-top: 0.5rem;">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="fas fa-receipt"></i>
+                Reporte de Ventas
+            </h1>
+            <p class="page-subtitle">
+                Análisis completo de ventas con filtros avanzados y estadísticas detalladas
+            </p>
+        </div>
+    </div>
+
+    <!-- Resumen general -->
+    <div class="row resumen-row mb-3">
+        <div class="col-md-2 mb-2">
+            <div class="resumen-card" style="border-left-color: #4e73df;">
+                <span class="resumen-label">Total Ventas</span>
+                <strong class="resumen-value">{{ total_ventas }}</strong>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="resumen-card" style="border-left-color: #1cc88a;">
+                <span class="resumen-label">Total BOB</span>
+                <div class="resumen-value-monto">
+                    <strong class="monto-numero text-bob">{{ total_monto_bob|floatformat:2 }}</strong>
+                    <span class="monto-simbolo text-bob">Bs.</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="resumen-card" style="border-left-color: #36b9cc;">
+                <span class="resumen-label">Total USD</span>
+                <div class="resumen-value-monto">
+                    <strong class="monto-numero text-usd">{{ total_monto_usd|floatformat:2 }}</strong>
+                    <span class="monto-simbolo text-usd">$us</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="resumen-card" style="border-left-color: #f6c23e;">
+                <span class="resumen-label">Completadas</span>
+                <strong class="resumen-value" style="color: #1cc88a;">{{ ventas_completadas }}</strong>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="resumen-card" style="border-left-color: #858796;">
+                <span class="resumen-label">Pendientes</span>
+                <strong class="resumen-value" style="color: #f6c23e;">{{ ventas_pendientes }}</strong>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="resumen-card" style="border-left-color: #e74a3b;">
+                <span class="resumen-label">Canceladas</span>
+                <strong class="resumen-value" style="color: #e74a3b;">{{ ventas_canceladas }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card card-filtros mb-3">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter"></i> Filtros
+                    {% if filtros_activos > 0 %}
+                    <span class="badge-filtros-count">{{ filtros_activos }}</span>
+                    {% endif %}
+                </h5>
+            </div>
+
+            <form method="GET" id="filtrosForm">
+                <!-- Primera fila de filtros -->
+                <div class="row mb-2">
+                    <div class="col-md-3 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-search"></i> Buscar
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-white border-right-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                            </div>
+                            <input
+                                type="text"
+                                class="form-control form-control-sm border-left-0"
+                                name="buscar"
+                                id="buscarInput"
+                                placeholder="Código, cliente, razón social..."
+                                value="{{ buscar }}"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-calendar-alt"></i> Fecha Desde
+                        </label>
+                        <input
+                            type="date"
+                            class="form-control form-control-sm"
+                            name="fecha_desde"
+                            id="fechaDesdeInput"
+                            value="{{ fecha_desde }}"
+                        >
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-calendar-alt"></i> Fecha Hasta
+                        </label>
+                        <input
+                            type="date"
+                            class="form-control form-control-sm"
+                            name="fecha_hasta"
+                            id="fechaHastaInput"
+                            value="{{ fecha_hasta }}"
+                        >
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-info-circle"></i> Estado
+                        </label>
+                        <select class="form-control form-control-sm" name="estado" id="estadoFiltro">
+                            <option value="">Todos</option>
+                            <option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                            <option value="completada" {% if estado == 'completada' %}selected{% endif %}>Completada</option>
+                            <option value="cancelada" {% if estado == 'cancelada' %}selected{% endif %}>Cancelada</option>
+                            <option value="anulada" {% if estado == 'anulada' %}selected{% endif %}>Anulada</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-user"></i> Vendedor
+                        </label>
+                        <select class="form-control form-control-sm" name="vendedor" id="vendedorFiltro">
+                            <option value="">Todos los vendedores</option>
+                            {% for vendedor in vendedores %}
+                            <option value="{{ vendedor.id }}" {% if vendedor_id == vendedor.id|stringformat:"s" %}selected{% endif %}>
+                                {% if vendedor.first_name %}
+                                    {{ vendedor.first_name }} {{ vendedor.last_name }}
+                                {% else %}
+                                    {{ vendedor.username }}
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Segunda fila de filtros -->
+                <div class="row">
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-credit-card"></i> Tipo de Pago
+                        </label>
+                        <select class="form-control form-control-sm" name="tipo_pago" id="tipoPagoFiltro">
+                            <option value="">Todos</option>
+                            <option value="contado" {% if tipo_pago == 'contado' %}selected{% endif %}>Contado</option>
+                            <option value="credito" {% if tipo_pago == 'credito' %}selected{% endif %}>Crédito</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-money-bill"></i> Moneda
+                        </label>
+                        <select class="form-control form-control-sm" name="moneda" id="monedaFiltro">
+                            <option value="">Todas</option>
+                            <option value="BOB" {% if moneda == 'BOB' %}selected{% endif %}>Bolivianos (Bs.)</option>
+                            <option value="USD" {% if moneda == 'USD' %}selected{% endif %}>Dólares ($us)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-dollar-sign"></i> Monto Mínimo
+                        </label>
+                        <input
+                            type="number"
+                            class="form-control form-control-sm"
+                            name="monto_minimo"
+                            id="montoMinimoInput"
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                            value="{{ monto_minimo }}"
+                        >
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-dollar-sign"></i> Monto Máximo
+                        </label>
+                        <input
+                            type="number"
+                            class="form-control form-control-sm"
+                            name="monto_maximo"
+                            id="montoMaximoInput"
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                            value="{{ monto_maximo }}"
+                        >
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-sort"></i> Ordenar por
+                        </label>
+                        <select class="form-control form-control-sm" name="ordenar" id="ordenarFiltro">
+                            <option value="fecha_desc" {% if ordenar_por == 'fecha_desc' or not ordenar_por %}selected{% endif %}>Fecha (Reciente)</option>
+                            <option value="fecha_asc" {% if ordenar_por == 'fecha_asc' %}selected{% endif %}>Fecha (Antigua)</option>
+                            <option value="codigo" {% if ordenar_por == 'codigo' %}selected{% endif %}>Código</option>
+                            <option value="cliente" {% if ordenar_por == 'cliente' %}selected{% endif %}>Cliente</option>
+                            <option value="total_desc" {% if ordenar_por == 'total_desc' %}selected{% endif %}>Total (Mayor)</option>
+                            <option value="total_asc" {% if ordenar_por == 'total_asc' %}selected{% endif %}>Total (Menor)</option>
+                            <option value="estado" {% if ordenar_por == 'estado' %}selected{% endif %}>Estado</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1 d-block">&nbsp;</label>
+                        <div class="d-flex" style="gap: 8px;">
+                            <button type="button" class="btn-accion btn-limpiar" onclick="limpiarFiltros()" title="Limpiar Filtros">
+                                <i class="fas fa-eraser"></i>
+                            </button>
+                            <button type="button" class="btn-accion btn-exportar" onclick="exportarTabla()" title="Exportar a Excel">
+                                <i class="fas fa-file-excel"></i>
+                            </button>
+                            <button type="button" class="btn-accion btn-pdf" onclick="alert('Funcionalidad PDF próximamente')" title="Exportar a PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de reporte -->
+    <div class="card card-tabla">
+        <div class="table-responsive">
+            <table class="table table-hover tabla-ventas mb-0" id="tablaVentas">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">CÓDIGO</th>
+                        <th style="width: 14%;">CLIENTE</th>
+                        <th style="width: 10%;">RAZÓN SOCIAL</th>
+                        <th style="width: 9%;">VENDEDOR</th>
+                        <th style="width: 10%;" class="text-center">UBICACIÓN</th>
+                        <th style="width: 9%;" class="text-center">FECHA</th>
+                        <th style="width: 8%;" class="text-center">TIPO PAGO</th>
+                        <th style="width: 8%;" class="text-center">ESTADO</th>
+                        <th style="width: 6%;" class="text-center">MONEDA</th>
+                        <th style="width: 8%;" class="text-right">DESCUENTO</th>
+                        <th style="width: 10%;" class="text-right">TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for venta in ventas %}
+                    <tr>
+                        <td>
+                            <span class="codigo-venta">{{ venta.codigo }}</span>
+                        </td>
+                        <td>
+                            <strong>{{ venta.cliente }}</strong>
+                            {% if venta.telefono %}
+                            <br><small class="text-muted">Tel: {{ venta.telefono }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>{{ venta.razon_social|default:'-' }}</small>
+                        </td>
+                        <td>
+                            <div class="vendedor-info">
+                                <div class="vendedor-avatar">
+                                    {% if venta.vendedor.first_name %}
+                                        {{ venta.vendedor.first_name|slice:":1"|upper }}
+                                    {% else %}
+                                        {{ venta.vendedor.username|slice:":1"|upper }}
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <small>
+                                        {% if venta.vendedor.first_name %}
+                                            {{ venta.vendedor.first_name }}
+                                        {% else %}
+                                            {{ venta.vendedor.username }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            {% if venta.ubicacion.rol == 'almacen' %}
+                                <span class="badge-ubicacion badge-almacen">
+                                    <i class="fas fa-warehouse"></i> Almacén
+                                </span>
+                            {% elif venta.ubicacion.rol == 'tienda' %}
+                                <span class="badge-ubicacion badge-tienda">
+                                    <i class="fas fa-store"></i> Tienda
+                                </span>
+                            {% elif venta.ubicacion.rol == 'tienda_online' %}
+                                <span class="badge-ubicacion badge-online">
+                                    <i class="fas fa-globe"></i> Online
+                                </span>
+                            {% else %}
+                                <span class="badge-ubicacion badge-deposito">
+                                    <i class="fas fa-box"></i> Depósito
+                                </span>
+                            {% endif %}
+                            <br>
+                            <small class="text-muted" style="font-size: 0.7rem;">{{ venta.ubicacion.nombre_ubicacion|default:'-' }}</small>
+                        </td>
+                        <td class="text-center">
+                            <small>{{ venta.fecha_elaboracion|date:"d/m/Y" }}</small>
+                            <br>
+                            <small class="text-muted">{{ venta.fecha_elaboracion|date:"H:i" }}</small>
+                        </td>
+                        <td class="text-center">
+                            {% if venta.tipo_pago == 'contado' %}
+                                <span class="badge-tipo-pago badge-contado">Contado</span>
+                            {% else %}
+                                <span class="badge-tipo-pago badge-credito">Crédito</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if venta.estado == 'completada' %}
+                                <span class="badge-estado badge-completada">Completada</span>
+                            {% elif venta.estado == 'pendiente' %}
+                                <span class="badge-estado badge-pendiente">Pendiente</span>
+                            {% elif venta.estado == 'cancelada' %}
+                                <span class="badge-estado badge-cancelada">Cancelada</span>
+                            {% else %}
+                                <span class="badge-estado badge-anulada">Anulada</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center celda-moneda">
+                            {% if venta.moneda == 'BOB' %}
+                                <span class="badge-moneda badge-moneda-bob">BOB</span>
+                            {% else %}
+                                <span class="badge-moneda badge-moneda-usd">USD</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <span class="text-muted" style="font-size: 0.85rem; white-space: nowrap;">
+                                {% if venta.moneda == 'BOB' %}Bs.{% else %}$us{% endif %} {{ venta.descuento|floatformat:2 }}
+                            </span>
+                        </td>
+                        <td class="text-right">
+                            <strong class="monto-venta {% if venta.moneda == 'BOB' %}text-bob{% else %}text-usd{% endif %}">
+                                {% if venta.moneda == 'BOB' %}Bs.{% else %}$us{% endif %} {{ venta.total|floatformat:2 }}
+                            </strong>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="text-center py-4">
+                            <div class="tabla-vacia">
+                                <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">No se encontraron ventas</p>
+                                {% if filtros_activos > 0 %}
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="limpiarFiltros()">
+                                    <i class="fas fa-eraser"></i> Limpiar filtros
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Paginación -->
+    {% if ventas.has_other_pages %}
+    <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+        <div class="text-muted">
+            <small>Mostrando {{ ventas.start_index }}-{{ ventas.end_index }} de {{ total_ventas }} registros</small>
+        </div>
+        
+        <nav aria-label="Paginación del reporte">
+            <ul class="pagination pagination-sm mb-0">
+                <!-- Botón Anterior -->
+                {% if ventas.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ ventas.previous_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if tipo_pago %}&tipo_pago={{ tipo_pago }}{% endif %}{% if vendedor_id %}&vendedor={{ vendedor_id }}{% endif %}{% if moneda %}&moneda={{ moneda }}{% endif %}{% if monto_minimo %}&monto_minimo={{ monto_minimo }}{% endif %}{% if monto_maximo %}&monto_maximo={{ monto_maximo }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}" aria-label="Anterior">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                </li>
+                {% endif %}
+                
+                <!-- Números de página -->
+                {% for num in ventas.paginator.page_range %}
+                    {% if ventas.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > ventas.number|add:'-3' and num < ventas.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if tipo_pago %}&tipo_pago={{ tipo_pago }}{% endif %}{% if vendedor_id %}&vendedor={{ vendedor_id }}{% endif %}{% if moneda %}&moneda={{ moneda }}{% endif %}{% if monto_minimo %}&monto_minimo={{ monto_minimo }}{% endif %}{% if monto_maximo %}&monto_maximo={{ monto_maximo }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Botón Siguiente -->
+                {% if ventas.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ ventas.next_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if tipo_pago %}&tipo_pago={{ tipo_pago }}{% endif %}{% if vendedor_id %}&vendedor={{ vendedor_id }}{% endif %}{% if moneda %}&moneda={{ moneda }}{% endif %}{% if monto_minimo %}&monto_minimo={{ monto_minimo }}{% endif %}{% if monto_maximo %}&monto_maximo={{ monto_maximo }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}" aria-label="Siguiente">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/reportes/ventas.js' %}"></script>
+{% endblock %}

@@ -4,6 +4,8 @@ from django.http import HttpResponse, JsonResponse
 from django.db.models import Q, Sum, Count
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from apps.productos.models import Producto, ProductoContenedor, Contenedor, Categoria
+from apps.ventas.models import Venta, DetalleVenta
+from django.contrib.auth.models import User
 from datetime import datetime
 
 @login_required
@@ -16,7 +18,167 @@ def reporte_inventario(request):
 
 @login_required
 def reporte_ventas(request):
-    return HttpResponse('Reporte de Ventas PDF')
+    """Vista para reporte de ventas con filtros y análisis"""
+    
+    # Obtener todas las ventas con sus relaciones
+    ventas = Venta.objects.select_related(
+        'ubicacion', 'vendedor'
+    ).prefetch_related('detalles')
+    
+    # Obtener filtros de la petición
+    buscar = request.GET.get('buscar', '').strip()
+    fecha_desde = request.GET.get('fecha_desde', '').strip()
+    fecha_hasta = request.GET.get('fecha_hasta', '').strip()
+    estado = request.GET.get('estado', '').strip()
+    tipo_pago = request.GET.get('tipo_pago', '').strip()
+    vendedor_id = request.GET.get('vendedor', '').strip()
+    moneda = request.GET.get('moneda', '').strip()
+    monto_minimo = request.GET.get('monto_minimo', '').strip()
+    monto_maximo = request.GET.get('monto_maximo', '').strip()
+    ordenar_por = request.GET.get('ordenar', 'fecha_desc').strip()
+    
+    # Aplicar filtros
+    if buscar:
+        ventas = ventas.filter(
+            Q(codigo__icontains=buscar) |
+            Q(cliente__icontains=buscar) |
+            Q(razon_social__icontains=buscar) |
+            Q(telefono__icontains=buscar)
+        )
+    
+    if fecha_desde:
+        try:
+            fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
+            ventas = ventas.filter(fecha_elaboracion__gte=fecha_desde_dt)
+        except ValueError:
+            pass
+    
+    if fecha_hasta:
+        try:
+            from datetime import timedelta
+            fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d')
+            # Incluir todo el día hasta las 23:59:59
+            fecha_hasta_dt = fecha_hasta_dt + timedelta(days=1) - timedelta(seconds=1)
+            ventas = ventas.filter(fecha_elaboracion__lte=fecha_hasta_dt)
+        except ValueError:
+            pass
+    
+    if estado:
+        ventas = ventas.filter(estado=estado)
+    
+    if tipo_pago:
+        ventas = ventas.filter(tipo_pago=tipo_pago)
+    
+    if vendedor_id:
+        ventas = ventas.filter(vendedor_id=vendedor_id)
+    
+    if moneda:
+        ventas = ventas.filter(moneda=moneda)
+    
+    if monto_minimo:
+        try:
+            monto_min = float(monto_minimo)
+            ventas = ventas.filter(total__gte=monto_min)
+        except ValueError:
+            pass
+    
+    if monto_maximo:
+        try:
+            monto_max = float(monto_maximo)
+            ventas = ventas.filter(total__lte=monto_max)
+        except ValueError:
+            pass
+    
+    # Aplicar ordenamiento
+    if ordenar_por == 'fecha_desc':
+        ventas = ventas.order_by('-fecha_elaboracion')
+    elif ordenar_por == 'fecha_asc':
+        ventas = ventas.order_by('fecha_elaboracion')
+    elif ordenar_por == 'codigo':
+        ventas = ventas.order_by('codigo')
+    elif ordenar_por == 'cliente':
+        ventas = ventas.order_by('cliente')
+    elif ordenar_por == 'total_desc':
+        ventas = ventas.order_by('-total')
+    elif ordenar_por == 'total_asc':
+        ventas = ventas.order_by('total')
+    elif ordenar_por == 'estado':
+        ventas = ventas.order_by('estado')
+    
+    # Calcular totales antes de paginar
+    total_ventas = ventas.count()
+    
+    # Calcular totales por moneda
+    ventas_bob = ventas.filter(moneda='BOB')
+    ventas_usd = ventas.filter(moneda='USD')
+    
+    total_monto_bob = ventas_bob.aggregate(total=Sum('total'))['total'] or 0
+    total_monto_usd = ventas_usd.aggregate(total=Sum('total'))['total'] or 0
+    
+    # Calcular totales por tipo de pago
+    ventas_contado = ventas.filter(tipo_pago='contado').count()
+    ventas_credito = ventas.filter(tipo_pago='credito').count()
+    
+    # Calcular totales por estado
+    ventas_completadas = ventas.filter(estado='completada').count()
+    ventas_pendientes = ventas.filter(estado='pendiente').count()
+    ventas_canceladas = ventas.filter(estado='cancelada').count()
+    ventas_anuladas = ventas.filter(estado='anulada').count()
+    
+    # Obtener datos para los selectores
+    vendedores = User.objects.filter(ventas__isnull=False).distinct().order_by('first_name', 'username')
+    
+    # Contar filtros activos
+    filtros_activos = sum([
+        bool(buscar),
+        bool(fecha_desde),
+        bool(fecha_hasta),
+        bool(estado),
+        bool(tipo_pago),
+        bool(vendedor_id),
+        bool(moneda),
+        bool(monto_minimo),
+        bool(monto_maximo),
+    ])
+    
+    # Configurar paginación (20 items por página)
+    paginator = Paginator(ventas, 20)
+    page = request.GET.get('page', 1)
+    
+    try:
+        ventas_paginadas = paginator.page(page)
+    except PageNotAnInteger:
+        ventas_paginadas = paginator.page(1)
+    except EmptyPage:
+        ventas_paginadas = paginator.page(paginator.num_pages)
+    
+    context = {
+        'ventas': ventas_paginadas,
+        'vendedores': vendedores,
+        'total_ventas': total_ventas,
+        'total_monto_bob': total_monto_bob,
+        'total_monto_usd': total_monto_usd,
+        'ventas_contado': ventas_contado,
+        'ventas_credito': ventas_credito,
+        'ventas_completadas': ventas_completadas,
+        'ventas_pendientes': ventas_pendientes,
+        'ventas_canceladas': ventas_canceladas,
+        'ventas_anuladas': ventas_anuladas,
+        'filtros_activos': filtros_activos,
+        # Mantener valores de filtros
+        'buscar': buscar,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+        'estado': estado,
+        'tipo_pago': tipo_pago,
+        'vendedor_id': vendedor_id,
+        'moneda': moneda,
+        'monto_minimo': monto_minimo,
+        'monto_maximo': monto_maximo,
+        'ordenar_por': ordenar_por,
+    }
+    
+    return render(request, 'reportes/ventas.html', context)
 
 @login_required
 def reporte_traspasos(request):
