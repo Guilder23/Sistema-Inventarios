@@ -1,0 +1,372 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Reporte de Contenedores{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/reportes/contenedores/contenedores.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid" style="padding-top: 0;">
+    <div class="page-header" style="margin-top: 0.5rem;">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="fas fa-box-open"></i>
+                Reporte de Contenedores y Productos
+            </h1>
+            <p class="page-subtitle">
+                Vista completa de productos por contenedor con información detallada de stock y estado
+            </p>
+        </div>
+    </div>
+
+    <!-- Resumen general -->
+    <div class="row resumen-row mb-3">
+        <div class="col-md-4 mb-2">
+            <div class="resumen-card" style="border-left-color: #4e73df;">
+                <span class="resumen-label">Total Contenedores</span>
+                <strong class="resumen-value">{{ total_contenedores }}</strong>
+            </div>
+        </div>
+        <div class="col-md-4 mb-2">
+            <div class="resumen-card" style="border-left-color: #1cc88a;">
+                <span class="resumen-label">Total Productos</span>
+                <strong class="resumen-value">{{ total_items }}</strong>
+            </div>
+        </div>
+        <div class="col-md-4 mb-2">
+            <div class="resumen-card" style="border-left-color: #36b9cc;">
+                <span class="resumen-label">Total Unidades</span>
+                <strong class="resumen-value">{{ total_unidades }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card card-filtros mb-3">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter"></i> Filtros
+                    {% if filtros_activos > 0 %}
+                    <span class="badge-filtros-count">{{ filtros_activos }}</span>
+                    {% endif %}
+                </h5>
+            </div>
+
+            <form method="GET" id="filtrosForm">
+                <!-- Primera fila de filtros -->
+                <div class="row mb-2">
+                    <div class="col-md-3 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-search"></i> Buscar
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-white border-right-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                            </div>
+                            <input
+                                type="text"
+                                class="form-control form-control-sm border-left-0"
+                                name="buscar"
+                                id="buscarInput"
+                                placeholder="Código, producto, contenedor..."
+                                value="{{ buscar }}"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-box"></i> Contenedor
+                        </label>
+                        <select class="form-control form-control-sm" name="contenedor" id="contenedorFiltro">
+                            <option value="">Todos los contenedores</option>
+                            {% for contenedor in contenedores %}
+                            <option value="{{ contenedor.id }}" {% if contenedor_id == contenedor.id|stringformat:"s" %}selected{% endif %}>
+                                {{ contenedor.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-tag"></i> Categoría
+                        </label>
+                        <select class="form-control form-control-sm" name="categoria" id="categoriaFiltro">
+                            <option value="">Todas las categorías</option>
+                            {% for cat in categorias %}
+                            <option value="{{ cat.id }}" {% if categoria_id == cat.id|stringformat:"s" %}selected{% endif %}>
+                                {{ cat.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-truck"></i> Proveedor
+                        </label>
+                        <select class="form-control form-control-sm" name="proveedor" id="proveedorFiltro">
+                            <option value="">Todos los proveedores</option>
+                            {% for prov in proveedores %}
+                            <option value="{{ prov }}" {% if proveedor == prov %}selected{% endif %}>
+                                {{ prov }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Segunda fila de filtros -->
+                <div class="row">
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-info-circle"></i> Estado Stock
+                        </label>
+                        <select class="form-control form-control-sm" name="estado" id="estadoFiltro">
+                            <option value="">Todos</option>
+                            <option value="normal" {% if estado == 'normal' %}selected{% endif %}>Normal</option>
+                            <option value="bajo" {% if estado == 'bajo' %}selected{% endif %}>Bajo</option>
+                            <option value="critico" {% if estado == 'critico' %}selected{% endif %}>Crítico</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-hashtag"></i> Stock Mínimo
+                        </label>
+                        <input
+                            type="number"
+                            class="form-control form-control-sm"
+                            name="stock_minimo"
+                            id="stockMinimoInput"
+                            placeholder="0"
+                            min="0"
+                            value="{{ stock_minimo }}"
+                        >
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-calendar-alt"></i> Fecha Desde
+                        </label>
+                        <input
+                            type="date"
+                            class="form-control form-control-sm"
+                            name="fecha_desde"
+                            id="fechaDesdeInput"
+                            value="{{ fecha_desde }}"
+                        >
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-calendar-alt"></i> Fecha Hasta
+                        </label>
+                        <input
+                            type="date"
+                            class="form-control form-control-sm"
+                            name="fecha_hasta"
+                            id="fechaHastaInput"
+                            value="{{ fecha_hasta }}"
+                        >
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">
+                            <i class="fas fa-sort"></i> Ordenar por
+                        </label>
+                        <select class="form-control form-control-sm" name="ordenar" id="ordenarFiltro">
+                            <option value="producto" {% if ordenar_por == 'producto' or not ordenar_por %}selected{% endif %}>Producto (A-Z)</option>
+                            <option value="codigo" {% if ordenar_por == 'codigo' %}selected{% endif %}>Código</option>
+                            <option value="contenedor" {% if ordenar_por == 'contenedor' %}selected{% endif %}>Contenedor</option>
+                            <option value="proveedor" {% if ordenar_por == 'proveedor' %}selected{% endif %}>Proveedor</option>
+                            <option value="stock_desc" {% if ordenar_por == 'stock_desc' %}selected{% endif %}>Stock (Mayor)</option>
+                            <option value="stock_asc" {% if ordenar_por == 'stock_asc' %}selected{% endif %}>Stock (Menor)</option>
+                            <option value="fecha_desc" {% if ordenar_por == 'fecha_desc' %}selected{% endif %}>Fecha (Reciente)</option>
+                            <option value="fecha_asc" {% if ordenar_por == 'fecha_asc' %}selected{% endif %}>Fecha (Antigua)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1 d-block">&nbsp;</label>
+                        <div class="d-flex" style="gap: 8px;">
+                            <button type="button" class="btn-accion btn-limpiar" onclick="limpiarFiltros()" title="Limpiar Filtros">
+                                <i class="fas fa-eraser"></i>
+                            </button>
+                            <button type="button" class="btn-accion btn-exportar" data-toggle="modal" data-target="#modalExportar" title="Exportar a Excel">
+                                <i class="fas fa-file-excel"></i>
+                            </button>
+                            <button type="button" class="btn-accion btn-pdf" onclick="alert('Funcionalidad PDF próximamente')" title="Exportar a PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de reporte -->
+    <div class="card card-tabla">
+        <div class="table-responsive">
+            <table class="table table-hover tabla-contenedores mb-0" id="tablaContenedores">
+                <thead>
+                    <tr>
+                        <th style="width: 4%;" class="text-center">FOTO</th>
+                        <th style="width: 7%;">CÓDIGO</th>
+                        <th style="width: 14%;">PRODUCTO</th>
+                        <th style="width: 18%;">DESCRIPCIÓN</th>
+                        <th style="width: 12%;">CONTENEDOR</th>
+                        <th style="width: 10%;">PROVEEDOR</th>
+                        <th style="width: 8%;" class="text-center">PRECIO UNIDAD</th>
+                        <th style="width: 8%;" class="text-center">PRECIO CAJA</th>
+                        <th style="width: 7%;" class="text-center">RECIBIDO</th>
+                        <th style="width: 7%;" class="text-center">ESTADO</th>
+                        <th style="width: 5%;" class="text-center">ACTUALIZADO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items_reporte %}
+                    <tr>
+                        <td class="text-center">
+                            {% if item.producto.foto %}
+                                <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="producto-imagen-tabla">
+                            {% else %}
+                                <div class="producto-sin-imagen">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="codigo-badge">{{ item.producto.codigo }}</span>
+                        </td>
+                        <td>
+                            <strong>{{ item.producto.nombre }}</strong>
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ item.producto.descripcion|default:'Sin descripción'|truncatewords:10 }}</small>
+                        </td>
+                        <td>
+                            <div class="contenedor-info">
+                                <i class="fas fa-box text-primary"></i>
+                                <span>{{ item.contenedor.nombre }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="proveedor-tag">
+                                <i class="fas fa-truck"></i>
+                                {{ item.contenedor.proveedor }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="precio-tag">{{ item.producto.precio_unidad|floatformat:2 }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="precio-tag">{{ item.producto.precio_caja|floatformat:2 }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge-recibido">{{ item.cantidad_recibida }}</span>
+                        </td>
+                        <td class="text-center">
+                            {% if item.estado == 'normal' %}
+                                <span class="badge-estado badge-estado-activo">Normal</span>
+                            {% elif item.estado == 'bajo' %}
+                                <span class="badge-estado badge-estado-bajo">Bajo</span>
+                            {% else %}
+                                <span class="badge-estado badge-estado-inactivo">Crítico</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center text-muted">
+                            <small>{{ item.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="text-center py-4">
+                            <div class="tabla-vacia">
+                                <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">No se encontraron productos en contenedores</p>
+                                {% if filtros_activos > 0 %}
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="limpiarFiltros()">
+                                    <i class="fas fa-eraser"></i> Limpiar filtros
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Paginación -->
+    {% if items_reporte.has_other_pages %}
+    <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+        <div class="text-muted">
+            <small>Mostrando {{ items_reporte.start_index }}-{{ items_reporte.end_index }} de {{ total_items }} registros</small>
+        </div>
+        
+        <nav aria-label="Paginación del reporte">
+            <ul class="pagination pagination-sm mb-0">
+                <!-- Botón Anterior -->
+                {% if items_reporte.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ items_reporte.previous_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if contenedor_id %}&contenedor={{ contenedor_id }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}{% if proveedor %}&proveedor={{ proveedor }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if stock_minimo %}&stock_minimo={{ stock_minimo }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}" aria-label="Anterior">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                </li>
+                {% endif %}
+                
+                <!-- Números de página -->
+                {% for num in items_reporte.paginator.page_range %}
+                    {% if items_reporte.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > items_reporte.number|add:'-3' and num < items_reporte.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if contenedor_id %}&contenedor={{ contenedor_id }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}{% if proveedor %}&proveedor={{ proveedor }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if stock_minimo %}&stock_minimo={{ stock_minimo }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Botón Siguiente -->
+                {% if items_reporte.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ items_reporte.next_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if contenedor_id %}&contenedor={{ contenedor_id }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}{% if proveedor %}&proveedor={{ proveedor }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if stock_minimo %}&stock_minimo={{ stock_minimo }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}" aria-label="Siguiente">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% else %}
+    <div class="text-muted text-center mt-3 mb-3">
+        <small>Mostrando todos los {{ total_items }} registro{% if total_items != 1 %}s{% endif %}</small>
+    </div>
+    {% endif %}
+
+    {% include 'reportes/contenedores/modal/modal_exportar.html' %}
+
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/reportes/contenedores/contenedores.js' %}"></script>
+<script src="{% static 'js/reportes/contenedores/modal/modal_exportar.js' %}"></script>
+{% endblock %}

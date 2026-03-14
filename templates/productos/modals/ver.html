@@ -128,6 +128,7 @@
                                         <p id="verPrecioMayor"></p>
                                     </div>
                                 </div>
+                                {% if user.perfil.rol == "administrador" %}
                                 <div class="col-6">
                                     <div class="info-item">
                                         <label>Póliza:</label>
@@ -135,11 +136,12 @@
                                     </div>
                                 </div>
                             </div>
-
+                            
                             <div class="info-item">
                                 <label>Gastos:</label>
                                 <p id="verGastos"></p>
                             </div>
+                             {% endif %}
                         </div>
 
                         <div class="info-section mt-4">

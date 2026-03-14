@@ -672,6 +672,7 @@ def obtener_detalle_venta(request, id):
             'total': str(venta.total),
             'detalles': [
                 {
+                    'codigo': d.producto.codigo,
                     'producto': d.producto.nombre,
                     'cantidad': d.cantidad,
                     'precio_unitario': str(d.precio_unitario),

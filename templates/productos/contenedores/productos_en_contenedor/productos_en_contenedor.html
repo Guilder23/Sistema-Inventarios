@@ -44,30 +44,48 @@
             <table class="table table-sm tabla-productos mb-0">
                 <thead>
                     <tr>
-                        <th style="width: 30%;">Producto</th>
+                        <th style="width: 30%;">Foto</th>
+                        <!--<th style="width: 30%;">Producto</th>-->
                         <th style="width: 20%;">Código</th>
+                        <th style="width: 15%;">Detalle</th>
                         <th style="width: 15%;">Cantidad Recibida</th>
-                        <th style="width: 15%;">Cantidad Disponible</th>
+                        <th style="width: 15%;">Stock Cajas</th>
+                        <!--<th style="width: 15%;">Cantidad Disponible</th>-->
                         <th class="text-center" style="width: 20%;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for pc in productos_contenedor %}
                     <tr>
-                        <td>
+                        <td class="text-center">
+                            {% if producto.foto %}
+                                <img src="{{ producto.foto.url }}" alt="{{ producto.nombre }}" class="img-producto">
+                            {% else %}
+                                <div class="img-placeholder">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <!--<td>
                             <div class="text-truncate" style="max-width: 300px;" title="{{ pc.producto.nombre }}">
                                 {{ pc.producto.nombre }}
                             </div>
-                        </td>
+                        </td>-->
                         <td>
                             <span class="codigo-badge">{{ pc.producto.codigo }}</span>
+                        </td>
+                        <td>
+                            <span class="badge-detalle">{{ pc.producto.descripcion|default:'Sin detalle' }}</span>
                         </td>
                         <td>
                             <span class="badge-recibida">{{ pc.cantidad_recibida }} unidades</span>
                         </td>
                         <td>
-                            <span class="badge-stock">{{ pc.cantidad }} unidades</span>
+                            <span class="badge-stock">{{ pc.stock_cajas }} cajas</span>
                         </td>
+                        <!--<td>
+                            <span class="badge-stock">{{ pc.cantidad }} unidades</span>
+                        </td>-->
                         <td class="text-center">
                             <button type="button" class="btn btn-info btn-sm btn-ver-producto-contenedor" 
                                     data-pc-id="{{ pc.id }}" 
