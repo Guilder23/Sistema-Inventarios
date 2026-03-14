@@ -72,6 +72,62 @@ document.addEventListener('DOMContentLoaded', function() {
         $('[data-toggle="tooltip"]').tooltip();
     }
     
+    // Configurar listeners para checkboxes de columnas cuando el modal exista
+    const configurarCheckboxes = function() {
+        const checkboxesColumnas = document.querySelectorAll('.columna-exportar');
+        const checkboxTodas = document.getElementById('colTodas');
+        
+        if (checkboxesColumnas.length > 0 && checkboxTodas) {
+            // Remover listeners anteriores si existen
+            checkboxesColumnas.forEach(checkbox => {
+                const newCheckbox = checkbox.cloneNode(true);
+                checkbox.parentNode.replaceChild(newCheckbox, checkbox);
+            });
+            
+            // Agregar nuevos listeners
+            document.querySelectorAll('.columna-exportar').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    actualizarCheckboxTodas();
+                });
+            });
+            
+            // Inicializar estado del checkbox "Seleccionar Todas"
+            actualizarCheckboxTodas();
+        }
+    };
+    
+    // Listener para cuando se abre el modal
+    if (typeof $ !== 'undefined') {
+        $('#modalExportar').on('shown.bs.modal', function() {
+            configurarCheckboxes();
+        });
+        
+        // Listener para cuando se cierra el modal
+        $('#modalExportar').on('hidden.bs.modal', function() {
+            // Restaurar foco al botón de exportar
+            const botonExportar = document.querySelector('.btn-accion.btn-exportar');
+            if (botonExportar) {
+                setTimeout(() => botonExportar.focus(), 100);
+            }
+        });
+    } else {
+        // Para Bootstrap 5 sin jQuery
+        const modalElement = document.getElementById('modalExportar');
+        if (modalElement) {
+            modalElement.addEventListener('shown.bs.modal', function() {
+                configurarCheckboxes();
+            });
+            
+            modalElement.addEventListener('hidden.bs.modal', function() {
+                // Restaurar foco al botón de exportar
+                const botonExportar = document.querySelector('.btn-accion.btn-exportar');
+                if (botonExportar) {
+                    setTimeout(() => botonExportar.focus(), 100);
+                }
+            });
+        }
+    }
+    
     // Resaltar filas al pasar el mouse
     const rows = document.querySelectorAll('.tabla-contenedores tbody tr');
     rows.forEach(row => {
@@ -94,14 +150,94 @@ function limpiarFiltros() {
 }
 
 /**
+ * Seleccionar o deseleccionar todas las columnas
+ */
+function seleccionarTodasColumnas(checked) {
+    const checkboxes = document.querySelectorAll('.columna-exportar');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = checked;
+    });
+}
+
+/**
+ * Actualizar el estado del checkbox "Seleccionar Todas"
+ */
+function actualizarCheckboxTodas() {
+    const checkboxes = document.querySelectorAll('.columna-exportar');
+    const checkboxTodas = document.getElementById('colTodas');
+    
+    if (!checkboxTodas || checkboxes.length === 0) return;
+    
+    const todasSeleccionadas = Array.from(checkboxes).every(cb => cb.checked);
+    const algunaSeleccionada = Array.from(checkboxes).some(cb => cb.checked);
+    
+    checkboxTodas.checked = todasSeleccionadas;
+    checkboxTodas.indeterminate = !todasSeleccionadas && algunaSeleccionada;
+}
+
+/**
+ * Confirmar y ejecutar la exportación con las columnas seleccionadas
+ */
+function confirmarExportacion() {
+    // Obtener columnas seleccionadas
+    const checkboxes = document.querySelectorAll('.columna-exportar:checked');
+    
+    if (checkboxes.length === 0) {
+        alert('Por favor, selecciona al menos una columna para exportar.');
+        return;
+    }
+    
+    // Obtener los índices de las columnas seleccionadas
+    const columnasSeleccionadas = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    // Cerrar el modal de forma segura
+    const modal = document.getElementById('modalExportar');
+    if (modal) {
+        // Intentar con jQuery/Bootstrap primero
+        if (typeof $ !== 'undefined' && $.fn.modal) {
+            $('#modalExportar').modal('hide');
+        } else if (typeof bootstrap !== 'undefined') {
+            // Bootstrap 5 nativo
+            const bsModal = bootstrap.Modal.getInstance(modal);
+            if (bsModal) {
+                bsModal.hide();
+            }
+        } else {
+            // Fallback manual
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+            modal.removeAttribute('aria-modal');
+            document.body.classList.remove('modal-open');
+            
+            // Remover backdrop si existe
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.remove();
+            }
+        }
+    }
+    
+    // Ejecutar la exportación con un pequeño delay para evitar problemas de foco
+    setTimeout(() => {
+        exportarTabla(columnasSeleccionadas);
+    }, 300);
+}
+
+/**
  * Exportar tabla a Excel/CSV
  * Usa punto y coma (;) como separador para mejor compatibilidad con Excel en español
  */
-function exportarTabla() {
+function exportarTabla(columnasSeleccionadas = null) {
     const tabla = document.getElementById('tablaContenedores');
     
     if (!tabla) {
         return;
+    }
+    
+    // Si no se especifican columnas, exportar todas (excepto foto)
+    if (!columnasSeleccionadas) {
+        columnasSeleccionadas = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     }
     
     // Obtener los datos de la tabla
@@ -113,8 +249,13 @@ function exportarTabla() {
         const rowData = [];
         
         cols.forEach((col, colIndex) => {
-            // Saltar la columna de foto (primera columna)
+            // Saltar la columna de foto (primera columna - índice 0)
             if (colIndex === 0) {
+                return;
+            }
+            
+            // Solo incluir si la columna está en las seleccionadas
+            if (!columnasSeleccionadas.includes(colIndex)) {
                 return;
             }
             
@@ -134,8 +275,11 @@ function exportarTabla() {
             rowData.push(text);
         });
         
-        // Usar punto y coma como separador (mejor para Excel en español)
-        csvContent += rowData.join(';') + '\r\n';
+        // Solo agregar la fila si tiene datos
+        if (rowData.length > 0) {
+            // Usar punto y coma como separador (mejor para Excel en español)
+            csvContent += rowData.join(';') + '\r\n';
+        }
     });
     
     // Crear blob con BOM UTF-8 para correcta visualización de caracteres especiales
