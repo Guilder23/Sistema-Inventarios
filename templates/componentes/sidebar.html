@@ -164,16 +164,14 @@
             </li>
             {% endif %}
 
-            <!-- Ventas - Almacén, Tienda, Staff y Administradores (Oculto para Tienda Online) -->
-            {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
-                {% if not user.perfil or user.perfil.rol != 'tienda_online' %}
-                <li class="sidebar-item">
-                    <a href="{% url 'ventas:listar_ventas' %}" class="sidebar-link {% if 'ventas' in request.path %}active{% endif %}" title="Ventas">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span>Ventas</span>
-                    </a>
-                </li>
-                {% endif %}
+            <!-- Ventas - Solo Almacén (NO Administradores ni Tienda Online) -->
+            {% if user.perfil.rol == 'almacen' %}
+            <li class="sidebar-item">
+                <a href="{% url 'ventas:listar_ventas' %}" class="sidebar-link {% if 'ventas' in request.path %}active{% endif %}" title="Ventas">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Ventas</span>
+                </a>
+            </li>
             {% endif %}
 
             <!-- Ventas - Solo para rol tienda -->
@@ -196,8 +194,8 @@
             </li>
             {% endif %}
 
-            <!-- Traspasos - Almacén, Tienda y Administradores (Oculto para Tienda Online) -->
-            {% if user.is_superuser or user.perfil.rol == 'almacen' or user.perfil.rol == 'tienda' or user.perfil.rol == 'deposito' %}
+            <!-- Traspasos - Almacén, Tienda (Oculto para Administradores y Tienda Online) -->
+            {% if user.perfil.rol == 'almacen' or user.perfil.rol == 'tienda' or user.perfil.rol == 'deposito' %}
             <li class="sidebar-item">
                 <a href="{% url 'listar_traspasos' %}" class="sidebar-link {% if 'traspasos' in request.resolver_match.url_name %}active{% endif %}" title="Traspasos">
                     <i class="fas fa-exchange-alt"></i>
