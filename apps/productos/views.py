@@ -12,6 +12,7 @@ from apps.moneda.models import TipoCambio
 from apps.inventario.models import Inventario, MovimientoInventario
 from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
 from decimal import Decimal
+from apps.servicios.tipos_cambios import obtener_tipo_cambio_usd, calcular_precios_usd, stock_en_cajas
 
 def verificar_permiso_productos(request):
     """Verifica si el usuario tiene permiso para gestionar productos"""
@@ -420,37 +421,13 @@ def listar_productos(request):
     elif estado == 'inactivo':
         productos = productos.filter(activo=False)
     
-    # --- LÓGICA CON TU MODELO TipoCambio ---
-    try:
-        # Buscamos el último tipo de cambio activo para USD
-        tc_dolar = TipoCambio.objects.filter(moneda='USD', activo=True).first()
-        
-        if tc_dolar:
-            valor_dolar = tc_dolar.valor
-        else:
-            # Si no hay ninguno activo, buscamos el último registrado
-            tc_dolar = TipoCambio.objects.filter(moneda='USD').first() # El ordering ['-fecha'] ya nos da el último
-            valor_dolar = tc_dolar.valor if tc_dolar else Decimal('6.96')
-            
-    except Exception:
-        valor_dolar = Decimal('6.96')
 
     # Aplicamos el cálculo a cada producto
-    # Aplicamos el cálculo a cada producto
+    valor_dolar = obtener_tipo_cambio_usd()
     for producto in productos:
-
-    # Precio en USD
-        if producto.precio_caja:
-            producto.precio_usd = producto.precio_caja / valor_dolar
-        else:
-            producto.precio_usd = 0
-
-    # Stock en cajas
-        producto.stock_cajas = (
-            producto.stock / producto.unidades_por_caja
-            if producto.unidades_por_caja
-            else 0
-        )
+        calcular_precios_usd(producto, valor_dolar)
+        stock_en_cajas(producto)
+        print(producto.nombre, producto.precio_caja, producto.precio_caja_usd)
 
     context = {
         'productos': productos,
