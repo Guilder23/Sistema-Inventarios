@@ -257,17 +257,18 @@
             <table class="table table-hover tabla-ventas mb-0" id="tablaVentas">
                 <thead>
                     <tr>
-                        <th style="width: 8%;">CÓDIGO</th>
-                        <th style="width: 14%;">CLIENTE</th>
-                        <th style="width: 10%;">RAZÓN SOCIAL</th>
-                        <th style="width: 9%;">VENDEDOR</th>
-                        <th style="width: 10%;" class="text-center">UBICACIÓN</th>
-                        <th style="width: 9%;" class="text-center">FECHA</th>
-                        <th style="width: 8%;" class="text-center">TIPO PAGO</th>
-                        <th style="width: 8%;" class="text-center">ESTADO</th>
-                        <th style="width: 6%;" class="text-center">MONEDA</th>
-                        <th style="width: 8%;" class="text-right">DESCUENTO</th>
-                        <th style="width: 10%;" class="text-right">TOTAL</th>
+                        <th style="width: 7%;">CÓDIGO</th>
+                        <th style="width: 13%;">CLIENTE</th>
+                        <th style="width: 9%;">RAZÓN SOCIAL</th>
+                        <th style="width: 8%;">VENDEDOR</th>
+                        <th style="width: 9%;" class="text-center">UBICACIÓN</th>
+                        <th style="width: 8%;" class="text-center">FECHA</th>
+                        <th style="width: 7%;" class="text-center">TIPO PAGO</th>
+                        <th style="width: 7%;" class="text-center">ESTADO</th>
+                        <th style="width: 5%;" class="text-center">MONEDA</th>
+                        <th style="width: 7%;" class="text-right">DESCUENTO</th>
+                        <th style="width: 9%;" class="text-right">TOTAL</th>
+                        <th style="width: 5%;" class="text-center">ACCIONES</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -366,6 +367,32 @@
                                 {% if venta.moneda == 'BOB' %}Bs.{% else %}$us{% endif %} {{ venta.total|floatformat:2 }}
                             </strong>
                         </td>
+                        <td class="text-center">
+                            <button 
+                                class="btn btn-sm btn-info btn-ver-detalle" 
+                                onclick="verDetalleVenta('{{ venta.id }}')"
+                                title="Ver Detalle"
+                                data-venta-id="{{ venta.id }}"
+                                data-codigo="{{ venta.codigo }}"
+                                data-cliente="{{ venta.cliente }}"
+                                data-telefono="{{ venta.telefono|default:'-' }}"
+                                data-razon-social="{{ venta.razon_social|default:'-' }}"
+                                data-direccion="{{ venta.direccion|default:'-' }}"
+                                data-vendedor="{% if venta.vendedor.first_name %}{{ venta.vendedor.first_name }} {{ venta.vendedor.last_name }}{% else %}{{ venta.vendedor.username }}{% endif %}"
+                                data-ubicacion="{{ venta.ubicacion.nombre_ubicacion }}"
+                                data-ubicacion-tipo="{{ venta.ubicacion.rol }}"
+                                data-fecha="{{ venta.fecha_elaboracion|date:'d/m/Y H:i' }}"
+                                data-tipo-pago="{{ venta.get_tipo_pago_display }}"
+                                data-estado="{{ venta.get_estado_display }}"
+                                data-moneda="{{ venta.moneda }}"
+                                data-tipo-cambio="{{ venta.tipo_cambio }}"
+                                data-subtotal="{{ venta.subtotal }}"
+                                data-descuento="{{ venta.descuento }}"
+                                data-total="{{ venta.total }}"
+                            >
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -438,6 +465,7 @@
     {% endif %}
 
     {% include 'reportes/ventas/modal/modal_exportar.html' %}
+    {% include 'reportes/ventas/modal/modal_detalle.html' %}
 
 </div>
 {% endblock %}
@@ -445,4 +473,5 @@
 {% block scripts_extra %}
 <script src="{% static 'js/reportes/ventas/ventas.js' %}"></script>
 <script src="{% static 'js/reportes/ventas/modal/modal_exportar.js' %}"></script>
+<script src="{% static 'js/reportes/ventas/modal/modal_detalle.js' %}"></script>
 {% endblock %}
