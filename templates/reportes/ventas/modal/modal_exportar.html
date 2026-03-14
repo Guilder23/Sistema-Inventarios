@@ -1,0 +1,109 @@
+{% load static %}
+<!-- Estilos específicos del modal -->
+<link rel="stylesheet" href="{% static 'css/reportes/ventas/modal/modal_exportar.css' %}">
+
+<!-- Modal para Seleccionar Columnas de Exportación -->
+<div class="modal fade" id="modalExportar" tabindex="-1" role="dialog" aria-labelledby="modalExportarLabel">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #1cc88a; color: white;">
+                <h5 class="modal-title" id="modalExportarLabel">
+                    <i class="fas fa-file-excel"></i> Exportar a Excel
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3"><strong>Selecciona las columnas que deseas exportar:</strong></p>
+                <div class="row">
+                    <div class="col-12 mb-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="colTodas" onchange="seleccionarTodasColumnas(this.checked)">
+                            <label class="custom-control-label font-weight-bold" for="colTodas">
+                                <i class="fas fa-check-double"></i> Seleccionar Todas
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <hr class="my-2">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input columna-exportar" id="colCodigo" value="0" checked>
+                            <label class="custom-control-label" for="colCodigo">Código</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input columna-exportar" id="colCliente" value="1" checked>
+                            <label class="custom-control-label" for="colCliente">Cliente</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input columna-exportar" id="colRazonSocial" value="2" checked>
+                            <label class="custom-control-label" for="colRazonSocial">Razón Social</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input columna-exportar" id="colVendedor" value="3" checked>
+                            <label class="custom-control-label" for="colVendedor">Vendedor</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input columna-exportar" id="colUbicacion" value="4" checked>
+                            <label class="custom-control-label" for="colUbicacion">Ubicación</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input columna-exportar" id="colFecha" value="5" checked>
+                            <label class="custom-control-label" for="colFecha">Fecha</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input columna-exportar" id="colTipoPago" value="6" checked>
+                            <label class="custom-control-label" for="colTipoPago">Tipo Pago</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input columna-exportar" id="colEstado" value="7" checked>
+                            <label class="custom-control-label" for="colEstado">Estado</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input columna-exportar" id="colMoneda" value="8" checked>
+                            <label class="custom-control-label" for="colMoneda">Moneda</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input columna-exportar" id="colDescuento" value="9" checked>
+                            <label class="custom-control-label" for="colDescuento">Descuento</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input columna-exportar" id="colTotal" value="10" checked>
+                            <label class="custom-control-label" for="colTotal">Total</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-success" onclick="confirmarExportacion()">
+                    <i class="fas fa-file-download"></i> Exportar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

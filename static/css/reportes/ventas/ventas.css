@@ -292,50 +292,6 @@
     border-color: #4e73df;
 }
 
-/* ===== ESTILOS DEL MODAL DE EXPORTACIÓN ===== */
-#modalExportar .modal-header {
-    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
-}
-
-#modalExportar .modal-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-#modalExportar .modal-body {
-    padding: 1.5rem;
-}
-
-#modalExportar .custom-control {
-    padding-left: 1.75rem;
-}
-
-#modalExportar .custom-control-label {
-    cursor: pointer;
-    user-select: none;
-    padding-top: 0.125rem;
-}
-
-#modalExportar .custom-control-label::before,
-#modalExportar .custom-control-label::after {
-    top: 0.125rem;
-}
-
-#modalExportar hr {
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-#modalExportar .modal-footer {
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
-    padding: 1rem 1.5rem;
-}
-
-#modalExportar .btn {
-    padding: 0.5rem 1.25rem;
-    font-weight: 500;
-}
-
-
 .vendedor-info {
     display: flex;
     align-items: center;

@@ -179,7 +179,7 @@ def reporte_ventas(request):
         'ordenar_por': ordenar_por,
     }
     
-    return render(request, 'reportes/ventas.html', context)
+    return render(request, 'reportes/ventas/ventas.html', context)
 
 @login_required
 def reporte_traspasos(request):
@@ -324,7 +324,7 @@ def reporte_traspasos(request):
         'ordenar_por': ordenar_por,
     }
     
-    return render(request, 'reportes/traspasos.html', context)
+    return render(request, 'reportes/traspasos/traspasos.html', context)
 
 @login_required
 def reporte_contenedores(request):
@@ -483,4 +483,4 @@ def reporte_contenedores(request):
         'stock_minimo': stock_minimo,
     }
     
-    return render(request, 'reportes/contenedores.html', context)
+    return render(request, 'reportes/contenedores/contenedores.html', context)
