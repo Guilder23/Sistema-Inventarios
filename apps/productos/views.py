@@ -436,13 +436,22 @@ def listar_productos(request):
         valor_dolar = Decimal('6.96')
 
     # Aplicamos el cálculo a cada producto
+    # Aplicamos el cálculo a cada producto
     for producto in productos:
-        if producto.precio_unidad:
-            # Realizamos la conversión: Bs / Valor Dólar
-            producto.precio_usd = producto.precio_unidad / valor_dolar
+
+    # Precio en USD
+        if producto.precio_caja:
+            producto.precio_usd = producto.precio_caja / valor_dolar
         else:
             producto.precio_usd = 0
-    # ---------------------------------------
+
+    # Stock en cajas
+        producto.stock_cajas = (
+            producto.stock / producto.unidades_por_caja
+            if producto.unidades_por_caja
+            else 0
+        )
+
     context = {
         'productos': productos,
         'categorias': Categoria.objects.filter(activo=True).order_by('nombre'),
