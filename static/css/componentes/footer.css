@@ -30,6 +30,9 @@
     margin-bottom: 0.75rem;
     font-weight: 600;
     font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 
 .footer-section h5 {
@@ -44,6 +47,13 @@
     line-height: 1.5;
     margin-bottom: 0;
     font-size: 0.8125rem;
+}
+
+.footer-logo {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    flex: 0 0 auto;
 }
 
 .footer-links {
