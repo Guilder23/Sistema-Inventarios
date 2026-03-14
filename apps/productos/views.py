@@ -8,8 +8,11 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
 from .models import Categoria, Contenedor, Producto, HistorialProducto, ProductoDanado, ProductoContenedor
+from apps.moneda.models import TipoCambio
 from apps.inventario.models import Inventario, MovimientoInventario
 from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
+from decimal import Decimal
+from apps.servicios.tipos_cambios import obtener_tipo_cambio_usd, calcular_precios_usd, stock_en_cajas
 
 def verificar_permiso_productos(request):
     """Verifica si el usuario tiene permiso para gestionar productos"""
@@ -418,6 +421,14 @@ def listar_productos(request):
     elif estado == 'inactivo':
         productos = productos.filter(activo=False)
     
+
+    # Aplicamos el cálculo a cada producto
+    valor_dolar = obtener_tipo_cambio_usd()
+    for producto in productos:
+        calcular_precios_usd(producto, valor_dolar)
+        stock_en_cajas(producto)
+        print(producto.nombre, producto.precio_caja, producto.precio_caja_usd)
+
     context = {
         'productos': productos,
         'categorias': Categoria.objects.filter(activo=True).order_by('nombre'),
