@@ -529,6 +529,11 @@ def obtener_producto(request, id):
     """Obtener datos de un producto en formato JSON"""
     try:
         producto = get_object_or_404(Producto, id=id)
+        #calcular el precio en dolares y stock en cajas
+        valor_dolar = obtener_tipo_cambio_usd()
+        calcular_precios_usd(producto, valor_dolar)
+        stock_en_cajas(producto)
+        #fin calcular precio en dolares y stock en cajas
         
         creado_por_str = ''
         if producto.creado_por:
@@ -549,6 +554,13 @@ def obtener_producto(request, id):
             'precio_compra': float(producto.precio_compra),
             'precio_caja': float(producto.precio_caja),
             'precio_mayor': float(producto.precio_mayor),
+            # Precios en dólares
+            'precio_unidad_dolar': float(producto.precio_unidad_usd),
+            'precio_mayor_dolar': float(producto.precio_mayor_usd),
+            'precio_caja_dolar': float(producto.precio_caja_usd),
+            # Stock en cajas
+            'stock_cajas': float(producto.stock_cajas),
+            # Otros campos
             'poliza': float(producto.poliza) if producto.poliza else 0,
             'gastos': float(producto.gastos) if producto.gastos else 0,
             'stock_critico': producto.stock_critico,
