@@ -121,6 +121,18 @@
     text-align: left;
 }
 
+.tabla-productos thead th:first-child,
+.tabla-productos tbody td:first-child {
+    width: 72px !important;
+    text-align: center;
+}
+
+.tabla-productos thead th:last-child,
+.tabla-productos tbody td:last-child {
+    width: 120px !important;
+    text-align: center;
+}
+
 .tabla-productos thead th.text-center {
     text-align: center;
 }
@@ -137,6 +149,26 @@
 }
 
 /* BADGES Y ESTILOS ESPECIALES */
+
+.img-producto {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 1px solid #e5e7eb;
+}
+
+.img-placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    color: #9ca3af;
+    font-size: 0.85rem;
+}
 
 .codigo-badge {
     display: inline-block;
@@ -156,6 +188,17 @@
     background-color: #dbeafe;
     color: #1e40af;
     border: 1px solid #93c5fd;
+    border-radius: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.badge-detalle {
+    display: inline-block;
+    padding: 0.3rem 0.55rem;
+    background-color: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
     border-radius: 0.35rem;
     font-size: 0.7rem;
     font-weight: 500;

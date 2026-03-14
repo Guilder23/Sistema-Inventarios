@@ -44,3 +44,17 @@ def stock_en_cajas(producto):
     )
 
     return producto
+
+def stock_cajas_contenedor(pc):
+    """
+    Calcula cuántas cajas hay en el contenedor para un producto.
+    pc = instancia de ProductoContenedor
+    """
+    unidades_por_caja = pc.producto.unidades_por_caja
+
+    pc.stock_cajas_contenedor = (
+        pc.cantidad_recibida / unidades_por_caja
+        if unidades_por_caja else 0
+    )
+
+    return pc

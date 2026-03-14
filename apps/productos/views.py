@@ -12,7 +12,7 @@ from apps.moneda.models import TipoCambio
 from apps.inventario.models import Inventario, MovimientoInventario
 from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
 from decimal import Decimal
-from apps.servicios.tipos_cambios import obtener_tipo_cambio_usd, calcular_precios_usd, stock_en_cajas
+from apps.servicios.tipos_cambios import obtener_tipo_cambio_usd, calcular_precios_usd, stock_en_cajas, stock_cajas_contenedor
 
 def verificar_permiso_productos(request):
     """Verifica si el usuario tiene permiso para gestionar productos"""
@@ -1480,7 +1480,23 @@ def productos_en_contenedor(request, contenedor_id):
     productos_contenedor = ProductoContenedor.objects.filter(
         contenedor=contenedor
     ).select_related('producto').order_by('-fecha_creacion')
-    
+
+    # calcular valor del dolar
+    valor_dolar = obtener_tipo_cambio_usd()
+
+    for pc in productos_contenedor:
+        producto = pc.producto
+
+        # precios USD
+        calcular_precios_usd(producto, valor_dolar)
+
+        # stock total del producto en cajas
+        stock_en_cajas(producto)
+
+        # stock del contenedor en cajas
+        stock_cajas_contenedor(pc)
+
+    #fin calcular valor de dolar y stock en cajas
     context = {
         'contenedor': contenedor,
         'productos_contenedor': productos_contenedor,
