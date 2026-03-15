@@ -9,27 +9,14 @@
         });
 
         $('#formEditarCategoria').on('submit', function(e) {
-            e.preventDefault();
-
             if (!validarFormularioEditar()) {
+                e.preventDefault();
                 return false;
             }
 
             const categoriaId = $('#editarCategoriaId').val();
-            const formData = $(this).serialize();
-
-            $.ajax({
-                url: `/productos/categorias/${categoriaId}/editar/`,
-                type: 'POST',
-                data: formData,
-                success: function() {
-                    $('#modalEditarCategoria').modal('hide');
-                    location.reload();
-                },
-                error: function() {
-                    alert('Error al actualizar la categoría');
-                }
-            });
+            const form = $(this);
+            form.attr('action', `/productos/categorias/${categoriaId}/editar/`);
         });
 
         $('#modalEditarCategoria').on('hidden.bs.modal', function() {
