@@ -35,7 +35,7 @@ body.sidebar-collapsed .main-container {
     border-left-color: #26de81;
 }
 
-.alert-danger {
+.alert-danger, .alert-error {
     background-color: #fef2f2;
     color: #991b1b;
     border-left-color: #ff4757;
@@ -53,6 +53,80 @@ body.sidebar-collapsed .main-container {
     border-left-color: #4bcffa;
 }
 
+/* ============================================================================
+   MENSAJES - Notificaciones en esquina inferior derecha
+   ============================================================================ */
+
+/* Contenedor de mensajes en esquina inferior derecha */
+.messages-container {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    z-index: 9999 !important;
+    max-width: 400px;
+    pointer-events: none;
+}
+
+.messages-container .alert {
+    margin-bottom: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideInRight 0.3s ease-out;
+    pointer-events: auto;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding-right: 3rem !important; /* Espacio para el botón X */
+    position: relative;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.messages-container .alert .close {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    padding: 0;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: inherit;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+.messages-container .alert .close:hover {
+    opacity: 0.8;
+}
+
+.messages-container .alert.fade-out {
+    animation: slideOutRight 0.3s ease-in;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
 /* RESPONSIVE */
 @media (max-width: 992px) {
     .main-container {
@@ -63,5 +137,17 @@ body.sidebar-collapsed .main-container {
 @media (max-width: 576px) {
     .content {
         padding: 1rem;
+    }
+    
+    .messages-container {
+        left: 10px !important;
+        right: 10px !important;
+        bottom: 10px !important;
+        max-width: none;
+    }
+    
+    .messages-container .alert {
+        font-size: 0.9rem;
+        padding: 0.75rem 2.5rem 0.75rem 1rem !important;
     }
 }

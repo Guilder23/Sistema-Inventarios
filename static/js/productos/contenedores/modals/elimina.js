@@ -15,39 +15,19 @@
             console.log('Elimina.js: ', { contenedorId, contenedorNombre });
 
             contenedorIdEliminar = contenedorId;
+            
+            // Configurar el action del formulario
+            $('#formEliminarContenedor').attr('action', `/productos/contenedores/${contenedorId}/eliminar/`);
+            
             $('#eliminarContenedorNombre').text(contenedorNombre);
             $('#modalEliminarContenedor').modal('show');
         });
 
         $('#formEliminarContenedor').on('submit', function(e) {
             console.log('Elimina.js: Form submit detectado');
-            e.preventDefault();
-            if (contenedorIdEliminar) {
-                eliminarContenedor(contenedorIdEliminar);
-            }
+            // Dejar que el formulario se envíe normalmente para que los mensajes funcionen
+            console.log('Elimina.js: Enviando formulario...');
+            // No prevenir el envío, dejar que se envíe normalmente
         });
     });
-
-    function eliminarContenedor(contenedorId) {
-        const csrftoken = $('[name=csrfmiddlewaretoken]').val();
-
-        console.log('Elimina.js: Enviando AJAX para eliminar:', { contenedorId, csrftoken });
-
-        $.ajax({
-            url: `/productos/contenedores/${contenedorId}/eliminar/`,
-            type: 'POST',
-            headers: {
-                'X-CSRFToken': csrftoken
-            },
-            success: function(response) {
-                console.log('Elimina.js: Respuesta exitosa:', response);
-                $('#modalEliminarContenedor').modal('hide');
-                location.reload();
-            },
-            error: function(xhr, status, error) {
-                console.error('Elimina.js: Error al eliminar:', { status, error, response: xhr.responseText });
-                alert('Error al cambiar el estado del contenedor');
-            }
-        });
-    }
 })();

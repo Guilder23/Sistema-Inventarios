@@ -14,32 +14,16 @@
 
         $('#formEditarContenedor').on('submit', function(e) {
             console.log('Edita.js: Form submit detectado');
-            e.preventDefault();
 
             if (!validarFormularioEditar()) {
                 console.log('Edita.js: Validación falló');
+                e.preventDefault();
                 return false;
             }
 
-            const contenedorId = $('#editarContenedorId').val();
-            const formData = $(this).serialize();
-
-            console.log('Edita.js: Enviando AJAX para editar:', { contenedorId, formData });
-
-            $.ajax({
-                url: `/productos/contenedores/${contenedorId}/editar/`,
-                type: 'POST',
-                data: formData,
-                success: function(response) {
-                    console.log('Edita.js: Respuesta exitosa:', response);
-                    $('#modalEditarContenedor').modal('hide');
-                    location.reload();
-                },
-                error: function(xhr, status, error) {
-                    console.error('Edita.js: Error al actualizar:', { status, error, response: xhr.responseText });
-                    alert('Error al actualizar el contenedor');
-                }
-            });
+            // Dejar que el formulario se envíe normalmente para que los mensajes funcionen
+            console.log('Edita.js: Enviando formulario...');
+            // No prevenir el envío, dejar que se envíe normalmente
         });
 
         $('#modalEditarContenedor').on('hidden.bs.modal', function() {
@@ -53,6 +37,10 @@
 
     function cargarDatosContenedor(contenedorId) {
         console.log('Edita.js: Llamando AJAX para cargar datos:', contenedorId);
+        
+        // Configurar el action del formulario
+        $('#formEditarContenedor').attr('action', `/productos/contenedores/${contenedorId}/editar/`);
+        
         $.ajax({
             url: `/productos/contenedores/${contenedorId}/obtener/`,
             type: 'GET',

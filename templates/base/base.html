@@ -40,21 +40,23 @@
         <!-- INCLUIR SIDEBAR -->
         {% include 'componentes/sidebar.html' %}
         
+        <!-- MENSAJES EN ESQUINA INFERIOR DERECHA -->
+        {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
         <!-- CONTENIDO PRINCIPAL -->
         <div class="main-container">
             <div class="content">
-                <!-- MENSAJES -->
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-
                 <!-- BLOQUE DE CONTENIDO QUE HEREDAN LAS PÁGINAS -->
                 {% block contenido %}
                 {% endblock %}
@@ -73,6 +75,9 @@
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.1/dist/sweetalert2.all.min.js"></script>
 
+    <!-- Scripts de Base -->
+    <script src="{% static 'js/base/base.js' %}"></script>
+    
     <!-- Scripts de Componentes -->
     <script src="{% static 'js/componentes/navbar.js' %}"></script>
     <script src="{% static 'js/componentes/sidebar.js' %}"></script>
