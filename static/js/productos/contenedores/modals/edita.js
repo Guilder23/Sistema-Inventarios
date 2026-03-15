@@ -61,6 +61,7 @@
                 console.log('Edita.js: Datos recibidos:', data);
                 $('#editarContenedorId').val(data.id);
                 $('#editNombre').val(data.nombre || '');
+                $('#editDescripcion').val(data.descripcion || '');
                 $('#editProveedor').val(data.proveedor || '');
                 $('#editActivo').prop('checked', data.activo);
                 console.log('Edita.js: Abriendo modal...');
