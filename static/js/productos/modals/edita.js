@@ -67,11 +67,11 @@
         $('#edit_codigo').val(data.codigo);
         $('#edit_nombre').val(data.nombre);
         $('#edit_categoria').val(data.categoria_id || '');
-        $('#edit_contenedor').val(data.contenedor_id || '');
+        //$('#edit_contenedor').val(data.contenedor_id || '');
         $('#edit_descripcion').val(data.descripcion);
         $('#edit_stock').val(data.stock);
         $('#edit_unidades_por_caja').val(data.unidades_por_caja);
-        $('#edit_precio_unidad').val(data.precio_unidad);
+        //$('#edit_precio_unidad').val(data.precio_unidad);
         $('#edit_stock_critico').val(data.stock_critico);
         $('#edit_stock_bajo').val(data.stock_bajo);
         $('#edit_activo').prop('checked', data.activo);
@@ -144,10 +144,10 @@
         const codigo = $('#edit_codigo').val().trim();
         const nombre = $('#edit_nombre').val().trim();
         const categoria = $('#edit_categoria').val();
-        const contenedor = $('#edit_contenedor').val();
+        //const contenedor = $('#edit_contenedor').val();
         const stock = $('#edit_stock').val();
         const unidades_por_caja = $('#edit_unidades_por_caja').val();
-        const precio_unidad = $('#edit_precio_unidad').val();
+        //const precio_unidad = $('#edit_precio_unidad').val();
         
         if (!codigo) {
             mostrarNotificacion('El código del producto es requerido', 'warning');
@@ -167,11 +167,11 @@
             return false;
         }
 
-        if (!contenedor) {
+        /*if (!contenedor) {
             mostrarNotificacion('Debe seleccionar un contenedor', 'warning');
             $('#edit_contenedor').focus();
             return false;
-        }
+        }*/
         
         if (!stock || parseInt(stock) < 0) {
             mostrarNotificacion('El stock debe ser un número válido', 'warning');
@@ -185,11 +185,11 @@
             return false;
         }
         
-        if (!precio_unidad || parseFloat(precio_unidad) < 0) {
+       /* if (!precio_unidad || parseFloat(precio_unidad) < 0) {
             mostrarNotificacion('El precio unitario debe ser un número válido', 'warning');
             $('#edit_precio_unidad').focus();
             return false;
-        }
+        }*/
         
         return true;
     }
