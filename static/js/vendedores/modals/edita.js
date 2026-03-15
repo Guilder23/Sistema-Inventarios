@@ -20,27 +20,9 @@
         
         // Manejar submit del formulario
         $(document).on('submit', '#formEditarVendedor', function(e) {
-            e.preventDefault();
-            
             const vendedorId = $('#editarVendedorId').val();
-            const formData = new FormData(this);
-            
-            $.ajax({
-                url: '/vendedores/editar/' + vendedorId + '/',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        $('#modalEditarVendedor').modal('hide');
-                        location.reload();
-                    }
-                },
-                error: function() {
-                }
-            });
+            const form = $(this);
+            form.attr('action', '/vendedores/editar/' + vendedorId + '/');
         });
     }
     
