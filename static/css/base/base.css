@@ -95,10 +95,23 @@ body.sidebar-collapsed .main-container {
     color: inherit;
     opacity: 0.5;
     cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
 }
 
 .messages-container .alert .close:hover {
-    opacity: 0.8;
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.messages-container .alert .close:active {
+    background: rgba(0, 0, 0, 0.2);
+    transform: translateY(-50%) scale(0.95);
 }
 
 .messages-container .alert.fade-out {
