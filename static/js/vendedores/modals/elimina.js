@@ -7,6 +7,10 @@
     
     let vendedorIdActual = null;
     
+    $(document).ready(function() {
+        inicializarModalEliminar();
+    });
+    
     function inicializarModalEliminar() {
         $(document).on('click', '.btn-eliminar-vendedor', function(e) {
             e.preventDefault();
@@ -24,8 +28,5 @@
             }
         });
     }
-    
-    // Exponer función para inicialización
-    window.inicializarModalEliminar = inicializarModalEliminar;
     
 })();

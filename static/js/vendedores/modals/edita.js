@@ -5,6 +5,10 @@
 (function() {
     'use strict';
     
+    $(document).ready(function() {
+        inicializarModalEditar();
+    });
+    
     function inicializarModalEditar() {
         $(document).on('click', '.btn-editar-vendedor', function(e) {
             e.preventDefault();
@@ -98,8 +102,5 @@
         } else {
         }
     }
-    
-    // Exponer función para inicialización
-    window.inicializarModalEditar = inicializarModalEditar;
     
 })();

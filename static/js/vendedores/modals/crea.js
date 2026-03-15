@@ -5,6 +5,10 @@
 (function() {
     'use strict';
     
+    $(document).ready(function() {
+        inicializarModalCrear();
+    });
+    
     function inicializarModalCrear() {
         // Cambio de tipo de ubicación (Almacén o Tienda)
         $(document).on('change', '#tipoUbicacion', function() {
@@ -19,30 +23,11 @@
         
         // Manejar submit del formulario
         $(document).on('submit', '#formCrearVendedor', function(e) {
-            e.preventDefault();
-            
             if (!validarFormulario()) {
+                e.preventDefault();
                 return false;
             }
-            
-            const formData = new FormData(this);
-            
-            $.ajax({
-                url: '/vendedores/crear/',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        $('#modalCrearVendedor').modal('hide');
-                        location.reload();
-                    }
-                },
-                error: function(xhr, status, error) {
-                }
-            });
+            // El formulario se envía con el action definido en el HTML
         });
     }
     

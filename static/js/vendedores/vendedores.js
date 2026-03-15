@@ -6,19 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     inicializarBusquedaFrontend();
     inicializarFiltrosFrontend();
     
-    // Inicializar modales
-    if (typeof inicializarModalCrear === 'function') {
-        inicializarModalCrear();
-    }
-    if (typeof inicializarModalVer === 'function') {
-        inicializarModalVer();
-    }
-    if (typeof inicializarModalEditar === 'function') {
-        inicializarModalEditar();
-    }
-    if (typeof inicializarModalEliminar === 'function') {
-        inicializarModalEliminar();
-    }
+    // Los modales se inicializan automáticamente en sus respectivos archivos
 });
 
 /**
