@@ -23,6 +23,7 @@ class Categoria(models.Model):
 class Contenedor(models.Model):
     """Modelo de Contenedor de productos"""
     nombre = models.CharField(max_length=120, unique=True)
+    descripcion = models.TextField(blank=True, null=True, verbose_name='Descripción')
     proveedor = models.CharField(max_length=150)
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='contenedores_creados')
     fecha_creacion = models.DateTimeField(auto_now_add=True)

@@ -22,6 +22,7 @@
             success: function(data) {
                 console.log('Ver.js: Datos recibidos:', data);
                 $('#verNombre').text(data.nombre || 'No especificado');
+                $('#verDescripcion').text(data.descripcion || 'Sin descripción');
                 $('#verProveedor').text(data.proveedor || 'No especificado');
                 $('#verStock').text((data.stock ?? 0) + ' unidades');
 

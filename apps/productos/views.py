@@ -285,6 +285,7 @@ def crear_contenedor(request):
 
     try:
         nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
         proveedor = request.POST.get('proveedor', '').strip()
         activo = request.POST.get('activo') == 'on'
 
@@ -298,6 +299,7 @@ def crear_contenedor(request):
 
         Contenedor.objects.create(
             nombre=nombre,
+            descripcion=descripcion if descripcion else None,
             proveedor=proveedor,
             activo=activo,
             creado_por=request.user
@@ -328,6 +330,7 @@ def obtener_contenedor(request, id):
         data = {
             'id': contenedor.id,
             'nombre': contenedor.nombre,
+            'descripcion': contenedor.descripcion or '',
             'proveedor': contenedor.proveedor,
             'stock': contenedor.stock_total,
             'activo': contenedor.activo,
@@ -352,6 +355,7 @@ def editar_contenedor(request, id):
 
     try:
         nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
         proveedor = request.POST.get('proveedor', '').strip()
         activo = request.POST.get('activo') == 'on'
 
@@ -365,6 +369,7 @@ def editar_contenedor(request, id):
             return redirect('listar_contenedores')
 
         contenedor.nombre = nombre
+        contenedor.descripcion = descripcion if descripcion else None
         contenedor.proveedor = proveedor
         contenedor.activo = activo
         contenedor.save()
