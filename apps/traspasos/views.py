@@ -717,29 +717,27 @@ def obtener_productos_traspaso(request):
             origen = ubicacion_actual
 
         if origen.rol == 'almacen':
-            # Obtener productos con stock en ProductoContenedor
-            productos_contenedores = ProductoContenedor.objects.filter(
+            # Obtener productos únicos con stock en ProductoContenedor
+            productos_ids = ProductoContenedor.objects.filter(
                 cantidad__gt=0,
                 producto__activo=True
-            ).values(
-                'producto__id',
-                'producto__codigo',
-                'producto__nombre',
-                'producto__precio_unidad'
-            ).distinct()
+            ).values_list('producto__id', flat=True).distinct()
             
-            # Construir respuesta con stock calculado
+            # Construir respuesta con stock calculado (un producto solo aparece una vez)
             resultado = []
-            for pc in productos_contenedores:
-                producto_id = pc['producto__id']
-                producto_obj = Producto.objects.get(id=producto_id)
-                resultado.append({
-                    'id': producto_id,
-                    'codigo': pc['producto__codigo'],
-                    'nombre': pc['producto__nombre'],
-                    'stock': producto_obj.stock,
-                    'precio_unidad': float(pc['producto__precio_unidad'] or 0),
-                })
+            productos_vistos = set()
+            
+            for producto_id in productos_ids:
+                if producto_id not in productos_vistos:
+                    productos_vistos.add(producto_id)
+                    producto_obj = Producto.objects.get(id=producto_id)
+                    resultado.append({
+                        'id': producto_id,
+                        'codigo': producto_obj.codigo,
+                        'nombre': producto_obj.nombre,
+                        'stock': producto_obj.stock,
+                        'precio_unidad': float(producto_obj.precio_unidad or 0),
+                    })
             return JsonResponse(resultado, safe=False)
 
         origen_stock = _perfil_stock_objetivo(origen)
