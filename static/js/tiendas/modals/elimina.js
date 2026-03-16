@@ -20,16 +20,7 @@ function inicializarModalEliminar() {
     const formEliminarTienda = document.getElementById('formEliminarTienda');
     if (formEliminarTienda) {
         formEliminarTienda.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Mostrar confirmación
-            const tiendaNombre = document.getElementById('eliminarTiendaNombre').textContent;
-            const estado = document.getElementById('eliminarTiendaEstado').value;
-            const textoEstado = estado === 'activo' ? 'activada' : 'desactivada';
-            
-            if (confirm(`¿Desea cambiar el estado de "${tiendaNombre}" a "${textoEstado}"?`)) {
-                this.submit();
-            }
+            // El formulario se envía normalmente
         });
     }
     
@@ -72,7 +63,6 @@ function cargarEliminacionTienda(tiendaId, tiendaNombre) {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             // En caso de error, usar valores por defecto
             const eliminarNombreElement = document.getElementById('eliminarTiendaNombre');
             const eliminarIdElement = document.getElementById('eliminarTiendaId');

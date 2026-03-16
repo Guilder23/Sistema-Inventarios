@@ -7,6 +7,10 @@
     
     let vendedorIdActual = null;
     
+    $(document).ready(function() {
+        inicializarModalEliminar();
+    });
+    
     function inicializarModalEliminar() {
         $(document).on('click', '.btn-eliminar-vendedor', function(e) {
             e.preventDefault();
@@ -17,29 +21,12 @@
             $('#modalEliminarVendedor').modal('show');
         });
         
-        $(document).on('click', '#btnConfirmarEliminar', function() {
-            if (!vendedorIdActual) return;
-            
-            $.ajax({
-                url: '/vendedores/eliminar/' + vendedorIdActual + '/',
-                type: 'POST',
-                headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        $('#modalEliminarVendedor').modal('hide');
-                        location.reload();
-                    }
-                },
-                error: function() {
-                }
-            });
+        $(document).on('submit', '#formEliminarVendedor', function(e) {
+            if (vendedorIdActual) {
+                const form = $(this);
+                form.attr('action', '/vendedores/eliminar/' + vendedorIdActual + '/');
+            }
         });
     }
-    
-    // Exponer función para inicialización
-    window.inicializarModalEliminar = inicializarModalEliminar;
     
 })();

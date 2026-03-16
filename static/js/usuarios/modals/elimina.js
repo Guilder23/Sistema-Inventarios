@@ -27,38 +27,12 @@ console.log('✓ Script elimina.js cargado');
         
         // Confirmar eliminación mediante submit del formulario
         $('#formEliminarUsuario').off('submit').on('submit', function(e) {
-            e.preventDefault();
             if (usuarioIdEliminar) {
                 console.log('→ Confirmando eliminación usuario ID:', usuarioIdEliminar);
-                eliminarUsuario(usuarioIdEliminar);
+                const form = $(this);
+                form.attr('action', `/usuarios/${usuarioIdEliminar}/eliminar/`);
             }
         });
     });
-    
-    function eliminarUsuario(userId) {
-        console.log('→ Eliminando usuario ID:', userId);
-        
-        // Obtener el CSRF token
-        const csrftoken = $('[name=csrfmiddlewaretoken]').val();
-        
-        $.ajax({
-            url: `/usuarios/${userId}/eliminar/`,
-            type: 'POST',
-            headers: {
-                'X-CSRFToken': csrftoken
-            },
-            success: function(response) {
-                console.log('✓ Usuario eliminado correctamente');
-                $('#modalEliminarUsuario').modal('hide');
-                
-                // Recargar la página o actualizar la tabla
-                location.reload();
-            },
-            error: function(xhr, status, error) {
-                console.error('✗ Error al eliminar usuario:', error);
-                alert('Error al eliminar el usuario');
-            }
-        });
-    }
     
 })();

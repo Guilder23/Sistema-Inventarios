@@ -26,28 +26,15 @@
             
             // Event listener para submit del formulario
             $('#formEditarUsuario').off('submit').on('submit', function(e) {
-                e.preventDefault(); // Prevenir submit normal
-                
                 if (!validarFormularioEditar()) {
+                    e.preventDefault();
                     return false;
                 }
                 
-                // Enviar datos mediante AJAX
+                // Configurar action del formulario dinámicamente
                 const userId = $('#editarUsuarioId').val();
-                const formData = $(this).serialize();
-                
-                $.ajax({
-                    url: `/usuarios/${userId}/editar/`,
-                    type: 'POST',
-                    data: formData,
-                    success: function(response) {
-                        $('#modalEditarUsuario').modal('hide');
-                        location.reload(); // Recargar la página para ver cambios
-                    },
-                    error: function(xhr, status, error) {
-                        alert('Error al actualizar el usuario');
-                    }
-                });
+                const form = $(this);
+                form.attr('action', `/usuarios/${userId}/editar/`);
             });
         });
         
