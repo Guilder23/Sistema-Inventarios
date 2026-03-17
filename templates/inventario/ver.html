@@ -85,7 +85,10 @@
                         <th style="width: 22%;">Producto</th>
                         <th style="width: 14%;">Categoría</th>
                         {% if not es_almacen %}<th style="width: 16%;">Contenedor</th>{% endif %}
-                        <th class="col-stock-almacen">{{ label_stock|default:'Stock' }}</th>
+                        <th class="col-stock-almacen">{{ label_stock|default:'Stock unidades' }}</th>
+                        <th class="col-stock-almacen">Stock caja</th>
+                        <th class="col-precio-usd">Precio por caja USD</th>
+                        <th class="col-precio-bs">Precio por caja Bs</th>
                         <th style="width: 10%;">Estado</th>
                         <th style="width: 14%;">Actualizado</th>
                     </tr>
@@ -101,12 +104,27 @@
                         {% if not es_almacen %}<td>{{ item.producto.contenedor.nombre|default:'Sin contenedor' }}</td>{% endif %}
                         <td>
                             {% if item.estado_stock == 'normal' %}
-                                <span class="badge-stock badge-stock-normal">{{ item.cantidad }} unidades</span>
+                                <span class="badge-stock badge-stock-normal">{{ item.producto.stock }} unidades</span>
                             {% elif item.estado_stock == 'bajo' %}
-                                <span class="badge-stock badge-stock-bajo">{{ item.cantidad }} unidades</span>
+                                <span class="badge-stock badge-stock-bajo">{{ item.producto.stock }} unidades</span>
                             {% else %}
-                                <span class="badge-stock badge-stock-critico">{{ item.cantidad }} unidades</span>
+                                <span class="badge-stock badge-stock-critico">{{ item.producto.stock}} unidades</span>
                             {% endif %}
+                        </td>
+                          <td>
+                            {% if item.estado_stock == 'normal' %}
+                                <span class="badge-stock badge-stock-normal">{{ item.producto.stock_cajas }} cajas</span>
+                            {% elif item.estado_stock == 'bajo' %}
+                                <span class="badge-stock badge-stock-bajo">{{ item.producto.stock_cajas }} cajas</span>
+                            {% else %}
+                                <span class="badge-stock badge-stock-critico">{{ item.producto.stock_cajas }} cajas</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-precio-usd">
+                            <span >{{ item.producto.precio_caja_usd | floatformat:2 }} Usd</span>
+                        </td>
+                        <td class="col-precio-bs">
+                            <span >{{ item.producto.precio_caja | floatformat:2 }} Bs</span>
                         </td>
                         <td>
                             {% if item.estado_stock == 'normal' %}

@@ -8,6 +8,7 @@ from .models import Inventario, MovimientoInventario
 from apps.usuarios.models import PerfilUsuario
 from apps.depositos.models import Deposito
 from apps.productos.models import Producto, ProductoContenedor
+from apps.servicios.tipos_cambios import obtener_tipo_cambio_usd, calcular_precios_usd, stock_en_cajas
 
 @login_required
 def ver_inventario(request):
@@ -78,6 +79,14 @@ def ver_inventario(request):
 
     total_items = len(inventarios_lista)
     total_unidades = sum(item.cantidad for item in inventarios_lista)
+
+    # Aplicamos el cálculo a cada producto
+    valor_dolar = obtener_tipo_cambio_usd()
+
+    for item in inventarios_lista:
+        producto = item.producto
+        calcular_precios_usd(producto, valor_dolar)
+        stock_en_cajas(producto)
 
     context = {
         'inventarios': inventarios_lista,
