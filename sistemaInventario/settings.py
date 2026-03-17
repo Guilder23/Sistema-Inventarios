@@ -250,9 +250,27 @@ LOGGING = {
             'class': 'logging.StreamHandler',
         },
     },
+    'loggers': {
+        'boto3': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+        'botocore': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+        's3transfer': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+        'urllib3': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+    },
     'root': {
         'handlers': ['console'],
-        'level': 'DEBUG',
+        'level': 'INFO',
     },
 }
 # REST_FRAMEWORK = {
