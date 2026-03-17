@@ -1,0 +1,129 @@
+{% load static %}
+<!-- Estilos específicos del modal de impresión -->
+<link rel="stylesheet" href="{% static 'css/reportes/contenedores/modal/modal_imprimir.css' %}">
+
+<!-- Modal para Imprimir Reporte -->
+<div class="modal fade" id="modalImprimir" tabindex="-1" role="dialog" aria-labelledby="modalImprimirLabel">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalImprimirLabel">
+                    <i class="fas fa-print"></i> Imprimir Reporte
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row h-100">
+                    <!-- Columna de Configuración -->
+                    <div class="col-md-3 border-right p-0">
+                        <div class="config-panel-header bg-light border-bottom">
+                            <!-- Indicador de Orientación -->
+                            <div id="indicadorOrientacion" class="mb-2 p-1 text-center rounded font-weight-bold small" style="background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;">
+                                Orientación: Horizontal
+                            </div>
+
+                            <h6 class="font-weight-bold mb-2">Columnas</h6>
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="colImpTodas" onchange="seleccionarTodasColumnasImprimir(this.checked)">
+                                <label class="custom-control-label font-weight-bold small" for="colImpTodas">
+                                    Todas
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="config-columns-scroll">
+                            <div class="custom-control custom-checkbox mb-1">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpFoto" value="0" checked data-target="0">
+                                <label class="custom-control-label small" for="colImpFoto">Foto</label>
+                            </div>
+                            <div class="custom-control custom-checkbox mb-1">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpCodigo" value="1" checked data-target="1">
+                                <label class="custom-control-label small" for="colImpCodigo">Código</label>
+                            </div>
+                            <div class="custom-control custom-checkbox mb-1">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpProducto" value="2" checked data-target="2">
+                                <label class="custom-control-label small" for="colImpProducto">Producto</label>
+                            </div>
+                            <div class="custom-control custom-checkbox mb-1">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpDescripcion" value="3" checked data-target="3">
+                                <label class="custom-control-label small" for="colImpDescripcion">Descripción</label>
+                            </div>
+                            <div class="custom-control custom-checkbox mb-1">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpContenedor" value="4" checked data-target="4">
+                                <label class="custom-control-label small" for="colImpContenedor">Contenedor</label>
+                            </div>
+                            <div class="custom-control custom-checkbox mb-1">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpProveedor" value="5" checked data-target="5">
+                                <label class="custom-control-label small" for="colImpProveedor">Proveedor</label>
+                            </div>
+                            <div class="custom-control custom-checkbox mb-1">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpPrecioUnidad" value="6" checked data-target="6">
+                                <label class="custom-control-label small" for="colImpPrecioUnidad">Precio Und.</label>
+                            </div>
+                            <div class="custom-control custom-checkbox mb-1">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpPrecioCaja" value="7" checked data-target="7">
+                                <label class="custom-control-label small" for="colImpPrecioCaja">Precio Caja</label>
+                            </div>
+                            <div class="custom-control custom-checkbox mb-1">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpRecibido" value="8" checked data-target="8">
+                                <label class="custom-control-label small" for="colImpRecibido">Recibido</label>
+                            </div>
+                            <div class="custom-control custom-checkbox mb-1">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpEstado" value="9" checked data-target="9">
+                                <label class="custom-control-label small" for="colImpEstado">Estado</label>
+                            </div>
+                            <div class="custom-control custom-checkbox mb-1">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpActualizado" value="10" checked data-target="10">
+                                <label class="custom-control-label small" for="colImpActualizado">Actualizado</label>
+                            </div>
+                        </div>
+
+                        <div class="config-panel-footer bg-light border-top">
+                            <small class="text-muted d-block text-center" style="font-size: 0.75rem; line-height: 1.2;">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                La orientación cambia automáticamente.
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Columna de Vista Previa -->
+                    <div class="col-md-9">
+                        <div class="d-flex justify-content-between align-items-center mb-2 d-print-none">
+                            <h6 class="font-weight-bold mb-0">Vista Previa de Impresión</h6>
+                            <span class="text-muted small">Esta es una vista aproximada de cómo se verá el documento.</span>
+                        </div>
+                        
+                        <div class="preview-container border bg-light p-3 rounded" id="contenedorVistaPrevia">
+                            <div class="preview-paper bg-white p-4 shadow-sm">
+                                <div class="text-center mb-4 header-reporte">
+                                    <h3>Reporte de Contenedores y Productos</h3>
+                                    <div class="d-flex justify-content-center align-items-center mb-1">
+                                        <p class="text-muted mb-0 mr-3">Generado el: {% now "d/m/Y H:i" %}</p>
+                                        <p class="text-muted mb-0">Por: {{ user.get_full_name|default:user.username }}</p>
+                                    </div>
+                                </div>
+                                <div class="table-responsive preview-table-wrapper">
+                                    <table class="table table-sm table-bordered table-striped" id="tablaVistaPrevia">
+                                        <!-- El contenido se clonará vía JS -->
+                                        <thead></thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="ejecutarImpresion()">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,252 @@
+.modal-xl {
+    max-width: 90vw;
+}
+
+.modal-body {
+    padding: 0;
+    overflow: hidden;
+}
+
+.row.h-100 {
+    min-height: 70vh;
+}
+
+.col-md-3.border-right {
+    height: 70vh;
+    overflow: hidden; /* Quitar scroll general */
+    padding: 0 !important; /* Padding controlado en hijos */
+    background-color: #f8f9fc;
+    display: flex;
+    flex-direction: column;
+}
+
+.config-panel-header {
+    padding: 15px 25px;
+}
+.config-panel-footer {
+    padding: 15px 25px;
+}
+
+.config-columns-scroll {
+    overflow-y: auto;
+    flex-grow: 1; 
+    padding: 15px 25px;
+}
+
+.col-md-9 {
+    background-color: #f0f0f0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-container {
+    flex-grow: 1;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    background-color: #e4e6ea;
+    border: 1px solid #d1d3e2;
+    padding: 2rem !important;
+}
+
+.preview-paper {
+    background: white;
+    width: 210mm; /* A4 width */
+    min-height: 297mm; /* A4 height */
+    padding: 20mm;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+}
+
+.preview-table-wrapper {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+#tablaVistaPrevia {
+    width: 100%;
+    font-size: 11px;
+}
+
+#tablaVistaPrevia th, #tablaVistaPrevia td {
+    padding: 4px 6px;
+    vertical-align: middle;
+}
+
+/* Ocultar elementos que no se deben ver en la impresión */
+.d-print-none {
+    display: none !important;
+}
+
+@media print {
+    /* Ocultar todo el cuerpo por defecto */
+    body * {
+        visibility: hidden;
+    }
+
+    /* Asegurar que el contenedor de la vista previa sea visible */
+    #modalImprimir, 
+    #modalImprimir .modal-dialog, 
+    #modalImprimir .modal-content,
+    #modalImprimir .modal-body,
+    #modalImprimir .row,
+    #modalImprimir .col-md-9,
+    #contenedorVistaPrevia,
+    .preview-paper,
+    .preview-paper * {
+        visibility: visible;
+    }
+
+    /* Posicionar el papel de vista previa para ocupar toda la página */
+    .preview-paper {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 20px !important;
+        box-shadow: none !important;
+        background-color: white !important;
+        border: none !important;
+    }
+
+    /* Ocultar elementos específicos del modal que no queremos imprimir */
+    .modal-header, 
+    .modal-footer, 
+    .col-md-3, 
+    .close,
+    .d-print-none {
+        display: none !important;
+    }
+
+    /* Resetear estilos del contenedor del modal */
+    .modal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        margin: 0;
+        padding: 0;
+        overflow: visible !important;
+    }
+
+    .modal-dialog {
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        height: auto !important;
+    }
+
+    .modal-content {
+        border: none !important;
+        box-shadow: none !important;
+        width: 100% !important;
+    }
+
+    /* Quitar scroll y asegurar ancho completo */
+    .table-responsive, 
+    .preview-table-wrapper {
+        overflow: visible !important;
+        width: 100% !important;
+        display: block !important;
+    }
+
+    /* Título y Cabecera compactos */
+    .header-reporte {
+        margin-bottom: 5px !important;
+    }
+    
+    .header-reporte h3 {
+        font-size: 18px !important;
+        margin-top: 0 !important;
+        margin-bottom: 2px !important;
+        color: #000 !important; /* Negro puro para impresión */
+    }
+    
+    .header-reporte p {
+        font-size: 10px !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Tabla optimizada para impresión */
+    #tablaImpresion {
+        width: 100% !important;
+        table-layout: auto !important; /* Dejar que el navegador ajuste anchos */
+        font-size: 9px !important; /* Fuente pequeña para que entre todo */
+        border-collapse: collapse !important;
+        background-color: transparent !important;
+    }
+    
+    #tablaImpresion thead th {
+        background-color: #f8f9fa !important;
+        color: #000 !important;
+        font-weight: bold !important;
+        border: 1px solid #dee2e6 !important;
+        padding: 4px 2px !important;
+        text-transform: uppercase;
+        font-size: 8px !important;
+        white-space: nowrap !important; /* Encabezados en una línea si es posible */
+    }
+    
+    #tablaImpresion tbody td {
+        padding: 3px 2px !important; /* Padding mínimo */
+        border: 1px solid #dee2e6 !important;
+        vertical-align: middle !important;
+    }
+    
+    /* Ajustes específicos para contenido de celdas */
+    #tablaImpresion .contenedor-info,
+    #tablaImpresion .proveedor-tag,
+    #tablaImpresion strong {
+        display: block;
+        font-weight: normal;
+    }
+    
+    #tablaImpresion i {
+        display: none !important; /* Ocultar iconos para ahorrar espacio */
+    }
+    
+    #tablaImpresion img {
+        max-width: 25px !important;
+        height: auto !important;
+        display: block;
+        margin: 0 auto;
+    }
+
+    /* Ocultar barra de desplazamiento */
+    ::-webkit-scrollbar {
+        width: 0px !important;
+        height: 0px !important;
+        background: transparent !important;
+    }
+    
+    /* Configuración de página base (la orientación se define por JS) */
+    @page {
+        margin: 5mm;
+    }
+
+    /* Añadir margen manual al contenido para compensar el @page margin 0 */
+    .preview-paper {
+        padding: 5mm 5mm 5mm 20mm !important; /* Aumentar margen izquierdo (20mm) y reducir derecho (5mm) */
+        width: 100% !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+    }
+}
+
+
+
+/* Mejoras visuales */
+.config-columns-scroll {
+    overflow-y: auto;
+    flex-grow: 1; 
+}
+
+/* Ocultar barra de scroll pero mantener funcionalidad */
+.config-columns-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+.config-columns-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 3px;
+}

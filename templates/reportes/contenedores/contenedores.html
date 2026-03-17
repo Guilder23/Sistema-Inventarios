@@ -202,9 +202,9 @@
                             <button type="button" class="btn-accion btn-exportar" data-toggle="modal" data-target="#modalExportar" title="Exportar a Excel">
                                 <i class="fas fa-file-excel"></i>
                             </button>
-                            <button type="button" class="btn-accion btn-pdf" onclick="alert('Funcionalidad PDF próximamente')" title="Exportar a PDF">
-                                <i class="fas fa-file-pdf"></i>
-                            </button>
+                            <button type="button" class="btn-accion btn-imprimir" data-toggle="modal" data-target="#modalImprimir" title="Exportar a PDF">
+                                <i class="fas fa-file-pdf"></i>    
+                            </button>   
                         </div>
                     </div>
                 </div>
@@ -362,6 +362,7 @@
     {% endif %}
 
     {% include 'reportes/contenedores/modal/modal_exportar.html' %}
+    {% include 'reportes/contenedores/modal/modal_imprimir.html' %}
 
 </div>
 {% endblock %}
@@ -369,4 +370,5 @@
 {% block scripts_extra %}
 <script src="{% static 'js/reportes/contenedores/contenedores.js' %}"></script>
 <script src="{% static 'js/reportes/contenedores/modal/modal_exportar.js' %}"></script>
+<script src="{% static 'js/reportes/contenedores/modal/modal_imprimir.js' %}"></script>
 {% endblock %}
