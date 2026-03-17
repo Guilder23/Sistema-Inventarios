@@ -88,6 +88,34 @@ function inicializarVistaPrevia() {
     actualizarOrientacionPagina();
 }
 
+// Variables globales para la orientación (por si no existen)
+window.orientacionManual = null; // null = automático, 'landscape' = horizontal, 'portrait' = vertical
+
+// Función para alternar orientación manualmente (conectada al botón)
+document.addEventListener('DOMContentLoaded', function() {
+    const btnOrientacion = document.getElementById('btnCambiarOrientacion');
+    if (btnOrientacion) {
+        btnOrientacion.addEventListener('click', function() {
+            // Alternar entre landscape y portrait
+            const estiloActual = window.orientacionManual || 'landscape'; // Default inicial suele ser landscape si hay muchas columnas
+            
+            if (estiloActual === 'landscape' || (window.orientacionManual === null && esOrientacionAutomaticaHorizontal())) {
+                window.orientacionManual = 'portrait';
+            } else {
+                window.orientacionManual = 'landscape';
+            }
+            
+            actualizarOrientacionPagina(); // Forzar actualización
+        });
+    }
+});
+
+function esOrientacionAutomaticaHorizontal() {
+    const checkboxes = document.querySelectorAll('.columna-imprimir');
+    const checkedBoxes = Array.from(checkboxes).filter(chk => chk.checked);
+    return checkedBoxes.length > 7;
+}
+
 function actualizarVistaPrevia() {
     const tabla = document.getElementById('tablaImpresion');
     if (!tabla) return;
@@ -97,23 +125,26 @@ function actualizarVistaPrevia() {
     const checkedBoxes = Array.from(checkboxes).filter(chk => chk.checked);
     const numColumnas = checkedBoxes.length;
 
-    // Actualizar orientación según número de columnas visibles
-    actualizarOrientacionPagina(numColumnas);
+    // Actualizar orientación si no es manual
+    if (window.orientacionManual === null) {
+        actualizarOrientacionPagina(numColumnas);
+    } else {
+        actualizarOrientacionPagina(); // Usa la manual
+    }
 
-    // Actualizar indicador visual
+    // Ya no usamos el indicador viejo, pero por si acaso
     const indicador = document.getElementById('indicadorOrientacion');
     if (indicador) {
-        if (numColumnas > 7) {
-            indicador.innerHTML = '<i class="fas fa-arrows-alt-h mr-1"></i> Orientación: Horizontal';
-        } else {
-            indicador.innerHTML = '<i class="fas fa-arrows-alt-v mr-1"></i> Orientación: Vertical';
-        }
+        // ... (código legado omitido)
     }
 
     // Mapear qué índices de columna deben ser visibles
     const indicesVisibles = new Set();
     checkedBoxes.forEach(chk => {
-        indicesVisibles.add(parseInt(chk.value));
+        // Asegurar que value exista, si no, usar data-target o índice
+        let val = parseInt(chk.value);
+        if (isNaN(val)) val = parseInt(chk.getAttribute('data-target'));
+        if (!isNaN(val)) indicesVisibles.add(val);
     });
     
     // Recorrer filas y celdas
@@ -128,27 +159,30 @@ function actualizarVistaPrevia() {
             }
         }
     });
-
-    // Ajustar visibilidad de la imagen según la columna de foto
-    const fotoCheckbox = document.getElementById('colImpFoto');
-    if (fotoCheckbox && !fotoCheckbox.checked) {
-        // Lógica adicional si fuera necesaria
-    }
 }
 
 /**
- * Define la orientación de la página (Horizontal/Vertical) automáticamente
- * basándose en la cantidad de columnas visibles.
+ * Define la orientación de la página
  */
 function actualizarOrientacionPagina(numColumnas = null) {
-    if (numColumnas === null) {
-        numColumnas = document.querySelectorAll('.columna-imprimir:checked').length;
+    let esHorizontal = false;
+
+    if (window.orientacionManual !== null) {
+        esHorizontal = (window.orientacionManual === 'landscape');
+    } else {
+        if (numColumnas === null) {
+            numColumnas = document.querySelectorAll('.columna-imprimir:checked').length;
+        }
+        // Automático: > 7 columnas = Horizontal
+        esHorizontal = numColumnas > 7;
+    }
+    
+    // Actualizar texto del botón si existe
+    const btnTexto = document.querySelector('#btnCambiarOrientacion span');
+    if (btnTexto) {
+        btnTexto.textContent = esHorizontal ? 'Cambiar a Vertical' : 'Cambiar a Horizontal';
     }
 
-    // Umbral: Si hay más de 7 columnas, usar horizontal. Si no, vertical.
-    // (Total columnas disponibles es 11)
-    const esHorizontal = numColumnas > 7;
-    
     let estiloPagina = document.getElementById('estilo-orientacion-dinamica');
     if (!estiloPagina) {
         estiloPagina = document.createElement('style');
@@ -161,17 +195,26 @@ function actualizarOrientacionPagina(numColumnas = null) {
             @media print {
                 @page {
                     size: landscape;
-                    margin: 5mm 0mm; /* Aún menos margen arriba/abajo */
+                    margin: 5mm 0mm;
                 }
+            }
+            /* Vista previa visual rotada o ancha */
+            .preview-paper {
+                width: 297mm !important; 
+                min-height: 210mm !important;
             }
         `;
     } else {
         estiloPagina.innerHTML = `
             @media print {
                 @page {
-                    size: portrait; /* Vertical */
+                    size: portrait;
                     margin: 5mm 0mm;
                 }
+            }
+            .preview-paper {
+                width: 210mm !important;
+                min-height: 297mm !important;
             }
         `;
     }
