@@ -5,14 +5,16 @@
 .modal-body {
     padding: 0;
     overflow: hidden;
+    height: 80vh; /* Altura fija para el modal body en PC */
 }
 
 .row.h-100 {
-    min-height: 70vh;
+    height: 100%; /* Ocupar toda la altura del modal body */
+    margin: 0;
 }
 
 .col-md-3.border-right {
-    height: 70vh;
+    height: 100%; /* Ocupar toda la altura */
     overflow: hidden; /* Quitar scroll general */
     padding: 0 !important; /* Padding controlado en hijos */
     background-color: #f8f9fc;
@@ -31,6 +33,7 @@
     overflow-y: auto;
     flex-grow: 1; 
     padding: 15px 25px;
+    height: 100%; /* Asegurar que ocupe el espacio */
 }
 
 .col-md-9 {
@@ -38,16 +41,19 @@
     padding: 20px;
     display: flex;
     flex-direction: column;
+    height: 100%; /* Altura completa */
+    overflow: hidden; /* Prevenir desbordamiento */
 }
 
 .preview-container {
     flex-grow: 1;
-    overflow: auto;
+    overflow: auto; /* IMPORTANTE: Permite scroll X e Y */
     display: flex;
     justify-content: center;
     background-color: #e4e6ea;
     border: 1px solid #d1d3e2;
-    padding: 2rem !important;
+    padding: 2rem;
+    height: 100%; /* Forzar altura */
 }
 
 .preview-paper {
@@ -84,30 +90,56 @@
         visibility: hidden;
     }
 
-    /* Asegurar que el contenedor de la vista previa sea visible */
+    /* Asegurar que los contenedores del modal sean visibles y no corten el contenido */
     #modalImprimir, 
     #modalImprimir .modal-dialog, 
     #modalImprimir .modal-content,
     #modalImprimir .modal-body,
     #modalImprimir .row,
     #modalImprimir .col-md-9,
-    #contenedorVistaPrevia,
+    #contenedorVistaPrevia {
+        visibility: visible;
+        height: auto !important;
+        overflow: visible !important;
+        position: static !important;
+        display: block !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        width: 100% !important;
+        box-shadow: none !important;
+        max-width: 100% !important;
+    }
+
+    /* Hacer visible el contenido interno, pero RESPETANDO su display original (tablas, flex, etc) */
     .preview-paper,
     .preview-paper * {
         visibility: visible;
     }
 
+    /* Ocultar específicamente el fondo del modal */
+    .modal-backdrop {
+        display: none !important;
+    }
+
     /* Posicionar el papel de vista previa para ocupar toda la página */
     .preview-paper {
-        position: absolute;
-        left: 0;
-        top: 0;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
         width: 100% !important;
         margin: 0 !important;
-        padding: 20px !important;
+        padding: 0px !important; /* El margen lo controla @page */
         box-shadow: none !important;
         background-color: white !important;
         border: none !important;
+        display: block !important;
+        /* Asegurar que el papel tenga altura automática para expandirse */
+        height: auto !important;
+        min-height: 100% !important;
+        overflow: visible !important;
     }
 
     /* Ocultar elementos específicos del modal que no queremos imprimir */
@@ -144,7 +176,26 @@
     }
 
     /* Quitar scroll y asegurar ancho completo */
-    .table-responsive, 
+    html, body {
+        overflow: visible !important;
+        height: auto !important;
+        background: #fff !important; 
+    }
+
+    #modalImprimir .modal-dialog, 
+    #modalImprimir .modal-content,
+    #modalImprimir .modal-body,
+    #modalImprimir .row,
+    #modalImprimir .col-md-9,
+    #contenedorVistaPrevia,
+    .preview-container {
+        overflow: visible !important;
+        width: 100% !important;
+        height: auto !important;
+        display: block !important;
+        position: static !important;
+    }
+
     .preview-table-wrapper {
         overflow: visible !important;
         width: 100% !important;
@@ -168,30 +219,40 @@
         margin-bottom: 0 !important;
     }
 
-    /* Tabla optimizada para impresión */
+    /* Quitar scroll de la lista de columnas si se imprime */
+    .config-columns-scroll {
+        display: none !important;
+    }
+
     #tablaImpresion {
         width: 100% !important;
-        table-layout: auto !important; /* Dejar que el navegador ajuste anchos */
-        font-size: 9px !important; /* Fuente pequeña para que entre todo */
-        border-collapse: collapse !important;
-        background-color: transparent !important;
+        font-size: 10px !important;
+        background-color: white !important;
     }
     
     #tablaImpresion thead th {
-        background-color: #f8f9fa !important;
+        background-color: #eee !important;
         color: #000 !important;
-        font-weight: bold !important;
-        border: 1px solid #dee2e6 !important;
-        padding: 4px 2px !important;
-        text-transform: uppercase;
-        font-size: 8px !important;
-        white-space: nowrap !important; /* Encabezados en una línea si es posible */
+        border: 1px solid #000 !important;
+        vertical-align: middle !important;
     }
     
     #tablaImpresion tbody td {
-        padding: 3px 2px !important; /* Padding mínimo */
-        border: 1px solid #dee2e6 !important;
-        vertical-align: middle !important;
+        border: 1px solid #000 !important;
+        page-break-inside: avoid !important; /* Tratar de no cortar filas por la mitad */
+    }
+    
+    tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+    }
+    
+    thead {
+        display: table-header-group !important; /* Repetir encabezado en cada página */
+    }
+    
+    tfoot {
+        display: table-footer-group !important;
     }
     
     /* Ajustes específicos para contenido de celdas */
@@ -249,4 +310,110 @@
 .config-columns-scroll::-webkit-scrollbar-thumb {
     background-color: rgba(0,0,0,0.1);
     border-radius: 3px;
+}
+
+/* Ajustes Responsive para Móviles */
+@media (max-width: 768px) {
+    /* Resetear modal a pantalla completa */
+    .modal-xl {
+        max-width: 100vw;
+        margin: 0;
+        height: 100%;
+    }
+
+    .modal-content {
+        height: 100%;
+        border-radius: 0;
+        border: none;
+    }
+
+    /* Permitir scroll en el body si es necesario */
+    .modal-body {
+        height: calc(100vh - 60px); /* Restando header */
+        padding: 0;
+        overflow-y: auto;
+    }
+
+    /* Layout en columna */
+    .row.h-100 {
+        flex-direction: column;
+        height: auto !important;
+        min-height: auto !important;
+    }
+
+    /* Panel de Configuración (Arriba) */
+    .col-md-3.border-right {
+        width: 100%;
+        height: auto !important;
+        max-height: 280px; /* Limitar altura */
+        flex: 0 0 auto; /* No crecer */
+        border-right: none !important;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 10px !important;
+        overflow-y: hidden; 
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Header del panel compacto */
+    .config-panel-header, .config-panel-footer {
+        padding: 10px 15px;
+    }
+
+    /* Lista de columnas en grid de 2 para ahorrar espacio vertical */
+    .config-columns-scroll {
+        display: flex;
+        flex-wrap: wrap; 
+        gap: 5px;
+        padding: 5px 15px;
+        max-height: 150px; /* Scroll vertical limitado */
+        overflow-y: auto;
+    }
+    
+    .config-columns-scroll .custom-control {
+        width: 48%; /* Dos columnas */
+        margin-bottom: 5px;
+    }
+
+    /* Panel de Vista Previa (Abajo with scroll) */
+    .col-md-9 {
+        width: 100%;
+        height: auto;
+        min-height: 400px; /* Dar espacio suficiente */
+        flex: 1 1 auto;
+        padding: 10px;
+        overflow: hidden; /* El contenedor interno maneja el scroll */
+    }
+
+    /* Contenedor sin scroll global, solo interno */
+    .preview-container {
+        display: block;
+        width: 100%;
+        height: 100%;
+        overflow: hidden; 
+        padding: 0 !important;
+        background-color: #fff; /* Fondo blanco para integrar mejor */
+    }
+
+    /* Papel A4 adaptable en móviles */
+    .preview-paper {
+        transform: none !important;
+        width: 100% !important;
+        margin: 0 !important;
+        min-height: auto;
+        padding: 10px !important;
+        box-shadow: none !important;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    /* Tabla con scroll horizontal interno si es necesario */
+    .preview-table-wrapper {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #tablaImpresion {
+        width: 100% !important;
+        min-width: 600px; /* Forzar scroll si se comprime demasiado */
+    }
 }
