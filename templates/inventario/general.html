@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="{% static 'css/productos/productos.css' %}">
 <link rel="stylesheet" href="{% static 'css/inventario/ver.css' %}">
 <link rel="stylesheet" href="{% static 'css/inventario/general.css' %}">
+<link rel="stylesheet" href="{% static 'css/inventario/modal/modal_imprimir.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -93,6 +94,9 @@
                 <div class="botones-accion">
                     <button type="button" class="btn-accion btn-limpiar" onclick="limpiarFiltros()" title="Limpiar Filtros">
                         <i class="fas fa-eraser"></i>
+                    </button>
+                    <button type="button" class="btn-accion btn-imprimir" data-toggle="modal" data-target="#modalImprimir" title="Imprimir Inventario">
+                        <i class="fas fa-print"></i>
                     </button>
                     <button type="button" class="btn-accion btn-exportar" onclick="exportarTabla()" title="Exportar a Excel">
                         <i class="fas fa-file-excel"></i>
@@ -362,8 +366,10 @@
         </div>
     </div>
 </div>
+    {% include 'inventario/modal/modal_imprimir.html' %}
 {% endblock %}
 
 {% block scripts_extra %}
 <script src="{% static 'js/inventario/general.js' %}"></script>
+<script src="{% static 'js/inventario/modal/modal_imprimir.js' %}"></script>
 {% endblock %}

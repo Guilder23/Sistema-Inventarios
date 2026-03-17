@@ -1,0 +1,125 @@
+{% load static %}
+<!-- Estilos específicos del modal de impresión -->
+<link rel="stylesheet" href="{% static 'css/reportes/contenedores/modal/modal_imprimir.css' %}">
+
+<!-- Modal Imprimir Contenedores -->
+<div class="modal fade" id="modalImprimir" tabindex="-1" role="dialog" aria-labelledby="modalImprimirLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header d-print-none">
+                <h5 class="modal-title" id="modalImprimirLabel">
+                    <i class="fas fa-print mr-2"></i>Vista Previa de Impresión
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="row h-100 m-0">
+                    <!-- Panel Izquierdo: Configuración -->
+                    <div class="col-md-3 border-right p-0 d-print-none" style="background-color: #f8f9fc;">
+                        <div class="config-panel-header border-bottom">
+                            <h6 class="font-weight-bold text-primary mb-0">Configuración del Reporte</h6>
+                        </div>
+                        
+                        <div class="config-columns-scroll">
+                            <h6 class="small font-weight-bold text-uppercase text-muted mb-3">Columnas Visibles</h6>
+                            
+                            <!-- Grupo 1: Información Principal -->
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpFoto" value="0" checked>
+                                <label class="custom-control-label" for="colImpFoto">Foto</label>
+                            </div>
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpCodigo" value="1" checked>
+                                <label class="custom-control-label" for="colImpCodigo">Código</label>
+                            </div>
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpProducto" value="2" checked>
+                                <label class="custom-control-label" for="colImpProducto">Producto</label>
+                            </div>
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpDescripcion" value="3" checked>
+                                <label class="custom-control-label" for="colImpDescripcion">Descripción</label>
+                            </div>
+
+                            <hr class="my-2">
+
+                            <!-- Grupo 2: Detalles Logísticos -->
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpContenedor" value="4" checked>
+                                <label class="custom-control-label" for="colImpContenedor">Contenedor</label>
+                            </div>
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpProveedor" value="5" checked>
+                                <label class="custom-control-label" for="colImpProveedor">Proveedor</label>
+                            </div>
+
+                            <hr class="my-2">
+
+                            <!-- Grupo 3: Precios y Estado -->
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpPrecioUnidad" value="6" checked>
+                                <label class="custom-control-label" for="colImpPrecioUnidad">Precio Und.</label>
+                            </div>
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpPrecioCaja" value="7" checked>
+                                <label class="custom-control-label" for="colImpPrecioCaja">Precio Caja</label>
+                            </div>
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpRecibido" value="8" checked>
+                                <label class="custom-control-label" for="colImpRecibido">Recibido</label>
+                            </div>
+                             <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpEstado" value="9" checked>
+                                <label class="custom-control-label" for="colImpEstado">Estado</label>
+                            </div>
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input columna-imprimir" id="colImpActualizado" value="10">
+                                <label class="custom-control-label" for="colImpActualizado">Actualizado</label>
+                            </div>
+                        </div>
+
+                        <div class="config-panel-footer border-top bg-white">
+                            <button class="btn btn-outline-primary btn-block mb-2" id="btnCambiarOrientacion">
+                                <i class="fas fa-sync-alt mr-2"></i><span>Cambiar Orientación</span>
+                            </button>
+                            <button class="btn btn-primary btn-block btn-imprimir-modal" onclick="ejecutarImpresion()">
+                                <i class="fas fa-print mr-2"></i>Imprimir Reporte
+                            </button>
+                            <button class="btn btn-secondary btn-block mt-2" data-dismiss="modal">
+                                <i class="fas fa-times mr-2"></i> Cerrar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Panel Derecho: Vista Previa -->
+                    <div class="col-md-9 bg-light p-4 preview-container">
+                        <div class="preview-paper myshadow" id="contenedorVistaPrevia">
+                            <!-- Encabezado del Reporte Impreso -->
+                            <div class="header-reporte mb-4 text-center">
+                                <h3 class="font-weight-bold text-dark">REPORTE DE CONTENEDORES Y PRODUCTOS</h3>
+                                <div class="d-flex justify-content-center align-items-center mb-1">
+                                    <p class="text-muted mb-0 mr-3">Generado el: <span id="fechaImpresion">{% now "d/m/Y H:i" %}</span></p>
+                                    <p class="text-muted mb-0">Por: {{ user.get_full_name|default:user.username }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Tabla de Vista Previa -->
+                            <div class="table-responsive preview-table-wrapper">
+                                <table class="table table-bordered table-sm table-hover text-dark" id="tablaVistaPrevia">
+                                    <thead class="thead-light">
+                                        <!-- Se llena dinámicamente con JS -->
+                                    </thead>
+                                    <tbody>
+                                        <!-- Se llena dinámicamente con JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

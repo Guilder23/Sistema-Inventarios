@@ -60,7 +60,7 @@ INSTALLED_APPS = [
     'apps.tiendas',
     'apps.depositos',
     'apps.tiendas_virtuales',
-    # 'storages',  # Para almacenamiento en S3 (Blackblaze B2) - COMENTADO
+    'storages',  # Para almacenamiento en S3 (Blackblaze B2)
     # 'rest_framework',  # Para la API REST - COMENTADO
     'apps.vendedores',
     'apps.devoluciones',
@@ -188,7 +188,6 @@ MESSAGE_TAGS = {
     messages.WARNING: 'warning',
     messages.ERROR: 'danger',  # Bootstrap usa 'danger' no 'error'
 }
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
@@ -214,33 +213,35 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
-# ========== CONFIGURACIÓN DE BLACKBLAZE B2 (COMENTADO) ==========
-# AWS_ACCESS_KEY_ID = config('B2_APPLICATION_KEY_ID', default='')
-# AWS_SECRET_ACCESS_KEY = config('B2_APPLICATION_KEY', default='')
-# AWS_STORAGE_BUCKET_NAME = config('B2_BUCKET_NAME', default='')
-# AWS_S3_REGION_NAME = config('B2_REGION', default='us-west-004')
-# AWS_S3_ENDPOINT_URL = f'https://s3.{AWS_S3_REGION_NAME}.backblazeb2.com'
-# AWS_QUERYSTRING_AUTH = False  # Para generar URLs públicas con firma de acceso temporal
-# AWS_S3_URL_EXPIRATION = 3600  # Tiempo en segundos para que las URLs expiren (1 hora)
-# AWS_S3_SIGNATURE_VERSION = 's3v4'  # Versión de firma para compatibilidad con B2
-# AWS_S3_OBJECT_PARAMETERS = {
-#     'CacheControl': 'max-age=86400',  # Cachear objetos por 1 día
-# }
-# AWS_DEFAULT_ACL = None
-# AWS_S3_ADDRESSING_STYLE = "virtual"
-# STORAGES = {
-#     "default": {
-#         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-#     },
-#     "staticfiles": {
-#         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-#     },
-# }
+# ========== CONFIGURACIÓN DE BLACKBLAZE B2 ==========
+AWS_ACCESS_KEY_ID = config('B2_APPLICATION_KEY_ID', default='')
+AWS_SECRET_ACCESS_KEY = config('B2_APPLICATION_KEY', default='')
+AWS_STORAGE_BUCKET_NAME = config('B2_BUCKET_NAME', default='')
+AWS_S3_REGION_NAME = config('B2_REGION', default='us-east-005')
+AWS_S3_ENDPOINT_URL = f'https://s3.{AWS_S3_REGION_NAME}.backblazeb2.com'
+AWS_QUERYSTRING_AUTH = False  # Para generar URLs públicas con firma de acceso temporal
+AWS_S3_URL_EXPIRATION = 3600  # Tiempo en segundos para que las URLs expiren (1 hora)
+AWS_S3_SIGNATURE_VERSION = 's3v4'  # Versión de firma para compatibilidad con B2
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',  # Cachear objetos por 1 día
+}
+AWS_DEFAULT_ACL = None
+AWS_S3_ADDRESSING_STYLE = "virtual"
+AWS_S3_FILE_OVERWRITE = False  # Evita sobrescribir archivos con el mismo nombre
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 # ================================================================
 
-# Configuración de archivos multimedia (almacenamiento local)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Configuración de archivos multimedia (eliminado: ya se maneja con STORAGES para B2)
+# MEDIA_URL = '/media/'  
+# MEDIA_ROOT = BASE_DIR / 'media'
 
 LOGGING = {
     'version': 1,
@@ -250,9 +251,27 @@ LOGGING = {
             'class': 'logging.StreamHandler',
         },
     },
+    'loggers': {
+        'boto3': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+        'botocore': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+        's3transfer': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+        'urllib3': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+    },
     'root': {
         'handlers': ['console'],
-        'level': 'DEBUG',
+        'level': 'INFO',
     },
 }
 # REST_FRAMEWORK = {

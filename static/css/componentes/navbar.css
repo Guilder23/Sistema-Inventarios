@@ -95,12 +95,31 @@
     font-size: 0.85rem;
     font-weight: 600;
     background: rgba(255, 255, 255, 0.08);
+    max-width: 240px;
+    min-width: 0;
     white-space: nowrap;
 }
 
 .navbar-tc i {
     font-size: 0.9rem;
     opacity: 0.9;
+}
+
+.navbar-tc .tc-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.navbar-tc .tc-label,
+.navbar-tc .tc-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Botón de notificaciones */
@@ -456,6 +475,10 @@
         display: none;
     }
 
+    .navbar-tc {
+        max-width: 200px;
+    }
+
     .navbar-dropdown {
         right: 0;
         min-width: 260px;
@@ -489,6 +512,17 @@
         right: 0;
         min-width: 240px;
     }
+
+    .navbar-tc {
+        padding: 0.3rem 0.55rem;
+        font-size: 0.8rem;
+        max-width: 150px;
+    }
+
+    .navbar-tc .tc-label,
+    .navbar-tc .tc-sep {
+        display: none;
+    }
 }
 
 @media (max-width: 576px) {
@@ -498,6 +532,12 @@
 
     .navbar-container {
         padding: 0 0.75rem;
+    }
+
+    .navbar-tc {
+        padding: 0.25rem 0.45rem;
+        font-size: 0.75rem;
+        max-width: 120px;
     }
 }
 

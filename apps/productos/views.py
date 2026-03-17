@@ -10,6 +10,7 @@ import json
 from .models import Categoria, Contenedor, Producto, HistorialProducto, ProductoDanado, ProductoContenedor
 from apps.moneda.models import TipoCambio
 from apps.inventario.models import Inventario, MovimientoInventario
+from apps.usuarios.models import PerfilUsuario
 from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
 from decimal import Decimal
 from apps.servicios.tipos_cambios import obtener_tipo_cambio_usd, calcular_precios_usd, stock_en_cajas, stock_cajas_contenedor
@@ -534,10 +535,21 @@ def obtener_producto(request, id):
     """Obtener datos de un producto en formato JSON"""
     try:
         producto = get_object_or_404(Producto, id=id)
+        perfil = getattr(request.user, 'perfil', None)
+        ubicacion_id = request.GET.get('ubicacion_id')
+        perfil_stock = perfil
+        if ubicacion_id:
+            try:
+                perfil_stock = PerfilUsuario.objects.filter(id=int(ubicacion_id)).first() or perfil
+            except ValueError:
+                perfil_stock = perfil
+
+        stock_disponible = _obtener_stock_disponible(producto, perfil_stock) if perfil_stock else producto.stock
+
         #calcular el precio en dolares y stock en cajas
         valor_dolar = obtener_tipo_cambio_usd()
         calcular_precios_usd(producto, valor_dolar)
-        stock_en_cajas(producto)
+        stock_en_cajas(producto, cantidad=stock_disponible, target=producto)
         #fin calcular precio en dolares y stock en cajas
         
         creado_por_str = ''
@@ -553,7 +565,7 @@ def obtener_producto(request, id):
             'categoria_id': producto.categoria_id if producto.categoria_id else '',
             'categoria_nombre': producto.categoria.nombre if producto.categoria else 'Sin categoría',
             'descripcion': producto.descripcion or '',
-            'stock': producto.stock,
+            'stock': stock_disponible,
             'unidades_por_caja': producto.unidades_por_caja,
             'precio_unidad': float(producto.precio_unidad),
             'precio_compra': float(producto.precio_compra),

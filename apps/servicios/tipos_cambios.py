@@ -36,14 +36,22 @@ def calcular_precios_usd(producto, valor_dolar):
     return producto
 
 
-def stock_en_cajas(producto):
-
-    producto.stock_cajas = (
-        producto.stock / producto.unidades_por_caja
+def stock_en_cajas(producto, cantidad=None, target=None):
+    """
+    Calcula stock en cajas.
+    - Si `cantidad` es None, usa producto.stock (global).
+    - Si `cantidad` tiene valor, se usa como stock por ubicaciÃ³n (tienda/depÃ³sito).
+    - Si `target` se provee, asigna `stock_cajas` en ese objeto; si no, en producto.
+    """
+    base = producto.stock if cantidad is None else cantidad
+    stock_cajas = (
+        base / producto.unidades_por_caja
         if producto.unidades_por_caja else Decimal('0')
     )
 
-    return producto
+    destino = target if target is not None else producto
+    destino.stock_cajas = stock_cajas
+    return destino
 
 def stock_cajas_contenedor(pc):
     """
