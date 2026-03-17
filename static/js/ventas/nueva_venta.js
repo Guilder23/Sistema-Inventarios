@@ -32,6 +32,11 @@ let debounceTimer = null;
 // INICIALIZACIÓN
 $(document).ready(function () {
     initSelectorTipoPago();
+<<<<<<< HEAD
+=======
+    initSelectorMoneda();
+    initSelectorvendedor();  // Cargar vendedores para almacén
+>>>>>>> adrian1
     initSelectorUsuarioVendedor();
     initSelectorTipoPrecio();
     initBuscadorProductos();
@@ -44,10 +49,77 @@ function initSelectorTipoPago() {
     $('.tipo-pago-option').on('click', function () {
         $('.tipo-pago-option').removeClass('active');
         $(this).addClass('active');
+<<<<<<< HEAD
         $('#inputTipoPago').val($(this).data('tipo'));
     });
 }
 
+=======
+        
+        // Diferenciar entre tipo de pago y moneda
+        if ($(this).data('tipo')) {
+            $('#inputTipoPago').val($(this).data('tipo'));
+        }
+    });
+}
+
+// SELECTOR MONEDA
+function initSelectorMoneda() {
+    // Manejar cambio de moneda via dropdown #selectMoneda
+    $('#selectMoneda').on('change', function () {
+        const monedaSeleccionada = $(this).val();
+        $('#inputMoneda').val(monedaSeleccionada);
+        
+        // Actualizar resumen (convertir totales si es USD)
+        actualizarResumen();
+    });
+}
+
+// SELECTOR VENDEDOR - Solo para usuarios de almacén
+function initSelectorvendedor() {
+    const selectVendedor = $('#selectVendedor');
+    
+    // Solo inicializar si el elemento existe (usuarios almacén)
+    if (selectVendedor.length === 0) {
+        return;
+    }
+    
+    // Cargar vendedores desde la API
+    cargarVendedores();
+    
+    // Manejar cambio de vendedor
+    selectVendedor.on('change', function () {
+        const vendedorId = $(this).val();
+        $('#inputVendedorId').val(vendedorId);
+    });
+}
+
+// FUNCIÓN PARA CARGAR VENDEDORES VÍA AJAX
+function cargarVendedores() {
+    const selectVendedor = $('#selectVendedor');
+    
+    fetch(URLS.obtenerVendedores || '/ventas/api/obtener-vendedores/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.vendedores && data.vendedores.length > 0) {
+                let html = '<option value="">-- Selecciona vendedor --</option>';
+                
+                data.vendedores.forEach(vendor => {
+                    const display = `${vendor.nombre_completo} - ${vendor.lugar}`;
+                    html += `<option value="${vendor.id}">${display}</option>`;
+                });
+                
+                selectVendedor.html(html);
+            } else {
+                selectVendedor.html('<option value="">No hay vendedores disponibles</option>');
+            }
+        })
+        .catch(err => {
+            selectVendedor.html('<option value="">Error al cargar vendedores</option>');
+        });
+}
+
+>>>>>>> adrian1
 // SELECTOR USUARIO VENDEDOR (Depósito/Tienda) - Solo para usuarios tienda
 function initSelectorUsuarioVendedor() {
     const selectUsuarioVendedor = $('#selectUsuarioVendedor');
@@ -169,7 +241,10 @@ function buscarProductos(query) {
                     <p>Error al buscar productos.</p>
                 </div>
             `).show();
+<<<<<<< HEAD
             console.error('Error buscando productos:', err);
+=======
+>>>>>>> adrian1
         });
 }
 
@@ -187,12 +262,26 @@ function renderResultadosBusqueda(productos) {
         return;
     }
 
+<<<<<<< HEAD
+=======
+    // Obtener tipo de cambio del formulario
+    const tipoCambioElement = document.getElementById('tipoCambioActual');
+    const tipoCambio = tipoCambioElement ? parseFloat(tipoCambioElement.value) || 1 : 1;
+
+>>>>>>> adrian1
     productos.forEach(p => {
         // Verificar si ya está en el carrito
         const enCarrito = carrito.find(item => item.productoId === p.id);
         const btnTexto = enCarrito ? 'Ya agregado' : '<i class="fas fa-plus mr-1"></i>Agregar';
         const btnDisabled = enCarrito ? 'disabled' : '';
         const btnClass = enCarrito ? 'btn-secondary' : 'btn-success';
+<<<<<<< HEAD
+=======
+        
+        // Calcular precio en dólares
+        const precioUnitario = parseFloat(p.precio_unidad);
+        const precioDolares = (precioUnitario / tipoCambio).toFixed(2);
+>>>>>>> adrian1
 
         const item = $(`
             <div class="resultado-item">
@@ -201,7 +290,14 @@ function renderResultadosBusqueda(productos) {
                     <div class="producto-codigo">${p.codigo}</div>
                 </div>
                 <div class="producto-meta">
+<<<<<<< HEAD
                     <div class="producto-precio">Bs. ${parseFloat(p.precio_unidad).toFixed(2)}</div>
+=======
+                    <div class="producto-precio">
+                        <div style="font-weight: bold; color: #28a745; font-size: 1rem;">Bs. ${precioUnitario.toFixed(2)}</div>
+                        <div style="font-size: 0.85rem; color: #666;">$ ${precioDolares}</div>
+                    </div>
+>>>>>>> adrian1
                     <div class="producto-stock">Stock: ${p.stock} uds.</div>
                 </div>
                 <button class="btn btn-sm ${btnClass} btn-agregar-producto"
@@ -285,7 +381,14 @@ function renderCarrito() {
     $btnLimpiar.show();
 
     carrito.forEach((item, index) => {
+<<<<<<< HEAD
         const subtotal = (item.precioUnitario * item.cantidad).toFixed(2);
+=======
+        const tipoCambio = parseFloat($('#tipoCambioActual').val() || 1);
+        const subtotal = (item.precioUnitario * item.cantidad).toFixed(2);
+        const precioEnDolares = (item.precioUnitario / tipoCambio).toFixed(2);
+        const subtotalEnDolares = (parseFloat(subtotal) / tipoCambio).toFixed(2);
+>>>>>>> adrian1
 
         const $row = $(`
             <tr class="carrito-row-nueva" data-index="${index}">
@@ -294,7 +397,14 @@ function renderCarrito() {
                     <div class="carrito-producto-codigo">${item.codigo}</div>
                 </td>
                 <td class="text-center">
+<<<<<<< HEAD
                     Bs. ${item.precioUnitario.toFixed(2)}
+=======
+                    <div class="precio-dual">
+                        <div>Bs. ${item.precioUnitario.toFixed(2)}</div>
+                        <div style="font-size: 0.85rem; color: #666;">$ ${precioEnDolares}</div>
+                    </div>
+>>>>>>> adrian1
                 </td>
                 <td class="text-center">
                     <div class="input-cantidad-wrapper">
@@ -310,7 +420,14 @@ function renderCarrito() {
                     <small class="text-muted d-block mt-1">Stock: ${item.stock}</small>
                 </td>
                 <td class="text-right carrito-subtotal">
+<<<<<<< HEAD
                     Bs. ${subtotal}
+=======
+                    <div class="subtotal-dual">
+                        <div>Bs. ${subtotal}</div>
+                        <div style="font-size: 0.85rem; color: #666;">$ ${subtotalEnDolares}</div>
+                    </div>
+>>>>>>> adrian1
                 </td>
                 <td class="text-center pr-3">
                     <button class="btn-eliminar-item" data-index="${index}" title="Eliminar">
@@ -393,6 +510,27 @@ function eliminarDelCarrito(index) {
 }
 
 // CARRITO: ACTUALIZAR RESUMEN
+<<<<<<< HEAD
+=======
+function actualizarEtiquetasMoneda() {
+    const tipoCambioElement = document.getElementById('tipoCambioActual');
+    const monedaElement = document.getElementById('inputMoneda');
+    
+    if (!tipoCambioElement || !monedaElement) return;
+    
+    const tipoCambio = parseFloat(tipoCambioElement.value) || 1;
+    const moneda = monedaElement.value || 'BOB';
+    
+    // Actualizar todos los labels de moneda
+    document.querySelectorAll('.moneda-label').forEach(el => {
+        el.textContent = moneda === 'USD' ? '$' : 'Bs.';
+    });
+    
+    // Actualizar resumen
+    actualizarResumen();
+}
+
+>>>>>>> adrian1
 function actualizarResumen() {
     let totalItems = 0;
     let totalPrecio = 0;
@@ -402,9 +540,23 @@ function actualizarResumen() {
         totalPrecio += item.precioUnitario * item.cantidad;
     });
 
+<<<<<<< HEAD
     $('#resumenCantItems').text(totalItems);
     $('#resumenSubtotal').text('Bs. ' + totalPrecio.toFixed(2));
     $('#resumenTotal').text('Bs. ' + totalPrecio.toFixed(2));
+=======
+    const monedaElement = document.getElementById('inputMoneda');
+    const tipoCambioElement = document.getElementById('tipoCambioActual');
+    const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
+    const tipoCambio = tipoCambioElement ? (parseFloat(tipoCambioElement.value) || 1) : 1;
+    
+    const etiqueta = moneda === 'USD' ? '$' : 'Bs.';
+    const totalDisplay = moneda === 'USD' ? (totalPrecio / tipoCambio).toFixed(2) : totalPrecio.toFixed(2);
+
+    $('#resumenCantItems').text(totalItems);
+    $('#resumenSubtotal').text(etiqueta + ' ' + totalDisplay);
+    $('#resumenTotal').text(etiqueta + ' ' + totalDisplay);
+>>>>>>> adrian1
 }
 
 // CARRITO: LIMPIAR TODO
@@ -475,6 +627,16 @@ function guardarVenta() {
     carrito.forEach(item => {
         totalFinal += item.precioUnitario * item.cantidad;
     });
+<<<<<<< HEAD
+=======
+    
+    const monedaElement = document.getElementById('inputMoneda');
+    const tipoCambioElement = document.getElementById('tipoCambioActual');
+    const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
+    const tipoCambio = tipoCambioElement ? (parseFloat(tipoCambioElement.value) || 1) : 1;
+    const etiqueta = moneda === 'USD' ? '$' : 'Bs.';
+    const totalDisplay = moneda === 'USD' ? (totalFinal / tipoCambio).toFixed(2) : totalFinal.toFixed(2);
+>>>>>>> adrian1
 
     const tipoPagoTexto = tipoPago === 'contado' ? 'Al Contado' : 'A Crédito';
 
@@ -485,9 +647,16 @@ function guardarVenta() {
                 <p><strong>Cliente:</strong> ${cliente}</p>
                 ${telefono ? `<p><strong>Teléfono:</strong> ${telefono}</p>` : ''}
                 <p><strong>Tipo de pago:</strong> ${tipoPagoTexto}</p>
+<<<<<<< HEAD
                 <p><strong>Productos:</strong> ${carrito.length} item(s)</p>
                 <hr>
                 <p style="font-size:1.2rem;"><strong>Total: Bs. ${totalFinal.toFixed(2)}</strong></p>
+=======
+                <p><strong>Moneda:</strong> ${moneda}</p>
+                <p><strong>Productos:</strong> ${carrito.length} item(s)</p>
+                <hr>
+                <p style="font-size:1.2rem;"><strong>Total: ${etiqueta} ${totalDisplay}</strong></p>
+>>>>>>> adrian1
             </div>
         `,
         icon: 'question',
@@ -512,14 +681,32 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
         cantidad: item.cantidad,
         precio_unitario: item.precioUnitario.toFixed(2),
     }));
+<<<<<<< HEAD
 
     //OJO: Incluye telefono, razon_social y direccion (campos reales de tu modelo Venta)
+=======
+    
+    const monedaElement = document.getElementById('inputMoneda');
+    const tipoCambioElement = document.getElementById('tipoCambioActual');
+    const vendedorIdElement = document.getElementById('inputVendedorId');
+    const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
+    const tipoCambio = tipoCambioElement ? parseFloat(tipoCambioElement.value) : 1;
+    const vendedorId = vendedorIdElement ? (vendedorIdElement.value || null) : null;
+
+    //OJO: Incluye telefono, razon_social, direccion, moneda/tipo_cambio y vendedor_id
+>>>>>>> adrian1
     const payload = {
         cliente: cliente,
         telefono: telefono,
         razon_social: razonSocial,
         direccion: direccion,
         tipo_pago: tipoPago,
+<<<<<<< HEAD
+=======
+        moneda: moneda,
+        tipo_cambio: tipoCambio,
+        vendedor_id: vendedorId,
+>>>>>>> adrian1
         items: items,
     };
 
@@ -539,7 +726,11 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
                 Swal.fire({
                     icon: 'success',
                     title: 'Venta Registrada',
+<<<<<<< HEAD
                     html: `<p>${data.message}</p><p>Código: <strong>${data.codigo}</strong></p>`,
+=======
+                    html: `<p>${data.message}</p><p>Código: <strong>${data.venta_codigo}</strong></p>`,
+>>>>>>> adrian1
                     confirmButtonColor: '#28a745',
                     confirmButtonText: 'Ir al listado',
                 }).then(() => {
@@ -559,7 +750,10 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
                 title: 'Error de conexión',
                 text: 'No se pudo conectar con el servidor.',
             });
+<<<<<<< HEAD
             console.error('Error guardando venta:', err);
+=======
+>>>>>>> adrian1
         })
         .finally(() => {
             $btn.prop('disabled', false).html('<i class="fas fa-check-circle mr-2"></i>Registrar Venta');

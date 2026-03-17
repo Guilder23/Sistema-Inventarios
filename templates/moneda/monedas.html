@@ -1,0 +1,57 @@
+﻿{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}GestiÃ³n de Monedas{% endblock %}
+
+{% block estilos_extra %}
+    <link rel="stylesheet" href="{% static 'css/moneda/monedas.css' %}">
+    <link rel="stylesheet" href="{% static 'css/componentes/tabla.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid moneda-page">
+    <div class="moneda-hero">
+        <div class="moneda-hero-left">
+            <div class="moneda-hero-title">
+                <i class="fas fa-money-bill-wave"></i> Gestion de Cambios de Moneda
+            </div>
+            <div class="moneda-hero-subtitle">Administra los tipos de cambio del sistema</div>
+        </div>
+        <button type="button" class="btn btn-primary moneda-hero-btn" data-toggle="modal" data-target="#modalCrearMoneda">
+            <i class="fas fa-plus"></i> Actualizar Cambio
+        </button>
+    </div>
+
+    <div class="moneda-card moneda-actual">
+        <div class="moneda-card-header">
+            <i class="fas fa-exchange-alt"></i>
+            <span>Tipo de Cambio Actual</span>
+        </div>
+        <div class="moneda-actual-body">
+            {% if moneda_actual %}
+                <div class="moneda-actual-rate">{{ moneda_actual.moneda }} &rarr; Bs {{ moneda_actual.valor|stringformat:"0.2f" }}</div>
+                <div class="moneda-actual-date">Actualizado: {{ moneda_actual.fecha|date:"d/m/Y" }}</div>
+            {% else %}
+                <div class="moneda-actual-empty">Sin registros de tipo de cambio</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="moneda-card moneda-actual">
+        <div class="moneda-card-header">
+            <i class="fas fa-history"></i>
+            <span>Ultimo Cambio</span>
+        </div>
+        <div class="moneda-actual-body">
+            {% if moneda_anterior %}
+                <div class="moneda-actual-rate">{{ moneda_anterior.moneda }} &rarr; Bs {{ moneda_anterior.valor|stringformat:"0.2f" }}</div>
+                <div class="moneda-actual-date">Registrado: {{ moneda_anterior.fecha|date:"d/m/Y" }}</div>
+            {% else %}
+                <div class="moneda-actual-empty">No hay cambios anteriores</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% include 'moneda/modals/crea.html' %}
+</div>
+{% endblock %}

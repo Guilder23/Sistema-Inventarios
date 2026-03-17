@@ -1,0 +1,178 @@
+﻿.moneda-page {
+    padding-bottom: 2rem;
+}
+
+.moneda-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    border-radius: 0.85rem;
+    background: linear-gradient(135deg, #1f2a66 0%, #2b3a8a 60%, #3148a1 100%);
+    color: #ffffff;
+    box-shadow: 0 10px 24px rgba(31, 42, 102, 0.25);
+    margin-bottom: 1.5rem;
+}
+
+.moneda-hero-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.moneda-hero-subtitle {
+    margin-top: 0.35rem;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.moneda-hero-btn {
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.65rem;
+    box-shadow: 0 6px 14px rgba(36, 86, 200, 0.25);
+}
+
+.moneda-card {
+    background: #ffffff;
+    border-radius: 0.85rem;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+    border: 1px solid #e5e9f2;
+}
+
+.moneda-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 700;
+    color: #1e2a58;
+    margin-bottom: 0.85rem;
+}
+
+.moneda-card-header i {
+    color: #2f6ef8;
+}
+
+.moneda-actual-body {
+    background: linear-gradient(120deg, #eef3ff 0%, #f7f9ff 70%);
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid #d7e3ff;
+}
+
+.moneda-actual-rate {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1b2a4e;
+}
+
+.moneda-actual-date {
+    margin-top: 0.3rem;
+    color: #5f6b85;
+    font-size: 0.9rem;
+}
+
+.moneda-actual-empty {
+    font-weight: 600;
+    color: #68708a;
+}
+
+.moneda-section-title {
+    margin: 1.8rem 0 0.85rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1e2a58;
+}
+
+.moneda-historial {
+    padding: 0;
+}
+
+.moneda-historial .table-responsive {
+    padding: 1.25rem 1.25rem 1rem;
+}
+
+.badge-moneda-texto {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 0.85rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #e6efff 0%, #f0f5ff 100%);
+    color: #1c4fd7;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border: 1px solid #cfe0ff;
+}
+
+.badge-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid transparent;
+}
+
+.badge-estado-activo {
+    background-color: #dcfce7;
+    color: #166534;
+    border-color: #86efac;
+}
+
+.badge-estado-historico {
+    background-color: #e2e8f0;
+    color: #475569;
+    border-color: #cbd5f5;
+}
+
+.tabla-moneda-personalizada thead th {
+    background: #eef2ff !important;
+    color: #1f2a44 !important;
+    border: none !important;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.6px;
+}
+
+.tabla-moneda-personalizada tbody td {
+    background: #ffffff !important;
+    border-top: 1px solid #e5e9f2 !important;
+    border-bottom: 1px solid #e5e9f2 !important;
+}
+
+.accion-btn {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.6rem;
+}
+
+.accion-view {
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+}
+
+.moneda-row-inactiva {
+    opacity: 0.75;
+}
+
+@media (max-width: 768px) {
+    .moneda-hero {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .moneda-hero-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

@@ -304,13 +304,15 @@ def _ajustar_stock_ubicacion(*, producto, ubicacion, delta, tipo_movimiento, ref
                     defaults={'proveedor': 'Sin Proveedor'}
                 )
             
-            pc, _ = ProductoContenedor.objects.get_or_create(
+            pc, creado = ProductoContenedor.objects.get_or_create(
                 producto=producto,
                 contenedor=contenedor,
-                defaults={'cantidad': 0}
+                defaults={'cantidad_recibida': delta, 'cantidad': delta}
             )
-            pc.cantidad += delta
-            pc.save(update_fields=['cantidad', 'fecha_actualizacion'])
+            if not creado:
+                # Si ya existe, solo aumentar cantidad disponible
+                pc.cantidad += delta
+                pc.save(update_fields=['cantidad', 'fecha_actualizacion'])
     
     # CASO TIENDA/DEPÓSITO: Ajustar Inventario
     else:

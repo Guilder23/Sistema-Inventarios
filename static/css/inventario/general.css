@@ -1,0 +1,413 @@
+/* Estilos específicos para Inventario General */
+
+/* ===== VISIBILIDAD DE TABLAS ===== */
+.tabla-visible {
+    display: block !important;
+}
+
+.tabla-oculta {
+    display: none !important;
+}
+
+/* ===== PESTAÑAS DE FILTROS ===== */
+.tabs-filtros {
+    border-bottom: 2px solid #e3e6f0;
+    margin-bottom: 0;
+}
+
+.tabs-filtros .nav-item {
+    margin-bottom: -2px;
+}
+
+.tabs-filtros .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6c757d;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.tabs-filtros .nav-link:hover {
+    color: #4e73df;
+    background-color: #f8f9fc;
+    border-bottom-color: #4e73df;
+}
+
+.tabs-filtros .nav-link.active {
+    color: #4e73df;
+    background-color: transparent;
+    border-bottom-color: #4e73df;
+}
+
+/* Badge contador de filtros */
+.badge-filtros-count {
+    display: inline-block;
+    min-width: 20px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #6b5b3a;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    background-color: #ffeaa7;
+    border-radius: 10px;
+    margin-left: 0.5rem;
+    box-shadow: 0 2px 4px rgba(255, 234, 167, 0.4);
+}
+
+/* Botones de acción en pestañas */
+.botones-accion {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-accion {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: #f8f9fc;
+    color: #5a5c69;
+}
+
+.btn-accion:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-accion:active {
+    transform: translateY(0);
+}
+
+.btn-limpiar {
+    border-color: #e3e6f0;
+    background-color: #dfe6e9;
+    color: #636e72;
+}
+
+.btn-limpiar:hover {
+    background-color: #b2bec3;
+    color: #2d3436;
+    border-color: #b2bec3;
+}
+
+.btn-exportar {
+    border-color: #e3e6f0;
+    background-color: #d5f4e6;
+    color: #27ae60;
+}
+
+.btn-exportar:hover {
+    background-color: #a8e6cf;
+    color: #1e8449;
+    border-color: #a8e6cf;
+}
+
+/* ===== TABLA SIMPLIFICADA ===== */
+.tabla-simplificada {
+    font-size: 0.95rem;
+}
+
+.tabla-simplificada thead {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    color: white;
+}
+
+.tabla-simplificada thead th {
+    border: none;
+    font-weight: 700;
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.tabla-simplificada tbody tr {
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.tabla-simplificada tbody tr:hover {
+    background-color: #f8f9fc;
+    border-left: 3px solid #4e73df;
+    box-shadow: 0 2px 8px rgba(78, 115, 223, 0.1);
+}
+
+.tabla-simplificada tbody td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    border-top: 1px solid #e3e6f0;
+}
+
+.tabla-simplificada .codigo-badge {
+    background-color: #e9ecef;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #495057;
+    display: inline-block;
+}
+
+/* ===== IMÁGENES DE PRODUCTOS EN TABLAS ===== */
+.producto-imagen-tabla {
+    width: 45px;
+    height: 45px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #e3e6f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.producto-imagen-tabla:hover {
+    transform: scale(1.8);
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.producto-sin-imagen {
+    width: 45px;
+    height: 45px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f1f3f5;
+    border-radius: 8px;
+    border: 2px dashed #dee2e6;
+    color: #adb5bd;
+    font-size: 1.2rem;
+}
+
+.badge-stock-simple {
+    background: linear-gradient(135deg, #36b9cc 0%, #258391 100%);
+    color: white;
+    padding: 0.45rem 0.95rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    border-radius: 20px;
+    display: inline-block;
+    min-width: 90px;
+}
+
+/* Badge compacto para tabla normal */
+.badge-stock-normal {
+    background-color: #c7ecee;
+    color: #16697a;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 12px;
+    display: inline-block;
+    white-space: nowrap;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+/* ===== BADGES DE ESTADO ===== */
+.badge-estado {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 12px;
+    display: inline-block;
+    border: 1px solid transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    min-width: 75px;
+    text-align: center;
+}
+
+.badge-estado-activo {
+    background-color: #d1fae5;
+    color: #065f46;
+    border-color: #6ee7b7;
+}
+
+.badge-estado-bajo {
+    background-color: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+.badge-estado-inactivo {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+}
+
+/* ===== TABLA COMPLETA (GENERAL) ===== */
+
+.inventario-general-table {
+    font-size: 0.9rem;
+}
+
+.inventario-general-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    vertical-align: middle;
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.inventario-general-table td {
+    vertical-align: middle;
+    padding: 0.6rem 0.5rem;
+}
+
+.stock-cell {
+    text-align: center;
+    font-weight: 500;
+}
+
+.stock-total {
+    background-color: #e8f5e9;
+    font-weight: 700;
+    color: #2e7d32;
+}
+
+.ubicaciones-header {
+    background-color: #e3f2fd !important;
+    font-size: 0.85rem;
+}
+
+.resumen-ubicacion {
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: center;
+}
+
+.resumen-ubicacion .ubicacion-nombre {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    opacity: 0.9;
+}
+
+.resumen-ubicacion .ubicacion-valor {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.ubicacion-card-deposito {
+    border-left: 3px solid #f5576c !important;
+}
+
+.ubicacion-card-tienda {
+    border-left: 3px solid #00f2fe !important;
+}
+
+.ubicacion-card-online {
+    border-left: 3px solid #38f9d7 !important;
+}
+
+.ubicacion-card-almacen {
+    border-left: 3px solid #764ba2 !important;
+}
+
+.ubicacion-card-default {
+    border-left: 3px solid #6c757d !important;
+}
+
+/* Estilos para la sección de filtros */
+.card-filtros .form-label {
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+
+.card-filtros .card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-filtros .badge-pill {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+}
+
+/* Botones de acción como iconos */
+.btn-icon-only {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.btn-icon-only:hover {
+    transform: scale(1.1);
+}
+
+.btn-icon-only i {
+    font-size: 1rem;
+}
+
+/* Estilos para el detalle expandible */
+.collapse .card {
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.collapse .card .card-body {
+    padding: 0.5rem 0.75rem;
+}
+
+/* Loading overlay para filtros en tiempo real */
+.table-loading {
+    position: relative;
+}
+
+.table-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .inventario-general-table {
+        font-size: 0.8rem;
+    }
+    
+    .inventario-general-table th,
+    .inventario-general-table td {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .btn-icon-only {
+        width: 32px;
+        height: 32px;
+    }
+}

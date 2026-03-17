@@ -2,7 +2,7 @@
 
 <!-- MODAL: EDITAR CANTIDAD EN CONTENEDOR -->
 <div class="modal fade" id="modalEditarProductoContenedor" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 400px;">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 500px;">
         <div class="modal-content">
             <div class="modal-header bg-warning text-white">
                 <h5 class="modal-title text-white">
@@ -16,36 +16,68 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <input type="hidden" id="pc_id_edit" name="producto_contenedor_id" value="">
+                    <input type="hidden" id="cantidadRecibidaEdit" name="cantidad_recibida_actual" value="0">
 
                     <div class="mb-3">
                         <small class="text-muted d-block mb-1">Producto</small>
                         <h6 class="mb-0" id="productoNombreEdit"></h6>
                     </div>
 
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <label class="form-label small text-muted mb-1 d-block">Actual</label>
-                            <div class="text-center py-2 bg-light rounded">
-                                <h6 class="mb-0" id="cantidadActualEdit">0</h6>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <label for="cantidadNuevaEdit" class="form-label small text-muted mb-1 d-block">Nueva</label>
-                            <input 
-                                type="number" 
-                                class="form-control form-control-sm text-center" 
-                                id="cantidadNuevaEdit" 
-                                name="cantidad"
-                                min="0" 
-                                value="0"
-                                required
-                            >
+                    <!-- Selector de Operación -->
+                    <div class="mb-3">
+                        <label class="form-label small text-muted mb-1 d-block">Operación</label>
+                        <div class="btn-group btn-group-toggle w-100 operacion-buttons" data-toggle="buttons">
+                            <label class="btn btn-outline-success active">
+                                <input type="radio" name="operacion" id="operacionSumar" value="sumar" checked> 
+                                <i class="fas fa-plus"></i> Sumar
+                            </label>
+                            <label class="btn btn-outline-danger">
+                                <input type="radio" name="operacion" id="operacionRestar" value="restar"> 
+                                <i class="fas fa-minus"></i> Restar
+                            </label>
                         </div>
                     </div>
 
-                    <div class="text-center py-2">
-                        <small class="text-muted d-block mb-2">Cambio Estimado</small>
-                        <span class="badge badge-cambio-editar badge-cambio-editar-neutral" id="diferenciaEdit">0 unidades</span>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label small text-muted mb-1 d-block">Recibida</label>
+                            <div class="text-center py-2 bg-light rounded">
+                                <h6 class="mb-0 text-info" id="cantidadRecibidaDisplayEdit">0</h6>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-muted mb-1 d-block">Disponible</label>
+                            <div class="text-center py-2 bg-light rounded">
+                                <h6 class="mb-0 text-success" id="cantidadActualEdit">0</h6>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="cantidadCambioEdit" class="form-label small text-muted mb-1 d-block">
+                            Cantidad a <span id="operacionTextoEdit">Sumar</span>
+                        </label>
+                        <input 
+                            type="number" 
+                            class="form-control form-control-sm text-center" 
+                            id="cantidadCambioEdit" 
+                            name="cantidad_cambio"
+                            min="1" 
+                            value="1"
+                            required
+                        >
+                    </div>
+
+                    <div class="resultado-final-container">
+                        <div class="resultado-final-titulo">Resultado Final</div>
+                        <div class="resultado-final-item">
+                            <span class="resultado-final-label">Recibida:</span> 
+                            <span class="badge-resultado-recibida" id="resultadoRecibidaEdit">0</span>
+                        </div>
+                        <div class="resultado-final-item">
+                            <span class="resultado-final-label">Disponible:</span> 
+                            <span class="badge-resultado-disponible" id="resultadoDisponibleEdit">0</span>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

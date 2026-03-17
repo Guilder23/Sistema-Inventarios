@@ -43,6 +43,13 @@ class Contenedor(models.Model):
         return self.productos_contenedores.aggregate(
             total=models.Sum('cantidad')
         )['total'] or 0
+    
+    @property
+    def total_recibido(self):
+        """Calcula el total de cantidad recibida de este contenedor"""
+        return self.productos_contenedores.aggregate(
+            total=models.Sum('cantidad_recibida')
+        )['total'] or 0
 
 
 class ProductoContenedor(models.Model):
@@ -55,8 +62,10 @@ class ProductoContenedor(models.Model):
     contenedor = models.ForeignKey('Contenedor', on_delete=models.CASCADE,
                                   related_name='productos_contenedores',
                                   verbose_name='Contenedor')
-    cantidad = models.IntegerField(default=0, verbose_name='Cantidad en este contenedor',
-                                  help_text='Cantidad de este producto que llegó en este contenedor')
+    cantidad_recibida = models.IntegerField(default=0, verbose_name='Cantidad recibida',
+                                  help_text='Cantidad original que llegó en este contenedor (registro histórico)')
+    cantidad = models.IntegerField(default=0, verbose_name='Cantidad disponible',
+                                  help_text='Cantidad actualmente disponible en este contenedor')
     
     # Metadata
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
@@ -187,6 +196,7 @@ class Producto(models.Model):
                 ProductoContenedor.objects.create(
                     producto=self,
                     contenedor=contenedor_general,
+                    cantidad_recibida=cantidad,
                     cantidad=cantidad,
                     creado_por=usuario
                 )
@@ -196,11 +206,12 @@ class Producto(models.Model):
             pc, creado = ProductoContenedor.objects.get_or_create(
                 producto=self,
                 contenedor=contenedor,
-                defaults={'cantidad': cantidad, 'creado_por': usuario}
+                defaults={'cantidad_recibida': cantidad, 'cantidad': cantidad, 'creado_por': usuario}
             )
             if not creado:
+                pc.cantidad_recibida += cantidad
                 pc.cantidad += cantidad
-                pc.save(update_fields=['cantidad', 'fecha_actualizacion'])
+                pc.save(update_fields=['cantidad_recibida', 'cantidad', 'fecha_actualizacion'])
             return True
 
 

@@ -13,6 +13,8 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 from datetime import datetime
 from decimal import Decimal
 import os
+from django.conf import settings
+from apps.moneda.utils import obtener_etiqueta_moneda
 
 
 def generar_pdf_venta_completo(venta):
@@ -74,7 +76,7 @@ def generar_pdf_venta_completo(venta):
     # ===== SECCIÓN 0: HEADER CON LOGO =====
     
     # Crear tabla con logo + empresa info
-    logo_path = os.path.join(os.path.dirname(__file__), '../../static/img/logoAlmacen.png')
+    logo_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'logoAlmacen.png')
     
     header_data = []
     header_row = []
@@ -82,9 +84,13 @@ def generar_pdf_venta_completo(venta):
     # Agregar logo si existe
     if os.path.exists(logo_path):
         try:
-            logo = Image(logo_path, width=0.8*inch, height=0.8*inch)
-            header_row.append(logo)
-        except:
+            # Leer logo en BytesIO para evitar problema de absolute paths en Windows
+            with open(logo_path, 'rb') as logo_file:
+                logo_bytes = BytesIO(logo_file.read())
+                logo_bytes.seek(0)  # ⬅️ IMPORTANTE: resetear posición del cursor
+                logo = Image(logo_bytes, width=0.8*inch, height=0.8*inch)
+                header_row.append(logo)
+        except Exception as e:
             header_row.append(Paragraph("<b>ALMAZEN</b>", style_empresa_nombre))
     else:
         header_row.append(Paragraph("<b>ALMAZEN</b>", style_empresa_nombre))
@@ -121,6 +127,9 @@ def generar_pdf_venta_completo(venta):
     elements.append(header_table)
     elements.append(Spacer(1, 0.2*inch))
     
+    # Obtener etiqueta de moneda
+    etiqueta_moneda = obtener_etiqueta_moneda(venta.moneda)
+    
     # ===== SECCIÓN 1: CABECERA =====
     
     # Título (inferir de rol del vendedor)
@@ -133,13 +142,18 @@ def generar_pdf_venta_completo(venta):
     fecha_str = venta.fecha_elaboracion.strftime('%d/%m/%Y %H:%M') if hasattr(venta, 'fecha_elaboracion') else datetime.now().strftime('%d/%m/%Y %H:%M')
     codigo_venta_str = getattr(venta, 'codigo', f'VENTA-{venta.id}')
     vendedor_nombre = venta.vendedor.get_full_name() or venta.vendedor.username
+    
+    # MEJORADO: Obtener ubicación del vendedor (almacén o tienda)
+    lugar_venta = venta.ubicacion.nombre_ubicacion if hasattr(venta.ubicacion, 'nombre_ubicacion') else 'Sin ubicación'
+    vendedor_con_lugar = f"{vendedor_nombre} - {lugar_venta}"
+    
     tipo_pago = venta.get_tipo_pago_display() if hasattr(venta, 'get_tipo_pago_display') else venta.tipo_pago
     
     info_general = f"""
     <b>Código:</b> {codigo_venta_str}<br/>
     <b>Fecha:</b> {fecha_str}<br/>
     <b>Cliente:</b> {venta.cliente}<br/>
-    <b>Vendedor:</b> {vendedor_nombre}<br/>
+    <b>Vendedor:</b> {vendedor_con_lugar}<br/>
     <b>Tipo Pago:</b> {tipo_pago}
     """
     elements.append(Paragraph(info_general, style_encabezado))
@@ -158,8 +172,8 @@ def generar_pdf_venta_completo(venta):
         datos_tabla.append([
             detalle.producto.nombre[:40],
             str(cantidad),
-            f'${precio:,.2f}',
-            f'${subtotal_valor:,.2f}'
+            f'{etiqueta_moneda} {precio:,.2f}',
+            f'{etiqueta_moneda} {subtotal_valor:,.2f}'
         ])
     
     # Calcular desglose si es tienda con cantidad > unidades_por_caja
@@ -223,13 +237,13 @@ def generar_pdf_venta_completo(venta):
     total = subtotal - monto_descuento
     
     datos_totales = [
-        ['', '', 'Subtotal:', f'${subtotal:,.2f}'],
+        ['', '', 'Subtotal:', f'{etiqueta_moneda} {subtotal:,.2f}'],
     ]
     
     if monto_descuento > 0:
-        datos_totales.append(['', '', 'Descuento:', f'-${monto_descuento:,.2f}'])
+        datos_totales.append(['', '', 'Descuento:', f'-{etiqueta_moneda} {monto_descuento:,.2f}'])
     
-    datos_totales.append(['', '', 'TOTAL:', f'${total:,.2f}'])
+    datos_totales.append(['', '', 'TOTAL:', f'{etiqueta_moneda} {total:,.2f}'])
     
     tabla_totales = Table(datos_totales, colWidths=[2.5*inch, 1*inch, 1.2*inch, 1.3*inch])
     tabla_totales.setStyle(TableStyle([
@@ -336,7 +350,7 @@ def generar_pdf_venta_completo(venta):
             
             # Iterar sobre amortizaciones con comprobante
             for idx, amort in enumerate(amortizaciones_con_comprobante, 1):
-                if amort.comprobante and hasattr(amort.comprobante, 'path'):
+                if amort.comprobante:
                     # Información de la amortización
                     fecha_str = amort.fecha.strftime('%d/%m/%Y %H:%M') if amort.fecha else 'N/A'
                     
@@ -354,17 +368,28 @@ def generar_pdf_venta_completo(venta):
                     
                     # Intentar agregar imagen de comprobante
                     try:
-                        archivo_path = amort.comprobante.path
-                        if os.path.exists(archivo_path):
-                            # Crear tabla para centrar imagen
-                            img_data = [[Image(archivo_path, width=3.5*inch, height=2.5*inch)]]
-                            img_table = Table(img_data)
-                            img_table.setStyle(TableStyle([
-                                ('ALIGN', (0, 0), (0, 0), 'CENTER'),
-                                ('VALIGN', (0, 0), (0, 0), 'MIDDLE'),
-                            ]))
-                            elements.append(img_table)
-                            elements.append(Spacer(1, 0.3*inch))
+                        if amort.comprobante:
+                            # Usar contenido en bytes en lugar de ruta absoluta
+                            # para evitar problema de "absolute paths" en ReportLab
+                            try:
+                                # Leer contenido del archivo
+                                comprobante_file = amort.comprobante
+                                comprobante_file.seek(0)
+                                contenido_archivo = BytesIO(comprobante_file.read())
+                                
+                                # Crear tabla para centrar imagen
+                                img_data = [[Image(contenido_archivo, width=3.5*inch, height=2.5*inch)]]
+                                img_table = Table(img_data)
+                                img_table.setStyle(TableStyle([
+                                    ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+                                    ('VALIGN', (0, 0), (0, 0), 'MIDDLE'),
+                                ]))
+                                elements.append(img_table)
+                                elements.append(Spacer(1, 0.3*inch))
+                            except Exception as img_err:
+                                error_msg = f"<i>Imagen en BD pero no se pudo procesar: {str(img_err)[:50]}</i>"
+                                elements.append(Paragraph(error_msg, style_encabezado))
+                                elements.append(Spacer(1, 0.2*inch))
                     except Exception as e:
                         error_msg = f"<i>No se pudo cargar imagen: {str(e)}</i>"
                         elements.append(Paragraph(error_msg, style_encabezado))

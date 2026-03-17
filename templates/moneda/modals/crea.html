@@ -1,0 +1,30 @@
+<div class="modal fade" id="modalCrearMoneda" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> Actualizar Cambio</h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <form action="{% url 'crear_moneda' %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Seleccionar Moneda <span class="text-danger">*</span></label>
+                        <select name="moneda" class="form-control" required>
+                            <option value="USD">Dólar (USD)</option>
+                            <option value="BOB">Boliviano (BOB)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Cambio <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" min="0" name="valor" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
