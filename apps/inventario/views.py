@@ -86,7 +86,7 @@ def ver_inventario(request):
     for item in inventarios_lista:
         producto = item.producto
         calcular_precios_usd(producto, valor_dolar)
-        stock_en_cajas(producto)
+        stock_en_cajas(producto, cantidad=getattr(item, 'cantidad', None), target=item)
 
     context = {
         'inventarios': inventarios_lista,
@@ -147,6 +147,13 @@ def ver_inventario_deposito(request):
 
     if estado in ['normal', 'bajo', 'critico']:
         inventarios_lista = [item for item in inventarios_lista if item.estado_stock == estado]
+
+    # Aplicar cálculo de precios y stock en cajas por ubicación (depósito)
+    valor_dolar = obtener_tipo_cambio_usd()
+    for item in inventarios_lista:
+        producto = item.producto
+        calcular_precios_usd(producto, valor_dolar)
+        stock_en_cajas(producto, cantidad=getattr(item, 'cantidad', None), target=item)
 
     nombre_deposito = ', '.join(nombres_depositos) if nombres_depositos else 'Depósito no configurado'
 
