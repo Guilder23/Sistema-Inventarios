@@ -9,14 +9,17 @@
         // Manejar clic en botón ver
         $(document).on('click', '.btn-ver-producto', function() {
             const productoId = $(this).data('producto-id');
-            cargarProducto(productoId);
+            const ubicacionId = $(this).data('ubicacion-id');
+            cargarProducto(productoId, ubicacionId);
         });
         
         console.log('✓ Modal Ver Producto inicializado');
     };
     
-    function cargarProducto(productoId) {
-        const url = `/productos/${productoId}/obtener/`;
+    function cargarProducto(productoId, ubicacionId) {
+        const url = ubicacionId
+            ? `/productos/${productoId}/obtener/?ubicacion_id=${encodeURIComponent(ubicacionId)}`
+            : `/productos/${productoId}/obtener/`;
         
         $.ajax({
             url: url,

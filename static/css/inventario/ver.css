@@ -36,6 +36,17 @@
     font-size: 0.78rem;
 }
 
+.tabla-inventario .col-precio-usd,
+.tabla-inventario .col-precio-bs {
+    min-width: 140px;
+    white-space: nowrap;
+}
+
+.tabla-inventario thead .col-precio-usd,
+.tabla-inventario thead .col-precio-bs {
+    line-height: 1.1;
+}
+
 .badge-estado-bajo {
     background: #fef3c7;
     color: #92400e;
