@@ -1,0 +1,431 @@
+.modal-xl {
+    max-width: 90vw;
+}
+
+.modal-body {
+    padding: 0;
+    overflow: hidden;
+    height: 80vh; /* Altura fija para el modal body en PC */
+}
+
+.row.h-100 {
+    height: 100%; /* Ocupar toda la altura del modal body */
+    margin: 0;
+}
+
+.col-md-3.border-right {
+    height: 100%; /* Ocupar toda la altura */
+    overflow: hidden; /* Quitar scroll general */
+    padding: 0 !important; /* Padding controlado en hijos */
+    background-color: #f8f9fc;
+    display: flex;
+    flex-direction: column;
+}
+
+.config-panel-header {
+    padding: 15px 25px;
+}
+.config-panel-footer {
+    padding: 15px 25px;
+}
+
+.config-columns-scroll {
+    overflow-y: auto;
+    flex-grow: 1; 
+    padding: 15px 25px;
+    height: 100%; /* Asegurar que ocupe el espacio */
+}
+
+.col-md-9 {
+    background-color: #f0f0f0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Altura completa */
+    overflow: hidden; /* Prevenir desbordamiento */
+}
+
+.preview-container {
+    flex-grow: 1;
+    overflow: auto; /* IMPORTANTE: Permite scroll X e Y */
+    display: block; /* Mejor scroll que flex */
+    text-align: center; /* Centrar el papel */
+    background-color: #e4e6ea;
+    border: 1px solid #d1d3e2;
+    padding: 2rem;
+    height: 100%; /* Forzar altura */
+}
+
+/* Hacer que el papel sea más flexible */
+.preview-paper {
+    background: white;
+    width: 210mm; /* A4 width base */
+    max-width: 100%; /* Evitar desbordamiento horizontal si el contenedor es chico */
+    min-height: 297mm;
+    padding: 20mm;
+    margin: 0 auto; /* Centrar horizontalmente */
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+    box-sizing: border-box; /* Incluir padding en el ancho */
+    text-align: left; /* Restaurar alineación del texto */
+}
+
+.preview-table-wrapper {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+#tablaVistaPrevia {
+    width: 100%;
+    font-size: 11px;
+}
+
+#tablaVistaPrevia th, #tablaVistaPrevia td {
+    padding: 4px 6px;
+    vertical-align: middle;
+}
+
+
+@media print {
+    /* Ocultar todo el cuerpo por defecto */
+    body * {
+        visibility: hidden;
+    }
+
+    /* Asegurar que los contenedores del modal sean visibles y no corten el contenido */
+    #modalImprimir, 
+    #modalImprimir .modal-dialog, 
+    #modalImprimir .modal-content,
+    #modalImprimir .modal-body,
+    #modalImprimir .row,
+    #modalImprimir .col-md-9,
+    #contenedorVistaPrevia {
+        visibility: visible;
+        overflow: visible !important;
+        position: absolute !important;
+        left: 0;
+        top: 0;
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        width: 100% !important;
+        height: auto !important;
+        max-width: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Ocultar específicamente el fondo y contenedores innecesarios */
+    .modal-backdrop, .col-md-3, .modal-header, .modal-footer {
+        display: none !important;
+    }
+
+    /* Resetear estilos del contenedor del modal */
+    .modal {
+        position: absolute !important;
+        left: 0;
+        top: 0;
+        margin: 0;
+        padding: 0;
+        overflow: visible !important;
+    }
+
+    .modal-dialog {
+        margin: 0 !important;
+        padding: 0 !important;
+        transform: none !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        height: auto !important;
+        position: static !important;
+    }
+
+    .modal-content {
+        border: none !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        transform: none !important;
+    }
+
+    /* Ajustar el papel para impresión */
+    .preview-paper {
+        margin: 0 !important;
+        padding: 0 !important; /* El margen lo controla @page */
+        border: none !important;
+        position: relative !important;
+        width: 100% !important;
+        min-height: auto !important;
+        box-shadow: none !important;
+        left: 0 !important;
+        top: 0 !important;
+    }
+
+    /* Hacer visible el contenido interno */
+    .preview-paper * {
+        visibility: visible;
+    }
+
+    /* Quitar scroll y asegurar ancho completo */
+    html, body {
+        overflow: visible !important;
+        height: auto !important;
+        background: #fff !important; 
+    }
+
+    .preview-container {
+        overflow: visible !important;
+        width: 100% !important;
+        height: auto !important;
+        display: block !important;
+        position: static !important;
+    }
+
+    .preview-table-wrapper {
+        overflow: visible !important;
+        width: 100% !important;
+        display: block !important;
+    }
+
+    /* Título y Cabecera compactos */
+    .header-reporte {
+        margin-bottom: 10px !important;
+        display: block !important;
+        visibility: visible !important;
+    }
+    
+    .header-reporte h3, .header-reporte p, .header-reporte span {
+        visibility: visible !important; 
+        color: #000 !important;
+        display: block !important;
+    }
+    
+    .header-reporte h3 {
+        font-size: 18px !important;
+        margin-top: 0 !important;
+        margin-bottom: 5px !important;
+    }
+    
+    .header-reporte p {
+        font-size: 11px !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Quitar scroll de la lista de columnas si se imprime */
+    .config-columns-scroll {
+        display: none !important;
+    }
+
+    #tablaVistaPrevia {
+        width: 100% !important;
+        font-size: 10px !important;
+        background-color: white !important;
+    }
+    
+    #tablaVistaPrevia thead th {
+        background-color: #eee !important;
+        color: #000 !important;
+        border: 1px solid #000 !important;
+        vertical-align: middle !important;
+    }
+    
+    #tablaVistaPrevia tbody td {
+        border: 1px solid #000 !important;
+        page-break-inside: avoid !important;
+    }
+    
+    tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+    }
+    
+    thead {
+        display: table-header-group !important;
+    }
+    
+    tfoot {
+        display: table-footer-group !important;
+    }
+    
+    /* Ocultar barra de desplazamiento */
+    ::-webkit-scrollbar {
+        width: 0px !important;
+        height: 0px !important;
+        background: transparent !important;
+    }
+    
+    /* Configuración de página base */
+    @page {
+        margin: 5mm;
+    }
+}
+
+
+
+
+/* Mejoras visuales */
+.config-columns-scroll {
+    overflow-y: auto;
+    flex-grow: 1; 
+}
+
+/* Ocultar barra de scroll pero mantener funcionalidad */
+.config-columns-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+.config-columns-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 3px;
+}
+
+/* Ajustes Responsive para Móviles y Tablets */
+@media (max-width: 991.98px) {
+    /* Resetear modal a pantalla completa */
+    .modal-dialog.modal-xl {
+        max-width: 100%;
+        margin: 0;
+        height: 100%;
+        min-height: 100vh;
+    }
+
+    .modal-content {
+        height: 100%;
+        min-height: 100vh;
+        border-radius: 0;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* IMPORTANTE: Prevenir que el contenido salga del modal */
+    }
+
+    .modal-header {
+        flex: 0 0 auto; /* Header fijo */
+        z-index: 1050; /* Por encima del sticky */
+    }
+
+    .modal-body {
+        flex: 1 1 auto;
+        padding: 0;
+        overflow-y: auto; /* Scroll dentro del cuerpo */
+        height: auto; /* Dejar que flex lo maneje */
+        display: block; 
+        -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+    }
+
+    .row.h-100 {
+        display: flex;
+        flex-direction: column;
+        height: auto !important;
+        margin: 0;
+        min-height: 100%; /* Asegurar que cubra al menos la pantalla */
+    }
+
+    /* Panel de Configuración (Arriba - Pegajoso) */
+    .col-md-3.border-right {
+        width: 100%;
+        height: auto !important;
+        flex: 0 0 auto;
+        border-right: none !important;
+        border-bottom: 2px solid #dee2e6;
+        background-color: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 1030; /* Asegurar que esté sobre la tabla pero bajo el header */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .config-panel-header, .config-panel-footer {
+        padding: 10px 15px;
+    }
+
+    .config-columns-scroll {
+        display: flex;
+        flex-wrap: wrap; 
+        gap: 10px;
+        padding: 10px 15px;
+        max-height: 120px; /* Scroll interno para opciones */
+        overflow-y: auto;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .config-columns-scroll .custom-control {
+        width: 45%; 
+        margin-bottom: 0px;
+        font-size: 0.85rem;
+    }
+    
+    .config-panel-footer .btn {
+        font-size: 0.9rem;
+        padding: 0.375rem 0.75rem;
+    }
+
+    /* Botones de acción siempre visibles */
+    .config-panel-footer {
+        position: relative;
+        z-index: 10;
+        background: #fff;
+    }
+
+    /* Panel de Vista Previa (Abajo) */
+    .col-md-9 {
+        width: 100%;
+        height: auto !important;
+        flex: 1 1 auto;
+        padding: 15px 10px 60px 10px !important; /* Padding inferior grande para poder scrollear hasta el final */
+        background-color: #f0f0f0;
+        overflow: visible; 
+    }
+
+    /* Contenedor fluido */
+    .preview-container {
+        display: block;
+        width: 100%;
+        height: auto !important;
+        padding: 0 !important;
+        background-color: transparent;
+        border: none;
+        overflow: visible;
+    }
+
+    /* Papel adaptable */
+    .preview-paper {
+        width: 100% !important;
+        min-height: auto;
+        padding: 15px !important;
+        margin: 0 !important;
+        box-shadow: 0 0.15rem 0.5rem 0 rgba(0,0,0,0.1) !important;
+        border-radius: 4px;
+    }
+
+    /* Ajustar tabla para móviles */
+    .preview-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-top: 5px;
+        border: 1px solid #dee2e6; 
+        background: #fff;
+    }
+
+    #tablaVistaPrevia {
+        font-size: 10px !important; 
+        min-width: 600px; 
+        margin-bottom: 0;
+    }
+
+    /* Ajustes botones móviles */
+    .config-panel-footer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .config-panel-footer .btn-block {
+        display: inline-block;
+        width: 48%; 
+        margin: 0 !important;
+    }
+    
+    .config-panel-footer .btn-secondary {
+        width: 100%;
+        margin-top: 5px !important;
+    }
+}
