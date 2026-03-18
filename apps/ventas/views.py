@@ -613,35 +613,23 @@ def obtener_vendedores_almacen(request):
         almacen_id = request.GET.get('almacen_id')
         tienda_id = request.GET.get('tienda_id')
 
-        qs = Vendedor.objects.filter(estado='activo')
+        qs = Vendedor.objects.all()
 
         if almacen_id:
             qs = qs.filter(almacen_id=almacen_id)
         elif tienda_id:
             qs = qs.filter(tienda_id=tienda_id)
-        else:
-            # Inferir desde el perfil del usuario si no se pasan parámetros
-            try:
-                perfil = request.user.perfil
-                if perfil.rol == 'almacen':
-                    qs = qs.filter(almacen_id=perfil.id)
-                elif perfil.rol == 'tienda':
-                    qs = qs.filter(tienda_id=perfil.id)
-                elif perfil.rol == 'deposito' and hasattr(perfil, 'ubicacion_relacionada') and perfil.ubicacion_relacionada:
-                    tienda_padre = perfil.ubicacion_relacionada
-                    qs = qs.filter(tienda_id=tienda_padre.id)
-            except Exception:
-                # Si no se puede inferir, mantener lista global filtrada por activo
-                pass
+        # Si no se pasan parámetros, retornar todos los vendedores del sistema
 
         vendedores = [
             {
                 'id': v.id,
-                'nombre': f"{v.nombre} {v.apellido}".strip(),
+                'nombre_completo': f"{v.nombre} {v.apellido}".strip(),
+                'lugar': v.almacen.nombre if v.almacen else (v.tienda.nombre if v.tienda else 'Sin ubicación'),
                 'almacen_id': v.almacen_id,
                 'tienda_id': v.tienda_id,
             }
-            for v in qs.order_by('-fecha_creacion')
+            for v in qs.order_by('almacen_id', 'tienda_id', '-fecha_creacion')
         ]
 
         return JsonResponse({'vendedores': vendedores})
