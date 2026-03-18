@@ -142,6 +142,7 @@
                             <strong>Tipo de Cambio Actual:</strong> 1 USD = Bs. <span id="tipoCambioDisplay">{{ tipo_cambio_actual|floatformat:2 }}</span>
                         </div>
                     </div>
+
                     <!-- SELECTOR USUARIO VENDEDOR (Depósito/Tienda) - Solo visible para tiendas -->
                     {% if user.perfil.rol == 'tienda' %}
                     <div class="form-group mt-3 mb-0">

@@ -121,6 +121,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
 /* Botón de notificaciones */
 .navbar-notificaciones {
     position: relative;

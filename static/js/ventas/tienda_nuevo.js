@@ -216,7 +216,9 @@ function inicializarBusqueda() {
     // Selector Tipo Vendedor
     const selectTipoVendedor = document.getElementById('selectTipoVendedor');
     if (selectTipoVendedor) {
+        // INICIALIZAR con el valor actual del selector (importante!)
         const valorInicial = selectTipoVendedor.value;
+        
         if (valorInicial === 'tienda') {
             tipoVendedorActual = 'tienda';
         } else if (valorInicial === 'deposito') {
@@ -225,6 +227,7 @@ function inicializarBusqueda() {
             tipoVendedorActual = null;
         }
         
+        // Listener para cambios posteriores
         selectTipoVendedor.addEventListener('change', function() {
             const tipo = this.value;
             if (tipo === 'tienda') {
@@ -393,6 +396,7 @@ function inicializarBusqueda() {
         });
     }
 }
+
 
 // Función para agregar desde resultados (TIENDA)
 function agregarDesdeResultados(productoId, productoNombre, unidadesPorCaja) {

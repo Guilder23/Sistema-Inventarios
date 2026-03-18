@@ -437,9 +437,6 @@ def guardar_venta(request):
 
 
 # API para buscar productos (con AJAX autocompletado).-
-#Busca productos por nombre o código.
-#URL: /ventas/api/buscar-productos/?q=texto
-#Retorna JSON con lista de productos que tengan stock > 0 y estén activos
 @login_required
 def buscar_productos(request):
     """
@@ -481,92 +478,17 @@ def buscar_productos(request):
         for p in productos:
             # Obtener stock basado en tipo_venta
             stock = None
-            debug_info = f"Producto: {p.codigo}"
             
-            if tipo_venta in ['tienda', 'deposito'] and user_perfil:
-                # BÚSQUEDA POR UBICACIÓN: usar modelo Inventario
+            if tipo_venta in ['tienda', 'deposito']:
+                # BÚSQUEDA POR TIPO DE UBICACIÓN: filtrar Inventario por rol
                 try:
-                    from django.db.models import Q as DjangoQ
+                    # Filtrar directo por rol de ubicación (tienda o deposito)
+                    inventarios = Inventario.objects.filter(
+                        producto=p,
+                        ubicacion__rol=tipo_venta
+                    )
                     
-                    if tipo_venta == 'tienda':
-                        # Si usuario es tienda: su tienda + depósitos asociados
-                        # Si usuario es depósito: su tienda padre + otros depósitos del mismo padre
-                        if user_perfil.rol == 'tienda':
-                            # Usuario es tienda: buscar su tienda + sus depósitos
-                            ubicaciones_ids = [user_perfil.id]
-                            # Agregar todos los depósitos asociados a esta tienda
-                            depositos_asociados = PerfilUsuario.objects.filter(
-                                rol='deposito',
-                                ubicacion_relacionada=user_perfil
-                            ).values_list('id', flat=True)
-                            ubicaciones_ids.extend(depositos_asociados)
-                            debug_info += f" | tipo=tienda, user.rol=tienda | ubicaciones_ids={ubicaciones_ids}"
-                            
-                            inventarios = Inventario.objects.filter(
-                                producto=p,
-                                ubicacion_id__in=ubicaciones_ids
-                            )
-                        elif user_perfil.rol == 'deposito' and user_perfil.ubicacion_relacionada:
-                            # Usuario es depósito: buscar su tienda padre + otros depósitos del padre
-                            tienda_padre = user_perfil.ubicacion_relacionada
-                            ubicaciones_ids = [tienda_padre.id]
-                            # Agregar todos los depósitos de la misma tienda padre
-                            depositos_asociados = PerfilUsuario.objects.filter(
-                                rol='deposito',
-                                ubicacion_relacionada=tienda_padre
-                            ).values_list('id', flat=True)
-                            ubicaciones_ids.extend(depositos_asociados)
-                            debug_info += f" | tipo=tienda, user.rol=deposito | ubicaciones_ids={ubicaciones_ids}"
-                            
-                            inventarios = Inventario.objects.filter(
-                                producto=p,
-                                ubicacion_id__in=ubicaciones_ids
-                            )
-                        else:
-                            # Usuario almacén u otro: buscar todas las tiendas
-                            debug_info += f" | tipo=tienda, user.rol={user_perfil.rol} (busca todas tiendas)"
-                            inventarios = Inventario.objects.filter(
-                                producto=p,
-                                ubicacion__rol='tienda'
-                            )
-                        
-                        stock = sum(inv.cantidad for inv in inventarios)
-                        debug_info += f" | stock_filtrado={stock}"
-                    
-                    elif tipo_venta == 'deposito':
-                        # Buscar SOLO depósitos
-                        if user_perfil.rol == 'tienda':
-                            # Usuario tienda: busca depósitos asociados a su tienda
-                            depositos_asociados = PerfilUsuario.objects.filter(
-                                rol='deposito',
-                                ubicacion_relacionada=user_perfil
-                            ).values_list('id', flat=True)
-                            debug_info += f" | tipo=deposito, user.rol=tienda | depositos_ids={list(depositos_asociados)}"
-                        elif user_perfil.rol == 'deposito' and user_perfil.ubicacion_relacionada:
-                            # Usuario depósito: busca depósitos del mismo padre
-                            tienda_padre = user_perfil.ubicacion_relacionada
-                            depositos_asociados = PerfilUsuario.objects.filter(
-                                rol='deposito',
-                                ubicacion_relacionada=tienda_padre
-                            ).values_list('id', flat=True)
-                            debug_info += f" | tipo=deposito, user.rol=deposito | depositos_ids={list(depositos_asociados)}"
-                        else:
-                            # Usuario almacén: busca todos los depósitos
-                            debug_info += f" | tipo=deposito, user.rol={user_perfil.rol} (busca todos depositos)"
-                            depositos_asociados = PerfilUsuario.objects.filter(
-                                rol='deposito'
-                            ).values_list('id', flat=True)
-                        
-                        if depositos_asociados:
-                            inventarios = Inventario.objects.filter(
-                                producto=p,
-                                ubicacion_id__in=depositos_asociados
-                            )
-                            stock = sum(inv.cantidad for inv in inventarios)
-                            debug_info += f" | stock_filtrado={stock}"
-                        else:
-                            stock = 0
-                            debug_info += f" | NO_DEPOSITOS"
+                    stock = sum(inv.cantidad for inv in inventarios)
                 
                 except Exception as e:
                     stock = None
@@ -679,6 +601,7 @@ def obtener_detalle_venta(request, id):
             'detalles': [
                 {
                     'codigo': d.producto.codigo,
+                    'producto': d.producto.nombre,
                     'cantidad': d.cantidad,
                     'precio_unitario': str(d.precio_unitario),
                     'subtotal': str(d.subtotal)
@@ -696,8 +619,6 @@ def obtener_detalle_venta(request, id):
         return JsonResponse({'success': False, 'error': 'Venta no encontrada'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': f'Error: {str(e)}'}, status=500)
-
-
 @login_required
 def ver_venta(request, id):
     venta = get_object_or_404(Venta, id=id)

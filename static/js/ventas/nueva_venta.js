@@ -475,6 +475,24 @@ function eliminarDelCarrito(index) {
 }
 
 // CARRITO: ACTUALIZAR RESUMEN
+function actualizarEtiquetasMoneda() {
+    const tipoCambioElement = document.getElementById('tipoCambioActual');
+    const monedaElement = document.getElementById('inputMoneda');
+    
+    if (!tipoCambioElement || !monedaElement) return;
+    
+    const tipoCambio = parseFloat(tipoCambioElement.value) || 1;
+    const moneda = monedaElement.value || 'BOB';
+    
+    // Actualizar todos los labels de moneda
+    document.querySelectorAll('.moneda-label').forEach(el => {
+        el.textContent = moneda === 'USD' ? '$' : 'Bs.';
+    });
+    
+    // Actualizar resumen
+    actualizarResumen();
+}
+
 function actualizarResumen() {
     let totalItems = 0;
     let totalPrecio = 0;
