@@ -178,7 +178,7 @@
                                     <td>{{ venta.cliente }}</td>
                                     <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
                                     <td class="text-right font-weight-bold">
-                                        {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}
+                                        {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total_display|floatformat:2 }}
                                     </td>
                                     <td class="text-center">
                                         {% if venta.estado == 'completada' %}
@@ -290,7 +290,7 @@
                                     <td>{{ venta.cliente }}</td>
                                     <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
                                     <td class="text-right font-weight-bold">
-                                        {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}
+                                        {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total_display|floatformat:2 }}
                                     </td>
                                     <td class="text-center">
                                         {% if venta.estado == 'completada' %}
@@ -302,7 +302,6 @@
                                             <i class="fas fa-times-circle mr-1"></i>Cancelada
                                         </span>
                                         {% elif venta.estado == 'pendiente' %}
->>>>>>> 729b8022f0b02d2dccb3bcd3c7e7bb32e51d6da2
                                         <span class="badge badge-estado badge-pendiente">
                                             <i class="fas fa-clock mr-1"></i>Pendiente
                                         </span>
@@ -622,7 +621,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Resto del código original de gestión de pestañas
->>>>>>> adrian1
     const urlParams = new URLSearchParams(window.location.search);
     const tabActivo = urlParams.get('tab');
     

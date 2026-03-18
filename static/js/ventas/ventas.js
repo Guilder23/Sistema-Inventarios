@@ -138,6 +138,8 @@ function cargarDetalleVenta(ventaId) {
 }
 
 function renderDetalleVenta(data) {
+    const etiqueta = data.moneda === 'USD' ? '$' : 'Bs.';
+
     // Badge de estado
     let badgeEstado = '';
     if (data.estado === 'completada') {
@@ -163,7 +165,7 @@ function renderDetalleVenta(data) {
             </div>
             <div class="detalle-info-item">
                 <div class="label">Total</div>
-                <div class="value"><span class="font-weight-bold">Bs. ${parseFloat(data.total).toFixed(2)}</span></div>
+                <div class="value"><span class="font-weight-bold">${etiqueta} ${parseFloat(data.total).toFixed(2)}</span></div>
             </div>
             <div class="detalle-info-item">
                 <div class="label">Estado</div>
@@ -196,8 +198,8 @@ function renderDetalleVenta(data) {
                 <tr>
                     <td><strong>${item.producto}</strong></td>
                     <td class="text-center">${item.cantidad}</td>
-                    <td class="text-right">Bs. ${parseFloat(item.precio_unitario).toFixed(2)}</td>
-                    <td class="text-right font-weight-bold">Bs. ${parseFloat(item.subtotal).toFixed(2)}</td>
+                    <td class="text-right">${etiqueta} ${parseFloat(item.precio_unitario).toFixed(2)}</td>
+                    <td class="text-right font-weight-bold">${etiqueta} ${parseFloat(item.subtotal).toFixed(2)}</td>
                 </tr>
             `;
         });
@@ -206,7 +208,7 @@ function renderDetalleVenta(data) {
     html += `
                     <tr class="total-row">
                         <td colspan="3" class="text-right"><strong>TOTAL:</strong></td>
-                        <td class="text-right"><strong>Bs. ${parseFloat(data.total).toFixed(2)}</strong></td>
+                        <td class="text-right"><strong>${etiqueta} ${parseFloat(data.total).toFixed(2)}</strong></td>
                     </tr>
                 </tbody>
             </table>
@@ -236,7 +238,7 @@ function renderDetalleVenta(data) {
                 html += `
                     <tr>
                         <td>${a.fecha}</td>
-                        <td class="text-right font-weight-bold text-success">Bs. ${parseFloat(a.monto).toFixed(2)}</td>
+                        <td class="text-right font-weight-bold text-success">${etiqueta} ${parseFloat(a.monto).toFixed(2)}</td>
                         <td>${a.observaciones || '-'}</td>
                     </tr>
                 `;
@@ -248,8 +250,8 @@ function renderDetalleVenta(data) {
 
         html += `
                 <div class="d-flex justify-content-between mt-2">
-                    <span><strong>Total amortizado:</strong> <span class="text-success">Bs. ${parseFloat(data.total_amortizado).toFixed(2)}</span></span>
-                    <span><strong>Saldo pendiente:</strong> <span class="text-danger">Bs. ${parseFloat(data.saldo_pendiente).toFixed(2)}</span></span>
+                    <span><strong>Total amortizado:</strong> <span class="text-success">${etiqueta} ${parseFloat(data.total_amortizado).toFixed(2)}</span></span>
+                    <span><strong>Saldo pendiente:</strong> <span class="text-danger">${etiqueta} ${parseFloat(data.saldo_pendiente).toFixed(2)}</span></span>
                 </div>
             </div>
         `;
@@ -268,7 +270,7 @@ function initBotonesAmortizacion() {
 
         $('#amortVentaId').val(ventaId);
         $('#amortVentaCodigo').text(ventaCodigo);
-        $('#amortVentaTotal').text('Bs. ' + parseFloat(ventaTotal).toFixed(2));
+        $('#amortVentaTotal').text(parseFloat(ventaTotal).toFixed(2));
         $('#amortMonto').val('');
         $('#amortObservaciones').val('');
 
@@ -303,8 +305,9 @@ function cargarDatosAmortizacion(ventaId) {
             const totalAmortizado = parseFloat(data.total_amortizado);
             const saldoPendiente = parseFloat(data.saldo_pendiente);
             
+            $('#amortVentaTotal').text(etiqueta + ' ' + parseFloat(data.total).toFixed(2));
             $('#amortTotalPagado').text(etiqueta + ' ' + totalAmortizado.toFixed(2));
-            $('#amortSaldoPendiente').text(saldoPendiente.toFixed(2));
+            $('#amortSaldoPendiente').text(etiqueta + ' ' + saldoPendiente.toFixed(2));
 
 // Establecer max del input
             $('#amortMonto').attr('max', saldoPendiente);

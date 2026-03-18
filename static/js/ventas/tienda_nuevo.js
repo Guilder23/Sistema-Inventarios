@@ -34,6 +34,43 @@ function getCSRFToken() {
            document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1] || '';
 }
 
+function obtenerMonedaActual() {
+    return document.getElementById('inputMoneda')?.value || 'BOB';
+}
+
+function obtenerTipoCambioActual() {
+    return parseFloat(document.getElementById('tipoCambioActual')?.value || 1) || 1;
+}
+
+function obtenerSimboloMoneda() {
+    return obtenerMonedaActual() === 'USD' ? '$' : 'Bs.';
+}
+
+function convertirBsAMoneda(montoBs) {
+    const monto = parseFloat(montoBs || 0);
+    return obtenerMonedaActual() === 'USD' ? (monto / obtenerTipoCambioActual()) : monto;
+}
+
+function convertirMonedaABs(monto) {
+    const valor = parseFloat(monto || 0);
+    return obtenerMonedaActual() === 'USD' ? (valor * obtenerTipoCambioActual()) : valor;
+}
+
+function formatearMonto(montoBs) {
+    return `${obtenerSimboloMoneda()} ${convertirBsAMoneda(montoBs).toFixed(2)}`;
+}
+
+function actualizarUnidadDescuento() {
+    const unidadEl = document.getElementById('tipoDescuentoUnidad');
+    if (!unidadEl) return;
+
+    if (tipoDescuentoActual === 'porcentaje') {
+        unidadEl.textContent = '%';
+    } else {
+        unidadEl.textContent = obtenerSimboloMoneda();
+    }
+}
+
 // Validar que teléfono solo acepte números
 function validarTelefono(input) {
     input.addEventListener('keypress', function(e) {
@@ -148,13 +185,13 @@ function renderCarrito() {
                 <span class="badge badge-info">${item.modalidad.charAt(0).toUpperCase() + item.modalidad.slice(1)}</span>
             </td>
             <td class="text-center font-weight-500" style="color: #28a745;" title="${item.modalidad === 'caja' ? 'Precio de caja' : 'Precio por unidad'}">
-                Bs. ${precioUnitario.toFixed(2)}
+                ${formatearMonto(precioUnitario)}
             </td>
             <td class="text-center">${cantidad}</td>
             <td class="text-right font-weight-bold" style="color: #28a745;">
-                <small class="text-muted">Bs. ${precioUnitario.toFixed(2)} × ${cantidad} = </small>
+                <small class="text-muted">${formatearMonto(precioUnitario)} x ${cantidad} = </small>
                 <br>
-                Bs. ${subtotal.toFixed(2)}
+                ${formatearMonto(subtotal)}
             </td>
             <td class="text-center pr-3">
                 <button type="button" class="btn btn-sm btn-danger" onclick="removerDelCarrito(${index})">
@@ -180,13 +217,12 @@ function actualizarTotales() {
         const porcentaje = Math.min(descuentoValue, 100);
         descuentoAplicado = (subtotal * porcentaje) / 100;
     } else {
-        // Descuento en monto fijo
-        descuentoAplicado = Math.min(descuentoValue, subtotal);
+        // Descuento en monto fijo: el usuario ingresa el valor en la moneda visible
+        descuentoAplicado = Math.min(convertirMonedaABs(descuentoValue), subtotal);
     }
     
     const total = subtotal - descuentoAplicado;
     
-    // Actualizar elementos del resumen (solo Bs. para tienda)
     const elemCantItems = document.getElementById('resumenCantItems');
     const elemSubtotal = document.getElementById('resumenSubtotal');
     const elemTotal = document.getElementById('resumenTotal');
@@ -195,10 +231,10 @@ function actualizarTotales() {
         elemCantItems.textContent = cantItems;
     }
     if (elemSubtotal) {
-        elemSubtotal.textContent = 'Bs. ' + subtotal.toFixed(2);
+        elemSubtotal.textContent = formatearMonto(subtotal);
     }
     if (elemTotal) {
-        elemTotal.innerHTML = `<strong style="font-size: 1.3rem; display: block;">Bs. ${total.toFixed(2)}</strong>`;
+        elemTotal.innerHTML = `<strong style="font-size: 1.3rem; display: block;">${formatearMonto(total)}</strong>`;
     }
 }
 
@@ -239,6 +275,22 @@ function inicializarBusqueda() {
             }
             carrito = [];
             renderCarrito();
+        });
+    }
+
+    const selectMoneda = document.getElementById('selectMoneda');
+    if (selectMoneda) {
+        selectMoneda.addEventListener('change', function() {
+            const inputMoneda = document.getElementById('inputMoneda');
+            if (inputMoneda) {
+                inputMoneda.value = this.value;
+            }
+            actualizarUnidadDescuento();
+            renderCarrito();
+            const inputBuscarActual = document.getElementById('inputBuscarProducto');
+            if (inputBuscarActual && inputBuscarActual.value.trim().length >= 2) {
+                inputBuscarActual.dispatchEvent(new Event('input'));
+            }
         });
     }
     
@@ -285,6 +337,8 @@ function inicializarBusqueda() {
                     data.productos.forEach(producto => {
                         const unidadesPorCaja = producto.unidades_por_caja || 1;
                         const stockText = `Stock: ${producto.stock} | Caja: ${unidadesPorCaja} unidad${unidadesPorCaja > 1 ? 'es' : ''}`;
+                        const precioReferencia = parseFloat(producto.precio_unidad) || 0;
+                        const precioTexto = formatearMonto(precioReferencia);
                         
                         let html = `
                             <div class="card mb-3 p-3" style="border-left: 4px solid #667eea;">
@@ -293,6 +347,8 @@ function inicializarBusqueda() {
                                         <strong style="font-size: 1.1rem;">${producto.nombre}</strong>
                                         <br>
                                         <small class="text-muted">${stockText}</small>
+                                        <br>
+                                        <small class="text-success font-weight-bold">Precio ref.: ${precioTexto}</small>
                                     </div>
                                 </div>
                                 <div class="row align-items-end">
@@ -386,7 +442,7 @@ function inicializarBusqueda() {
                     if (unidadEl) unidadEl.textContent = '%';
                     if (inputEl) inputEl.max = '100';
                 } else {
-                    if (unidadEl) unidadEl.textContent = 'Bs.';
+                    actualizarUnidadDescuento();
                     if (inputEl) inputEl.removeAttribute('max');
                 }
                 
@@ -518,13 +574,16 @@ function inicializarGuardarVenta() {
         
         const descuentoValue = parseFloat(document.getElementById('inputDescuento').value) || 0;
         const subtotal = carrito.reduce((sum, item) => sum + item.subtotal, 0);
+        const moneda = obtenerMonedaActual();
+        const tipoCambio = obtenerTipoCambioActual();
+        const tipoPago = document.getElementById('inputTipoPago')?.value || 'contado';
         
         let descuentoAplicado = 0;
         if (tipoDescuentoActual === 'porcentaje') {
             const porcentaje = Math.min(descuentoValue, 100);
             descuentoAplicado = (subtotal * porcentaje) / 100;
         } else {
-            descuentoAplicado = Math.min(descuentoValue, subtotal);
+            descuentoAplicado = Math.min(convertirMonedaABs(descuentoValue), subtotal);
         }
         
         const datosVenta = {
@@ -532,8 +591,10 @@ function inicializarGuardarVenta() {
             telefono: document.getElementById('inputTelefono').value.trim(),
             razon_social: document.getElementById('inputRazonSocial').value.trim(),
             direccion: document.getElementById('inputDireccion').value.trim(),
-            tipo_pago: 'contado',
+            tipo_pago: tipoPago,
             tipo_venta: tipoVendedorActual,
+            moneda: moneda,
+            tipo_cambio: tipoCambio,
             descuento: descuentoAplicado,
             items: carrito.map(item => ({
                 producto_id: item.producto.id,
@@ -623,8 +684,12 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
         inicializarBusqueda();
         inicializarGuardarVenta();
+        actualizarUnidadDescuento();
+        actualizarTotales();
     });
 } else {
     inicializarBusqueda();
     inicializarGuardarVenta();
+    actualizarUnidadDescuento();
+    actualizarTotales();
 }

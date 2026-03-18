@@ -173,10 +173,10 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for detalle in venta.detalles.all %}
+                            {% for detalle in detalles_display %}
                             <tr>
                                 <td>
-                                    <strong>{{ detalle.producto.nombre }}</strong>
+                                    <strong>{{ detalle.producto }}</strong>
                                 </td>
                                 <td class="text-center">{{ detalle.cantidad }}</td>
                                 <td class="text-right">{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ detalle.precio_unitario|floatformat:2 }}</td>
@@ -197,17 +197,17 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between mb-2">
                             <span>Subtotal:</span>
-                            <span>{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.subtotal|floatformat:2 }}</span>
+                            <span>{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ subtotal_display|floatformat:2 }}</span>
                         </div>
-                        {% if venta.total < venta.subtotal %}
+                        {% if descuento_display > 0 %}
                         <div class="d-flex justify-content-between mb-2">
                             <span>Descuento:</span>
-                            <span class="text-danger">-{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.subtotal|add:venta.total|floatformat:2 }}</span>
+                            <span class="text-danger">-{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ descuento_display|floatformat:2 }}</span>
                         </div>
                         {% endif %}
                         <div class="d-flex justify-content-between total-row border-top pt-2">
                             <span>TOTAL:</span>
-                            <span>{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}</span>
+                            <span>{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ total_display|floatformat:2 }}</span>
                         </div>
                     </div>
                 </div>
@@ -251,7 +251,7 @@
                     <form id="formAmortizacion">
                         <div class="modal-body">
                             <div class="form-group">
-                                <label><strong>Saldo Pendiente:</strong> {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}</label>
+                                <label><strong>Saldo Pendiente:</strong> {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ saldo_pendiente|floatformat:2 }}</label>
                             </div>
                             <div class="form-group">
                                 <label for="monto">Monto a Abonar:</label>

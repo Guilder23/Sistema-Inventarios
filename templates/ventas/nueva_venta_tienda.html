@@ -126,6 +126,19 @@
                         </div>
                         <input type="hidden" id="inputTipoPago" value="contado">
                     </div>
+                    <div class="form-group mt-3 mb-0">
+                        <label class="label-campo">Moneda de Venta</label>
+                        <select id="selectMoneda" class="form-control">
+                            <option value="BOB" selected>Bolivianos (Bs.)</option>
+                            <option value="USD">Dolares (USD)</option>
+                        </select>
+                        <input type="hidden" id="inputMoneda" value="BOB">
+                        <input type="hidden" id="tipoCambioActual" value="{{ tipo_cambio_actual }}">
+                        <div class="alert alert-info mt-2 mb-0" style="font-size: 0.9rem;">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <strong>Tipo de Cambio Actual:</strong> 1 USD = Bs. <span id="tipoCambioDisplay">{{ tipo_cambio_actual|floatformat:2 }}</span>
+                        </div>
+                    </div>
                     {% else %}
                     {# Tipo de pago fijo a contado para tiendas sucursales #}
                     <input type="hidden" id="inputTipoPago" value="contado">
@@ -237,7 +250,7 @@
                                 <div class="btn-group btn-group-sm" role="group" style="box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                                     <input type="radio" class="btn-check" name="tipoDescuento" id="descuentoFijo" value="fijo" checked>
                                     <label class="btn btn-outline-success" for="descuentoFijo" style="font-size: 0.9rem; font-weight: 500; padding: 0.5rem 1rem;">
-                                        <i class="fas fa-coins mr-1"></i>Monto (Bs.)
+                                        <i class="fas fa-coins mr-1"></i>Monto fijo
                                     </label>
                                     
                                     <input type="radio" class="btn-check" name="tipoDescuento" id="descuentoPorcentaje" value="porcentaje">
