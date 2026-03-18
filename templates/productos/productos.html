@@ -23,9 +23,9 @@
             <p class="page-subtitle">Administra el catálogo de productos</p>
         </div>
         {% if es_almacen %}
-        <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalCrearProducto">
+        <!--<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalCrearProducto">
             <i class="fas fa-plus"></i> Nuevo Producto
-        </button>
+        </button>-->
         {% endif %}
     </div>
 
@@ -70,12 +70,15 @@
                     <tr>
                         <th style="width: 6%;">Foto</th>
                         <th style="width: 9%;">Código</th>
-                        <th style="width: 14%;">Nombre</th>
+                        <!--<th style="width: 14%;">Nombre</th> -->
+                        <th style="width: 12%;">Detalle</th>
                         <th style="width: 12%;">Categoría</th>
-                        <th style="width: 12%;">Contenedores</th>
-                        <th style="width: 10%;">Stock</th>
+                        <th style="width: 12%;">Stock Cajas</th>
                         <th style="width: 9%;">Unid/Caja</th>
-                        <th style="width: 10%;">Precio Unitario</th>
+                        <th style="width: 12%;">Precio USD</th>
+                        <!--<th style="width: 12%;">Contenedores</th>
+                        <th style="width: 10%;">Stock</th>-->
+                        <th style="width: 10%;">Precio por Caja</th>
                         <th style="width: 8%;">Estado</th>
                         <th class="text-center" style="width: 10%;">Acciones</th>
                     </tr>
@@ -95,9 +98,14 @@
                         <td>
                             <span class="codigo-badge">{{ producto.codigo }}</span>
                         </td>
-                        <td>
+                        <!--<td>
                             <div class="text-truncate" style="max-width: 200px;" title="{{ producto.nombre }}">
                                 {{ producto.nombre }}
+                            </div>
+                        </td>-->
+                        <td>
+                            <div class="text-truncate" style="max-width: 200px;" title="{{ producto.detalle|default:'Sin detalle' }}">
+                                {{ producto.descripcion|default:'Sin detalle' }}
                             </div>
                         </td>
                         <td>
@@ -106,24 +114,30 @@
                             </div>
                         </td>
                         <td>
-                            <a href="{% url 'listar_contenedores_producto' producto.id %}" class="contenedores-badge" title="Ver contenedores">
-                                {{ producto.productos_contenedores.all|length }}
-                            </a>
-                        </td>
-                        <td>
                             {% if producto.stock <= producto.stock_critico %}
                                 <span class="badge-stock badge-stock-critico">{{ producto.stock }} unidades</span>
                             {% elif producto.stock <= producto.stock_bajo %}
                                 <span class="badge-stock badge-stock-bajo">{{ producto.stock }} unidades</span>
                             {% else %}
-                                <span class="badge-stock badge-stock-normal">{{ producto.stock }} unidades</span>
+                                <span class="badge-stock badge-stock-normal">{{ producto.stock_cajas | floatformat:0 }} cajas</span>
                             {% endif %}
                         </td>
                         <td class="text-center">
                             {{ producto.unidades_por_caja }}
                         </td>
+                        <td>
+                             <div class="text-truncate" style="max-width: 200px;" title="{{ producto.nombre }}">
+                                USD {{ producto.precio_caja_usd|floatformat:2 }}                     
+                            </div>
+                        </td>
+                       <!-- <td>
+                            <a href="{% url 'listar_contenedores_producto' producto.id %}" class="contenedores-badge" title="Ver contenedores">
+                                {{ producto.productos_contenedores.all|length }}
+                            </a>
+                        </td>-->
+
                         <td class="text-center">
-                            <span class="precio-badge">Bs. {{ producto.precio_unidad|floatformat:2 }}</span>
+                            <span class="precio-badge">Bs. {{ producto.precio_caja|floatformat:2 }}</span>
                         </td>
                         <td class="text-center">
                             {% if producto.activo %}

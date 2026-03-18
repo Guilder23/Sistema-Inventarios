@@ -1,7 +1,7 @@
 {% extends 'base/base.html' %}
 {% load static %}
 
-{% block titulo %}Dashboard - Sistema de Inventario{% endblock %}
+{% block titulo %}Dashboard Administrativo - Sistema de Inventario{% endblock %}
 
 {% block estilos_extra %}
 <link rel="stylesheet" href="{% static 'css/dashboard/dashboard.css' %}">
@@ -12,9 +12,9 @@
 <div class="page-header mb-4">
     <div class="page-header-content">
         <h1 class="page-title">
-            <i class="fas fa-th-large"></i> Dashboard
+            <i class="fas fa-chart-line"></i> Dashboard Administrativo
         </h1>
-        <p class="page-subtitle">Bienvenido de nuevo, <strong>{{ user.username|title }}</strong></p>
+        <p class="page-subtitle">Bienvenido, <strong>{{ user.get_full_name|default:user.username }}</strong> | Panel de control general del sistema</p>
     </div>
     <div class="page-header-actions">
         <span class="badge-time">
@@ -26,215 +26,420 @@
 
 <!-- Tarjetas de Estadísticas -->
 <div class="stats-grid mb-4">
+    <!-- Total Productos -->
     <div class="stat-card stat-card-primary">
         <div class="stat-card-icon">
-            <i class="fas fa-box"></i>
+            <i class="fas fa-cube"></i>
         </div>
         <div class="stat-card-content">
-            <div class="stat-card-label">Total Productos</div>
-            <div class="stat-card-value">1,247</div>
-            <div class="stat-card-trend positive">
-                <i class="fas fa-arrow-up"></i> 12% vs mes anterior
-            </div>
+            <div class="stat-card-label">Total Productos Activos</div>
+            <div class="stat-card-value">{{ total_productos|default:0 }}</div>
+            <div class="stat-card-info-text">Productos registrados y activos en el catálogo</div>
         </div>
     </div>
 
+    <!-- En Stock -->
     <div class="stat-card stat-card-success">
         <div class="stat-card-icon">
-            <i class="fas fa-warehouse"></i>
+            <i class="fas fa-boxes"></i>
         </div>
         <div class="stat-card-content">
-            <div class="stat-card-label">En Stock</div>
-            <div class="stat-card-value">892</div>
-            <div class="stat-card-trend positive">
-                <i class="fas fa-arrow-up"></i> 8% del total
-            </div>
+            <div class="stat-card-label">Productos con Stock</div>
+            <div class="stat-card-value">{{ productos_en_stock|default:0 }}</div>
+            <div class="stat-card-info-text">Productos con inventario disponible</div>
         </div>
     </div>
 
-    <div class="stat-card stat-card-warning">
+    <!-- Stock Crítico -->
+    <div class="stat-card stat-card-danger">
         <div class="stat-card-icon">
             <i class="fas fa-exclamation-triangle"></i>
         </div>
         <div class="stat-card-content">
-            <div class="stat-card-label">Stock Bajo</div>
-            <div class="stat-card-value">45</div>
-            <div class="stat-card-trend negative">
-                <i class="fas fa-arrow-down"></i> Requiere atención
-            </div>
+            <div class="stat-card-label">Stock Crítico</div>
+            <div class="stat-card-value">{{ inventario_critico|default:0 }}</div>
+            <div class="stat-card-info-text">Bajo nivel mínimo, requieren atención inmediata</div>
         </div>
     </div>
 
+    <!-- Stock Bajo -->
+    <div class="stat-card stat-card-warning">
+        <div class="stat-card-icon">
+            <i class="fas fa-exclamation-circle"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-card-label">Stock Bajo</div>
+            <div class="stat-card-value">{{ inventario_bajo|default:0 }}</div>
+            <div class="stat-card-info-text">Cerca del nivel mínimo, requieren reabastecimiento</div>
+        </div>
+    </div>
+
+    <!-- Ventas del Mes BOB -->
+    <div class="stat-card stat-card-purple">
+        <div class="stat-card-icon">
+            <i class="fas fa-dollar-sign"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-card-label">Ventas del Mes (BOB)</div>
+            <div class="stat-card-value">Bs. {{ total_ventas_mes_bob|floatformat:2 }}</div>
+            <div class="stat-card-info-text">Total de ventas en bolivianos</div>
+        </div>
+    </div>
+
+    <!-- Ventas del Mes USD -->
     <div class="stat-card stat-card-info">
+        <div class="stat-card-icon">
+            <i class="fas fa-money-bill-wave"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-card-label">Ventas del Mes (USD)</div>
+            <div class="stat-card-value">${{ total_ventas_mes_usd|floatformat:2 }}</div>
+            <div class="stat-card-info-text">Total de ventas en dólares</div>
+        </div>
+    </div>
+
+    <!-- Ventas de Hoy -->
+    <div class="stat-card stat-card-primary">
         <div class="stat-card-icon">
             <i class="fas fa-shopping-cart"></i>
         </div>
         <div class="stat-card-content">
-            <div class="stat-card-label">Ventas del Mes</div>
-            <div class="stat-card-value">$48,520</div>
-            <div class="stat-card-trend positive">
-                <i class="fas fa-arrow-up"></i> 15% vs mes anterior
-            </div>
+            <div class="stat-card-label">Ventas de Hoy</div>
+            <div class="stat-card-value">{{ ventas_hoy|default:0 }}</div>
+            <div class="stat-card-info-text">Ventas completadas el día de hoy</div>
+        </div>
+    </div>
+
+    <!-- Ventas Pendientes -->
+    <div class="stat-card stat-card-warning">
+        <div class="stat-card-icon">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-card-label">Ventas Pendientes</div>
+            <div class="stat-card-value">{{ ventas_pendientes|default:0 }}</div>
+            <div class="stat-card-info-text">Ventas en estado pendiente</div>
+        </div>
+    </div>
+
+    <!-- Traspasos Pendientes -->
+    <div class="stat-card stat-card-info">
+        <div class="stat-card-icon">
+            <i class="fas fa-exchange-alt"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-card-label">Traspasos Pendientes</div>
+            <div class="stat-card-value">{{ traspasos_pendientes|default:0 }}</div>
+            <div class="stat-card-info-text">Traspasos entre ubicaciones pendientes</div>
+        </div>
+    </div>
+
+    <!-- Pedidos Pendientes -->
+    <div class="stat-card stat-card-purple">
+        <div class="stat-card-icon">
+            <i class="fas fa-clipboard-list"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-card-label">Pedidos Pendientes</div>
+            <div class="stat-card-value">{{ pedidos_pendientes|default:0 }}</div>
+            <div class="stat-card-info-text">Pedidos de productos pendientes</div>
+        </div>
+    </div>
+
+    <!-- Total Usuarios -->
+    <div class="stat-card stat-card-success">
+        <div class="stat-card-icon">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-card-label">Total Usuarios</div>
+            <div class="stat-card-value">{{ total_usuarios|default:0 }}</div>
+            <div class="stat-card-info-text">Usuarios activos en el sistema</div>
+        </div>
+    </div>
+
+    <!-- Total Vendedores -->
+    <div class="stat-card stat-card-danger">
+        <div class="stat-card-icon">
+            <i class="fas fa-user-tie"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-card-label">Total Vendedores</div>
+            <div class="stat-card-value">{{ total_vendedores|default:0 }}</div>
+            <div class="stat-card-info-text">Vendedores activos en tiendas</div>
         </div>
     </div>
 </div>
 
 <!-- Contenido Principal -->
 <div class="dashboard-grid">
-    <!-- Gráfico de Inventario -->
-    <div class="dashboard-card full-width">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="fas fa-chart-line"></i> Movimientos de Inventario
-            </h3>
-            <div class="card-actions">
-                <button class="btn-icon" title="Actualizar">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="chart-placeholder">
-                <i class="fas fa-chart-area"></i>
-                <p>Gráfico de movimientos de inventario</p>
-                <small>Próximamente: Visualización de datos en tiempo real</small>
-            </div>
-        </div>
-    </div>
-
     <!-- Accesos Rápidos -->
-    <div class="dashboard-card">
+    <!-- <div class="dashboard-card full-width">
         <div class="card-header">
             <h3 class="card-title">
                 <i class="fas fa-rocket"></i> Accesos Rápidos
             </h3>
+            <small class="text-muted-small">Navegación rápida a módulos principales</small>
         </div>
         <div class="card-body">
-            <div class="quick-actions">
-                <a href="{% url 'listar_productos' %}" class="quick-action-btn">
-                    <div class="quick-action-icon bg-primary">
-                        <i class="fas fa-box"></i>
+            <div class="quick-actions-grid">
+                <a href="{% url 'listar_productos' %}" class="quick-card">
+                    <div class="quick-card-icon bg-primary">
+                        <i class="fas fa-cube"></i>
                     </div>
-                    <div class="quick-action-content">
+                    <div class="quick-card-content">
                         <strong>Productos</strong>
                         <small>Gestionar catálogo</small>
                     </div>
-                    <i class="fas fa-chevron-right"></i>
                 </a>
 
-                <a href="{% url 'ver_inventario' %}" class="quick-action-btn">
-                    <div class="quick-action-icon bg-success">
+                <a href="{% url 'ver_inventario' %}" class="quick-card">
+                    <div class="quick-card-icon bg-success">
                         <i class="fas fa-warehouse"></i>
                     </div>
-                    <div class="quick-action-content">
+                    <div class="quick-card-content">
                         <strong>Inventario</strong>
                         <small>Ver stock disponible</small>
                     </div>
-                    <i class="fas fa-chevron-right"></i>
                 </a>
 
-                <a href="#" class="quick-action-btn">
-                    <div class="quick-action-icon bg-warning">
+                <a href="{% url 'ventas:listar_ventas' %}" class="quick-card">
+                    <div class="quick-card-icon bg-info">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="quick-card-content">
+                        <strong>Ventas</strong>
+                        <small>Administrar ventas</small>
+                    </div>
+                </a>
+
+                <a href="#" class="quick-card">
+                    <div class="quick-card-icon bg-warning">
                         <i class="fas fa-clipboard-list"></i>
                     </div>
-                    <div class="quick-action-content">
+                    <div class="quick-card-content">
                         <strong>Pedidos</strong>
-                        <small>Administrar pedidos</small>
+                        <small>Gestionar pedidos</small>
                     </div>
-                    <i class="fas fa-chevron-right"></i>
                 </a>
 
-                <a href="#" class="quick-action-btn">
-                    <div class="quick-action-icon bg-info">
+                <a href="#" class="quick-card">
+                    <div class="quick-card-icon bg-purple">
                         <i class="fas fa-exchange-alt"></i>
                     </div>
-                    <div class="quick-action-content">
+                    <div class="quick-card-content">
                         <strong>Traspasos</strong>
                         <small>Gestionar traspasos</small>
                     </div>
-                    <i class="fas fa-chevron-right"></i>
+                </a>
+
+                <a href="#" class="quick-card">
+                    <div class="quick-card-icon bg-danger">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="quick-card-content">
+                        <strong>Reportes</strong>
+                        <small>Ver reportes</small>
+                    </div>
                 </a>
             </div>
         </div>
-    </div>
+    </div> -->
 
-    <!-- Actividad Reciente -->
+    <!-- Alertas de Stock Crítico -->
     <div class="dashboard-card">
         <div class="card-header">
             <h3 class="card-title">
-                <i class="fas fa-history"></i> Actividad Reciente
+                <i class="fas fa-exclamation-triangle text-danger"></i> Stock Crítico
             </h3>
-            <a href="#" class="card-link">Ver todo</a>
+            <small class="text-muted-small">Productos que requieren atención urgente</small>
         </div>
         <div class="card-body">
-            <div class="activity-timeline">
-                <div class="activity-item">
-                    <div class="activity-icon bg-success">
-                        <i class="fas fa-check"></i>
+            {% if productos_stock_critico %}
+                <div class="alert-list">
+                    {% for inventario in productos_stock_critico %}
+                    <div class="alert-item">
+                        <div class="alert-item-header">
+                            <strong>{{ inventario.producto.nombre }}</strong>
+                            <span class="dash-badge dash-badge-danger">{{ inventario.cantidad }} unid.</span>
+                        </div>
+                        <p class="alert-item-text">
+                            Mínimo requerido: {{ inventario.producto.stock_critico }} unidades
+                        </p>
+                        <small class="alert-item-location">
+                            <i class="fas fa-map-marker-alt"></i> {{ inventario.ubicacion.nombre_ubicacion }}
+                        </small>
                     </div>
-                    <div class="activity-content">
-                        <strong>Producto agregado</strong>
-                        <p>Se agregó "Laptop Dell XPS 15" al inventario</p>
-                        <small>Hace 10 minutos</small>
-                    </div>
+                    {% endfor %}
                 </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-check-circle"></i>
+                    <p>No hay productos con stock crítico</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 
-                <div class="activity-item">
-                    <div class="activity-icon bg-info">
-                        <i class="fas fa-box"></i>
+    <!-- Top Productos Más Vendidos -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-fire text-warning"></i> Top Productos del Mes
+            </h3>
+            <small class="text-muted-small">Los productos más vendidos este mes</small>
+        </div>
+        <div class="card-body">
+            {% if productos_mas_vendidos %}
+                <div class="top-products-list">
+                    {% for producto in productos_mas_vendidos %}
+                    <div class="top-product-item">
+                        <div class="top-product-rank">{{ forloop.counter }}</div>
+                        <div class="top-product-info">
+                            <strong>{{ producto.producto__nombre }}</strong>
+                            <small>{{ producto.producto__codigo }}</small>
+                        </div>
+                        <div class="top-product-quantity">{{ producto.total_vendido }}</div>
                     </div>
-                    <div class="activity-content">
-                        <strong>Stock actualizado</strong>
-                        <p>Se actualizó el stock de "Mouse Logitech" a 150 unidades</p>
-                        <small>Hace 1 hora</small>
-                    </div>
+                    {% endfor %}
                 </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-chart-bar"></i>
+                    <p>No hay datos de ventas este mes</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 
-                <div class="activity-item">
-                    <div class="activity-icon bg-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <div class="activity-content">
-                        <strong>Alerta de stock bajo</strong>
-                        <p>El producto "Teclado Mecánico" tiene solo 5 unidades</p>
-                        <small>Hace 2 horas</small>
-                    </div>
+    <!-- Últimos Movimientos -->
+    <div class="dashboard-card full-width">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-history"></i> Movimientos Recientes de Inventario
+            </h3>
+            <small class="text-muted-small">Últimas transacciones registradas en el sistema</small>
+        </div>
+        <div class="card-body">
+            {% if ultimos_movimientos %}
+                <div class="table-responsive">
+                    <table class="activity-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha y Hora</th>
+                                <th>Tipo</th>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Ubicación</th>
+                                <th>Referencia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for movimiento in ultimos_movimientos %}
+                            <tr>
+                                <td>{{ movimiento.fecha|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    {% if movimiento.tipo == 'entrada' %}
+                                        <span class="dash-badge dash-badge-success"><i class="fas fa-arrow-down"></i> Entrada</span>
+                                    {% elif movimiento.tipo == 'salida' %}
+                                        <span class="dash-badge dash-badge-danger"><i class="fas fa-arrow-up"></i> Salida</span>
+                                    {% elif movimiento.tipo == 'venta' %}
+                                        <span class="dash-badge dash-badge-info"><i class="fas fa-shopping-cart"></i> Venta</span>
+                                    {% elif movimiento.tipo == 'traspaso_enviado' %}
+                                        <span class="dash-badge dash-badge-purple"><i class="fas fa-truck"></i> Enviado</span>
+                                    {% elif movimiento.tipo == 'traspaso_recibido' %}
+                                        <span class="dash-badge dash-badge-purple"><i class="fas fa-dolly"></i> Recibido</span>
+                                    {% elif movimiento.tipo == 'devolucion' %}
+                                        <span class="dash-badge dash-badge-warning"><i class="fas fa-undo"></i> Devolución</span>
+                                    {% else %}
+                                        <span class="dash-badge dash-badge-secondary">{{ movimiento.get_tipo_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td><strong>{{ movimiento.producto.nombre }}</strong></td>
+                                <td><strong>{{ movimiento.cantidad }}</strong></td>
+                                <td>{{ movimiento.ubicacion.nombre_ubicacion }}</td>
+                                <td>{{ movimiento.referencia|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No hay movimientos registrados</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 
-                <div class="activity-item">
-                    <div class="activity-icon bg-primary">
-                        <i class="fas fa-shopping-cart"></i>
-                    </div>
-                    <div class="activity-content">
-                        <strong>Venta registrada</strong>
-                        <p>Venta #1234 por $1,500 completada</p>
-                        <small>Hace 3 horas</small>
-                    </div>
+    <!-- Últimas Ventas -->
+    <div class="dashboard-card full-width">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-receipt"></i> Últimas Ventas Registradas
+            </h3>
+            <small class="text-muted-small">Ventas recientes completadas en el sistema</small>
+        </div>
+        <div class="card-body">
+            {% if ultimas_ventas %}
+                <div class="table-responsive">
+                    <table class="activity-table">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Vendedor</th>
+                                <th>Ubicación</th>
+                                <th>Tipo Pago</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for venta in ultimas_ventas %}
+                            <tr>
+                                <td><strong>{{ venta.codigo }}</strong></td>
+                                <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
+                                <td>{{ venta.cliente }}</td>
+                                <td>{{ venta.vendedor.get_full_name|default:venta.vendedor.username }}</td>
+                                <td>{{ venta.ubicacion.nombre_ubicacion }}</td>
+                                <td>
+                                    {% if venta.tipo_pago == 'contado' %}
+                                        <span class="dash-badge dash-badge-success">Contado</span>
+                                    {% else %}
+                                        <span class="dash-badge dash-badge-warning">Crédito</span>
+                                    {% endif %}
+                                </td>
+                                <td><strong>{{ venta.moneda }} {{ venta.total|floatformat:2 }}</strong></td>
+                                <td>
+                                    {% if venta.estado == 'completada' %}
+                                        <span class="dash-badge dash-badge-success">Completada</span>
+                                    {% elif venta.estado == 'pendiente' %}
+                                        <span class="dash-badge dash-badge-warning">Pendiente</span>
+                                    {% elif venta.estado == 'cancelada' %}
+                                        <span class="dash-badge dash-badge-danger">Cancelada</span>
+                                    {% else %}
+                                        <span class="dash-badge dash-badge-secondary">{{ venta.estado|title }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-            </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-shopping-cart"></i>
+                    <p>No hay ventas registradas</p>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
+{% endblock %}
 
-<script>
-// Actualizar fecha y hora
-function updateDateTime() {
-    const now = new Date();
-    const options = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    };
-    const dateTimeElement = document.getElementById('currentDateTime');
-    if (dateTimeElement) {
-        dateTimeElement.textContent = now.toLocaleDateString('es-ES', options);
-    }
-}
-
-updateDateTime();
-setInterval(updateDateTime, 60000); // Actualizar cada minuto
-</script>
+{% block scripts_extra %}
+<script src="{% static 'js/dashboard/dashboard.js' %}"></script>
 {% endblock %}

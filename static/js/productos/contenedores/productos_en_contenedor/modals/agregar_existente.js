@@ -9,32 +9,12 @@
     
     // Función para obtener token CSRF de forma segura
     function obtenerCSRFToken() {
-        // Buscar en el formulario actual (dentro del modal)
-        let token = document.querySelector('[name=csrfmiddlewaretoken]');
-        if (token && token.value) {
-            console.log('✓ CSRF token encontrado en el formulario');
-            return token.value;
+        const token = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (!token) {
+            console.warn('Token CSRF no encontrado en el formulario');
+            return '';
         }
-        
-        // Buscar en meta tags
-        token = document.querySelector('meta[name="csrf-token"]');
-        if (token && token.getAttribute('content')) {
-            console.log('✓ CSRF token encontrado en meta tag');
-            return token.getAttribute('content');
-        }
-        
-        // Buscar en cookies
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            const [name, value] = cookie.trim().split('=');
-            if (name === 'csrftoken') {
-                console.log('✓ CSRF token encontrado en cookies');
-                return decodeURIComponent(value);
-            }
-        }
-        
-        console.warn('⚠️ CSRF token NO ENCONTRADO en formulario, meta tags, ni cookies');
-        return '';
+        return token.value || '';
     }
     
     // Event listener para el botón Agregar Producto Existente
@@ -104,31 +84,13 @@
                 const productoId = document.getElementById('producto_id_modal').value;
                 const cantidad = document.getElementById('cantidad_existente_modal').value;
                 
-                console.log('Enviando formulario:', {
-                    productoId,
-                    cantidad,
-                    contenedorActualId
-                });
-                
                 if (!productoId || !cantidad) {
                     alert('Por favor selecciona un producto e ingresa una cantidad');
                     return;
                 }
                 
-                if (!contenedorActualId) {
-                    alert('Error: No se especificó el contenedor');
-                    return;
-                }
-                
-                // Usar FormData para enviar todos los campos
                 const formData = new FormData(this);
-                // Asegurar que el tipo está correcto
-                formData.set('tipo', 'existente');
-                formData.set('producto_id', productoId);
-                formData.set('cantidad', cantidad);
-                
                 const url = `/productos/contenedores/${contenedorActualId}/agregar-producto/`;
-                console.log('POST URL:', url);
                 
                 fetch(url, {
                     method: 'POST',
@@ -139,16 +101,10 @@
                     body: formData
                 })
                 .then(response => {
-                    console.log('Response:', response.status, response.statusText);
-                    if (!response.ok) {
-                        return response.text().then(text => {
-                            throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
-                        });
-                    }
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Response data:', data);
                     if (data.success) {
                         $('#modalAgregarProductoExistente').modal('hide');
                         alert(data.mensaje || 'Producto agregado exitosamente');
@@ -158,7 +114,7 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Full error:', error);
+                    console.error('Error:', error);
                     alert('Error al agregar el producto: ' + error.message);
                 });
             });

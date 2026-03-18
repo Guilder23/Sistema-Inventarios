@@ -3,9 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib import messages
 from django.contrib.auth.models import User
-from django.db.models import Q
+from django.db.models import Q, Sum, F
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+from decimal import Decimal
 from .models import PerfilUsuario
 
 
@@ -27,18 +29,110 @@ def custom_logout(request):
 @login_required
 def dashboard(request):
     """Dashboard principal del sistema - dinámico por rol"""
+    from apps.productos.models import Producto
+    from apps.inventario.models import Inventario, MovimientoInventario
+    from apps.traspasos.models import Traspaso
+    from apps.pedidos.models import Pedido
+    from apps.ventas.models import Venta, DetalleVenta
+    from apps.vendedores.models import Vendedor
+    
     # Determinar qué dashboard mostrar según el rol del usuario
     if request.user.is_superuser:
-        # Dashboard para administradores
         template = 'dashboard/admin_dashboard.html'
     elif request.user.is_staff:
-        # Dashboard para staff
-        template = 'dashboard/admin_dashboard.html'  # Por ahora usa el mismo, después crear staff_dashboard.html
+        template = 'dashboard/admin_dashboard.html'
     else:
-        # Dashboard para usuarios normales
-        template = 'dashboard/admin_dashboard.html'  # Por ahora usa el mismo, después crear user_dashboard.html
+        template = 'dashboard/admin_dashboard.html'
     
-    return render(request, template)
+    # ======= PRODUCTOS Y STOCK =======
+    total_productos = Producto.objects.filter(activo=True).count()
+    productos_en_stock = Inventario.objects.filter(cantidad__gt=0).values('producto').distinct().count()
+    
+    # Stock crítico en TODAS las ubicaciones (almacenes, tiendas, depósitos)
+    inventario_critico = Inventario.objects.select_related('producto', 'ubicacion').filter(
+        cantidad__lte=F('producto__stock_critico')
+    ).count()
+    
+    inventario_bajo = Inventario.objects.select_related('producto', 'ubicacion').filter(
+        cantidad__lte=F('producto__stock_bajo'),
+        cantidad__gt=F('producto__stock_critico')
+    ).count()
+    
+    # ======= VENTAS =======
+    inicio_mes = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    ventas_mes = Venta.objects.filter(
+        fecha_elaboracion__gte=inicio_mes,
+        estado='completada'
+    )
+    total_ventas_mes_bob = ventas_mes.filter(moneda='BOB').aggregate(total=Sum('total'))['total'] or Decimal('0')
+    total_ventas_mes_usd = ventas_mes.filter(moneda='USD').aggregate(total=Sum('total'))['total'] or Decimal('0')
+    cantidad_ventas_mes = ventas_mes.count()
+    
+    hoy = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    ventas_hoy = Venta.objects.filter(fecha_elaboracion__gte=hoy, estado='completada').count()
+    ventas_pendientes = Venta.objects.filter(estado='pendiente').count()
+    
+    # ======= TRASPASOS Y PEDIDOS =======
+    traspasos_pendientes = Traspaso.objects.filter(estado='PENDIENTE').count()
+    pedidos_pendientes = Pedido.objects.filter(estado='PENDIENTE').count()
+    
+    # ======= MOVIMIENTOS RECIENTES =======
+    ultimos_movimientos = MovimientoInventario.objects.select_related(
+        'producto', 'ubicacion'
+    ).order_by('-fecha')[:5]
+    
+    # ======= ÚLTIMAS VENTAS =======
+    ultimas_ventas = Venta.objects.select_related(
+        'ubicacion', 'vendedor'
+    ).order_by('-fecha_elaboracion')[:5]
+    
+    # ======= PRODUCTOS MÁS VENDIDOS DEL MES =======
+    productos_mas_vendidos = DetalleVenta.objects.filter(
+        venta__fecha_elaboracion__gte=inicio_mes,
+        venta__estado='completada'
+    ).values(
+        'producto__id',
+        'producto__codigo',
+        'producto__nombre'
+    ).annotate(
+        total_vendido=Sum('cantidad')
+    ).order_by('-total_vendido')[:5]
+    
+    # ======= STOCK CRÍTICO DETALLADO =======
+    # Mostrar productos con stock crítico de TODAS las ubicaciones
+    productos_stock_critico = Inventario.objects.select_related(
+        'producto', 'ubicacion'
+    ).filter(
+        cantidad__lte=F('producto__stock_critico')
+    ).order_by('cantidad')[:10]
+    
+    # ======= USUARIOS Y VENDEDORES =======
+    # Total usuarios activos del sistema (excluyendo usuarios técnicos de depósitos)
+    total_usuarios = User.objects.filter(is_active=True).exclude(username__startswith='deposito_auto_').count()
+    # Total vendedores activos desde el módulo de gestión de vendedores
+    total_vendedores = Vendedor.objects.filter(estado='activo').count()
+    
+    context = {
+        'total_productos': total_productos,
+        'productos_en_stock': productos_en_stock,
+        'inventario_critico': inventario_critico,
+        'inventario_bajo': inventario_bajo,
+        'total_ventas_mes_bob': total_ventas_mes_bob,
+        'total_ventas_mes_usd': total_ventas_mes_usd,
+        'cantidad_ventas_mes': cantidad_ventas_mes,
+        'ventas_hoy': ventas_hoy,
+        'ventas_pendientes': ventas_pendientes,
+        'traspasos_pendientes': traspasos_pendientes,
+        'pedidos_pendientes': pedidos_pendientes,
+        'total_usuarios': total_usuarios,
+        'total_vendedores': total_vendedores,
+        'ultimos_movimientos': ultimos_movimientos,
+        'ultimas_ventas': ultimas_ventas,
+        'productos_mas_vendidos': productos_mas_vendidos,
+        'productos_stock_critico': productos_stock_critico,
+    }
+    
+    return render(request, template, context)
 
 @login_required
 def listar_usuarios(request):

@@ -180,6 +180,21 @@
                                     <td class="text-right font-weight-bold">
                                         {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}
                                     </td>
+                                    <td class="text-center">
+                                        {% if venta.estado == 'completada' %}
+                                        <span class="badge badge-estado badge-completada">
+                                            <i class="fas fa-check-circle mr-1"></i>Completada
+                                        </span>
+                                        {% elif venta.estado == 'cancelada' %}
+                                        <span class="badge badge-estado badge-cancelada">
+                                            <i class="fas fa-times-circle mr-1"></i>Cancelada
+                                        </span>
+                                        {% else %}
+                                        <span class="badge badge-estado badge-pendiente">
+                                            <i class="fas fa-clock mr-1"></i>Pendiente
+                                        </span>
+                                        {% endif %}
+                                    </td>
                                     <td class="text-center pr-3">
                                         <div class="btn-group btn-group-sm">
                                             <button class="btn btn-outline-primary btn-ver-detalle"
@@ -276,6 +291,18 @@
                                     <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
                                     <td class="text-right font-weight-bold">
                                         {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if venta.estado == 'completada' %}
+                                        <span class="badge badge-estado badge-completada">
+                                            <i class="fas fa-check-circle mr-1"></i>Completada
+                                        </span>
+                                        {% elif venta.estado == 'cancelada' %}
+                                        <span class="badge badge-estado badge-cancelada">
+                                            <i class="fas fa-times-circle mr-1"></i>Cancelada
+                                        </span>
+                                        {% elif venta.estado == 'pendiente' %}
+>>>>>>> 729b8022f0b02d2dccb3bcd3c7e7bb32e51d6da2
                                         <span class="badge badge-estado badge-pendiente">
                                             <i class="fas fa-clock mr-1"></i>Pendiente
                                         </span>

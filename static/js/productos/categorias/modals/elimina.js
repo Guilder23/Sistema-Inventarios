@@ -15,29 +15,10 @@
         });
 
         $('#formEliminarCategoria').on('submit', function(e) {
-            e.preventDefault();
             if (categoriaIdEliminar) {
-                eliminarCategoria(categoriaIdEliminar);
+                const form = $(this);
+                form.attr('action', `/productos/categorias/${categoriaIdEliminar}/eliminar/`);
             }
         });
     });
-
-    function eliminarCategoria(categoriaId) {
-        const csrftoken = $('[name=csrfmiddlewaretoken]').val();
-
-        $.ajax({
-            url: `/productos/categorias/${categoriaId}/eliminar/`,
-            type: 'POST',
-            headers: {
-                'X-CSRFToken': csrftoken
-            },
-            success: function() {
-                $('#modalEliminarCategoria').modal('hide');
-                location.reload();
-            },
-            error: function() {
-                alert('Error al cambiar el estado de la categoría');
-            }
-        });
-    }
 })();

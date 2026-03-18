@@ -23,6 +23,7 @@ class Categoria(models.Model):
 class Contenedor(models.Model):
     """Modelo de Contenedor de productos"""
     nombre = models.CharField(max_length=120, unique=True)
+    descripcion = models.TextField(blank=True, null=True, verbose_name='Descripción')
     proveedor = models.CharField(max_length=150)
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='contenedores_creados')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -104,9 +105,7 @@ class Producto(models.Model):
     poliza = models.DecimalField(max_digits=10, decimal_places=2, default=0, blank=True, null=True)
     gastos = models.DecimalField(max_digits=10, decimal_places=2, default=0, blank=True, null=True)
     
-    # Control de stock 
-    # Cuando no hay ProductoContenedor, usar este valor como stock principal
-    stock = models.IntegerField(default=0, help_text='Stock principal del producto')
+    # Control de stock (se calcula automáticamente desde ProductoContenedor)
     stock_critico = models.IntegerField(default=10)
     stock_bajo = models.IntegerField(default=30)
     
@@ -123,6 +122,13 @@ class Producto(models.Model):
     
     def __str__(self):
         return f"{self.codigo} - {self.nombre}"
+    
+    @property
+    def stock(self):
+        """Calcula el stock total sumando todos los productos en contenedores"""
+        return self.productos_contenedores.aggregate(
+            total_stock=models.Sum('cantidad')
+        )['total_stock'] or 0
     
     def obtener_stock_por_contenedor(self):
         """Retorna un diccionario con el stock del producto en cada contenedor"""

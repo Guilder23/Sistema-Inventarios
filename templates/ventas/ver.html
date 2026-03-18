@@ -125,7 +125,13 @@
                         </p>
                     </div>
                     <div class="col-md-3">
-                        <p><strong>Estado:</strong> {{ venta.get_estado_display }}</p>
+                        <p><strong>Moneda:</strong> 
+                            {% if venta.moneda == 'USD' %}
+                                <span class="badge badge-success">USD ($)</span>
+                            {% else %}
+                                <span class="badge badge-primary">BOB (Bs.)</span>
+                            {% endif %}
+                        </p>
                     </div>
                     <div class="col-md-3">
                         <p><strong>Moneda:</strong> 

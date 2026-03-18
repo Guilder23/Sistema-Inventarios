@@ -20,10 +20,7 @@ function inicializarModalEliminar() {
     const formEliminarAlmacen = document.getElementById('formEliminarAlmacen');
     if (formEliminarAlmacen) {
         formEliminarAlmacen.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (confirm('¿Desea cambiar el estado de este almacén?')) {
-                this.submit();
-            }
+            // El formulario se envía normalmente
         });
     }
 }
@@ -46,7 +43,6 @@ function cargarEliminacionAlmacen(almacenId, almacenNombre) {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             alert('Error al cargar el almacén');
         });
 }

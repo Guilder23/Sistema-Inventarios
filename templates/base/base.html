@@ -3,7 +3,6 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <link rel="icon" href="data:,">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Sistema de Gestión de Inventario">
     <title>{% block titulo %}Sistema de Inventario{% endblock %}</title>
@@ -24,13 +23,13 @@
     <link rel="stylesheet" href="{% static 'css/componentes/navbar.css' %}">
     <link rel="stylesheet" href="{% static 'css/componentes/sidebar.css' %}">
     <link rel="stylesheet" href="{% static 'css/componentes/footer.css' %}">
-    <link rel="stylesheet" href="{% static 'css/componentes/modales.css' %}">
     
     <!-- Estilos de Notificaciones -->
     <link rel="stylesheet" href="{% static 'css/notificaciones/badge.css' %}">
-    <link rel="stylesheet" href="{% static 'css/notificaciones/toast.css' %}">
-
+    
     <!-- Estilos Extra por página -->
+     <!-- logo de la pagina-->
+    <link rel="icon" href="{% static 'img/logoAlmacen.png' %}" type="image/png">
     {% block estilos_extra %}{% endblock %}
 </head>
 <body>
@@ -41,24 +40,23 @@
         <!-- INCLUIR SIDEBAR -->
         {% include 'componentes/sidebar.html' %}
         
-        <!-- CONTENEDOR PARA MODALES DEL SISTEMA -->
-        <div id="modalContainer"></div>
+        <!-- MENSAJES EN ESQUINA INFERIOR DERECHA -->
+        {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
         
         <!-- CONTENIDO PRINCIPAL -->
         <div class="main-container">
             <div class="content">
-                <!-- MENSAJES -->
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-
                 <!-- BLOQUE DE CONTENIDO QUE HEREDAN LAS PÁGINAS -->
                 {% block contenido %}
                 {% endblock %}
@@ -79,25 +77,20 @@
 
     <!-- Scripts Globales (URLS y configuración global) -->
     {% block scripts_globales %}{% endblock %}
-
+    
+    <!-- Scripts de Base -->
+    <script src="{% static 'js/base/base.js' %}"></script>
+    
     <!-- Scripts de Componentes -->
-    <script src="{% static 'js/componentes/modales.js' %}"></script>
     <script src="{% static 'js/componentes/navbar.js' %}"></script>
     <script src="{% static 'js/componentes/sidebar.js' %}"></script>
     <script src="{% static 'js/componentes/footer.js' %}"></script>
     
     <!-- Scripts de Notificaciones -->
     <script src="{% static 'js/notificaciones/badge.js' %}"></script>
-    <script src="{% static 'js/notificaciones/toast.js' %}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const toastManager = new ToastManager();
-        });
-    </script>
     
     <!-- Scripts Extra por página -->
-    {% block scripts_extra %}
-    {% endblock %}
+    {% block scripts_extra %}{% endblock %}
 </body>
 </html>
 

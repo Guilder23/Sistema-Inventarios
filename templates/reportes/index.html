@@ -1,0 +1,137 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Reportes{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/reportes/index.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid reportes-container">
+    <div class="reportes-header">
+        <div class="reportes-header-content">
+            <h1 class="reportes-title">
+                <i class="fas fa-chart-bar"></i>
+                Centro de Reportes
+            </h1>
+            <p class="reportes-subtitle">
+                Accede a todos los reportes y análisis del sistema
+            </p>
+        </div>
+    </div>
+
+    <!-- Tarjetas de reportes disponibles -->
+    <div class="row">
+        <!-- Reporte de Contenedores -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="report-card">
+                <div class="report-card-body">
+                    <div class="report-card-header">
+                        <div class="report-icon report-icon-contenedores">
+                            <i class="fas fa-box-open"></i>
+                        </div>
+                        <div class="report-info">
+                            <h5 class="report-title">Contenedores</h5>
+                            <p class="report-label">Productos por contenedor</p>
+                        </div>
+                    </div>
+                    <p class="report-description">
+                        Vista completa de productos organizados por contenedor con información de stock, precios y estado.
+                    </p>
+                    <a href="{% url 'reporte_contenedores' %}" class="report-btn btn-contenedores">
+                        <i class="fas fa-eye"></i> Ver Reporte
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reporte de Inventario -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="report-card">
+                <div class="report-card-body">
+                    <div class="report-card-header">
+                        <div class="report-icon report-icon-inventario">
+                            <i class="fas fa-warehouse"></i>
+                        </div>
+                        <div class="report-info">
+                            <h5 class="report-title">Inventario</h5>
+                            <p class="report-label">Stock general</p>
+                        </div>
+                    </div>
+                    <p class="report-description">
+                        Reporte general del inventario con niveles de stock, alertas y valorización de productos.
+                    </p>
+                    <a href="{% url 'ver_inventario_general' %}" class="report-btn btn-inventario">
+                        <i class="fas fa-eye"></i> Ver Reporte
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reporte de Ventas -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="report-card">
+                <div class="report-card-body">
+                    <div class="report-card-header">
+                        <div class="report-icon report-icon-ventas">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="report-info">
+                            <h5 class="report-title">Ventas</h5>
+                            <p class="report-label">Análisis de ventas</p>
+                        </div>
+                    </div>
+                    <p class="report-description">
+                        Análisis detallado de ventas por período, productos más vendidos y tendencias.
+                    </p>
+                    <a href="{% url 'reporte_ventas' %}" class="report-btn btn-ventas">
+                        <i class="fas fa-eye"></i> Ver Reporte
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reporte de Traspasos -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="report-card">
+                <div class="report-card-body">
+                    <div class="report-card-header">
+                        <div class="report-icon report-icon-traspasos">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <div class="report-info">
+                            <h5 class="report-title">Traspasos</h5>
+                            <p class="report-label">Movimientos entre ubicaciones</p>
+                        </div>
+                    </div>
+                    <p class="report-description">
+                        Historial de traspasos entre almacenes, tiendas y depósitos con trazabilidad completa.
+                    </p>
+                    <a href="{% url 'reporte_traspasos' %}" class="report-btn btn-traspasos">
+                        <i class="fas fa-eye"></i> Ver Reporte
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información adicional -->
+    <div class="row">
+        <div class="col-12">
+            <div class="reportes-info-alert">
+                <div class="reportes-info-content">
+                    <i class="fas fa-info-circle reportes-info-icon"></i>
+                    <div>
+                        <h6 class="reportes-info-title">Información sobre reportes</h6>
+                        <p class="reportes-info-text">
+                            Todos los reportes se pueden filtrar, ordenar y exportar a Excel o PDF. 
+                            Utiliza los filtros disponibles para obtener información específica según tus necesidades.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

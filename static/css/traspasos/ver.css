@@ -103,7 +103,7 @@
 }
 
 .table td {
-    vertical-align: middle !important;
+    vertical-align: middle;
 }
 
 /* Botones de acción */

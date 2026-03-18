@@ -10,8 +10,10 @@
             </button>
             
             <div class="navbar-logo">
-                <img src="{% static 'img/logoAlmacen.png' %}" alt="Logo Sistema de Inventario" class="footer-logo"> 
+                <a href="{% url 'dashboard' %}">
+                    <i class="fas fa-store"></i>
                     <span class="navbar-brand-text">Sistema Inventario</span>
+                </a>
             </div>
         </div>
 
@@ -21,9 +23,15 @@
             <div class="navbar-tc">
                 <i class="fas fa-money-bill-wave"></i>
                 {% if navbar_moneda_actual %}
-                    <span>{{ navbar_moneda_actual.moneda }} - Bs {{ navbar_moneda_actual.valor|stringformat:"0.2f" }}</span>
+                    <span class="tc-text">
+                        <span class="tc-label">{{ navbar_moneda_actual.moneda }}</span>
+                        <span class="tc-sep">-</span>
+                        <span class="tc-value">Bs {{ navbar_moneda_actual.valor|stringformat:"0.2f" }}</span>
+                    </span>
                 {% else %}
-                    <span>Sin tipo de cambio</span>
+                    <span class="tc-text">
+                        <span class="tc-label">Sin tipo de cambio</span>
+                    </span>
                 {% endif %}
             </div>
             <!-- Notificaciones -->

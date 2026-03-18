@@ -1,0 +1,157 @@
+{% load static %}
+<!-- Estilos específicos del modal -->
+<link rel="stylesheet" href="{% static 'css/reportes/ventas/modal/modal_detalle.css' %}">
+
+<!-- Modal para Ver Detalle de Venta -->
+<div class="modal fade" id="modalDetalleVenta" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye"></i> Detalles de la Venta
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- COLUMNA IZQUIERDA: Código y Estado -->
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <div id="detalleCodigoDisplay" class="mb-3">
+                                    <span class="codigo-venta-badge" id="detalleCodigoVenta">-</span>
+                                </div>
+                                <div id="detalleEstadoVenta" class="mb-2">
+                                    <!-- Estado badge aquí -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Información del Cliente -->
+                        <div class="info-section mt-3">
+                            <h6 class="section-title">
+                                <i class="fas fa-user"></i> Cliente
+                            </h6>
+                            <div class="info-item">
+                                <label>Nombre:</label>
+                                <p id="detalleCliente">-</p>
+                            </div>
+                            <div class="info-item">
+                                <label>Teléfono:</label>
+                                <p id="detalleTelefono">-</p>
+                            </div>
+                            <div class="info-item">
+                                <label>Razón Social:</label>
+                                <p id="detalleRazonSocial">-</p>
+                            </div>
+                            <div class="info-item">
+                                <label>Dirección:</label>
+                                <p id="detalleDireccion">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COLUMNA CENTRAL: Productos -->
+                    <div class="col-md-6">
+                        <div class="info-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-box-open"></i> Productos Vendidos
+                            </h6>
+                            <div class="tabla-productos-wrapper">
+                                <div id="loadingProductos" class="text-center py-3">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Cargando...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted small">Cargando productos...</p>
+                                </div>
+                                <table class="table table-sm tabla-productos" id="tablaProductosDetalle" style="display: none;">
+                                    <thead>
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Producto</th>
+                                            <th class="text-center">Cant.</th>
+                                            <th class="text-right">P. Unit.</th>
+                                            <th class="text-right">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productosDetalleBody">
+                                        <!-- Se llenará dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Totales -->
+                        <div class="info-section mt-3">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="total-item">
+                                        <span class="total-label">Subtotal:</span>
+                                        <span class="total-valor" id="detalleSubtotal">-</span>
+                                    </div>
+                                    <div class="total-item">
+                                        <span class="total-label">Descuento:</span>
+                                        <span class="total-valor text-danger" id="detalleDescuento">-</span>
+                                    </div>
+                                    <div class="total-item total-final">
+                                        <span class="total-label">TOTAL:</span>
+                                        <span class="total-valor" id="detalleTotal">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COLUMNA DERECHA: Información de la Venta -->
+                    <div class="col-md-3">
+                        <div class="info-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-info-circle"></i> Información
+                            </h6>
+                            <div class="info-item">
+                                <label>Vendedor:</label>
+                                <p id="detalleVendedor">-</p>
+                            </div>
+                            <div class="info-item">
+                                <label>Ubicación:</label>
+                                <p id="detalleUbicacion">-</p>
+                            </div>
+                            <div class="info-item">
+                                <label>Fecha:</label>
+                                <p id="detalleFecha">-</p>
+                            </div>
+                            <div class="info-item">
+                                <label>Tipo de Pago:</label>
+                                <p id="detalleTipoPago">-</p>
+                            </div>
+                        </div>
+
+                        <div class="info-section mt-3">
+                            <h6 class="section-title">
+                                <i class="fas fa-dollar-sign"></i> Moneda
+                            </h6>
+                            <div class="info-item">
+                                <label>Moneda:</label>
+                                <p id="detalleMoneda">-</p>
+                            </div>
+                            <div class="info-item">
+                                <label>Tipo de Cambio:</label>
+                                <p id="detalleTipoCambio">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="imprimirDetalle()">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

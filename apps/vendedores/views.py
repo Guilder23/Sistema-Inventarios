@@ -75,21 +75,26 @@ def crear_vendedor(request):
         
         # Validaciones
         if not nombre:
-            return JsonResponse({'success': False, 'error': 'El nombre es requerido'})
+            messages.error(request, 'El nombre es requerido')
+            return redirect('listar_vendedores')
         
         if not apellido:
-            return JsonResponse({'success': False, 'error': 'El apellido es requerido'})
+            messages.error(request, 'El apellido es requerido')
+            return redirect('listar_vendedores')
         
         if not cedula:
-            return JsonResponse({'success': False, 'error': 'La cédula/DNI es requerida'})
+            messages.error(request, 'La cédula/DNI es requerida')
+            return redirect('listar_vendedores')
         
         # Validar cédula única
         if Vendedor.objects.filter(cedula=cedula).exists():
-            return JsonResponse({'success': False, 'error': f'Ya existe un vendedor con cédula "{cedula}"'})
+            messages.error(request, f'Ya existe un vendedor con cédula "{cedula}"')
+            return redirect('listar_vendedores')
         
         # Validar que sea asignado a almacén o tienda
         if not almacen_id and not tienda_id:
-            return JsonResponse({'success': False, 'error': 'Debe asignar el vendedor a un almacén o tienda'})
+            messages.error(request, 'Debe asignar el vendedor a un almacén o tienda')
+            return redirect('listar_vendedores')
         
         # Obtener almacén y tienda si aplica
         almacen = None
@@ -119,10 +124,11 @@ def crear_vendedor(request):
         )
         
         messages.success(request, f'Vendedor "{vendedor.nombre_completo}" creado exitosamente')
-        return JsonResponse({'success': True})
+        return redirect('listar_vendedores')
             
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
+        messages.error(request, f'Error al crear vendedor: {str(e)}')
+        return redirect('listar_vendedores')
 
 
 @login_required
@@ -174,21 +180,26 @@ def editar_vendedor(request, id):
         
         # Validaciones
         if not nombre:
-            return JsonResponse({'success': False, 'error': 'El nombre es requerido'})
+            messages.error(request, 'El nombre es requerido')
+            return redirect('listar_vendedores')
         
         if not apellido:
-            return JsonResponse({'success': False, 'error': 'El apellido es requerido'})
+            messages.error(request, 'El apellido es requerido')
+            return redirect('listar_vendedores')
         
         if not cedula:
-            return JsonResponse({'success': False, 'error': 'La cédula/DNI es requerida'})
+            messages.error(request, 'La cédula/DNI es requerida')
+            return redirect('listar_vendedores')
         
         # Validar cédula única (excluyendo al vendedor actual)
         if Vendedor.objects.filter(cedula=cedula).exclude(id=id).exists():
-            return JsonResponse({'success': False, 'error': f'Ya existe otro vendedor con cédula "{cedula}"'})
+            messages.error(request, f'Ya existe otro vendedor con cédula "{cedula}"')
+            return redirect('listar_vendedores')
         
         # Validar asignación
         if not almacen_id and not tienda_id:
-            return JsonResponse({'success': False, 'error': 'Debe asignar el vendedor a un almacén o tienda'})
+            messages.error(request, 'Debe asignar el vendedor a un almacén o tienda')
+            return redirect('listar_vendedores')
         
         # Obtener almacén y tienda
         almacen = None
@@ -216,10 +227,11 @@ def editar_vendedor(request, id):
         vendedor.save()
         
         messages.success(request, f'Vendedor "{vendedor.nombre_completo}" actualizado exitosamente')
-        return JsonResponse({'success': True})
+        return redirect('listar_vendedores')
         
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
+        messages.error(request, f'Error al actualizar vendedor: {str(e)}')
+        return redirect('listar_vendedores')
 
 
 @login_required
@@ -232,10 +244,11 @@ def eliminar_vendedor(request, id):
         vendedor.delete()
         
         messages.success(request, f'Vendedor "{nombre}" eliminado exitosamente')
-        return JsonResponse({'success': True})
+        return redirect('listar_vendedores')
         
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
+        messages.error(request, f'Error al eliminar vendedor: {str(e)}')
+        return redirect('listar_vendedores')
 
 
 @login_required

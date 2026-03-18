@@ -127,6 +127,7 @@ function cargarDetalleVenta(ventaId) {
             }
         })
         .catch(err => {
+            console.error('Error cargando detalle:', err);
             $body.html(`
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-triangle mr-2"></i>

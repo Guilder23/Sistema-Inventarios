@@ -8,8 +8,12 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
 from .models import Categoria, Contenedor, Producto, HistorialProducto, ProductoDanado, ProductoContenedor
+from apps.moneda.models import TipoCambio
 from apps.inventario.models import Inventario, MovimientoInventario
+from apps.usuarios.models import PerfilUsuario
 from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
+from decimal import Decimal
+from apps.servicios.tipos_cambios import obtener_tipo_cambio_usd, calcular_precios_usd, stock_en_cajas, stock_cajas_contenedor
 
 def verificar_permiso_productos(request):
     """Verifica si el usuario tiene permiso para gestionar productos"""
@@ -282,6 +286,7 @@ def crear_contenedor(request):
 
     try:
         nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
         proveedor = request.POST.get('proveedor', '').strip()
         activo = request.POST.get('activo') == 'on'
 
@@ -295,6 +300,7 @@ def crear_contenedor(request):
 
         Contenedor.objects.create(
             nombre=nombre,
+            descripcion=descripcion if descripcion else None,
             proveedor=proveedor,
             activo=activo,
             creado_por=request.user
@@ -325,6 +331,7 @@ def obtener_contenedor(request, id):
         data = {
             'id': contenedor.id,
             'nombre': contenedor.nombre,
+            'descripcion': contenedor.descripcion or '',
             'proveedor': contenedor.proveedor,
             'stock': contenedor.stock_total,
             'activo': contenedor.activo,
@@ -349,6 +356,7 @@ def editar_contenedor(request, id):
 
     try:
         nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
         proveedor = request.POST.get('proveedor', '').strip()
         activo = request.POST.get('activo') == 'on'
 
@@ -362,6 +370,7 @@ def editar_contenedor(request, id):
             return redirect('listar_contenedores')
 
         contenedor.nombre = nombre
+        contenedor.descripcion = descripcion if descripcion else None
         contenedor.proveedor = proveedor
         contenedor.activo = activo
         contenedor.save()
@@ -418,6 +427,14 @@ def listar_productos(request):
     elif estado == 'inactivo':
         productos = productos.filter(activo=False)
     
+
+    # Aplicamos el cálculo a cada producto
+    valor_dolar = obtener_tipo_cambio_usd()
+    for producto in productos:
+        calcular_precios_usd(producto, valor_dolar)
+        stock_en_cajas(producto)
+        print(producto.nombre, producto.precio_caja, producto.precio_caja_usd)
+
     context = {
         'productos': productos,
         'categorias': Categoria.objects.filter(activo=True).order_by('nombre'),
@@ -518,6 +535,22 @@ def obtener_producto(request, id):
     """Obtener datos de un producto en formato JSON"""
     try:
         producto = get_object_or_404(Producto, id=id)
+        perfil = getattr(request.user, 'perfil', None)
+        ubicacion_id = request.GET.get('ubicacion_id')
+        perfil_stock = perfil
+        if ubicacion_id:
+            try:
+                perfil_stock = PerfilUsuario.objects.filter(id=int(ubicacion_id)).first() or perfil
+            except ValueError:
+                perfil_stock = perfil
+
+        stock_disponible = _obtener_stock_disponible(producto, perfil_stock) if perfil_stock else producto.stock
+
+        #calcular el precio en dolares y stock en cajas
+        valor_dolar = obtener_tipo_cambio_usd()
+        calcular_precios_usd(producto, valor_dolar)
+        stock_en_cajas(producto, cantidad=stock_disponible, target=producto)
+        #fin calcular precio en dolares y stock en cajas
         
         creado_por_str = ''
         if producto.creado_por:
@@ -532,12 +565,19 @@ def obtener_producto(request, id):
             'categoria_id': producto.categoria_id if producto.categoria_id else '',
             'categoria_nombre': producto.categoria.nombre if producto.categoria else 'Sin categoría',
             'descripcion': producto.descripcion or '',
-            'stock': producto.stock,
+            'stock': stock_disponible,
             'unidades_por_caja': producto.unidades_por_caja,
             'precio_unidad': float(producto.precio_unidad),
             'precio_compra': float(producto.precio_compra),
             'precio_caja': float(producto.precio_caja),
             'precio_mayor': float(producto.precio_mayor),
+            # Precios en dólares
+            'precio_unidad_dolar': float(producto.precio_unidad_usd),
+            'precio_mayor_dolar': float(producto.precio_mayor_usd),
+            'precio_caja_dolar': float(producto.precio_caja_usd),
+            # Stock en cajas
+            'stock_cajas': float(producto.stock_cajas),
+            # Otros campos
             'poliza': float(producto.poliza) if producto.poliza else 0,
             'gastos': float(producto.gastos) if producto.gastos else 0,
             'stock_critico': producto.stock_critico,
@@ -1457,7 +1497,23 @@ def productos_en_contenedor(request, contenedor_id):
     productos_contenedor = ProductoContenedor.objects.filter(
         contenedor=contenedor
     ).select_related('producto').order_by('-fecha_creacion')
-    
+
+    # calcular valor del dolar
+    valor_dolar = obtener_tipo_cambio_usd()
+
+    for pc in productos_contenedor:
+        producto = pc.producto
+
+        # precios USD
+        calcular_precios_usd(producto, valor_dolar)
+
+        # stock total del producto en cajas
+        stock_en_cajas(producto)
+
+        # stock del contenedor en cajas
+        stock_cajas_contenedor(pc)
+
+    #fin calcular valor de dolar y stock en cajas
     context = {
         'contenedor': contenedor,
         'productos_contenedor': productos_contenedor,
@@ -1479,15 +1535,6 @@ def agregar_producto_a_contenedor(request, contenedor_id):
     
     if request.method == 'POST':
         tipo = request.POST.get('tipo')  # 'nuevo' o 'existente'
-        
-        # DEBUG: Log de datos recibidos
-        print(f"\n{'='*60}")
-        print(f"DEBUG: agregar_producto_a_contenedor POST recibido")
-        print(f"  contenedor_id (URL): {contenedor_id}")
-        print(f"  tipo: '{tipo}'")
-        print(f"  POST data: {dict(request.POST)}")
-        print(f"  FILES: {dict(request.FILES)}")
-        print(f"{'='*60}\n")
         
         if tipo == 'nuevo':
             # Crear nuevo producto con todos los campos

@@ -1,0 +1,278 @@
+/* Estilos para Centro de Reportes */
+
+/* ===== ENCABEZADO ===== */
+.reportes-header {
+    margin-top: 0.5rem;
+    margin-bottom: 2rem;
+    background: #1e3a8a;
+    padding: 1.5rem;
+    border-radius: 10px;
+}
+
+.reportes-header-content {
+    text-align: center;
+    padding: 0;
+}
+
+.reportes-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.reportes-title i {
+    font-size: 1.6rem;
+    color: white;
+}
+
+.reportes-subtitle {
+    font-size: 0.875rem;
+    color: white;
+    margin: 0.4rem 0 0 0;
+    opacity: 0.95;
+}
+
+/* ===== TARJETAS DE REPORTES ===== */
+.report-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    overflow: hidden;
+    height: 100%;
+}
+
+.report-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.report-card-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.report-card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.report-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.report-icon i {
+    font-size: 1.75rem;
+    color: white;
+}
+
+/* Colores específicos por reporte */
+.report-icon-contenedores {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+}
+
+.report-icon-inventario {
+    background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+}
+
+.report-icon-ventas {
+    background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%);
+}
+
+.report-icon-traspasos {
+    background: linear-gradient(135deg, #e74a3b 0%, #be2617 100%);
+}
+
+.report-info {
+    flex: 1;
+}
+
+.report-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0 0 0.25rem 0;
+}
+
+.report-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin: 0;
+}
+
+.report-description {
+    color: #6c757d;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin: 0 0 1.25rem 0;
+    flex-grow: 1;
+}
+
+.report-btn {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+
+.report-btn:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    text-decoration: none;
+}
+
+.report-btn i {
+    font-size: 1rem;
+}
+
+/* Colores de botones */
+.btn-contenedores {
+    background: #4e73df;
+    color: white;
+}
+
+.btn-contenedores:hover {
+    background: #224abe;
+    color: white;
+}
+
+.btn-inventario {
+    background: #1cc88a;
+    color: white;
+}
+
+.btn-inventario:hover {
+    background: #13855c;
+    color: white;
+}
+
+.btn-ventas {
+    background: #f6c23e;
+    color: white;
+}
+
+.btn-ventas:hover {
+    background: #dda20a;
+    color: white;
+}
+
+.btn-traspasos {
+    background: #e74a3b;
+    color: white;
+}
+
+.btn-traspasos:hover {
+    background: #be2617;
+    color: white;
+}
+
+/* ===== ALERTA INFORMATIVA ===== */
+.reportes-info-alert {
+    background-color: #e7f3ff;
+    border-left: 4px solid #4e73df;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-top: 2rem;
+}
+
+.reportes-info-content {
+    display: flex;
+    align-items: start;
+    gap: 1rem;
+}
+
+.reportes-info-icon {
+    font-size: 1.5rem;
+    color: #4e73df;
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+}
+
+.reportes-info-title {
+    color: #1e3a8a;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+}
+
+.reportes-info-text {
+    color: #4b5563;
+    margin: 0;
+    line-height: 1.6;
+    font-size: 0.9rem;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .reportes-header {
+        padding: 1.25rem;
+    }
+    
+    .reportes-title {
+        font-size: 1.35rem;
+    }
+    
+    .reportes-title i {
+        font-size: 1.4rem;
+    }
+    
+    .report-icon {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .report-icon i {
+        font-size: 1.5rem;
+    }
+    
+    .report-title {
+        font-size: 1.1rem;
+    }
+    
+    .report-card-body {
+        padding: 1.25rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .reportes-header {
+        padding: 1rem;
+    }
+    
+    .reportes-title {
+        font-size: 1.25rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .report-card-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .report-icon {
+        margin-right: 0;
+        margin-bottom: 0.75rem;
+    }
+}

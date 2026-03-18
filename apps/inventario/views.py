@@ -7,75 +7,8 @@ from django.http import JsonResponse
 from .models import Inventario, MovimientoInventario
 from apps.usuarios.models import PerfilUsuario
 from apps.depositos.models import Deposito
-from apps.almacenes.models import Almacen
-from apps.tiendas.models import Tienda
-from apps.filtros.serializers import AllRolesSerializer
-
-from .serializers import InventarioAPISerializer
-from rest_framework import filters, viewsets
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from apps.productos.models import Producto, ProductoContenedor
-
-class RolesAPIView(APIView):
-    def get(self, request):
-        data_context = {
-            # Traemos la lista de los modelos que definiste en el Serializer
-            'almacenes': Almacen.objects.all(), 
-            'tiendas': Tienda.objects.all(),
-            'depositos': Deposito.objects.all(),
-        }
-        serializer = AllRolesSerializer(data_context)
-        return Response(serializer.data)
-    
-class InventarioAPIViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = InventarioAPISerializer
-    def get_queryset(self):
-        queryset = Inventario.objects.select_related(
-            "producto",
-            "ubicacion",
-            "ubicacion__almacen",
-            "ubicacion__tienda"
-        )
-
-        # ── BUSCADOR: ?search=texto ──────────────────────────────
-        search = self.request.query_params.get("search", "").strip()
-        if search:
-            queryset = queryset.filter(
-                Q(producto__codigo__icontains=search) |
-                Q(producto__nombre__icontains=search) |
-                Q(ubicacion__tienda__nombre__icontains=search) |
-                Q(ubicacion__almacen__nombre__icontains=search)
-            )
-
-        # ── FILTRO UNIDAD OPERATIVA: ?unidad_operativa=texto ─────
-        unidad = self.request.query_params.get("unidad_operativa", "").strip()
-        if unidad:
-            queryset = queryset.filter(
-                Q(ubicacion__tienda__nombre__icontains=unidad) |
-                Q(ubicacion__almacen__nombre__icontains=unidad)
-            )
-
-        # ── FILTRO STOCK: ?stock_estado=critico/bajo/normal ──────
-        # Nombre igual al que envía el JS
-        stock_estado = self.request.query_params.get("stock_estado", "").strip()
-        if stock_estado == 'critico':
-            queryset = queryset.filter(
-                cantidad__lte=F('producto__stock_critico')
-            )
-        elif stock_estado == 'bajo':
-            queryset = queryset.filter(
-                cantidad__gt=F('producto__stock_critico'),
-                cantidad__lte=F('producto__stock_bajo')
-            )
-        elif stock_estado == 'normal':
-            queryset = queryset.filter(
-                cantidad__gt=F('producto__stock_bajo')
-            )
-
-        return queryset
-
-
+from apps.servicios.tipos_cambios import obtener_tipo_cambio_usd, calcular_precios_usd, stock_en_cajas
 
 @login_required
 def ver_inventario(request):
@@ -147,6 +80,14 @@ def ver_inventario(request):
     total_items = len(inventarios_lista)
     total_unidades = sum(item.cantidad for item in inventarios_lista)
 
+    # Aplicamos el cálculo a cada producto
+    valor_dolar = obtener_tipo_cambio_usd()
+
+    for item in inventarios_lista:
+        producto = item.producto
+        calcular_precios_usd(producto, valor_dolar)
+        stock_en_cajas(producto, cantidad=getattr(item, 'cantidad', None), target=item)
+
     context = {
         'inventarios': inventarios_lista,
         'buscar': buscar,
@@ -207,6 +148,13 @@ def ver_inventario_deposito(request):
     if estado in ['normal', 'bajo', 'critico']:
         inventarios_lista = [item for item in inventarios_lista if item.estado_stock == estado]
 
+    # Aplicar cálculo de precios y stock en cajas por ubicación (depósito)
+    valor_dolar = obtener_tipo_cambio_usd()
+    for item in inventarios_lista:
+        producto = item.producto
+        calcular_precios_usd(producto, valor_dolar)
+        stock_en_cajas(producto, cantidad=getattr(item, 'cantidad', None), target=item)
+
     nombre_deposito = ', '.join(nombres_depositos) if nombres_depositos else 'Depósito no configurado'
 
     context = {
@@ -244,7 +192,7 @@ def ver_inventario_ubicacion(request, ubicacion_id):
         'buscar': '',
         'estado': '',
     }
-    return render(request, 'inventario/ver_inventario.html', context)
+    return render(request, 'inventario/ver.html', context)
 
 @login_required
 def asignar_precio(request, producto_id):
