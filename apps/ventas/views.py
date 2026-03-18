@@ -4,7 +4,7 @@ from io import BytesIO
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponse, FileResponse
+from django.http import JsonResponse, HttpResponse, FileResponse, HttpResponseForbidden
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
@@ -1058,7 +1058,7 @@ def anular_venta(request, id):
     try:
         comentario = request.POST.get('comentario', '').strip()
         if not comentario:
-            return JsonResponse({'success': False, 'error': 'El comentario es obligatorio.'})
+            return JsonResponse({'success': False, 'error': 'El comentario es obligatorio.'}, status=400)
 
         # Verificar si es almacén
         es_almacen_user = hasattr(request.user, 'perfil') and request.user.perfil.rol == 'almacen'
@@ -1114,7 +1114,7 @@ def validar_solicitudes_anulacion(request):
     Panel para que ALMACÉN valide solicitudes de anulación enviadas por TIENDA
     """
     if not es_almacen(request):
-        return redirect('dashboard')
+        return HttpResponseForbidden()
 
     solicitudes = SolicitudAnulacionVenta.objects.select_related(
         'venta', 'solicitado_por', 'respondido_por'
@@ -1198,7 +1198,7 @@ def responder_solicitud_anulacion(request, id):
         return JsonResponse({
             'success': False,
             'error': 'Esta solicitud ya ha sido respondida por otro administrador/almacén.'
-        })
+        }, status=409)
 
     accion = request.POST.get('accion')  # 'aceptar' o 'rechazar'
     comentario_respuesta = request.POST.get('comentario_respuesta', '').strip()
