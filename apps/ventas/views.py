@@ -604,6 +604,52 @@ def buscar_productos(request):
 
 
 @login_required
+def obtener_vendedores_almacen(request):
+    """
+    API: retorna vendedores activos asociados al almacén/tienda indicado o inferido
+    desde el perfil del usuario. Parámetros GET opcionales: `almacen_id`, `tienda_id`.
+    """
+    try:
+        almacen_id = request.GET.get('almacen_id')
+        tienda_id = request.GET.get('tienda_id')
+
+        qs = Vendedor.objects.filter(estado='activo')
+
+        if almacen_id:
+            qs = qs.filter(almacen_id=almacen_id)
+        elif tienda_id:
+            qs = qs.filter(tienda_id=tienda_id)
+        else:
+            # Inferir desde el perfil del usuario si no se pasan parámetros
+            try:
+                perfil = request.user.perfil
+                if perfil.rol == 'almacen':
+                    qs = qs.filter(almacen_id=perfil.id)
+                elif perfil.rol == 'tienda':
+                    qs = qs.filter(tienda_id=perfil.id)
+                elif perfil.rol == 'deposito' and hasattr(perfil, 'ubicacion_relacionada') and perfil.ubicacion_relacionada:
+                    tienda_padre = perfil.ubicacion_relacionada
+                    qs = qs.filter(tienda_id=tienda_padre.id)
+            except Exception:
+                # Si no se puede inferir, mantener lista global filtrada por activo
+                pass
+
+        vendedores = [
+            {
+                'id': v.id,
+                'nombre': f"{v.nombre} {v.apellido}".strip(),
+                'almacen_id': v.almacen_id,
+                'tienda_id': v.tienda_id,
+            }
+            for v in qs.order_by('-fecha_creacion')
+        ]
+
+        return JsonResponse({'vendedores': vendedores})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
 def obtener_detalle_venta(request, id):
     """
     API AJAX para obtener detalles de una venta en formato JSON
