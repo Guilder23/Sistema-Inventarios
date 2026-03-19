@@ -1,12 +1,92 @@
-// CARRITO EN MEMORIA
+/**
+ * Lógica del carrito de compras para Tienda Nuevo
+ * Búsqueda AJAX de productos, carrito en memoria, y envío de la venta
+ * Soporta dos tipos de vendedor: TIENDA y DEPÓSITO
+ */
+
+// ═══════════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════════════════════
 let carrito = [];
 let tipoVendedorActual = null;
-let productosActuales = {}; // Almacenar productos para obtener precios correctos
+let productosActuales = {};
+let tipoDescuentoActual = 'fijo'; // 'fijo' o 'porcentaje'
 
-// Funciones auxiliares
+// ═══════════════════════════════════════════════════════════
+// UTILIDADES
+// ═══════════════════════════════════════════════════════════
+
+// ASEGURAR QUE URLS ESTÉ DISPONIBLE
+function obtenerURLs() {
+    if (typeof URLS !== 'undefined' && URLS) {
+        return URLS;
+    }
+    return {
+        buscarProductos: '/ventas/api/buscar-productos/',
+        guardarVentaTienda: '/ventas/tienda/guardar/',
+        listaTienda: '/ventas/tienda/listar/'
+    };
+}
+
+// CSRF Token
 function getCSRFToken() {
     return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
            document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1] || '';
+}
+
+function obtenerMonedaActual() {
+    return document.getElementById('inputMoneda')?.value || 'BOB';
+}
+
+function obtenerTipoCambioActual() {
+    return parseFloat(document.getElementById('tipoCambioActual')?.value || 1) || 1;
+}
+
+function obtenerSimboloMoneda() {
+    return obtenerMonedaActual() === 'USD' ? '$' : 'Bs.';
+}
+
+function convertirBsAMoneda(montoBs) {
+    const monto = parseFloat(montoBs || 0);
+    return obtenerMonedaActual() === 'USD' ? (monto / obtenerTipoCambioActual()) : monto;
+}
+
+function convertirMonedaABs(monto) {
+    const valor = parseFloat(monto || 0);
+    return obtenerMonedaActual() === 'USD' ? (valor * obtenerTipoCambioActual()) : valor;
+}
+
+function formatearMonto(montoBs) {
+    return `${obtenerSimboloMoneda()} ${convertirBsAMoneda(montoBs).toFixed(2)}`;
+}
+
+function actualizarUnidadDescuento() {
+    const unidadEl = document.getElementById('tipoDescuentoUnidad');
+    if (!unidadEl) return;
+
+    if (tipoDescuentoActual === 'porcentaje') {
+        unidadEl.textContent = '%';
+    } else {
+        unidadEl.textContent = obtenerSimboloMoneda();
+    }
+}
+
+function inicializarSelectorTipoPago() {
+    const opciones = document.querySelectorAll('.tipo-pago-option');
+    if (!opciones.length) return;
+
+    opciones.forEach(opcion => {
+        opcion.addEventListener('click', function () {
+            opciones.forEach(el => el.classList.remove('active'));
+            this.classList.add('active');
+
+            const tipo = this.dataset.tipo || 'contado';
+            const inputTipoPago = document.getElementById('inputTipoPago');
+            if (inputTipoPago) {
+                inputTipoPago.value = tipo;
+            }
+        });
+    });
 }
 
 // Validar que teléfono solo acepte números
@@ -87,76 +167,100 @@ function agregarAlCarrito(producto, cantidad, modalidad, precioUnitario) {
     return true;
 }
 
-function eliminarDelCarrito(index) {
+// Remover del carrito
+function removerDelCarrito(index) {
     carrito.splice(index, 1);
     renderCarrito();
 }
 
+// Renderizar carrito - VERSIÓN MEJORADA
 function renderCarrito() {
-    const carritoBody = document.getElementById('carritoBody');
-    const carritoFooter = document.getElementById('carritoFooter');
-    
-    if (carrito.length === 0) {
-        carritoBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="fas fa-inbox"></i> Carrito vacío</td></tr>';
-        carritoFooter.style.display = 'none';
+    const tbody = document.getElementById('carritoBody') || document.getElementById('tablaCarritoProductos');
+    if (!tbody) {
+        console.warn('[CARRITO] No se encontró elemento de carrito');
         return;
     }
     
-    let html = '';
+    tbody.innerHTML = '';
+    if (carrito.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="fas fa-inbox"></i> Carrito vacío</td></tr>';
+        const carritoFooter = document.getElementById('carritoFooter');
+        if (carritoFooter) carritoFooter.style.display = 'none';
+        return;
+    }
+    
+    const carritoFooter = document.getElementById('carritoFooter');
+    if (carritoFooter) carritoFooter.style.display = 'block';
+    
     carrito.forEach((item, index) => {
         const precioUnitario = parseFloat(item.precio_unitario);
         const cantidad = parseInt(item.cantidad);
         const subtotal = precioUnitario * cantidad;
         
-        html += `
-            <tr>
-                <td class="pl-3"><strong>${item.producto.nombre}</strong></td>
-                <td class="text-center">
-                    <span class="badge badge-info">${item.modalidad.charAt(0).toUpperCase() + item.modalidad.slice(1)}</span>
-                </td>
-                <td class="text-center" title="${item.modalidad === 'caja' ? 'Precio de caja' : 'Precio por unidad'}">
-                    <strong>Bs. ${precioUnitario.toFixed(2)}</strong>
-                </td>
-                <td class="text-center">${cantidad}</td>
-                <td class="text-right">
-                    <small class="text-muted">Bs. ${precioUnitario.toFixed(2)} × ${cantidad} = </small>
-                    <br>
-                    <strong>Bs. ${subtotal.toFixed(2)}</strong>
-                </td>
-                <td class="text-center pr-3">
-                    <button type="button" class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${index})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML += `<tr>
+            <td class="pl-3"><strong>${item.producto.nombre}</strong></td>
+            <td class="text-center">
+                <span class="badge badge-info">${item.modalidad.charAt(0).toUpperCase() + item.modalidad.slice(1)}</span>
+            </td>
+            <td class="text-center font-weight-500" style="color: #28a745;" title="${item.modalidad === 'caja' ? 'Precio de caja' : 'Precio por unidad'}">
+                ${formatearMonto(precioUnitario)}
+            </td>
+            <td class="text-center">${cantidad}</td>
+            <td class="text-right font-weight-bold" style="color: #28a745;">
+                <small class="text-muted">${formatearMonto(precioUnitario)} x ${cantidad} = </small>
+                <br>
+                ${formatearMonto(subtotal)}
+            </td>
+            <td class="text-center pr-3">
+                <button type="button" class="btn btn-sm btn-danger" onclick="removerDelCarrito(${index})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>`;
     });
     
-    carritoBody.innerHTML = html;
-    carritoFooter.style.display = 'block';
     actualizarTotales();
 }
 
+// Actualizar totales - VERSIÓN MEJORADA
 function actualizarTotales() {
     const subtotal = carrito.reduce((sum, item) => sum + item.subtotal, 0);
-    const descuentoInput = document.getElementById('inputDescuento');
-    const descuento = parseFloat(descuentoInput.value) || 0;
+    const cantItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+    const descuentoValue = parseFloat(document.getElementById('inputDescuento')?.value || 0) || 0;
     
-    let descuentoAplicado = Math.min(descuento, subtotal);
-    if (descuentoAplicado !== descuento && descuento > 0) {
-        descuentoInput.value = descuentoAplicado.toFixed(2);
+    let descuentoAplicado = 0;
+    
+    if (tipoDescuentoActual === 'porcentaje') {
+        // Descuento en porcentaje
+        const porcentaje = Math.min(descuentoValue, 100);
+        descuentoAplicado = (subtotal * porcentaje) / 100;
+    } else {
+        // Descuento en monto fijo: el usuario ingresa el valor en la moneda visible
+        descuentoAplicado = Math.min(convertirMonedaABs(descuentoValue), subtotal);
     }
     
     const total = subtotal - descuentoAplicado;
     
-    document.getElementById('resumenCantItems').textContent = carrito.length;
-    document.getElementById('resumenSubtotal').textContent = 'Bs. ' + subtotal.toFixed(2);
-    document.getElementById('resumenTotal').textContent = 'Bs. ' + total.toFixed(2);
+    const elemCantItems = document.getElementById('resumenCantItems');
+    const elemSubtotal = document.getElementById('resumenSubtotal');
+    const elemTotal = document.getElementById('resumenTotal');
+    
+    if (elemCantItems) {
+        elemCantItems.textContent = cantItems;
+    }
+    if (elemSubtotal) {
+        elemSubtotal.textContent = formatearMonto(subtotal);
+    }
+    if (elemTotal) {
+        elemTotal.innerHTML = `<strong style="font-size: 1.3rem; display: block;">${formatearMonto(total)}</strong>`;
+    }
 }
 
-// BÚSQUEDA DE PRODUCTOS CON OPCIONES INLINE
-document.addEventListener('DOMContentLoaded', function() {
-    
+// ═══════════════════════════════════════════════════════════
+// BÚSQUEDA DE PRODUCTOS
+// ═══════════════════════════════════════════════════════════
+
+function inicializarBusqueda() {
     // Validar teléfono
     const inputTelefono = document.getElementById('inputTelefono');
     if (inputTelefono) {
@@ -191,8 +295,24 @@ document.addEventListener('DOMContentLoaded', function() {
             renderCarrito();
         });
     }
+
+    const selectMoneda = document.getElementById('selectMoneda');
+    if (selectMoneda) {
+        selectMoneda.addEventListener('change', function() {
+            const inputMoneda = document.getElementById('inputMoneda');
+            if (inputMoneda) {
+                inputMoneda.value = this.value;
+            }
+            actualizarUnidadDescuento();
+            renderCarrito();
+            const inputBuscarActual = document.getElementById('inputBuscarProducto');
+            if (inputBuscarActual && inputBuscarActual.value.trim().length >= 2) {
+                inputBuscarActual.dispatchEvent(new Event('input'));
+            }
+        });
+    }
     
-    // Búsqueda de productos
+    // INPUT BÚSQUEDA
     const inputBuscar = document.getElementById('inputBuscarProducto');
     if (inputBuscar) {
         inputBuscar.addEventListener('input', function(e) {
@@ -210,7 +330,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            const url = URLS.buscarProductos + `?q=${encodeURIComponent(query)}&tipo_venta=${encodeURIComponent(tipoVendedorActual || '')}`;
+            const urls = obtenerURLs();
+            const url = urls.buscarProductos + `?q=${encodeURIComponent(query)}&tipo_venta=${encodeURIComponent(tipoVendedorActual || '')}`;
             
             fetch(url)
                 .then(response => response.json())
@@ -218,7 +339,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     const resultados = document.getElementById('resultadosBusqueda');
                     resultados.innerHTML = '';
                     
-                    // Almacenar productos actuales para acceso en funciones
                     productosActuales = {};
                     if (data.productos) {
                         data.productos.forEach(p => {
@@ -235,21 +355,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     data.productos.forEach(producto => {
                         const unidadesPorCaja = producto.unidades_por_caja || 1;
                         const stockText = `Stock: ${producto.stock} | Caja: ${unidadesPorCaja} unidad${unidadesPorCaja > 1 ? 'es' : ''}`;
-                        
-                        const productoId = `producto_${producto.id}`;
+                        const precioReferencia = parseFloat(producto.precio_unidad) || 0;
+                        const precioTexto = formatearMonto(precioReferencia);
                         
                         let html = `
                             <div class="card mb-3 p-3" style="border-left: 4px solid #667eea;">
-                                <!-- Fila 1: Nombre y Stock -->
                                 <div class="row mb-2">
                                     <div class="col-12">
                                         <strong style="font-size: 1.1rem;">${producto.nombre}</strong>
                                         <br>
                                         <small class="text-muted">${stockText}</small>
+                                        <br>
+                                        <small class="text-success font-weight-bold">Precio ref.: ${precioTexto}</small>
                                     </div>
                                 </div>
-                                
-                                <!-- Fila 2: Opciones de venta -->
                                 <div class="row align-items-end">
                         `;
                         
@@ -328,137 +447,60 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Guardar venta
-    const btnGuardar = document.getElementById('btnGuardarVenta');
-    if (btnGuardar) {
-        btnGuardar.addEventListener('click', function() {
-            if (carrito.length === 0) {
-                Swal.fire('Advertencia', 'El carrito está vacío', 'warning');
-                return;
-            }
-            
-            const cliente = document.getElementById('inputCliente').value.trim();
-            if (!cliente) {
-                Swal.fire('Advertencia', 'Ingresa el nombre del cliente', 'warning');
-                return;
-            }
-            
-            const descuentoValue = parseFloat(document.getElementById('inputDescuento').value) || 0;
-            const subtotal = carrito.reduce((sum, item) => sum + item.subtotal, 0);
-            const descuentoAplicado = Math.min(descuentoValue, subtotal);
-            
-            const datosVenta = {
-                cliente,
-                telefono: document.getElementById('inputTelefono').value.trim(),
-                razon_social: document.getElementById('inputRazonSocial').value.trim(),
-                direccion: document.getElementById('inputDireccion').value.trim(),
-                tipo_pago: 'contado',
-                tipo_venta: tipoVendedorActual,
-                descuento: descuentoAplicado,
-                items: carrito.map(item => ({
-                    producto_id: item.producto.id,
-                    cantidad: item.cantidad,
-                    modalidad: item.modalidad,
-                    precio_unitario: item.precio_unitario
-                }))
-            };
-            
-            // Deshabilitar botón mientras se procesa
-            btnGuardar.disabled = true;
-            btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
-            
-            fetch(URLS.guardarVentaTienda, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCSRFToken(),
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(datosVenta)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Venta Registrada',
-                        html: `<p>Código: <strong>${data.venta_codigo}</strong></p>`,
-                        confirmButtonColor: '#28a745',
-                        confirmButtonText: 'Ver Venta',
-                    }).then(() => {
-                        window.location.href = data.redireccionar_a;
-                    });
+    // Toggle tipo de descuento
+    const descuentoRadios = document.querySelectorAll('input[name="tipoDescuento"]');
+    if (descuentoRadios.length > 0) {
+        descuentoRadios.forEach(radio => {
+            radio.addEventListener('change', function(e) {
+                tipoDescuentoActual = this.value;
+                const unidadEl = document.getElementById('tipoDescuentoUnidad');
+                const inputEl = document.getElementById('inputDescuento');
+                
+                if (tipoDescuentoActual === 'porcentaje') {
+                    if (unidadEl) unidadEl.textContent = '%';
+                    if (inputEl) inputEl.max = '100';
                 } else {
-                    Swal.fire('Error', data.error || 'Error desconocido', 'error');
-                    btnGuardar.disabled = false;
-                    btnGuardar.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Registrar Venta';
+                    actualizarUnidadDescuento();
+                    if (inputEl) inputEl.removeAttribute('max');
                 }
-            })
-            .catch(err => {
-                Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
-                btnGuardar.disabled = false;
-                btnGuardar.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Registrar Venta';
+                
+                if (inputEl) inputEl.value = '0';
+                actualizarTotales();
             });
         });
     }
-    
-    // Limpiar carrito
-    const btnLimpiar = document.getElementById('btnLimpiarCarrito');
-    if (btnLimpiar) {
-        btnLimpiar.addEventListener('click', function() {
-            Swal.fire({
-                title: '¿Limpiar carrito?',
-                text: 'Se eliminarán todos los productos agregados',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Sí, limpiar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    carrito = [];
-                    renderCarrito();
-                }
-            });
-        });
-    }
-});
+}
+
 
 // Función para agregar desde resultados (TIENDA)
 function agregarDesdeResultados(productoId, productoNombre, unidadesPorCaja) {
     const cantidad = parseInt(document.getElementById(`cantidad_${productoId}`).value) || 0;
     const modalidad = document.querySelector(`input[name="modalidad_${productoId}"]:checked`).value;
     
-    // Validar cantidad según modalidad
     if (cantidad === 0) {
         alert('Ingresa una cantidad mayor a 0');
         return;
     }
     
-    // Obtener producto con precios
     const productoData = productosActuales[productoId];
     if (!productoData) {
         alert('Producto no encontrado');
         return;
     }
     
-    // Determinar precio según modalidad
     let precioUnitario = 0;
     switch(modalidad) {
         case 'unidad':
             precioUnitario = parseFloat(productoData.precio_unidad) || 0;
             break;
         case 'caja':
-            // Si no tiene precio_caja definido, usar precio_unidad como fallback
             precioUnitario = parseFloat(productoData.precio_caja) || parseFloat(productoData.precio_unidad) || 0;
             break;
         case 'mayor':
-            // Si no tiene precio_mayor definido, usar precio_unidad como fallback
             precioUnitario = parseFloat(productoData.precio_mayor) || parseFloat(productoData.precio_unidad) || 0;
             break;
     }
     
-    // Validar que el precio sea mayor a 0
     if (!precioUnitario || precioUnitario <= 0) {
         alert(`Error: El producto "${productoData.nombre}" no tiene precio unitario configurado en la base de datos.`);
         return;
@@ -471,8 +513,16 @@ function agregarDesdeResultados(productoId, productoNombre, unidadesPorCaja) {
     };
     
     if (agregarAlCarrito(producto, cantidad, modalidad, precioUnitario)) {
-        // Limpiar cantidad
         document.getElementById(`cantidad_${productoId}`).value = 0;
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Agregado',
+                text: `${productoNombre} fue agregado al carrito`,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
     }
 }
 
@@ -480,13 +530,11 @@ function agregarDesdeResultados(productoId, productoNombre, unidadesPorCaja) {
 function agregarDesdeResultadosDeposito(productoId, productoNombre) {
     const cantidad = parseInt(document.getElementById(`cantidad_${productoId}`).value) || 0;
     
-    // Validar cantidad
     if (cantidad === 0) {
         alert('Ingresa una cantidad mayor a 0');
         return;
     }
     
-    // Obtener producto con precio
     const productoData = productosActuales[productoId];
     if (!productoData) {
         alert('Producto no encontrado');
@@ -495,7 +543,6 @@ function agregarDesdeResultadosDeposito(productoId, productoNombre) {
     
     const precioUnitario = parseFloat(productoData.precio_unidad) || 0;
     
-    // Validar que el precio sea mayor a 0
     if (!precioUnitario || precioUnitario <= 0) {
         alert(`Error: El producto "${productoData.nombre}" no tiene precio unitario configurado en la base de datos.`);
         return;
@@ -508,7 +555,161 @@ function agregarDesdeResultadosDeposito(productoId, productoNombre) {
     };
     
     if (agregarAlCarrito(producto, cantidad, 'unidad', precioUnitario)) {
-        // Limpiar cantidad
         document.getElementById(`cantidad_${productoId}`).value = 0;
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Agregado',
+                text: `${productoNombre} fue agregado al carrito`,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
     }
+}
+
+// ═══════════════════════════════════════════════════════════
+// GUARDAR VENTA
+// ═══════════════════════════════════════════════════════════
+
+function inicializarGuardarVenta() {
+    const btnGuardar = document.getElementById('btnGuardarVenta');
+    if (!btnGuardar) return;
+    
+    btnGuardar.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        if (carrito.length === 0) {
+            alert('El carrito está vacío');
+            return;
+        }
+        
+        const cliente = document.getElementById('inputCliente').value.trim();
+        if (!cliente) {
+            alert('Ingresa el nombre del cliente');
+            return;
+        }
+        
+        const descuentoValue = parseFloat(document.getElementById('inputDescuento').value) || 0;
+        const subtotal = carrito.reduce((sum, item) => sum + item.subtotal, 0);
+        const moneda = obtenerMonedaActual();
+        const tipoCambio = obtenerTipoCambioActual();
+        const tipoPago = document.getElementById('inputTipoPago')?.value || 'contado';
+        
+        let descuentoAplicado = 0;
+        if (tipoDescuentoActual === 'porcentaje') {
+            const porcentaje = Math.min(descuentoValue, 100);
+            descuentoAplicado = (subtotal * porcentaje) / 100;
+        } else {
+            descuentoAplicado = Math.min(convertirMonedaABs(descuentoValue), subtotal);
+        }
+        
+        const datosVenta = {
+            cliente,
+            telefono: document.getElementById('inputTelefono').value.trim(),
+            razon_social: document.getElementById('inputRazonSocial').value.trim(),
+            direccion: document.getElementById('inputDireccion').value.trim(),
+            tipo_pago: tipoPago,
+            tipo_venta: tipoVendedorActual,
+            moneda: moneda,
+            tipo_cambio: tipoCambio,
+            descuento: convertirBsAMoneda(descuentoAplicado).toFixed(2),
+            items: carrito.map(item => ({
+                producto_id: item.producto.id,
+                cantidad: item.cantidad,
+                modalidad: item.modalidad,
+                precio_unitario: convertirBsAMoneda(item.precio_unitario).toFixed(2)
+            }))
+        };
+        
+        btnGuardar.disabled = true;
+        btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+        
+        const urls = obtenerURLs();
+        fetch(urls.guardarVentaTienda, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(datosVenta)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Venta Registrada',
+                        html: `<p>Código: <strong>${data.venta_codigo}</strong></p>`,
+                        confirmButtonColor: '#28a745',
+                        confirmButtonText: 'Ver Venta',
+                    }).then(() => {
+                        window.location.href = data.redireccionar_a;
+                    });
+                } else {
+                    alert(`Venta registrada: ${data.venta_codigo}`);
+                    window.location.href = data.redireccionar_a;
+                }
+            } else {
+                alert('Error: ' + (data.error || 'Error desconocido'));
+                btnGuardar.disabled = false;
+                btnGuardar.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Registrar Venta';
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('Error al conectar con el servidor');
+            btnGuardar.disabled = false;
+            btnGuardar.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Registrar Venta';
+        });
+    });
+    
+    const btnLimpiar = document.getElementById('btnLimpiarCarrito');
+    if (btnLimpiar) {
+        btnLimpiar.addEventListener('click', function() {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: '¿Limpiar carrito?',
+                    text: 'Se eliminarán todos los productos agregados',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sí, limpiar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        carrito = [];
+                        renderCarrito();
+                    }
+                });
+            } else {
+                if (confirm('¿Limpiar carrito?')) {
+                    carrito = [];
+                    renderCarrito();
+                }
+            }
+        });
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// INICIALIZACIÓN AL CARGAR
+// ═══════════════════════════════════════════════════════════
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        inicializarSelectorTipoPago();
+        inicializarBusqueda();
+        inicializarGuardarVenta();
+        actualizarUnidadDescuento();
+        actualizarTotales();
+    });
+} else {
+    inicializarSelectorTipoPago();
+    inicializarBusqueda();
+    inicializarGuardarVenta();
+    actualizarUnidadDescuento();
+    actualizarTotales();
 }

@@ -11,6 +11,7 @@ from apps.ventas.models import Venta, SolicitudAnulacionVenta, DetalleVenta
 from apps.productos.models import Producto
 from apps.tiendas.models import Tienda
 from apps.usuarios.models import PerfilUsuario
+from apps.almacenes.models import Almacen
 from django.utils import timezone
 
 
@@ -32,19 +33,28 @@ class AnulacionAlmacenTest(TestCase):
             rol='almacen'
         )
         
-        # Crear tienda (ubicación)
+        # Crear almacén y tienda (ubicación)
+        self.almacen = Almacen.objects.create(
+            nombre='Almacen Test',
+            direccion='Calle Falsa 123',
+            ciudad='Ciudad',
+            departamento='Departamento'
+        )
         self.tienda = Tienda.objects.create(
             nombre='Tienda Test',
-            tipo='principal'
+            tipo='principal',
+            almacen=self.almacen
         )
         
-        # Crear producto con stock
+        # Crear producto y añadir stock via contenedores
         self.producto = Producto.objects.create(
+            codigo='P-001',
             nombre='Producto Test',
-            precio=100.00,
-            stock=50,
+            precio_unidad=100.00,
             unidades_por_caja=12
         )
+        # Añadir stock mediante la API del modelo
+        self.producto.aumentar_stock(50)
         
         # Crear venta contado
         self.venta_contado = Venta.objects.create(
@@ -55,7 +65,7 @@ class AnulacionAlmacenTest(TestCase):
             total=200.00,
             subtotal=200.00,
             vendedor=self.usuario_almacen,
-            ubicacion=self.tienda
+            ubicacion=self.perfil_almacen
         )
         
         # Crear detalle venta
@@ -63,7 +73,8 @@ class AnulacionAlmacenTest(TestCase):
             venta=self.venta_contado,
             producto=self.producto,
             cantidad=2,
-            precio_unitario=100.00
+            precio_unitario=100.00,
+            subtotal=Decimal('200.00'),
         )
 
     def test_anular_venta_almacen_sin_comentario(self):
@@ -72,8 +83,7 @@ class AnulacionAlmacenTest(TestCase):
         
         response = self.client.post(
             reverse('ventas:anular_venta', args=[self.venta_contado.id]),
-            data={},
-            content_type='application/json'
+            data={}
         )
         
         # Debe requerir comentario
@@ -90,8 +100,7 @@ class AnulacionAlmacenTest(TestCase):
         response = self.client.post(
             reverse('ventas:anular_venta', args=[self.venta_contado.id]),
             data={'comentario': 'Error en cantidad'},
-            content_type='application/json'
-        )
+            )
         
         # Verificar respuesta
         self.assertEqual(response.status_code, 200)
@@ -120,9 +129,17 @@ class AnulacionTiendaTest(TestCase):
             email='tienda@test.com',
             password='test123'
         )
+        # Crear almacén y tienda
+        self.almacen = Almacen.objects.create(
+            nombre='Almacen Test',
+            direccion='Calle Falsa 123',
+            ciudad='Ciudad',
+            departamento='Departamento'
+        )
         self.tienda = Tienda.objects.create(
             nombre='Tienda Test',
-            tipo='principal'
+            tipo='principal',
+            almacen=self.almacen
         )
         self.perfil_tienda = PerfilUsuario.objects.create(
             usuario=self.usuario_tienda,
@@ -130,13 +147,14 @@ class AnulacionTiendaTest(TestCase):
             tienda=self.tienda
         )
         
-        # Crear producto
+        # Crear producto y agregar stock
         self.producto = Producto.objects.create(
+            codigo='P-002',
             nombre='Producto Test',
-            precio=100.00,
-            stock=100,
+            precio_unidad=100.00,
             unidades_por_caja=12
         )
+        self.producto.aumentar_stock(100)
         
         # Crear venta tienda
         self.venta_tienda = Venta.objects.create(
@@ -147,7 +165,7 @@ class AnulacionTiendaTest(TestCase):
             total=300.00,
             subtotal=300.00,
             vendedor=self.usuario_tienda,
-            ubicacion=self.tienda
+            ubicacion=self.perfil_tienda
         )
         
         # Crear detalle venta
@@ -155,7 +173,8 @@ class AnulacionTiendaTest(TestCase):
             venta=self.venta_tienda,
             producto=self.producto,
             cantidad=3,
-            precio_unitario=100.00
+            precio_unitario=100.00,
+            subtotal=Decimal('300.00'),
         )
 
     def test_tienda_solicita_anulacion(self):
@@ -165,8 +184,7 @@ class AnulacionTiendaTest(TestCase):
         response = self.client.post(
             reverse('ventas:anular_venta', args=[self.venta_tienda.id]),
             data={'comentario': 'Cliente no está satisfecho'},
-            content_type='application/json'
-        )
+            )
         
         # Verificar respuesta
         self.assertEqual(response.status_code, 200)
@@ -207,20 +225,28 @@ class SolicitudesAnulacionTest(TestCase):
             username='tienda2',
             password='test123'
         )
-        self.tienda = Tienda.objects.create(nombre='Tienda', tipo='principal')
+        # Crear almacén y tienda
+        self.almacen = Almacen.objects.create(
+            nombre='Almacen Test',
+            direccion='Calle Falsa 123',
+            ciudad='Ciudad',
+            departamento='Departamento'
+        )
+        self.tienda = Tienda.objects.create(nombre='Tienda', tipo='principal', almacen=self.almacen)
         PerfilUsuario.objects.create(
             usuario=self.usuario_tienda,
             rol='tienda',
             tienda=self.tienda
         )
         
-        # Producto
+        # Producto y stock
         self.producto = Producto.objects.create(
+            codigo='P-003',
             nombre='Producto',
-            precio=50.00,
-            stock=50,
+            precio_unidad=50.00,
             unidades_por_caja=10
         )
+        self.producto.aumentar_stock(50)
         
         # Venta
         self.venta = Venta.objects.create(
@@ -231,7 +257,7 @@ class SolicitudesAnulacionTest(TestCase):
             total=100.00,
             subtotal=100.00,
             vendedor=self.usuario_tienda,
-            ubicacion=self.tienda
+            ubicacion=PerfilUsuario.objects.filter(usuario=self.usuario_tienda).first()
         )
         
         # Solicitud
@@ -269,9 +295,8 @@ class SolicitudesAnulacionTest(TestCase):
             data={
                 'accion': 'aceptar',
                 'comentario_respuesta': 'Aceptado'
-            },
-            content_type='application/json'
-        )
+                }
+            )
         
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -296,9 +321,8 @@ class SolicitudesAnulacionTest(TestCase):
             data={
                 'accion': 'rechazar',
                 'comentario_respuesta': 'No se puede anular'
-            },
-            content_type='application/json'
-        )
+                }
+            )
         
         self.assertEqual(response.status_code, 200)
         
@@ -318,8 +342,7 @@ class SolicitudesAnulacionTest(TestCase):
             reverse('ventas:responder_solicitud_anulacion', 
                    args=[self.solicitud.id]),
             data={'accion': 'aceptar', 'comentario_respuesta': 'Ok'},
-            content_type='application/json'
-        )
+            )
         self.assertEqual(response1.status_code, 200)
         
         # Segunda respuesta: debe fallar (estado ya no es pendiente)
@@ -327,8 +350,7 @@ class SolicitudesAnulacionTest(TestCase):
             reverse('ventas:responder_solicitud_anulacion', 
                    args=[self.solicitud.id]),
             data={'accion': 'rechazar', 'comentario_respuesta': 'Demasiado tarde'},
-            content_type='application/json'
-        )
+            )
         
         # Debe fallar con error
         self.assertNotEqual(response2.status_code, 200)
@@ -347,7 +369,14 @@ class ModalPersonalizadoTest(TestCase):
             usuario=self.usuario_almacen,
             rol='almacen'
         )
-        self.tienda = Tienda.objects.create(nombre='T', tipo='principal')
+        # Crear almacén y tienda
+        self.almacen = Almacen.objects.create(
+            nombre='Almacen Test',
+            direccion='Calle Falsa 123',
+            ciudad='Ciudad',
+            departamento='Departamento'
+        )
+        self.tienda = Tienda.objects.create(nombre='T', tipo='principal', almacen=self.almacen)
         self.venta = Venta.objects.create(
             codigo='V-004',
             cliente='C',
@@ -356,7 +385,7 @@ class ModalPersonalizadoTest(TestCase):
             total=100.00,
             subtotal=100.00,
             vendedor=self.usuario_almacen,
-            ubicacion=self.tienda
+            ubicacion=PerfilUsuario.objects.filter(usuario=self.usuario_almacen).first()
         )
 
     def test_anulacion_responde_json(self):
@@ -365,8 +394,7 @@ class ModalPersonalizadoTest(TestCase):
         
         response = self.client.post(
             reverse('ventas:anular_venta', args=[self.venta.id]),
-            data={'comentario': 'Test'},
-            content_type='application/json'
+            data={'comentario': 'Test'}
         )
         
         # Debe ser JSON

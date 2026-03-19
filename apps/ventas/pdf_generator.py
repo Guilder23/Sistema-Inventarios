@@ -17,6 +17,12 @@ from django.conf import settings
 from apps.moneda.utils import obtener_etiqueta_moneda
 
 
+def convertir_desde_bob_para_pdf(monto, venta):
+    """Devuelve el monto tal como fue guardado, usando la moneda de la venta solo para la etiqueta."""
+    valor = Decimal(str(monto or 0))
+    return valor
+
+
 def generar_pdf_venta_completo(venta):
     """
     Genera PDF completo de una venta (por ahora para tienda Almacén o Tienda).
@@ -142,13 +148,18 @@ def generar_pdf_venta_completo(venta):
     fecha_str = venta.fecha_elaboracion.strftime('%d/%m/%Y %H:%M') if hasattr(venta, 'fecha_elaboracion') else datetime.now().strftime('%d/%m/%Y %H:%M')
     codigo_venta_str = getattr(venta, 'codigo', f'VENTA-{venta.id}')
     vendedor_nombre = venta.vendedor.get_full_name() or venta.vendedor.username
+    
+    # MEJORADO: Obtener ubicación del vendedor (almacén o tienda)
+    lugar_venta = venta.ubicacion.nombre_ubicacion if hasattr(venta.ubicacion, 'nombre_ubicacion') else 'Sin ubicación'
+    vendedor_con_lugar = f"{vendedor_nombre} - {lugar_venta}"
+    
     tipo_pago = venta.get_tipo_pago_display() if hasattr(venta, 'get_tipo_pago_display') else venta.tipo_pago
     
     info_general = f"""
     <b>Código:</b> {codigo_venta_str}<br/>
     <b>Fecha:</b> {fecha_str}<br/>
     <b>Cliente:</b> {venta.cliente}<br/>
-    <b>Vendedor:</b> {vendedor_nombre}<br/>
+    <b>Vendedor:</b> {vendedor_con_lugar}<br/>
     <b>Tipo Pago:</b> {tipo_pago}
     """
     elements.append(Paragraph(info_general, style_encabezado))
@@ -160,9 +171,10 @@ def generar_pdf_venta_completo(venta):
     datos_tabla = [['Producto', 'Cantidad', 'P. Unitario', 'Subtotal']]
     
     for detalle in detalles:
-        precio = float(detalle.precio_unitario)
+        precio = float(convertir_desde_bob_para_pdf(detalle.precio_unitario, venta))
         cantidad = int(detalle.cantidad)
-        subtotal_valor = float(detalle.subtotal) if hasattr(detalle, 'subtotal') else (precio * cantidad)
+        subtotal_base = detalle.subtotal if hasattr(detalle, 'subtotal') else (detalle.precio_unitario * cantidad)
+        subtotal_valor = float(convertir_desde_bob_para_pdf(subtotal_base, venta))
         
         datos_tabla.append([
             detalle.producto.nombre[:40],
@@ -222,12 +234,18 @@ def generar_pdf_venta_completo(venta):
     
     # Calcular totales (defensivo)
     if hasattr(venta, 'subtotal'):
-        subtotal = float(venta.subtotal)
+        subtotal = float(convertir_desde_bob_para_pdf(venta.subtotal, venta))
     else:
-        subtotal = sum(float(d.subtotal) if hasattr(d, 'subtotal') else (float(d.precio_unitario) * int(d.cantidad)) for d in detalles)
+        subtotal = sum(
+            float(convertir_desde_bob_para_pdf(
+                d.subtotal if hasattr(d, 'subtotal') else (d.precio_unitario * int(d.cantidad)),
+                venta
+            ))
+            for d in detalles
+        )
     
     # Descuento (aplicar de campo descuento del modelo)
-    monto_descuento = float(venta.descuento) if hasattr(venta, 'descuento') and venta.descuento else 0
+    monto_descuento = float(convertir_desde_bob_para_pdf(venta.descuento, venta)) if hasattr(venta, 'descuento') and venta.descuento else 0
     
     total = subtotal - monto_descuento
     
@@ -282,7 +300,7 @@ def generar_pdf_venta_completo(venta):
         
         for idx, amort in enumerate(amortizaciones, 1):
             fecha_str = amort.fecha.strftime('%d/%m/%Y') if amort.fecha else 'N/A'
-            monto_str = f'Bs. {float(amort.monto):,.2f}'
+            monto_str = f'{etiqueta_moneda} {float(convertir_desde_bob_para_pdf(amort.monto, venta)):,.2f}'
             obs_str = (amort.observaciones[:30] + '...') if amort.observaciones and len(amort.observaciones) > 30 else (amort.observaciones or '-')
             
             datos_amort.append([str(idx), fecha_str, monto_str, obs_str])
@@ -317,9 +335,9 @@ def generar_pdf_venta_completo(venta):
         )
         
         info_saldo = f"""
-        <b>Total de la venta:</b> Bs. {float(venta.total):,.2f}<br/>
-        <b>Total amortizado:</b> Bs. {float(total_amortizado):,.2f}<br/>
-        <b>Saldo pendiente:</b> <b style="color: {'#22c55e' if saldo_pendiente == 0 else '#ef4444'}">Bs. {float(saldo_pendiente):,.2f}</b>
+        <b>Total de la venta:</b> {etiqueta_moneda} {float(convertir_desde_bob_para_pdf(venta.total, venta)):,.2f}<br/>
+        <b>Total amortizado:</b> {etiqueta_moneda} {float(convertir_desde_bob_para_pdf(total_amortizado, venta)):,.2f}<br/>
+        <b>Saldo pendiente:</b> <b style="color: {'#22c55e' if saldo_pendiente == 0 else '#ef4444'}">{etiqueta_moneda} {float(convertir_desde_bob_para_pdf(saldo_pendiente, venta)):,.2f}</b>
         """
         
         elements.append(Paragraph(info_saldo, style_saldo))
@@ -351,7 +369,7 @@ def generar_pdf_venta_completo(venta):
                     
                     amort_info = f"""
                     <b>Comprobante #{idx}</b><br/>
-                    <b>Monto abonado:</b> Bs. {float(amort.monto):,.2f}<br/>
+                    <b>Monto abonado:</b> {etiqueta_moneda} {float(convertir_desde_bob_para_pdf(amort.monto, venta)):,.2f}<br/>
                     <b>Fecha y hora:</b> {fecha_str}<br/>
                     """
                     

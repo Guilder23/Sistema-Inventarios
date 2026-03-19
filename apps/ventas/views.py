@@ -4,7 +4,7 @@ from io import BytesIO
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponse, FileResponse
+from django.http import JsonResponse, HttpResponse, FileResponse, HttpResponseForbidden
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
@@ -20,8 +20,16 @@ from datetime import datetime
 
 from apps.ventas.models import Venta, DetalleVenta, AmortizacionCredito, SolicitudAnulacionVenta
 from apps.productos.models import Producto, ProductoContenedor
-from apps.moneda.utils import obtener_tasa_cambio_actual
+from apps.servicios.tipos_cambios import obtener_tipo_cambio_usd
 from apps.inventario.models import Inventario
+from apps.vendedores.models import Vendedor
+from apps.tiendas.models import Tienda
+from apps.usuarios.models import PerfilUsuario
+
+def convertir_monto_para_mostrar(venta, monto):
+    """Devuelve el monto tal como fue guardado en la moneda de la venta."""
+    valor = Decimal(str(monto or '0'))
+    return valor.quantize(Decimal('0.01'))
 
 def descontar_stock_desde_inventario(producto, cantidad, tipo_venta):
     """
@@ -59,6 +67,78 @@ def descontar_stock_desde_inventario(producto, cantidad, tipo_venta):
         if cantidad_a_descontar <= 0:
             break
         
+        if inv.cantidad >= cantidad_a_descontar:
+            inv.cantidad -= cantidad_a_descontar
+            inv.save()
+            cantidad_a_descontar = 0
+        else:
+            cantidad_a_descontar -= inv.cantidad
+            inv.cantidad = 0
+            inv.save()
+
+
+def obtener_inventarios_venta_tienda(producto, perfil, tipo_venta, bloquear=False):
+    """
+    Obtiene el inventario válido para una venta de tienda según la tienda actual.
+
+    - tienda: solo stock de la tienda actual.
+    - deposito: solo stock de los depósitos vinculados a la misma tienda.
+
+    Args:
+        producto: instancia de Producto.
+        perfil: perfil del usuario que vende.
+        tipo_venta: 'tienda' o 'deposito'.
+        bloquear: si es True, aplica select_for_update para uso dentro de una transacción.
+    """
+    if tipo_venta not in ['tienda', 'deposito']:
+        return Inventario.objects.none()
+
+    tienda_id = getattr(perfil, 'tienda_id', None)
+    if not tienda_id:
+        return Inventario.objects.none()
+
+    filtros = {
+        'producto': producto,
+        'ubicacion__tienda_id': tienda_id,
+    }
+
+    if tipo_venta == 'tienda':
+        filtros['ubicacion__rol'] = 'tienda'
+    else:
+        filtros['ubicacion__rol'] = 'deposito'
+
+    qs = Inventario.objects.filter(**filtros).order_by('fecha_actualizacion')
+    if bloquear:
+        qs = qs.select_for_update()
+    return qs
+
+
+def descontar_stock_desde_inventario_tienda(producto, cantidad, perfil, tipo_venta):
+    """
+    Descuenta stock del inventario correspondiente a la tienda actual.
+    Usa FIFO sobre las ubicaciones válidas de la misma tienda.
+    """
+    inventarios = list(
+        obtener_inventarios_venta_tienda(
+            producto=producto,
+            perfil=perfil,
+            tipo_venta=tipo_venta,
+            bloquear=True,
+        )
+    )
+
+    stock_total = sum(inv.cantidad for inv in inventarios)
+    if stock_total < cantidad:
+        raise ValueError(
+            f'Stock insuficiente en {tipo_venta} para "{producto.nombre}". '
+            f'Disponible: {stock_total}, Solicitado: {cantidad}.'
+        )
+
+    cantidad_a_descontar = cantidad
+    for inv in inventarios:
+        if cantidad_a_descontar <= 0:
+            break
+
         if inv.cantidad >= cantidad_a_descontar:
             inv.cantidad -= cantidad_a_descontar
             inv.save()
@@ -137,7 +217,6 @@ def restaurar_stock_a_contenedores(producto, cantidad):
             f'No hay contenedores registrados para el producto "{producto.nombre}". '
             f'No se puede restaurar stock.'
         )
-
 
 def generar_codigo_venta():
     """Genera un código único para la venta: VTA-0001, VTA-0002, etc."""
@@ -220,27 +299,35 @@ def listar_ventas(request):
         ventas = ventas.filter(cliente__icontains=cliente_filtro)
 
     # Por tipo de pago
-    ventas_contado = ventas.filter(tipo_pago='contado')
-    ventas_credito = ventas.filter(tipo_pago='credito')
+    ventas_contado_qs = ventas.filter(tipo_pago='contado')
+    ventas_credito_qs = ventas.filter(tipo_pago='credito')
 
     # Verificar si se solicita PDF
     pdf = request.GET.get('pdf')
     if pdf:
         tipo_pago = request.GET.get('tipo_pago', 'contado')
         if tipo_pago == 'contado':
-            ventas_filtradas = ventas_contado
+            ventas_filtradas = ventas_contado_qs
         else:
-            ventas_filtradas = ventas_credito
+            ventas_filtradas = ventas_credito_qs
         return generar_pdf_lista(ventas_filtradas, tipo_pago)
 
     # Stats rápidas
+    ventas_contado = list(ventas_contado_qs)
+    ventas_credito = list(ventas_credito_qs)
+    for venta in ventas_contado:
+        venta.total_display = convertir_monto_para_mostrar(venta, venta.total)
+
+    for venta in ventas_credito:
+        venta.total_display = convertir_monto_para_mostrar(venta, venta.total)
+
     total_ventas = ventas.count()
-    total_contado = ventas_contado.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
-    total_credito = ventas_credito.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+    total_contado = ventas_contado_qs.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+    total_credito = ventas_credito_qs.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
     total_general = total_contado + total_credito
 
     # Ventas de crédito pendientes
-    creditos_pendientes = ventas_credito.filter(estado='pendiente').count()
+    creditos_pendientes = ventas_credito_qs.filter(estado='pendiente').count()
 
     context = {
         'ventas_contado': ventas_contado,
@@ -277,15 +364,20 @@ def crear_venta(request):
     
     codigo_sugerido = generar_codigo_venta()
     
-    # Obtener tipo de cambio actual
-    tipo_cambio_actual = obtener_tasa_cambio_actual() or 1
+    # ═══════════════════════════════════════════════════════════
+    # TIPO DE CAMBIO: DINÁMICO - Obtenido de la BD
+    # El admin/almacén puede cambiar este valor a su discreción
+    # ═══════════════════════════════════════════════════════════
+    tipo_cambio_actual = float(obtener_tipo_cambio_usd() or 1)
     
     context = {
         'codigo_sugerido': codigo_sugerido,
         'perfil': perfil,
-        'tipo_cambio_actual': float(tipo_cambio_actual),
+        'tipo_cambio_actual': tipo_cambio_actual,
     }
     return render(request, 'ventas/nueva_venta.html', context)
+
+
 
 
 #Guardar venta (Post AJAX, es decir; recibe el JSON del carrito y crea la Venta + DetalleVenta.
@@ -312,7 +404,8 @@ def guardar_venta(request):
     tipo_pago = data.get('tipo_pago', 'contado')
     tipo_venta = data.get('tipo_venta', '').strip().lower()  # 'tienda' o 'deposito'
     moneda = data.get('moneda', 'BOB').upper()
-    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tasa_cambio_actual() or 1)))
+    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd() or 1)))
+    vendedor_id = data.get('vendedor_id', None)  # Para vendedores de almacén
     items = data.get('items', [])
 
 #Validaciones
@@ -333,6 +426,18 @@ def guardar_venta(request):
         perfil = request.user.perfil
     except:
         return JsonResponse({'success': False, 'error': 'El usuario no tiene un perfil asignado.'}, status=403)
+    
+    # Obtener el vendedor a usar
+    vendedor_user = request.user
+    if vendedor_id:
+        try:
+            # Si se proporciona vendedor_id, obtener al vendedor
+            vendedor_obj = Vendedor.objects.get(id=vendedor_id)
+            # Obtener al usuario asociado al vendedor (no hay relación directa, tomar el actual)
+            # En caso de que necesites relacionar con un User, aquí puedes hacerlo
+            vendedor_user = request.user  # Mantener el usuario actual como quien registra
+        except Vendedor.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Vendedor no encontrado.'})
 
     try:
         with transaction.atomic():
@@ -347,10 +452,14 @@ def guardar_venta(request):
                 moneda=moneda,
                 tipo_cambio=tipo_cambio,
                 estado='completada' if tipo_pago == 'contado' else 'pendiente',
-                vendedor=request.user,
+                vendedor=vendedor_user,
                 subtotal=Decimal('0.00'),
                 total=Decimal('0.00'),
             )
+            
+            # Si se proporcionó vendedor_id, guardar referencia personalizada
+            if vendedor_id:
+                venta.vendedor_id_almacen = vendedor_id  # Guardar para referencia
 
             total_venta = Decimal('0.00')
 
@@ -413,26 +522,35 @@ def guardar_venta(request):
 
 
 # API para buscar productos (con AJAX autocompletado).-
-#Busca productos por nombre o código.
-#URL: /ventas/api/buscar-productos/?q=texto
-#Retorna JSON con lista de productos que tengan stock > 0 y estén activos
 @login_required
 def buscar_productos(request):
     """
     API AJAX para buscar productos con respecto a disponibilidad de stock.
+    Parámetros GET:
+    - q: string de búsqueda
+    - tipo_venta: 'tienda' o 'deposito'
+    - sin_filtro: si está presente, no filtra por stock (solo para debug)
     """
     query = request.GET.get('q', '').strip()
     tipo_venta = request.GET.get('tipo_venta', '').strip().lower()  # 'tienda' o 'deposito'
+    sin_filtro = request.GET.get('sin_filtro', '')
     
     if len(query) < 2:
-        return JsonResponse({'productos': []})
+        return JsonResponse({
+            'productos': [],
+            'debug': {
+                'error': 'Query muy corta (< 2 caracteres)',
+                'query': query,
+            }
+        })
 
     try:
-        # Obtener el perfil del usuario actual
+        # Obtener el usuario actual y su perfil
+        user = request.user
         try:
-            user_perfil = request.user.perfil
+            user_perfil = user.perfil
         except:
-            user_perfil = None
+            return JsonResponse({'error': 'No hay perfil', 'productos': []})
         
         # Buscar productos por nombre o código, activos
         productos = Producto.objects.filter(
@@ -450,9 +568,10 @@ def buscar_productos(request):
                 # BÚSQUEDA POR TIPO DE UBICACIÓN: filtrar Inventario por rol
                 try:
                     # Filtrar directo por rol de ubicación (tienda o deposito)
-                    inventarios = Inventario.objects.filter(
+                    inventarios = obtener_inventarios_venta_tienda(
                         producto=p,
-                        ubicacion__rol=tipo_venta
+                        perfil=user_perfil,
+                        tipo_venta=tipo_venta
                     )
                     
                     stock = sum(inv.cantidad for inv in inventarios)
@@ -491,144 +610,39 @@ def buscar_productos(request):
     except Exception as e:
         return JsonResponse({'error': f'Error al buscar: {str(e)}'}, status=500)
 
+
+@login_required
+def obtener_vendedores_almacen(request):
+    """
+    API: retorna vendedores activos asociados al almacén/tienda indicado o inferido
+    desde el perfil del usuario. Parámetros GET opcionales: `almacen_id`, `tienda_id`.
+    """
     try:
-        # Buscar productos por nombre o código, activos
-        productos = Producto.objects.filter(
-            Q(nombre__icontains=query) | Q(codigo__icontains=query),
-            activo=True,
-        ).select_related('categoria')[:20]
+        almacen_id = request.GET.get('almacen_id')
+        tienda_id = request.GET.get('tienda_id')
 
-        resultado = []
-        
-        # Obtener el perfil del usuario actual
-        try:
-            user_perfil = request.user.perfil
-        except:
-            user_perfil = None
-        
-        for p in productos:
-            # Obtener stock basado en tipo_venta
-            stock = None
-            debug_info = f"Producto: {p.codigo}"
-            
-            if tipo_venta in ['tienda', 'deposito'] and user_perfil:
-                # BÚSQUEDA POR UBICACIÓN: usar modelo Inventario
-                try:
-                    from django.db.models import Q as DjangoQ
-                    
-                    if tipo_venta == 'tienda':
-                        # Si usuario es tienda: su tienda + depósitos asociados
-                        # Si usuario es depósito: su tienda padre + otros depósitos del mismo padre
-                        if user_perfil.rol == 'tienda':
-                            # Usuario es tienda: buscar su tienda + sus depósitos
-                            ubicaciones_ids = [user_perfil.id]
-                            # Agregar todos los depósitos asociados a esta tienda
-                            depositos_asociados = PerfilUsuario.objects.filter(
-                                rol='deposito',
-                                ubicacion_relacionada=user_perfil
-                            ).values_list('id', flat=True)
-                            ubicaciones_ids.extend(depositos_asociados)
-                            debug_info += f" | tipo=tienda, user.rol=tienda | ubicaciones_ids={ubicaciones_ids}"
-                            
-                            inventarios = Inventario.objects.filter(
-                                producto=p,
-                                ubicacion_id__in=ubicaciones_ids
-                            )
-                        elif user_perfil.rol == 'deposito' and user_perfil.ubicacion_relacionada:
-                            # Usuario es depósito: buscar su tienda padre + otros depósitos del padre
-                            tienda_padre = user_perfil.ubicacion_relacionada
-                            ubicaciones_ids = [tienda_padre.id]
-                            # Agregar todos los depósitos de la misma tienda padre
-                            depositos_asociados = PerfilUsuario.objects.filter(
-                                rol='deposito',
-                                ubicacion_relacionada=tienda_padre
-                            ).values_list('id', flat=True)
-                            ubicaciones_ids.extend(depositos_asociados)
-                            debug_info += f" | tipo=tienda, user.rol=deposito | ubicaciones_ids={ubicaciones_ids}"
-                            
-                            inventarios = Inventario.objects.filter(
-                                producto=p,
-                                ubicacion_id__in=ubicaciones_ids
-                            )
-                        else:
-                            # Usuario almacén u otro: buscar todas las tiendas
-                            debug_info += f" | tipo=tienda, user.rol={user_perfil.rol} (busca todas tiendas)"
-                            inventarios = Inventario.objects.filter(
-                                producto=p,
-                                ubicacion__rol='tienda'
-                            )
-                        
-                        stock = sum(inv.cantidad for inv in inventarios)
-                        debug_info += f" | stock_filtrado={stock}"
-                    
-                    elif tipo_venta == 'deposito':
-                        # Buscar SOLO depósitos
-                        if user_perfil.rol == 'tienda':
-                            # Usuario tienda: busca depósitos asociados a su tienda
-                            depositos_asociados = PerfilUsuario.objects.filter(
-                                rol='deposito',
-                                ubicacion_relacionada=user_perfil
-                            ).values_list('id', flat=True)
-                            debug_info += f" | tipo=deposito, user.rol=tienda | depositos_ids={list(depositos_asociados)}"
-                        elif user_perfil.rol == 'deposito' and user_perfil.ubicacion_relacionada:
-                            # Usuario depósito: busca depósitos del mismo padre
-                            tienda_padre = user_perfil.ubicacion_relacionada
-                            depositos_asociados = PerfilUsuario.objects.filter(
-                                rol='deposito',
-                                ubicacion_relacionada=tienda_padre
-                            ).values_list('id', flat=True)
-                            debug_info += f" | tipo=deposito, user.rol=deposito | depositos_ids={list(depositos_asociados)}"
-                        else:
-                            # Usuario almacén: busca todos los depósitos
-                            debug_info += f" | tipo=deposito, user.rol={user_perfil.rol} (busca todos depositos)"
-                            depositos_asociados = PerfilUsuario.objects.filter(
-                                rol='deposito'
-                            ).values_list('id', flat=True)
-                        
-                        if depositos_asociados:
-                            inventarios = Inventario.objects.filter(
-                                producto=p,
-                                ubicacion_id__in=depositos_asociados
-                            )
-                            stock = sum(inv.cantidad for inv in inventarios)
-                            debug_info += f" | stock_filtrado={stock}"
-                        else:
-                            stock = 0
-                            debug_info += f" | NO_DEPOSITOS"
-                
-                except Exception as e:
-                    stock = None
-            
-            # Si no se usó ubicación específica o hubo error, usar stock universal
-            if stock is None:
-                try:
-                    stock = p.stock if p.stock else 0
-                except Exception as e:
-                    stock = 0
-            
-            # Asegurar que stock es entero y >= 0
-            stock = max(0, int(stock))
-            
-            # Filtrar solo productos con stock disponible
-            if stock < 1:
-                continue
-                
-            resultado.append({
-                'id': p.id,
-                'codigo': p.codigo,
-                'nombre': p.nombre,
-                'categoria': p.categoria.nombre if p.categoria else 'Sin categoría',
-                'stock': stock,
-                'unidades_por_caja': int(p.unidades_por_caja) if p.unidades_por_caja else 1,
-                'precio_unidad': float(p.precio_unidad or 0),
-                'precio_mayor': float(p.precio_mayor or 0),
-                'precio_caja': float(p.precio_caja or 0),
-            })
+        qs = Vendedor.objects.all()
 
-        return JsonResponse({'productos': resultado})
-        
+        if almacen_id:
+            qs = qs.filter(almacen_id=almacen_id)
+        elif tienda_id:
+            qs = qs.filter(tienda_id=tienda_id)
+        # Si no se pasan parámetros, retornar todos los vendedores del sistema
+
+        vendedores = [
+            {
+                'id': v.id,
+                'nombre_completo': f"{v.nombre} {v.apellido}".strip(),
+                'lugar': v.almacen.nombre if v.almacen else (v.tienda.nombre if v.tienda else 'Sin ubicación'),
+                'almacen_id': v.almacen_id,
+                'tienda_id': v.tienda_id,
+            }
+            for v in qs.order_by('almacen_id', 'tienda_id', '-fecha_creacion')
+        ]
+
+        return JsonResponse({'vendedores': vendedores})
     except Exception as e:
-        return JsonResponse({'error': f'Error al buscar: {str(e)}'}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @login_required
@@ -653,7 +667,7 @@ def obtener_detalle_venta(request, id):
             for a in amorts:
                 amortizaciones.append({
                     'id': a.id,
-                    'monto': str(a.monto),
+                    'monto': str(convertir_monto_para_mostrar(venta, a.monto)),
                     'fecha': a.fecha.strftime('%d/%m/%Y %H:%M') if a.fecha else '',
                     'observaciones': a.observaciones or '',
                 })
@@ -667,22 +681,23 @@ def obtener_detalle_venta(request, id):
             'cliente': venta.cliente,
             'tipo_pago': venta.tipo_pago,
             'estado': venta.estado,
-            'subtotal': str(venta.subtotal),
-            'descuento': str(venta.descuento) if hasattr(venta, 'descuento') else '0.00',
-            'total': str(venta.total),
+            'moneda': venta.moneda,
+            'subtotal': str(convertir_monto_para_mostrar(venta, venta.subtotal)),
+            'descuento': str(convertir_monto_para_mostrar(venta, venta.descuento if hasattr(venta, 'descuento') else Decimal('0.00'))),
+            'total': str(convertir_monto_para_mostrar(venta, venta.total)),
             'detalles': [
                 {
                     'codigo': d.producto.codigo,
                     'producto': d.producto.nombre,
                     'cantidad': d.cantidad,
-                    'precio_unitario': str(d.precio_unitario),
-                    'subtotal': str(d.subtotal)
+                    'precio_unitario': str(convertir_monto_para_mostrar(venta, d.precio_unitario)),
+                    'subtotal': str(convertir_monto_para_mostrar(venta, d.subtotal))
                 }
                 for d in detalles
             ],
             'amortizaciones': amortizaciones,
-            'total_amortizado': str(total_amortizado),
-            'saldo_pendiente': str(saldo_pendiente),
+            'total_amortizado': str(convertir_monto_para_mostrar(venta, total_amortizado)),
+            'saldo_pendiente': str(convertir_monto_para_mostrar(venta, saldo_pendiente)),
         }
         
         return JsonResponse({'success': True, 'data': datos})
@@ -691,9 +706,6 @@ def obtener_detalle_venta(request, id):
         return JsonResponse({'success': False, 'error': 'Venta no encontrada'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': f'Error: {str(e)}'}, status=500)
-
-
-@login_required
 @login_required
 def ver_venta(request, id):
     venta = get_object_or_404(Venta, id=id)
@@ -709,7 +721,7 @@ def ver_venta(request, id):
         for a in amorts:
             amortizaciones.append({
                 'id': a.id,
-                'monto': str(a.monto),
+                'monto': str(convertir_monto_para_mostrar(venta, a.monto)),
                 'fecha': a.fecha.strftime('%d/%m/%Y %H:%M') if a.fecha else '',
                 'observaciones': a.observaciones or '',
             })
@@ -722,17 +734,30 @@ def ver_venta(request, id):
             'id': venta.id,
             'codigo': venta.codigo,
             'moneda': venta.moneda,
-            'total': str(venta.total),
+            'tipo_cambio': str(venta.tipo_cambio),
+            'total': str(convertir_monto_para_mostrar(venta, venta.total)),
             'tipo_pago': venta.tipo_pago,
-            'total_amortizado': str(total_amortizado),
-            'saldo_pendiente': str(saldo_pendiente),
+            'total_amortizado': str(convertir_monto_para_mostrar(venta, total_amortizado)),
+            'saldo_pendiente': str(convertir_monto_para_mostrar(venta, saldo_pendiente)),
         })
 
     context = {
         'venta': venta,
+        'detalles_display': [
+            {
+                'producto': d.producto.nombre,
+                'cantidad': d.cantidad,
+                'precio_unitario': convertir_monto_para_mostrar(venta, d.precio_unitario),
+                'subtotal': convertir_monto_para_mostrar(venta, d.subtotal),
+            }
+            for d in detalles
+        ],
+        'subtotal_display': convertir_monto_para_mostrar(venta, venta.subtotal),
+        'descuento_display': convertir_monto_para_mostrar(venta, venta.descuento),
+        'total_display': convertir_monto_para_mostrar(venta, venta.total),
         'amortizaciones': amortizaciones,
-        'total_amortizado': total_amortizado,
-        'saldo_pendiente': saldo_pendiente,
+        'total_amortizado': convertir_monto_para_mostrar(venta, total_amortizado),
+        'saldo_pendiente': convertir_monto_para_mostrar(venta, saldo_pendiente),
     }
 
     return render(request, 'ventas/ver.html', context)
@@ -1042,7 +1067,7 @@ def anular_venta(request, id):
     try:
         comentario = request.POST.get('comentario', '').strip()
         if not comentario:
-            return JsonResponse({'success': False, 'error': 'El comentario es obligatorio.'})
+            return JsonResponse({'success': False, 'error': 'El comentario es obligatorio.'}, status=400)
 
         # Verificar si es almacén
         es_almacen_user = hasattr(request.user, 'perfil') and request.user.perfil.rol == 'almacen'
@@ -1098,7 +1123,7 @@ def validar_solicitudes_anulacion(request):
     Panel para que ALMACÉN valide solicitudes de anulación enviadas por TIENDA
     """
     if not es_almacen(request):
-        return redirect('dashboard')
+        return HttpResponseForbidden()
 
     solicitudes = SolicitudAnulacionVenta.objects.select_related(
         'venta', 'solicitado_por', 'respondido_por'
@@ -1115,7 +1140,6 @@ def validar_solicitudes_anulacion(request):
     })
 
 
-@login_required
 @login_required
 def detalle_solicitud_anulacion(request, id):
     """
@@ -1183,7 +1207,7 @@ def responder_solicitud_anulacion(request, id):
         return JsonResponse({
             'success': False,
             'error': 'Esta solicitud ya ha sido respondida por otro administrador/almacén.'
-        })
+        }, status=409)
 
     accion = request.POST.get('accion')  # 'aceptar' o 'rechazar'
     comentario_respuesta = request.POST.get('comentario_respuesta', '').strip()
@@ -1286,6 +1310,10 @@ def listar_ventas_tienda(request):
     if pdf:
         return generar_pdf_lista(ventas_contado, 'contado')
 
+    # Obtener tipo de tienda (principal o sucursal)
+    es_tienda_principal = False
+    if hasattr(perfil, 'tienda') and perfil.tienda:
+        es_tienda_principal = perfil.tienda.tipo == 'principal'
     context = {
         'ventas_contado': ventas_contado,
         'ventas_credito': ventas_credito,
@@ -1298,6 +1326,7 @@ def listar_ventas_tienda(request):
         'creditos_pendientes': 0,  # Tienda no usa crédito
         'perfil': perfil,
         'es_tienda': True,
+        'es_tienda_principal': es_tienda_principal,
         # Mantener filtros en el contexto
         'fecha_desde': fecha_desde,
         'fecha_hasta': fecha_hasta,
@@ -1323,11 +1352,17 @@ def crear_venta_tienda(request):
     if hasattr(perfil, 'tienda') and perfil.tienda:
         es_tienda_principal = perfil.tienda.tipo == 'principal'
     
+    # ═══════════════════════════════════════════════════════════
+    # TIPO DE CAMBIO: DINÁMICO - Obtenido de la BD
+    # El admin/almacén puede cambiar este valor a su discreción
+    # ═══════════════════════════════════════════════════════════
+    tipo_cambio_actual = float(obtener_tipo_cambio_usd() or 1)
     context = {
         'codigo_sugerido': codigo_sugerido,
         'perfil': perfil,
         'es_tienda': True,
         'es_tienda_principal': es_tienda_principal,
+        'tipo_cambio_actual': tipo_cambio_actual,
     }
     return render(request, 'ventas/nueva_venta_tienda.html', context)
 
@@ -1377,7 +1412,7 @@ def guardar_venta_tienda(request):
     tipo_pago = data.get('tipo_pago', 'contado')
     tipo_venta = data.get('tipo_venta', '').strip().lower()  # 'tienda' o 'deposito'
     moneda = data.get('moneda', 'BOB').upper()
-    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tasa_cambio_actual() or 1)))
+    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd() or 1)))
     descuento = Decimal(str(data.get('descuento', '0')))
     items = data.get('items', [])
 
@@ -1463,9 +1498,10 @@ def guardar_venta_tienda(request):
                 # Validar stock ANTES de bloquear
                 # Para tienda/deposito: validar contra el inventario específico
                 if tipo_venta in ['tienda', 'deposito']:
-                    inventarios = Inventario.objects.filter(
+                    inventarios = obtener_inventarios_venta_tienda(
                         producto=producto,
-                        ubicacion__rol=tipo_venta
+                        perfil=perfil,
+                        tipo_venta=tipo_venta
                     )
                     stock_disponible = sum(inv.cantidad for inv in inventarios)
                 else:
@@ -1529,3 +1565,126 @@ def guardar_venta_tienda(request):
         return JsonResponse({'success': False, 'error': str(e)})
     except Exception as e:
         return JsonResponse({'success': False, 'error': f'Error al guardar venta: {str(e)}'}, status=500)
+
+
+@login_required
+def obtener_saldo_pendiente(request, id):
+    """
+    Retorna el saldo pendiente de una venta a crédito en formato JSON.
+    """
+    try:
+        venta = Venta.objects.get(id=id)
+        
+        # Calcular total amortizado
+        total_amortizado = AmortizacionCredito.objects.filter(
+            venta=venta
+        ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        
+        saldo_pendiente = venta.total - total_amortizado
+        
+        # Determinar símbolo de moneda
+        moneda_simbolo = '$' if venta.moneda == 'USD' else 'Bs.'
+        
+        return JsonResponse({
+            'success': True,
+            'total_pagado': f"{moneda_simbolo} {convertir_monto_para_mostrar(venta, total_amortizado):.2f}",
+            'saldo_pendiente': f"{convertir_monto_para_mostrar(venta, saldo_pendiente):.2f}",
+            'moneda_simbolo': moneda_simbolo,
+        })
+    except Venta.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Venta no encontrada'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error: {str(e)}'
+        }, status=500)
+
+
+@login_required
+def registrar_amortizacion_tienda(request, id):
+    """
+    Registra una amortización (pago) para una venta a crédito de tienda.
+    Similar a registrar_amortizacion pero específico para tiendas.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    try:
+        venta = Venta.objects.get(id=id)
+        
+        # Validar que sea del usuario
+        if venta.vendedor != request.user:
+            return JsonResponse({'success': False, 'error': 'No tienes permisos para esta venta.'}, status=403)
+        
+        if venta.tipo_pago != 'credito':
+            return JsonResponse({'success': False, 'error': 'Esta venta no es a crédito.'})
+
+        if venta.estado == 'cancelada' or venta.estado == 'anulada':
+            return JsonResponse({'success': False, 'error': 'No se puede registrar pago a una venta cancelada/anulada.'})
+
+        # Procesar FormData
+        monto_str = request.POST.get('monto', '0')
+        observaciones = request.POST.get('observaciones', '').strip()
+        comprobante = request.FILES.get('comprobante')
+
+        # Validar campos requeridos
+        if not monto_str:
+            return JsonResponse({'success': False, 'error': 'El monto es requerido.'})
+        
+        if not comprobante:
+            return JsonResponse({'success': False, 'error': 'La fotografía de comprobante es obligatoria.'})
+
+        try:
+            monto = Decimal(str(monto_str))
+        except:
+            return JsonResponse({'success': False, 'error': 'El monto debe ser un número válido.'})
+
+        if monto <= 0:
+            return JsonResponse({'success': False, 'error': 'El monto debe ser mayor a 0.'})
+
+        # Calcular saldo pendiente
+        total_amortizado = AmortizacionCredito.objects.filter(
+            venta=venta
+        ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+
+        saldo_pendiente = venta.total - total_amortizado
+
+        if monto > saldo_pendiente:
+            return JsonResponse({
+                'success': False,
+                'error': f'El monto excede el saldo pendiente ({venta.moneda} {saldo_pendiente:.2f}).'
+            })
+
+        with transaction.atomic():
+            # Crear amortización
+            amortizacion = AmortizacionCredito(
+                venta=venta,
+                monto=monto,
+                observaciones=observaciones,
+                registrado_por=request.user,
+                comprobante=comprobante,
+            )
+            amortizacion.save()
+
+            nuevo_total_amortizado = total_amortizado + monto
+            nuevo_saldo = venta.total - nuevo_total_amortizado
+            
+            # Marcar como completada si está totalmente pagada
+            if nuevo_total_amortizado >= venta.total:
+                venta.estado = 'completada'
+                venta.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Pago registrado exitosamente.',
+            'nuevo_saldo': str(nuevo_saldo),
+            'venta_completada': nuevo_total_amortizado >= venta.total,
+        })
+
+    except Venta.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Venta no encontrada'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error al registrar pago: {str(e)}'}, status=500)
