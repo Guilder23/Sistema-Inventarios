@@ -27,10 +27,8 @@ from apps.tiendas.models import Tienda
 from apps.usuarios.models import PerfilUsuario
 
 def convertir_monto_para_mostrar(venta, monto):
+    """Devuelve el monto tal como fue guardado en la moneda de la venta."""
     valor = Decimal(str(monto or '0'))
-    tipo_cambio = Decimal(str(getattr(venta, 'tipo_cambio', 1) or 1))
-    if getattr(venta, 'moneda', 'BOB') == 'USD' and tipo_cambio > 0:
-        return (valor / tipo_cambio).quantize(Decimal('0.01'))
     return valor.quantize(Decimal('0.01'))
 
 def descontar_stock_desde_inventario(producto, cantidad, tipo_venta):

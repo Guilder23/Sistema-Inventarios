@@ -626,7 +626,7 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
     const items = carrito.map(item => ({
         producto_id: item.productoId,
         cantidad: item.cantidad,
-        precio_unitario: item.precioUnitario.toFixed(2),
+        precio_unitario: convertirBsAMoneda(item.precioUnitario).toFixed(2),
     }));
     
     const monedaElement = document.getElementById('inputMoneda');

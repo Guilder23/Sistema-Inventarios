@@ -595,12 +595,12 @@ function inicializarGuardarVenta() {
             tipo_venta: tipoVendedorActual,
             moneda: moneda,
             tipo_cambio: tipoCambio,
-            descuento: descuentoAplicado,
+            descuento: convertirBsAMoneda(descuentoAplicado).toFixed(2),
             items: carrito.map(item => ({
                 producto_id: item.producto.id,
                 cantidad: item.cantidad,
                 modalidad: item.modalidad,
-                precio_unitario: item.precio_unitario
+                precio_unitario: convertirBsAMoneda(item.precio_unitario).toFixed(2)
             }))
         };
         

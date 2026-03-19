@@ -18,11 +18,8 @@ from apps.moneda.utils import obtener_etiqueta_moneda
 
 
 def convertir_desde_bob_para_pdf(monto, venta):
+    """Devuelve el monto tal como fue guardado, usando la moneda de la venta solo para la etiqueta."""
     valor = Decimal(str(monto or 0))
-    tipo_cambio = Decimal(str(getattr(venta, 'tipo_cambio', 1) or 1))
-
-    if getattr(venta, 'moneda', 'BOB') == 'USD' and tipo_cambio > 0:
-        return valor / tipo_cambio
     return valor
 
 
