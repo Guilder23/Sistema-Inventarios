@@ -71,6 +71,24 @@ function actualizarUnidadDescuento() {
     }
 }
 
+function inicializarSelectorTipoPago() {
+    const opciones = document.querySelectorAll('.tipo-pago-option');
+    if (!opciones.length) return;
+
+    opciones.forEach(opcion => {
+        opcion.addEventListener('click', function () {
+            opciones.forEach(el => el.classList.remove('active'));
+            this.classList.add('active');
+
+            const tipo = this.dataset.tipo || 'contado';
+            const inputTipoPago = document.getElementById('inputTipoPago');
+            if (inputTipoPago) {
+                inputTipoPago.value = tipo;
+            }
+        });
+    });
+}
+
 // Validar que teléfono solo acepte números
 function validarTelefono(input) {
     input.addEventListener('keypress', function(e) {
@@ -682,12 +700,14 @@ function inicializarGuardarVenta() {
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
+        inicializarSelectorTipoPago();
         inicializarBusqueda();
         inicializarGuardarVenta();
         actualizarUnidadDescuento();
         actualizarTotales();
     });
 } else {
+    inicializarSelectorTipoPago();
     inicializarBusqueda();
     inicializarGuardarVenta();
     actualizarUnidadDescuento();

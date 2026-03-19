@@ -236,18 +236,18 @@
                                     </td>
                                     <td class="text-center pr-3">
                                         <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary btn-ver-detalle"
+                                            <button type="button" class="btn btn-outline-primary btn-ver-detalle"
                                                     data-venta-id="{{ venta.id }}"
                                                     title="Ver detalle">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <button class="btn btn-outline-info btn-generar-pdf-venta"
+                                            <button type="button" class="btn btn-outline-info btn-generar-pdf-venta"
                                                     data-venta-id="{{ venta.id }}"
                                                     title="Generar PDF">
                                                 <i class="fas fa-file-pdf"></i>
                                             </button>
                                             {% if venta.estado != 'cancelada' and venta.estado != 'anulada' %}
-                                            <button class="btn btn-outline-danger btn-anular-venta"
+                                            <button type="button" class="btn btn-outline-danger btn-anular-venta"
                                                     data-venta-id="{{ venta.id }}"
                                                     data-venta-codigo="{{ venta.codigo }}"
                                                     title="Anular venta">
@@ -320,18 +320,18 @@
                                     </td>
                                     <td class="text-center pr-3">
                                         <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary btn-ver-detalle"
+                                            <button type="button" class="btn btn-outline-primary btn-ver-detalle"
                                                     data-venta-id="{{ venta.id }}"
                                                     title="Ver detalle">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <button class="btn btn-outline-info btn-generar-pdf-venta"
+                                            <button type="button" class="btn btn-outline-info btn-generar-pdf-venta"
                                                     data-venta-id="{{ venta.id }}"
                                                     title="Generar PDF">
                                                 <i class="fas fa-file-pdf"></i>
                                             </button>
                                             {% if venta.estado == 'completada' %}
-                                            <button class="btn btn-outline-success btn-registrar-amortizacion"
+                                            <button type="button" class="btn btn-outline-success btn-registrar-amortizacion"
                                                     data-venta-id="{{ venta.id }}"
                                                     data-venta-codigo="{{ venta.codigo }}"
                                                     data-venta-total="{{ venta.total }}"
@@ -340,7 +340,7 @@
                                             </button>
                                             {% endif %}
                                             {% if venta.estado != 'cancelada' and venta.estado != 'anulada' %}
-                                            <button class="btn btn-outline-danger btn-anular-venta"
+                                            <button type="button" class="btn btn-outline-danger btn-anular-venta"
                                                     data-venta-id="{{ venta.id }}"
                                                     data-venta-codigo="{{ venta.codigo }}"
                                                     title="Anular venta">
@@ -405,18 +405,18 @@
                             </td>
                             <td class="text-center pr-3">
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary btn-ver-detalle"
+                                    <button type="button" class="btn btn-outline-primary btn-ver-detalle"
                                             data-venta-id="{{ venta.id }}"
                                             title="Ver detalle">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="btn btn-outline-info btn-generar-pdf-venta"
+                                    <button type="button" class="btn btn-outline-info btn-generar-pdf-venta"
                                             data-venta-id="{{ venta.id }}"
                                             title="Generar PDF">
                                         <i class="fas fa-file-pdf"></i>
                                     </button>
                                     {% if venta.estado != 'cancelada' and venta.estado != 'anulada' %}
-                                    <button class="btn btn-outline-danger btn-anular-venta"
+                                    <button type="button" class="btn btn-outline-danger btn-anular-venta"
                                             data-venta-id="{{ venta.id }}"
                                             data-venta-codigo="{{ venta.codigo }}"
                                             title="Anular venta">
