@@ -20,11 +20,16 @@ from datetime import datetime
 
 from apps.ventas.models import Venta, DetalleVenta, AmortizacionCredito, SolicitudAnulacionVenta
 from apps.productos.models import Producto, ProductoContenedor
-from apps.moneda.utils import obtener_tasa_cambio_actual
+from apps.servicios.tipos_cambios import obtener_tipo_cambio_usd
 from apps.inventario.models import Inventario
 from apps.vendedores.models import Vendedor
 from apps.tiendas.models import Tienda
 from apps.usuarios.models import PerfilUsuario
+
+def convertir_monto_para_mostrar(venta, monto):
+    """Devuelve el monto tal como fue guardado en la moneda de la venta."""
+    valor = Decimal(str(monto or '0'))
+    return valor.quantize(Decimal('0.01'))
 
 def descontar_stock_desde_inventario(producto, cantidad, tipo_venta):
     """
@@ -62,6 +67,78 @@ def descontar_stock_desde_inventario(producto, cantidad, tipo_venta):
         if cantidad_a_descontar <= 0:
             break
         
+        if inv.cantidad >= cantidad_a_descontar:
+            inv.cantidad -= cantidad_a_descontar
+            inv.save()
+            cantidad_a_descontar = 0
+        else:
+            cantidad_a_descontar -= inv.cantidad
+            inv.cantidad = 0
+            inv.save()
+
+
+def obtener_inventarios_venta_tienda(producto, perfil, tipo_venta, bloquear=False):
+    """
+    Obtiene el inventario válido para una venta de tienda según la tienda actual.
+
+    - tienda: solo stock de la tienda actual.
+    - deposito: solo stock de los depósitos vinculados a la misma tienda.
+
+    Args:
+        producto: instancia de Producto.
+        perfil: perfil del usuario que vende.
+        tipo_venta: 'tienda' o 'deposito'.
+        bloquear: si es True, aplica select_for_update para uso dentro de una transacción.
+    """
+    if tipo_venta not in ['tienda', 'deposito']:
+        return Inventario.objects.none()
+
+    tienda_id = getattr(perfil, 'tienda_id', None)
+    if not tienda_id:
+        return Inventario.objects.none()
+
+    filtros = {
+        'producto': producto,
+        'ubicacion__tienda_id': tienda_id,
+    }
+
+    if tipo_venta == 'tienda':
+        filtros['ubicacion__rol'] = 'tienda'
+    else:
+        filtros['ubicacion__rol'] = 'deposito'
+
+    qs = Inventario.objects.filter(**filtros).order_by('fecha_actualizacion')
+    if bloquear:
+        qs = qs.select_for_update()
+    return qs
+
+
+def descontar_stock_desde_inventario_tienda(producto, cantidad, perfil, tipo_venta):
+    """
+    Descuenta stock del inventario correspondiente a la tienda actual.
+    Usa FIFO sobre las ubicaciones válidas de la misma tienda.
+    """
+    inventarios = list(
+        obtener_inventarios_venta_tienda(
+            producto=producto,
+            perfil=perfil,
+            tipo_venta=tipo_venta,
+            bloquear=True,
+        )
+    )
+
+    stock_total = sum(inv.cantidad for inv in inventarios)
+    if stock_total < cantidad:
+        raise ValueError(
+            f'Stock insuficiente en {tipo_venta} para "{producto.nombre}". '
+            f'Disponible: {stock_total}, Solicitado: {cantidad}.'
+        )
+
+    cantidad_a_descontar = cantidad
+    for inv in inventarios:
+        if cantidad_a_descontar <= 0:
+            break
+
         if inv.cantidad >= cantidad_a_descontar:
             inv.cantidad -= cantidad_a_descontar
             inv.save()
@@ -222,27 +299,35 @@ def listar_ventas(request):
         ventas = ventas.filter(cliente__icontains=cliente_filtro)
 
     # Por tipo de pago
-    ventas_contado = ventas.filter(tipo_pago='contado')
-    ventas_credito = ventas.filter(tipo_pago='credito')
+    ventas_contado_qs = ventas.filter(tipo_pago='contado')
+    ventas_credito_qs = ventas.filter(tipo_pago='credito')
 
     # Verificar si se solicita PDF
     pdf = request.GET.get('pdf')
     if pdf:
         tipo_pago = request.GET.get('tipo_pago', 'contado')
         if tipo_pago == 'contado':
-            ventas_filtradas = ventas_contado
+            ventas_filtradas = ventas_contado_qs
         else:
-            ventas_filtradas = ventas_credito
+            ventas_filtradas = ventas_credito_qs
         return generar_pdf_lista(ventas_filtradas, tipo_pago)
 
     # Stats rápidas
+    ventas_contado = list(ventas_contado_qs)
+    ventas_credito = list(ventas_credito_qs)
+    for venta in ventas_contado:
+        venta.total_display = convertir_monto_para_mostrar(venta, venta.total)
+
+    for venta in ventas_credito:
+        venta.total_display = convertir_monto_para_mostrar(venta, venta.total)
+
     total_ventas = ventas.count()
-    total_contado = ventas_contado.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
-    total_credito = ventas_credito.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+    total_contado = ventas_contado_qs.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+    total_credito = ventas_credito_qs.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
     total_general = total_contado + total_credito
 
     # Ventas de crédito pendientes
-    creditos_pendientes = ventas_credito.filter(estado='pendiente').count()
+    creditos_pendientes = ventas_credito_qs.filter(estado='pendiente').count()
 
     context = {
         'ventas_contado': ventas_contado,
@@ -283,7 +368,7 @@ def crear_venta(request):
     # TIPO DE CAMBIO: DINÁMICO - Obtenido de la BD
     # El admin/almacén puede cambiar este valor a su discreción
     # ═══════════════════════════════════════════════════════════
-    tipo_cambio_actual = float(obtener_tasa_cambio_actual() or 1)
+    tipo_cambio_actual = float(obtener_tipo_cambio_usd() or 1)
     
     context = {
         'codigo_sugerido': codigo_sugerido,
@@ -319,7 +404,7 @@ def guardar_venta(request):
     tipo_pago = data.get('tipo_pago', 'contado')
     tipo_venta = data.get('tipo_venta', '').strip().lower()  # 'tienda' o 'deposito'
     moneda = data.get('moneda', 'BOB').upper()
-    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tasa_cambio_actual() or 1)))
+    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd() or 1)))
     vendedor_id = data.get('vendedor_id', None)  # Para vendedores de almacén
     items = data.get('items', [])
 
@@ -483,9 +568,10 @@ def buscar_productos(request):
                 # BÚSQUEDA POR TIPO DE UBICACIÓN: filtrar Inventario por rol
                 try:
                     # Filtrar directo por rol de ubicación (tienda o deposito)
-                    inventarios = Inventario.objects.filter(
+                    inventarios = obtener_inventarios_venta_tienda(
                         producto=p,
-                        ubicacion__rol=tipo_venta
+                        perfil=user_perfil,
+                        tipo_venta=tipo_venta
                     )
                     
                     stock = sum(inv.cantidad for inv in inventarios)
@@ -581,7 +667,7 @@ def obtener_detalle_venta(request, id):
             for a in amorts:
                 amortizaciones.append({
                     'id': a.id,
-                    'monto': str(a.monto),
+                    'monto': str(convertir_monto_para_mostrar(venta, a.monto)),
                     'fecha': a.fecha.strftime('%d/%m/%Y %H:%M') if a.fecha else '',
                     'observaciones': a.observaciones or '',
                 })
@@ -595,22 +681,23 @@ def obtener_detalle_venta(request, id):
             'cliente': venta.cliente,
             'tipo_pago': venta.tipo_pago,
             'estado': venta.estado,
-            'subtotal': str(venta.subtotal),
-            'descuento': str(venta.descuento) if hasattr(venta, 'descuento') else '0.00',
-            'total': str(venta.total),
+            'moneda': venta.moneda,
+            'subtotal': str(convertir_monto_para_mostrar(venta, venta.subtotal)),
+            'descuento': str(convertir_monto_para_mostrar(venta, venta.descuento if hasattr(venta, 'descuento') else Decimal('0.00'))),
+            'total': str(convertir_monto_para_mostrar(venta, venta.total)),
             'detalles': [
                 {
                     'codigo': d.producto.codigo,
                     'producto': d.producto.nombre,
                     'cantidad': d.cantidad,
-                    'precio_unitario': str(d.precio_unitario),
-                    'subtotal': str(d.subtotal)
+                    'precio_unitario': str(convertir_monto_para_mostrar(venta, d.precio_unitario)),
+                    'subtotal': str(convertir_monto_para_mostrar(venta, d.subtotal))
                 }
                 for d in detalles
             ],
             'amortizaciones': amortizaciones,
-            'total_amortizado': str(total_amortizado),
-            'saldo_pendiente': str(saldo_pendiente),
+            'total_amortizado': str(convertir_monto_para_mostrar(venta, total_amortizado)),
+            'saldo_pendiente': str(convertir_monto_para_mostrar(venta, saldo_pendiente)),
         }
         
         return JsonResponse({'success': True, 'data': datos})
@@ -634,7 +721,7 @@ def ver_venta(request, id):
         for a in amorts:
             amortizaciones.append({
                 'id': a.id,
-                'monto': str(a.monto),
+                'monto': str(convertir_monto_para_mostrar(venta, a.monto)),
                 'fecha': a.fecha.strftime('%d/%m/%Y %H:%M') if a.fecha else '',
                 'observaciones': a.observaciones or '',
             })
@@ -647,17 +734,30 @@ def ver_venta(request, id):
             'id': venta.id,
             'codigo': venta.codigo,
             'moneda': venta.moneda,
-            'total': str(venta.total),
+            'tipo_cambio': str(venta.tipo_cambio),
+            'total': str(convertir_monto_para_mostrar(venta, venta.total)),
             'tipo_pago': venta.tipo_pago,
-            'total_amortizado': str(total_amortizado),
-            'saldo_pendiente': str(saldo_pendiente),
+            'total_amortizado': str(convertir_monto_para_mostrar(venta, total_amortizado)),
+            'saldo_pendiente': str(convertir_monto_para_mostrar(venta, saldo_pendiente)),
         })
 
     context = {
         'venta': venta,
+        'detalles_display': [
+            {
+                'producto': d.producto.nombre,
+                'cantidad': d.cantidad,
+                'precio_unitario': convertir_monto_para_mostrar(venta, d.precio_unitario),
+                'subtotal': convertir_monto_para_mostrar(venta, d.subtotal),
+            }
+            for d in detalles
+        ],
+        'subtotal_display': convertir_monto_para_mostrar(venta, venta.subtotal),
+        'descuento_display': convertir_monto_para_mostrar(venta, venta.descuento),
+        'total_display': convertir_monto_para_mostrar(venta, venta.total),
         'amortizaciones': amortizaciones,
-        'total_amortizado': total_amortizado,
-        'saldo_pendiente': saldo_pendiente,
+        'total_amortizado': convertir_monto_para_mostrar(venta, total_amortizado),
+        'saldo_pendiente': convertir_monto_para_mostrar(venta, saldo_pendiente),
     }
 
     return render(request, 'ventas/ver.html', context)
@@ -1256,7 +1356,7 @@ def crear_venta_tienda(request):
     # TIPO DE CAMBIO: DINÁMICO - Obtenido de la BD
     # El admin/almacén puede cambiar este valor a su discreción
     # ═══════════════════════════════════════════════════════════
-    tipo_cambio_actual = float(obtener_tasa_cambio_actual() or 1)
+    tipo_cambio_actual = float(obtener_tipo_cambio_usd() or 1)
     context = {
         'codigo_sugerido': codigo_sugerido,
         'perfil': perfil,
@@ -1312,7 +1412,7 @@ def guardar_venta_tienda(request):
     tipo_pago = data.get('tipo_pago', 'contado')
     tipo_venta = data.get('tipo_venta', '').strip().lower()  # 'tienda' o 'deposito'
     moneda = data.get('moneda', 'BOB').upper()
-    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tasa_cambio_actual() or 1)))
+    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd() or 1)))
     descuento = Decimal(str(data.get('descuento', '0')))
     items = data.get('items', [])
 
@@ -1398,9 +1498,10 @@ def guardar_venta_tienda(request):
                 # Validar stock ANTES de bloquear
                 # Para tienda/deposito: validar contra el inventario específico
                 if tipo_venta in ['tienda', 'deposito']:
-                    inventarios = Inventario.objects.filter(
+                    inventarios = obtener_inventarios_venta_tienda(
                         producto=producto,
-                        ubicacion__rol=tipo_venta
+                        perfil=perfil,
+                        tipo_venta=tipo_venta
                     )
                     stock_disponible = sum(inv.cantidad for inv in inventarios)
                 else:
@@ -1486,8 +1587,8 @@ def obtener_saldo_pendiente(request, id):
         
         return JsonResponse({
             'success': True,
-            'total_pagado': f"{moneda_simbolo} {total_amortizado:.2f}",
-            'saldo_pendiente': f"{saldo_pendiente:.2f}",
+            'total_pagado': f"{moneda_simbolo} {convertir_monto_para_mostrar(venta, total_amortizado):.2f}",
+            'saldo_pendiente': f"{convertir_monto_para_mostrar(venta, saldo_pendiente):.2f}",
             'moneda_simbolo': moneda_simbolo,
         })
     except Venta.DoesNotExist:

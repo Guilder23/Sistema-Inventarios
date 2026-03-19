@@ -60,7 +60,6 @@
         margin-right: auto !important;
     }
 </style>
->>>>>>> adrian1
 {% endblock %}
 
 {% block contenido %}
@@ -237,18 +236,18 @@
                                     </td>
                                     <td class="text-center pr-3">
                                         <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary btn-ver-detalle"
+                                            <button type="button" class="btn btn-outline-primary btn-ver-detalle"
                                                     data-venta-id="{{ venta.id }}"
                                                     title="Ver detalle">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <button class="btn btn-outline-info btn-generar-pdf-venta"
+                                            <button type="button" class="btn btn-outline-info btn-generar-pdf-venta"
                                                     data-venta-id="{{ venta.id }}"
                                                     title="Generar PDF">
                                                 <i class="fas fa-file-pdf"></i>
                                             </button>
                                             {% if venta.estado != 'cancelada' and venta.estado != 'anulada' %}
-                                            <button class="btn btn-outline-danger btn-anular-venta"
+                                            <button type="button" class="btn btn-outline-danger btn-anular-venta"
                                                     data-venta-id="{{ venta.id }}"
                                                     data-venta-codigo="{{ venta.codigo }}"
                                                     title="Anular venta">
@@ -321,18 +320,18 @@
                                     </td>
                                     <td class="text-center pr-3">
                                         <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary btn-ver-detalle"
+                                            <button type="button" class="btn btn-outline-primary btn-ver-detalle"
                                                     data-venta-id="{{ venta.id }}"
                                                     title="Ver detalle">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <button class="btn btn-outline-info btn-generar-pdf-venta"
+                                            <button type="button" class="btn btn-outline-info btn-generar-pdf-venta"
                                                     data-venta-id="{{ venta.id }}"
                                                     title="Generar PDF">
                                                 <i class="fas fa-file-pdf"></i>
                                             </button>
                                             {% if venta.estado == 'completada' %}
-                                            <button class="btn btn-outline-success btn-registrar-amortizacion"
+                                            <button type="button" class="btn btn-outline-success btn-registrar-amortizacion"
                                                     data-venta-id="{{ venta.id }}"
                                                     data-venta-codigo="{{ venta.codigo }}"
                                                     data-venta-total="{{ venta.total }}"
@@ -341,7 +340,7 @@
                                             </button>
                                             {% endif %}
                                             {% if venta.estado != 'cancelada' and venta.estado != 'anulada' %}
-                                            <button class="btn btn-outline-danger btn-anular-venta"
+                                            <button type="button" class="btn btn-outline-danger btn-anular-venta"
                                                     data-venta-id="{{ venta.id }}"
                                                     data-venta-codigo="{{ venta.codigo }}"
                                                     title="Anular venta">
@@ -406,18 +405,18 @@
                             </td>
                             <td class="text-center pr-3">
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary btn-ver-detalle"
+                                    <button type="button" class="btn btn-outline-primary btn-ver-detalle"
                                             data-venta-id="{{ venta.id }}"
                                             title="Ver detalle">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="btn btn-outline-info btn-generar-pdf-venta"
+                                    <button type="button" class="btn btn-outline-info btn-generar-pdf-venta"
                                             data-venta-id="{{ venta.id }}"
                                             title="Generar PDF">
                                         <i class="fas fa-file-pdf"></i>
                                     </button>
                                     {% if venta.estado != 'cancelada' and venta.estado != 'anulada' %}
-                                    <button class="btn btn-outline-danger btn-anular-venta"
+                                    <button type="button" class="btn btn-outline-danger btn-anular-venta"
                                             data-venta-id="{{ venta.id }}"
                                             data-venta-codigo="{{ venta.codigo }}"
                                             title="Anular venta">
@@ -849,197 +848,5 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-</script>
->>>>>>> adrian1
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    return cookieValue || document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-}
-
-// Variables para anulación
-let ventaIdActual = null;
-
-// Esperar a que el DOM esté completamente cargado
-document.addEventListener('DOMContentLoaded', function() {
-    // Ver detalle de venta (Modal bootstrap)
-    document.querySelectorAll('.btn-ver-detalle').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const ventaId = this.getAttribute('data-venta-id');
-            
-            fetch(`/ventas/${ventaId}/ver/`)
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('modalDetalleContenido').innerHTML = html;
-                    // Asegurar que el backdrop se muestre
-                    $('#modalDetalleVenta').modal({backdrop: 'static', keyboard: false});
-                    $('#modalDetalleVenta').modal('show');
-                })
-                .catch(error => {
-                    alert('Error: No se pudo cargar el detalle de la venta.');
-                    console.error('Error:', error);
-                });
-        });
-    });
-
-    // Botones anular venta
-    document.querySelectorAll('.btn-anular-venta').forEach(btn => {
-        btn.addEventListener('click', function() {
-            ventaIdActual = this.getAttribute('data-venta-id');
-            document.getElementById('inputMotivoAnulacion').value = '';
-            
-            // Mostrar modal de anulación con backdrop
-            $('#modalAnularVenta').modal({backdrop: 'static', keyboard: false});
-            $('#modalAnularVenta').modal('show');
-        });
-    });
-
-    // Confirmar anulación
-    const btnConfirmar = document.getElementById('btnConfirmarAnulacion');
-    if (btnConfirmar) {
-        btnConfirmar.addEventListener('click', function() {
-            const motivo = document.getElementById('inputMotivoAnulacion').value.trim();
-            
-            if (!motivo) {
-                alert('Por favor, ingresa un motivo para la solicitud de anulación.');
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('comentario', motivo);
-            formData.append('csrfmiddlewaretoken', getCsrfToken());
-            
-            this.disabled = true;
-            const btnText = this.innerHTML;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
-            
-            fetch(`/ventas/${ventaIdActual}/anular/`, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Solicitud de anulación enviada correctamente.');
-                    $('#modalAnularVenta').modal('hide');
-                    setTimeout(() => location.reload(), 500);
-                } else {
-                    alert('Error: ' + (data.error || 'No se pudo procesar la solicitud'));
-                    this.disabled = false;
-                    this.innerHTML = btnText;
-                }
-            })
-            .catch(error => {
-                alert('Error de conexión: No se pudo procesar la solicitud.');
-                console.error('Error:', error);
-                this.disabled = false;
-                this.innerHTML = btnText;
-            });
-        });
-    }
-
-    // Botones registrar amortización (solo si tienda principal)
-    document.querySelectorAll('.btn-registrar-amortizacion').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const ventaId = this.getAttribute('data-venta-id');
-            const ventaCodigo = this.getAttribute('data-venta-codigo');
-            const ventaTotal = this.getAttribute('data-venta-total');
-
-            // Obtener datos de la venta via AJAX
-            fetch(`/ventas/${ventaId}/ver/`)
-                .then(response => response.text())
-                .then(html => {
-                    // Extraer datos del modal de detalle
-                    document.getElementById('amortVentaId').value = ventaId;
-                    document.getElementById('amortVentaCodigo').textContent = ventaCodigo;
-                    document.getElementById('amortVentaTotal').textContent = ventaTotal;
-                    
-                    // Obtener saldo pendiente via AJAX
-                    fetch(`/ventas/api/saldo-pendiente/${ventaId}/`)
-                        .then(res => res.json())
-                        .then(data => {
-                            document.getElementById('amortTotalPagado').textContent = data.total_pagado;
-                            document.getElementById('amortSaldoPendiente').textContent = data.saldo_pendiente;
-                            document.getElementById('amortMonedaLabel').textContent = data.moneda_simbolo;
-                            document.getElementById('amortMonedaLabel2').textContent = data.moneda_simbolo;
-                        })
-                        .catch(error => console.log('Error al cargar saldo:', error));
-                    
-                    // Limpiar formulario
-                    document.getElementById('formAmortizacion').reset();
-                    
-                    // Mostrar modal con backdrop
-                    $('#modalAmortizacion').modal({backdrop: 'static', keyboard: false});
-                    $('#modalAmortizacion').modal('show');
-                })
-                .catch(error => {
-                    alert('Error: No se pudo cargar los datos de la venta.');
-                    console.error('Error:', error);
-                });
-        });
-    });
-
-    // Guardar amortización
-    const btnGuardarAmortizacion = document.getElementById('btnGuardarAmortizacion');
-    if (btnGuardarAmortizacion) {
-        btnGuardarAmortizacion.addEventListener('click', function() {
-            const ventaId = document.getElementById('amortVentaId').value;
-            const monto = document.getElementById('amortMonto').value;
-            const observaciones = document.getElementById('amortObservaciones').value;
-            const comprobante = document.getElementById('amortComprobante').files[0];
-
-            if (!monto || parseFloat(monto) <= 0) {
-                alert('Por favor, ingresa un monto válido.');
-                return;
-            }
-
-            if (!comprobante) {
-                alert('Por favor, sube una fotografía del comprobante.');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('monto', monto);
-            formData.append('observaciones', observaciones);
-            formData.append('comprobante', comprobante);
-            formData.append('csrfmiddlewaretoken', getCsrfToken());
-
-            this.disabled = true;
-            const btnText = this.innerHTML;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Procesando...';
-
-            fetch(`/ventas/${ventaId}/registrar-amortizacion/`, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Pago registrado correctamente.');
-                    $('#modalAmortizacion').modal('hide');
-                    setTimeout(() => location.reload(), 500);
-                } else {
-                    alert('Error: ' + (data.error || 'No se pudo registrar el pago'));
-                    this.disabled = false;
-                    this.innerHTML = btnText;
-                }
-            })
-            .catch(error => {
-                alert('Error de conexión: No se pudo registrar el pago.');
-                console.error('Error:', error);
-                this.disabled = false;
-                this.innerHTML = btnText;
-            });
-        });
-    }
-});
->>>>>>> adrian1
 </script>
 {% endblock %}
