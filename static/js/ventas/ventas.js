@@ -138,7 +138,8 @@ function cargarDetalleVenta(ventaId) {
 }
 
 function renderDetalleVenta(data) {
-    const etiqueta = data.moneda === 'USD' ? '$' : 'Bs.';
+    const etiqueta = data.moneda_simbolo || (data.moneda === 'USD' ? '$' : 'Bs.');
+    const monedaDescripcion = data.moneda_descripcion || (data.moneda === 'USD' ? 'USD ($)' : 'BOB (Bs.)');
 
     // Badge de estado
     let badgeEstado = '';
@@ -170,6 +171,10 @@ function renderDetalleVenta(data) {
             <div class="detalle-info-item">
                 <div class="label">Estado</div>
                 <div class="value">${badgeEstado}</div>
+            </div>
+            <div class="detalle-info-item">
+                <div class="label">Moneda</div>
+                <div class="value">${monedaDescripcion}</div>
             </div>
         </div>
     `;
@@ -216,7 +221,7 @@ function renderDetalleVenta(data) {
     `;
 
     // Sección de amortizaciones (solo crédito)
-    if (data.tipo_pago === 'credito') {
+    if (data.tipo_pago === 'credito' && data.mostrar_amortizaciones !== false) {
         html += `
             <div class="seccion-amortizaciones">
                 <h6><i class="fas fa-hand-holding-usd mr-1"></i> Amortizaciones</h6>
@@ -228,6 +233,7 @@ function renderDetalleVenta(data) {
                     <thead>
                         <tr>
                             <th>Fecha</th>
+                            <th>Moneda</th>
                             <th class="text-right">Monto</th>
                             <th>Observaciones</th>
                         </tr>
@@ -236,12 +242,13 @@ function renderDetalleVenta(data) {
             `;
             data.amortizaciones.forEach(a => {
                 html += `
-                    <tr>
-                        <td>${a.fecha}</td>
-                        <td class="text-right font-weight-bold text-success">${etiqueta} ${parseFloat(a.monto).toFixed(2)}</td>
-                        <td>${a.observaciones || '-'}</td>
-                    </tr>
-                `;
+                <tr>
+                    <td>${a.fecha}</td>
+                    <td>${a.moneda_descripcion || monedaDescripcion}</td>
+                    <td class="text-right font-weight-bold text-success">${a.moneda_simbolo || etiqueta} ${parseFloat(a.monto).toFixed(2)}</td>
+                    <td>${a.observaciones || '-'}</td>
+                </tr>
+            `;
             });
             html += `</tbody></table>`;
         } else {
@@ -295,19 +302,19 @@ function cargarDatosAmortizacion(ventaId) {
     })
         .then(res => res.json())
         .then(data => {
-            const etiqueta = data.moneda === 'USD' ? '$' : 'Bs.';
-            const tipoCambio = parseFloat(data.tipo_cambio) || 1;
+            const etiqueta = data.moneda_simbolo || (data.moneda === 'USD' ? '$' : 'Bs.');
             
             // Actualizar labels de moneda en ambos lugares
             $('#amortMonedaLabel').text(etiqueta);
             $('#amortMonedaLabel2').text(etiqueta);
+            $('#amortMonedaVenta').text(data.moneda_descripcion || (data.moneda === 'USD' ? 'USD ($)' : 'BOB (Bs.)'));
             
             const totalAmortizado = parseFloat(data.total_amortizado);
             const saldoPendiente = parseFloat(data.saldo_pendiente);
             
             $('#amortVentaTotal').text(etiqueta + ' ' + parseFloat(data.total).toFixed(2));
             $('#amortTotalPagado').text(etiqueta + ' ' + totalAmortizado.toFixed(2));
-            $('#amortSaldoPendiente').text(etiqueta + ' ' + saldoPendiente.toFixed(2));
+            $('#amortSaldoPendiente').text(saldoPendiente.toFixed(2));
 
 // Establecer max del input
             $('#amortMonto').attr('max', saldoPendiente);
