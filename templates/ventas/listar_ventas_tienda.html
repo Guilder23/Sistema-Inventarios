@@ -176,6 +176,7 @@
                         </a>
                     </div>
                     {% endif %}
+                </form>
             </div>
 
             {# TABS: Contado - Crédito (Solo para Tienda Principal) #}
@@ -224,9 +225,9 @@
                                         <span class="badge badge-estado badge-completada">
                                             <i class="fas fa-check-circle mr-1"></i>Completada
                                         </span>
-                                        {% elif venta.estado == 'cancelada' %}
+                                        {% elif venta.estado == 'cancelada' or venta.estado == 'anulada' %}
                                         <span class="badge badge-estado badge-cancelada">
-                                            <i class="fas fa-times-circle mr-1"></i>Cancelada
+                                            <i class="fas fa-times-circle mr-1"></i>Anulada
                                         </span>
                                         {% else %}
                                         <span class="badge badge-estado badge-pendiente">
@@ -308,9 +309,9 @@
                                         <span class="badge badge-estado badge-completada">
                                             <i class="fas fa-check-circle mr-1"></i>Completada
                                         </span>
-                                        {% elif venta.estado == 'cancelada' %}
+                                        {% elif venta.estado == 'cancelada' or venta.estado == 'anulada' %}
                                         <span class="badge badge-estado badge-cancelada">
-                                            <i class="fas fa-times-circle mr-1"></i>Cancelada
+                                            <i class="fas fa-times-circle mr-1"></i>Anulada
                                         </span>
                                         {% else %}
                                         <span class="badge badge-estado badge-pendiente">
@@ -330,12 +331,12 @@
                                                     title="Generar PDF">
                                                 <i class="fas fa-file-pdf"></i>
                                             </button>
-                                            {% if venta.estado == 'completada' %}
+                                            {% if venta.mostrar_boton_amortizacion %}
                                             <button type="button" class="btn btn-outline-success btn-registrar-amortizacion"
                                                     data-venta-id="{{ venta.id }}"
                                                     data-venta-codigo="{{ venta.codigo }}"
                                                     data-venta-total="{{ venta.total }}"
-                                                    title="Registrar pago">
+                                                    title="Registrar amortización">
                                                 <i class="fas fa-hand-holding-usd"></i>
                                             </button>
                                             {% endif %}
@@ -393,9 +394,9 @@
                                 <span class="badge badge-estado badge-completada">
                                     <i class="fas fa-check-circle mr-1"></i>Completada
                                 </span>
-                                {% elif venta.estado == 'cancelada' %}
+                                {% elif venta.estado == 'cancelada' or venta.estado == 'anulada' %}
                                 <span class="badge badge-estado badge-cancelada">
-                                    <i class="fas fa-times-circle mr-1"></i>Cancelada
+                                    <i class="fas fa-times-circle mr-1"></i>Anulada
                                 </span>
                                 {% else %}
                                 <span class="badge badge-estado badge-pendiente">
@@ -449,16 +450,25 @@
 
 {# Modal: Detalle de Venta #}
 <div class="modal fade" id="modalDetalleVenta" tabindex="-1" role="dialog" aria-labelledby="modalDetalleVentaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                <h5 class="modal-title" id="modalDetalleVentaLabel" style="color: white; font-weight: 600;">Detalle de Venta</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white; opacity: 0.8;">
+            <div class="modal-header modal-header-detalle">
+                <h5 class="modal-title" id="modalDetalleVentaLabel">
+                    <i class="fas fa-file-invoice mr-2"></i>
+                    Detalle de Venta: <span id="detalleVentaCodigo"></span>
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="modal-body" id="modalDetalleContenido" style="padding: 1.5rem;">
-                <!-- Se cargará via AJAX -->
+            <div class="modal-body" id="detalleVentaBody">
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p class="mt-2 text-muted">Cargando detalle...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -495,11 +505,11 @@
 <div class="modal fade" id="modalAmortizacion" tabindex="-1" role="dialog" aria-labelledby="modalAmortizacionLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%); color: white;">
-                <h5 class="modal-title" id="modalAmortizacionLabel" style="color: white; font-weight: 600;">
-                    <i class="fas fa-hand-holding-usd mr-2"></i>Registrar Pago
+            <div class="modal-header modal-header-amortizacion">
+                <h5 class="modal-title" id="modalAmortizacionLabel">
+                    <i class="fas fa-hand-holding-usd mr-2"></i>Registrar Amortización
                 </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white; opacity: 0.8;">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -527,6 +537,12 @@
                             <div class="col-6 text-right">
                                 <small class="text-muted">Saldo pendiente:</small>
                                 <p class="font-weight-bold text-danger mb-0"><span id="amortMonedaLabel">Bs.</span> <span id="amortSaldoPendiente">0.00</span></p>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <small class="text-muted">Moneda de liquidación:</small>
+                                <p class="font-weight-bold mb-0" id="amortMonedaVenta">BOB (Bs.)</p>
                             </div>
                         </div>
                     </div>
@@ -564,7 +580,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-success btn-sm" id="btnGuardarAmortizacion">
-                    <i class="fas fa-save mr-1"></i>Registrar Pago
+                    <i class="fas fa-save mr-1"></i>Registrar Amortización
                 </button>
             </div>
         </div>
@@ -575,7 +591,6 @@
 
 {% block scripts_extra %}
 <script src="{% static 'js/componentes/modales.js' %}"></script>
-<script src="{% static 'js/ventas/ventas.js' %}"></script>
 <style>
     /* FIX: Prevenir desplazamiento horizontal del footer */
     html, body {
@@ -672,6 +687,198 @@ function getCsrfToken() {
     return cookieValue || document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 }
 
+function renderDetalleVentaTienda(data) {
+    const etiqueta = data.moneda_simbolo || (data.moneda === 'USD' ? '$' : 'Bs.');
+    const monedaDescripcion = data.moneda_descripcion || (data.moneda === 'USD' ? 'USD ($)' : 'BOB (Bs.)');
+
+    let badgeEstado = '';
+    if (data.estado === 'completada') {
+        badgeEstado = '<span class="badge badge-estado badge-completada"><i class="fas fa-check-circle mr-1"></i>Completada</span>';
+    } else if (data.estado === 'pendiente') {
+        badgeEstado = '<span class="badge badge-estado badge-pendiente"><i class="fas fa-clock mr-1"></i>Pendiente</span>';
+    } else if (data.estado === 'anulada') {
+        badgeEstado = '<span class="badge badge-estado badge-cancelada"><i class="fas fa-times-circle mr-1"></i>Anulada</span>';
+    } else {
+        badgeEstado = `<span class="badge badge-secondary">${data.estado}</span>`;
+    }
+
+    let html = `
+        <div class="detalle-info-grid">
+            <div class="detalle-info-item">
+                <div class="label">Cliente</div>
+                <div class="value">${data.cliente || 'N/A'}</div>
+            </div>
+            <div class="detalle-info-item">
+                <div class="label">Tipo de Pago</div>
+                <div class="value">${data.tipo_pago === 'credito' ? 'Crédito' : 'Contado'}</div>
+            </div>
+            <div class="detalle-info-item">
+                <div class="label">Total</div>
+                <div class="value"><span class="font-weight-bold">${etiqueta} ${parseFloat(data.total).toFixed(2)}</span></div>
+            </div>
+            <div class="detalle-info-item">
+                <div class="label">Estado</div>
+                <div class="value">${badgeEstado}</div>
+            </div>
+            <div class="detalle-info-item">
+                <div class="label">Moneda</div>
+                <div class="value">${monedaDescripcion}</div>
+            </div>
+        </div>
+        <h6 class="font-weight-bold mt-3 mb-2">
+            <i class="fas fa-list mr-1"></i> Productos vendidos
+        </h6>
+        <div class="table-responsive">
+            <table class="table table-sm tabla-detalle-items">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th class="text-center">Cant.</th>
+                        <th class="text-right">P. Unit.</th>
+                        <th class="text-right">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    if (data.detalles && data.detalles.length > 0) {
+        data.detalles.forEach(item => {
+            html += `
+                <tr>
+                    <td><strong>${item.producto}</strong></td>
+                    <td class="text-center">${item.cantidad}</td>
+                    <td class="text-right">${etiqueta} ${parseFloat(item.precio_unitario).toFixed(2)}</td>
+                    <td class="text-right font-weight-bold">${etiqueta} ${parseFloat(item.subtotal).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+    }
+
+    html += `
+                    <tr class="total-row">
+                        <td colspan="3" class="text-right"><strong>TOTAL:</strong></td>
+                        <td class="text-right"><strong>${etiqueta} ${parseFloat(data.total).toFixed(2)}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    if (data.tipo_pago === 'credito' && data.mostrar_amortizaciones !== false) {
+        html += `
+            <div class="seccion-amortizaciones">
+                <h6><i class="fas fa-hand-holding-usd mr-1"></i> Amortizaciones</h6>
+        `;
+
+        if (data.amortizaciones && data.amortizaciones.length > 0) {
+            html += `
+                <table class="table table-sm mb-2">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Moneda</th>
+                            <th class="text-right">Monto</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.amortizaciones.forEach(a => {
+                html += `
+                    <tr>
+                        <td>${a.fecha}</td>
+                        <td>${a.moneda_descripcion || monedaDescripcion}</td>
+                        <td class="text-right font-weight-bold text-success">${a.moneda_simbolo || etiqueta} ${parseFloat(a.monto).toFixed(2)}</td>
+                        <td>${a.observaciones || '-'}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+        } else {
+            html += '<p class="text-muted mb-2"><i class="fas fa-info-circle mr-1"></i>No hay amortizaciones registradas.</p>';
+        }
+
+        html += `
+                <div class="d-flex justify-content-between mt-2">
+                    <span><strong>Total amortizado:</strong> <span class="text-success">${etiqueta} ${parseFloat(data.total_amortizado).toFixed(2)}</span></span>
+                    <span><strong>Saldo pendiente:</strong> <span class="text-danger">${etiqueta} ${parseFloat(data.saldo_pendiente).toFixed(2)}</span></span>
+                </div>
+            </div>
+        `;
+    }
+
+    return html;
+}
+
+function cargarDetalleVentaTienda(ventaId) {
+    const body = document.getElementById('detalleVentaBody');
+    const codigo = document.getElementById('detalleVentaCodigo');
+
+    body.innerHTML = `
+        <div class="text-center py-4">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-2 text-muted">Cargando detalle...</p>
+        </div>
+    `;
+    codigo.textContent = '...';
+
+    fetch(`/ventas/api/venta/${ventaId}/detalle/`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+    })
+        .then(response => response.json().then(data => ({ status: response.status, data })))
+        .then(({ status, data }) => {
+            if (status === 401) {
+                throw new Error('Sesión expirada. Por favor, recarga la página.');
+            }
+            if (!data.success) {
+                throw new Error(data.error || 'No se pudo cargar el detalle.');
+            }
+
+            codigo.textContent = data.data.venta_codigo;
+            body.innerHTML = renderDetalleVentaTienda(data.data);
+            $('#modalDetalleVenta').modal({backdrop: 'static', keyboard: false});
+            $('#modalDetalleVenta').modal('show');
+        })
+        .catch(error => {
+            body.innerHTML = `
+                <div class="alert alert-danger mb-0">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    ${error.message}
+                </div>
+            `;
+        });
+}
+
+function cargarDatosAmortizacionTienda(ventaId) {
+    return fetch(`/ventas/${ventaId}/ver/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include'
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error || 'No se pudo cargar el saldo pendiente.');
+            }
+
+            const etiqueta = data.moneda_simbolo || (data.moneda === 'USD' ? '$' : 'Bs.');
+            const totalAmortizado = parseFloat(data.total_amortizado || 0);
+            const saldoPendiente = parseFloat(data.saldo_pendiente || 0);
+
+            document.getElementById('amortVentaTotal').textContent = `${etiqueta} ${parseFloat(data.total || 0).toFixed(2)}`;
+            document.getElementById('amortTotalPagado').textContent = `${etiqueta} ${totalAmortizado.toFixed(2)}`;
+            document.getElementById('amortSaldoPendiente').textContent = saldoPendiente.toFixed(2);
+            document.getElementById('amortMonedaLabel').textContent = etiqueta;
+            document.getElementById('amortMonedaLabel2').textContent = etiqueta;
+            document.getElementById('amortMonedaVenta').textContent = data.moneda_descripcion || (data.moneda === 'USD' ? 'USD ($)' : 'BOB (Bs.)');
+            document.getElementById('amortMonto').setAttribute('max', saldoPendiente);
+        });
+}
+
 // Variables para anulación
 let ventaIdActual = null;
 
@@ -681,19 +888,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.btn-ver-detalle').forEach(btn => {
         btn.addEventListener('click', function () {
             const ventaId = this.getAttribute('data-venta-id');
-            
-            fetch(`/ventas/${ventaId}/ver/`)
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('modalDetalleContenido').innerHTML = html;
-                    // Asegurar que el backdrop se muestre
-                    $('#modalDetalleVenta').modal({backdrop: 'static', keyboard: false});
-                    $('#modalDetalleVenta').modal('show');
-                })
-                .catch(error => {
-                    alert('Error: No se pudo cargar el detalle de la venta.');
-                    console.error('Error:', error);
-                });
+            cargarDetalleVentaTienda(ventaId);
+        });
+    });
+
+    document.querySelectorAll('.btn-generar-pdf-venta').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const ventaId = this.getAttribute('data-venta-id');
+            window.location.href = `/ventas/${ventaId}/pdf/`;
         });
     });
 
@@ -758,38 +960,24 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function() {
             const ventaId = this.getAttribute('data-venta-id');
             const ventaCodigo = this.getAttribute('data-venta-codigo');
-            const ventaTotal = this.getAttribute('data-venta-total');
+            
+            document.getElementById('amortVentaId').value = ventaId;
+            document.getElementById('amortVentaCodigo').textContent = ventaCodigo;
+            document.getElementById('formAmortizacion').reset();
+            document.getElementById('amortVentaTotal').textContent = 'Cargando...';
+            document.getElementById('amortTotalPagado').textContent = 'Cargando...';
+            document.getElementById('amortSaldoPendiente').textContent = '0.00';
+            document.getElementById('amortMonedaLabel').textContent = '...';
+            document.getElementById('amortMonedaLabel2').textContent = '...';
+            document.getElementById('amortMonedaVenta').textContent = 'Cargando moneda...';
 
-            // Obtener datos de la venta via AJAX
-            fetch(`/ventas/${ventaId}/ver/`)
-                .then(response => response.text())
-                .then(html => {
-                    // Extraer datos del modal de detalle
-                    document.getElementById('amortVentaId').value = ventaId;
-                    document.getElementById('amortVentaCodigo').textContent = ventaCodigo;
-                    document.getElementById('amortVentaTotal').textContent = ventaTotal;
-                    
-                    // Obtener saldo pendiente via AJAX
-                    fetch(`/ventas/api/saldo-pendiente/${ventaId}/`)
-                        .then(res => res.json())
-                        .then(data => {
-                            document.getElementById('amortTotalPagado').textContent = data.total_pagado;
-                            document.getElementById('amortSaldoPendiente').textContent = data.saldo_pendiente;
-                            document.getElementById('amortMonedaLabel').textContent = data.moneda_simbolo;
-                            document.getElementById('amortMonedaLabel2').textContent = data.moneda_simbolo;
-                        })
-                        .catch(error => console.log('Error al cargar saldo:', error));
-                    
-                    // Limpiar formulario
-                    document.getElementById('formAmortizacion').reset();
-                    
-                    // Mostrar modal con backdrop
-                    $('#modalAmortizacion').modal({backdrop: 'static', keyboard: false});
-                    $('#modalAmortizacion').modal('show');
-                })
+            $('#modalAmortizacion').modal({backdrop: 'static', keyboard: false});
+            $('#modalAmortizacion').modal('show');
+            cargarDatosAmortizacionTienda(ventaId)
                 .catch(error => {
-                    alert('Error: No se pudo cargar los datos de la venta.');
+                    alert('Error: ' + (error.message || 'No se pudo cargar los datos de la venta.'));
                     console.error('Error:', error);
+                    $('#modalAmortizacion').modal('hide');
                 });
         });
     });

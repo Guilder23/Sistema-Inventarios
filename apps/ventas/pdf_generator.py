@@ -135,6 +135,7 @@ def generar_pdf_venta_completo(venta):
     
     # Obtener etiqueta de moneda
     etiqueta_moneda = obtener_etiqueta_moneda(venta.moneda)
+    moneda_liquidacion = f"{venta.moneda} ({etiqueta_moneda})"
     
     # ===== SECCIÓN 1: CABECERA =====
     
@@ -160,7 +161,8 @@ def generar_pdf_venta_completo(venta):
     <b>Fecha:</b> {fecha_str}<br/>
     <b>Cliente:</b> {venta.cliente}<br/>
     <b>Vendedor:</b> {vendedor_con_lugar}<br/>
-    <b>Tipo Pago:</b> {tipo_pago}
+    <b>Tipo Pago:</b> {tipo_pago}<br/>
+    <b>Moneda de liquidación:</b> {moneda_liquidacion}
     """
     elements.append(Paragraph(info_general, style_encabezado))
     elements.append(Spacer(1, 0.3*inch))
@@ -296,22 +298,23 @@ def generar_pdf_venta_completo(venta):
         elements.append(Paragraph("DETALLES DE AMORTIZACIONES Y SALDO PENDIENTE", style_titulo_amort))
         
         # Tabla de resumen de amortizaciones
-        datos_amort = [['#', 'Fecha', 'Monto', 'Observaciones']]
+        datos_amort = [['#', 'Fecha', 'Moneda', 'Monto', 'Observaciones']]
         
         for idx, amort in enumerate(amortizaciones, 1):
             fecha_str = amort.fecha.strftime('%d/%m/%Y') if amort.fecha else 'N/A'
             monto_str = f'{etiqueta_moneda} {float(convertir_desde_bob_para_pdf(amort.monto, venta)):,.2f}'
+            moneda_amort = f"{(amort.moneda or venta.moneda)} ({etiqueta_moneda})"
             obs_str = (amort.observaciones[:30] + '...') if amort.observaciones and len(amort.observaciones) > 30 else (amort.observaciones or '-')
             
-            datos_amort.append([str(idx), fecha_str, monto_str, obs_str])
+            datos_amort.append([str(idx), fecha_str, moneda_amort, monto_str, obs_str])
         
         if amortizaciones.exists():
-            tabla_amort = Table(datos_amort, colWidths=[0.5*inch, 1.2*inch, 1.3*inch, 2.5*inch])
+            tabla_amort = Table(datos_amort, colWidths=[0.4*inch, 1.0*inch, 1.2*inch, 1.1*inch, 2.3*inch])
             tabla_amort.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f2937')),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('ALIGN', (3, 0), (3, -1), 'LEFT'),
+                ('ALIGN', (4, 0), (4, -1), 'LEFT'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('FONTSIZE', (0, 0), (-1, 0), 9),
                 ('FONTSIZE', (0, 1), (-1, -1), 8),
@@ -335,6 +338,7 @@ def generar_pdf_venta_completo(venta):
         )
         
         info_saldo = f"""
+        <b>Moneda de liquidación:</b> {moneda_liquidacion}<br/>
         <b>Total de la venta:</b> {etiqueta_moneda} {float(convertir_desde_bob_para_pdf(venta.total, venta)):,.2f}<br/>
         <b>Total amortizado:</b> {etiqueta_moneda} {float(convertir_desde_bob_para_pdf(total_amortizado, venta)):,.2f}<br/>
         <b>Saldo pendiente:</b> <b style="color: {'#22c55e' if saldo_pendiente == 0 else '#ef4444'}">{etiqueta_moneda} {float(convertir_desde_bob_para_pdf(saldo_pendiente, venta)):,.2f}</b>
@@ -369,6 +373,7 @@ def generar_pdf_venta_completo(venta):
                     
                     amort_info = f"""
                     <b>Comprobante #{idx}</b><br/>
+                    <b>Moneda de liquidación:</b> {moneda_liquidacion}<br/>
                     <b>Monto abonado:</b> {etiqueta_moneda} {float(convertir_desde_bob_para_pdf(amort.monto, venta)):,.2f}<br/>
                     <b>Fecha y hora:</b> {fecha_str}<br/>
                     """
