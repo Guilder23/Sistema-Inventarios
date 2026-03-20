@@ -428,6 +428,12 @@
                                 <p class="font-weight-bold text-danger mb-0"><span id="amortMonedaLabel">Bs.</span> <span id="amortSaldoPendiente">0.00</span></p>
                             </div>
                         </div>
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <small class="text-muted">Moneda de liquidación:</small>
+                                <p class="font-weight-bold mb-0" id="amortMonedaVenta">BOB (Bs.)</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -472,35 +478,6 @@
 
 {# Modal: Anular Venta - Almacén #}
 <div class="modal fade" id="modalAnularVenta" tabindex="-1" role="dialog" aria-labelledby="modalAnularVentaLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
-                <h5 class="modal-title" id="modalAnularVentaLabel" style="color: white; font-weight: 600;">
-                    <i class="fas fa-ban mr-2"></i>Anular Venta
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white; opacity: 0.8;">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="info-section mb-3">
-                    <small class="text-muted">Venta a Anular:</small>
-                    <p class="font-weight-bold mb-0" id="anularVentaCodigo"></p>
-                </div>
-                <div class="form-group">
-                    <label for="inputMotivoAnulacion" class="font-weight-600">Motivo de Anulación</label>
-                    <textarea class="form-control" id="inputMotivoAnulacion" rows="4" placeholder="Explica por qué se anula esta venta..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger btn-sm" id="btnConfirmarAnulacion">
-                    <i class="fas fa-trash mr-2"></i>Anular Venta
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">

@@ -6,6 +6,7 @@ urlpatterns = [
     path('', views.listar_productos, name='listar_productos'),
     path('crear/', views.crear_producto, name='crear_producto'),
     path('<int:id>/obtener/', views.obtener_producto, name='obtener_producto'),
+    path('<int:id>/datos-basicos/', views.datos_basicos_producto, name='datos_basicos_producto'), # Cambio para obtener solo datos básicos
     path('<int:id>/editar/', views.editar_producto, name='editar_producto'),
     path('<int:id>/editar-precio/', views.editar_precio_producto, name='editar_precio_producto'),
     path('<int:id>/eliminar/', views.eliminar_producto, name='eliminar_producto'),

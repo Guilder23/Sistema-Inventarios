@@ -377,38 +377,30 @@
         font-size: 0.75rem;
     }
 
-    .tabla-productos thead {
-        display: none;
+    .tabla-productos {
+        min-width: 760px;
+        font-size: 0.7rem;
     }
 
-    .tabla-productos tbody {
-        display: block;
-    }
-
-    .tabla-productos tbody tr {
-        display: block;
-        border: 1px solid #e5e7eb;
-        margin-bottom: 1rem;
-        border-radius: 0.35rem;
+    .tabla-productos thead th {
+        padding: 0.55rem 0.4rem;
+        font-size: 0.65rem;
     }
 
     .tabla-productos tbody td {
-        display: block;
-        text-align: right;
-        padding: 0.5rem;
-        border-bottom: 1px solid #e5e7eb;
+        padding: 0.55rem 0.4rem;
+        vertical-align: middle;
     }
 
-    .tabla-productos tbody td:last-child {
-        border-bottom: none;
-    }
-
-    .tabla-productos tbody td:before {
-        content: attr(data-label);
-        float: left;
-        font-weight: bold;
-        color: #6b7280;
-        text-transform: uppercase;
+    .tabla-productos .btn-sm {
+        padding: 0.25rem 0.4rem;
         font-size: 0.7rem;
+        min-width: 30px;
+    }
+
+    .img-producto,
+    .img-placeholder {
+        width: 30px;
+        height: 30px;
     }
 }

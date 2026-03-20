@@ -31,6 +31,81 @@ def convertir_monto_para_mostrar(venta, monto):
     valor = Decimal(str(monto or '0'))
     return valor.quantize(Decimal('0.01'))
 
+
+def obtener_simbolo_moneda(moneda):
+    return '$' if moneda == 'USD' else 'Bs.'
+
+
+def obtener_descripcion_moneda(moneda):
+    return 'USD ($)' if moneda == 'USD' else 'BOB (Bs.)'
+
+
+def convertir_bs_a_moneda_venta(monto_bs, moneda, tipo_cambio):
+    valor = Decimal(str(monto_bs or '0'))
+    tc = Decimal(str(tipo_cambio or '1'))
+
+    if moneda == 'USD' and tc > 0:
+        return (valor / tc).quantize(Decimal('0.01'))
+
+    return valor.quantize(Decimal('0.01'))
+
+
+def obtener_precio_base_producto(producto, modalidad):
+    unidades_por_caja = int(producto.unidades_por_caja or 1)
+    precio_unidad = Decimal(str(producto.precio_unidad or 0))
+    precio_caja = Decimal(str(producto.precio_caja or 0))
+    precio_mayor = Decimal(str(producto.precio_mayor or 0))
+
+    if modalidad == 'caja':
+        if precio_caja > 0:
+            return precio_caja
+        return (precio_unidad * Decimal(str(unidades_por_caja))).quantize(Decimal('0.01'))
+
+    if modalidad == 'mayor':
+        return precio_mayor if precio_mayor > 0 else precio_unidad
+
+    return precio_unidad
+
+
+def es_tienda_principal_usuario(user):
+    if not hasattr(user, 'perfil') or user.perfil.rol != 'tienda':
+        return False
+
+    return bool(
+        hasattr(user.perfil, 'tienda')
+        and user.perfil.tienda
+        and user.perfil.tienda.tipo == 'principal'
+    )
+
+
+def puede_ver_amortizaciones(user, venta=None):
+    if getattr(user, 'is_staff', False) or getattr(user, 'is_superuser', False):
+        return True
+
+    if not hasattr(user, 'perfil'):
+        return False
+
+    if user.perfil.rol == 'almacen':
+        return True
+
+    if es_tienda_principal_usuario(user):
+        if venta is None:
+            return True
+        return venta.vendedor == user or venta.ubicacion == user.perfil
+
+    return False
+
+
+def puede_registrar_amortizaciones_almacen(user):
+    if getattr(user, 'is_staff', False) or getattr(user, 'is_superuser', False):
+        return True
+
+    return bool(
+        hasattr(user, 'perfil')
+        and user.perfil
+        and user.perfil.rol == 'almacen'
+    )
+
 def descontar_stock_desde_inventario(producto, cantidad, tipo_venta):
     """
     Descuenta stock de un producto desde la tabla Inventario según el rol de ubicación.
@@ -603,6 +678,9 @@ def buscar_productos(request):
                 'precio_unidad': float(p.precio_unidad or 0),
                 'precio_mayor': float(p.precio_mayor or 0),
                 'precio_caja': float(p.precio_caja or 0),
+                'precio_compra': float(p.precio_compra or 0),
+                'poliza': float(p.poliza or 0),
+                'gastos': float(p.gastos or 0),
             })
 
         return JsonResponse({'productos': resultado})
@@ -658,16 +736,20 @@ def obtener_detalle_venta(request, id):
         venta = Venta.objects.get(id=id)
         detalles = DetalleVenta.objects.filter(venta=venta).select_related('producto')
         
-        # Amortizaciones (si es con crédito)
+        # Amortizaciones (solo almacén y tienda principal)
         amortizaciones = []
         total_amortizado = Decimal('0.00')
+        mostrar_amortizaciones = venta.tipo_pago == 'credito' and puede_ver_amortizaciones(request.user, venta)
         
-        if venta.tipo_pago == 'credito':
+        if mostrar_amortizaciones:
             amorts = AmortizacionCredito.objects.filter(venta=venta).order_by('-fecha')
             for a in amorts:
                 amortizaciones.append({
                     'id': a.id,
                     'monto': str(convertir_monto_para_mostrar(venta, a.monto)),
+                    'moneda': a.moneda or venta.moneda,
+                    'moneda_simbolo': obtener_simbolo_moneda(a.moneda or venta.moneda),
+                    'moneda_descripcion': obtener_descripcion_moneda(a.moneda or venta.moneda),
                     'fecha': a.fecha.strftime('%d/%m/%Y %H:%M') if a.fecha else '',
                     'observaciones': a.observaciones or '',
                 })
@@ -682,6 +764,8 @@ def obtener_detalle_venta(request, id):
             'tipo_pago': venta.tipo_pago,
             'estado': venta.estado,
             'moneda': venta.moneda,
+            'moneda_simbolo': obtener_simbolo_moneda(venta.moneda),
+            'moneda_descripcion': obtener_descripcion_moneda(venta.moneda),
             'subtotal': str(convertir_monto_para_mostrar(venta, venta.subtotal)),
             'descuento': str(convertir_monto_para_mostrar(venta, venta.descuento if hasattr(venta, 'descuento') else Decimal('0.00'))),
             'total': str(convertir_monto_para_mostrar(venta, venta.total)),
@@ -695,6 +779,7 @@ def obtener_detalle_venta(request, id):
                 }
                 for d in detalles
             ],
+            'mostrar_amortizaciones': mostrar_amortizaciones,
             'amortizaciones': amortizaciones,
             'total_amortizado': str(convertir_monto_para_mostrar(venta, total_amortizado)),
             'saldo_pendiente': str(convertir_monto_para_mostrar(venta, saldo_pendiente)),
@@ -716,12 +801,17 @@ def ver_venta(request, id):
     total_amortizado = Decimal('0.00')
     saldo_pendiente = Decimal('0.00')
 
-    if venta.tipo_pago == 'credito':
+    mostrar_amortizaciones = venta.tipo_pago == 'credito' and puede_ver_amortizaciones(request.user, venta)
+
+    if mostrar_amortizaciones:
         amorts = AmortizacionCredito.objects.filter(venta=venta).order_by('-fecha')
         for a in amorts:
             amortizaciones.append({
                 'id': a.id,
                 'monto': str(convertir_monto_para_mostrar(venta, a.monto)),
+                'moneda': a.moneda or venta.moneda,
+                'moneda_simbolo': obtener_simbolo_moneda(a.moneda or venta.moneda),
+                'moneda_descripcion': obtener_descripcion_moneda(a.moneda or venta.moneda),
                 'fecha': a.fecha.strftime('%d/%m/%Y %H:%M') if a.fecha else '',
                 'observaciones': a.observaciones or '',
             })
@@ -734,9 +824,12 @@ def ver_venta(request, id):
             'id': venta.id,
             'codigo': venta.codigo,
             'moneda': venta.moneda,
+            'moneda_simbolo': obtener_simbolo_moneda(venta.moneda),
+            'moneda_descripcion': obtener_descripcion_moneda(venta.moneda),
             'tipo_cambio': str(venta.tipo_cambio),
             'total': str(convertir_monto_para_mostrar(venta, venta.total)),
             'tipo_pago': venta.tipo_pago,
+            'mostrar_amortizaciones': mostrar_amortizaciones,
             'total_amortizado': str(convertir_monto_para_mostrar(venta, total_amortizado)),
             'saldo_pendiente': str(convertir_monto_para_mostrar(venta, saldo_pendiente)),
         })
@@ -755,6 +848,7 @@ def ver_venta(request, id):
         'subtotal_display': convertir_monto_para_mostrar(venta, venta.subtotal),
         'descuento_display': convertir_monto_para_mostrar(venta, venta.descuento),
         'total_display': convertir_monto_para_mostrar(venta, venta.total),
+        'mostrar_amortizaciones': mostrar_amortizaciones,
         'amortizaciones': amortizaciones,
         'total_amortizado': convertir_monto_para_mostrar(venta, total_amortizado),
         'saldo_pendiente': convertir_monto_para_mostrar(venta, saldo_pendiente),
@@ -977,12 +1071,18 @@ def registrar_amortizacion(request, venta_id):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
 
+    if not puede_registrar_amortizaciones_almacen(request.user):
+        return JsonResponse({
+            'success': False,
+            'error': 'Solo usuarios de almacén pueden registrar amortizaciones desde este módulo.'
+        }, status=403)
+
     venta = get_object_or_404(Venta, id=venta_id)
 
     if venta.tipo_pago != 'credito':
         return JsonResponse({'success': False, 'error': 'Esta venta no es a crédito.'})
 
-    if venta.estado == 'cancelada':
+    if venta.estado in ['cancelada', 'anulada']:
         return JsonResponse({'success': False, 'error': 'No se puede abonar a una venta cancelada.'})
 
     # Procesar FormData en lugar de JSON
@@ -1010,12 +1110,21 @@ def registrar_amortizacion(request, venta_id):
         venta=venta
     ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
 
-    saldo_pendiente = venta.total - total_amortizado
+    saldo_pendiente = max(venta.total - total_amortizado, Decimal('0.00'))
+
+    if saldo_pendiente <= 0:
+        return JsonResponse({
+            'success': False,
+            'error': 'Esta venta ya no tiene saldo pendiente.'
+        })
 
     if monto > saldo_pendiente:
         return JsonResponse({
             'success': False,
-            'error': f'El monto (Bs. {monto}) excede el saldo pendiente (Bs. {saldo_pendiente}).'
+            'error': (
+                f'El monto ({obtener_descripcion_moneda(venta.moneda)} {monto:.2f}) '
+                f'excede el saldo pendiente ({obtener_descripcion_moneda(venta.moneda)} {saldo_pendiente:.2f}).'
+            )
         })
 
     try:
@@ -1024,6 +1133,7 @@ def registrar_amortizacion(request, venta_id):
             amortizacion = AmortizacionCredito(
                 venta=venta,
                 monto=monto,
+                moneda=venta.moneda,
                 observaciones=observaciones,
                 registrado_por=request.user,
                 comprobante=comprobante,  # Guardar archivo
@@ -1039,6 +1149,8 @@ def registrar_amortizacion(request, venta_id):
             'success': True,
             'message': 'Amortización registrada exitosamente.',
             'nuevo_saldo': str(venta.total - nuevo_total_amortizado),
+            'moneda_codigo': venta.moneda,
+            'moneda_simbolo': obtener_simbolo_moneda(venta.moneda),
             'venta_completada': nuevo_total_amortizado >= venta.total,
         })
 
@@ -1163,11 +1275,23 @@ def detalle_solicitud_anulacion(request, id):
         'cliente': venta.cliente,
         'estado_venta': venta.estado,
         'tipo_pago': venta.tipo_pago,
+        'moneda': venta.moneda,
+        'moneda_simbolo': obtener_simbolo_moneda(venta.moneda),
+        'moneda_descripcion': obtener_descripcion_moneda(venta.moneda),
         'total': str(venta.total),
         'solicitado_por': solicitud.solicitado_por.get_full_name() or solicitud.solicitado_por.username,
         'fecha_solicitud': solicitud.fecha_solicitud.strftime('%d/%m/%Y %H:%M'),
         'comentario': solicitud.comentario,
         'estado_solicitud': solicitud.get_estado_display(),
+        'comentario_respuesta': solicitud.comentario_respuesta or '',
+        'respondido_por': (
+            solicitud.respondido_por.get_full_name() or solicitud.respondido_por.username
+            if solicitud.respondido_por else ''
+        ),
+        'fecha_respuesta': (
+            solicitud.fecha_respuesta.strftime('%d/%m/%Y %H:%M')
+            if solicitud.fecha_respuesta else ''
+        ),
         'detalles': [
             {
                 'producto': d.producto.nombre,
@@ -1180,8 +1304,12 @@ def detalle_solicitud_anulacion(request, id):
         'amortizaciones': [
             {
                 'monto': str(a.monto),
+                'moneda': a.moneda or venta.moneda,
+                'moneda_simbolo': obtener_simbolo_moneda(a.moneda or venta.moneda),
+                'moneda_descripcion': obtener_descripcion_moneda(a.moneda or venta.moneda),
                 'fecha': a.fecha.strftime('%d/%m/%Y'),
-                'comprobante': a.comprobante.url if a.comprobante else None
+                'comprobante': a.comprobante.url if a.comprobante else None,
+                'observaciones': a.observaciones or '',
             }
             for a in amortizaciones
         ]
@@ -1201,14 +1329,6 @@ def responder_solicitud_anulacion(request, id):
     if not es_almacen(request):
         return JsonResponse({'success': False, 'error': 'Sin permisos'}, status=403)
 
-    solicitud = get_object_or_404(SolicitudAnulacionVenta, id=id)
-
-    if solicitud.estado != 'pendiente':
-        return JsonResponse({
-            'success': False,
-            'error': 'Esta solicitud ya ha sido respondida por otro administrador/almacén.'
-        }, status=409)
-
     accion = request.POST.get('accion')  # 'aceptar' o 'rechazar'
     comentario_respuesta = request.POST.get('comentario_respuesta', '').strip()
 
@@ -1217,6 +1337,23 @@ def responder_solicitud_anulacion(request, id):
 
     try:
         with transaction.atomic():
+            solicitud = SolicitudAnulacionVenta.objects.select_for_update().select_related('venta').get(id=id)
+
+            if solicitud.estado != 'pendiente':
+                estado_esperado = 'aceptada' if accion == 'aceptar' else 'rechazada'
+                if solicitud.estado == estado_esperado and solicitud.respondido_por == request.user:
+                    return JsonResponse({
+                        'success': True,
+                        'message': f'La solicitud ya estaba {solicitud.get_estado_display().lower()}.',
+                        'nuevo_estado': solicitud.get_estado_display(),
+                        'ya_procesada': True,
+                    })
+
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Esta solicitud ya fue procesada previamente.'
+                }, status=409)
+
             solicitud.estado = 'aceptada' if accion == 'aceptar' else 'rechazada'
             solicitud.respondido_por = request.user
             solicitud.fecha_respuesta = timezone.now()
@@ -1231,8 +1368,9 @@ def responder_solicitud_anulacion(request, id):
                     producto = Producto.objects.select_for_update().get(id=detalle.producto.id)
                     restaurar_stock_a_contenedores(producto, detalle.cantidad)
 
-                venta.estado = 'anulada'
-                venta.save()
+                if venta.estado != 'anulada':
+                    venta.estado = 'anulada'
+                    venta.save(update_fields=['estado'])
 
         return JsonResponse({
             'success': True,
@@ -1240,6 +1378,8 @@ def responder_solicitud_anulacion(request, id):
             'nuevo_estado': solicitud.get_estado_display()
         })
 
+    except SolicitudAnulacionVenta.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Solicitud no encontrada'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': f'Error: {str(e)}'})
 
@@ -1291,14 +1431,17 @@ def listar_ventas_tienda(request):
     if cliente_filtro:
         ventas = ventas.filter(cliente__icontains=cliente_filtro)
 
-    # Por tipo de pago (aunque tienda siempre es contado)
-    ventas_contado = ventas.filter(tipo_pago='contado')
-    ventas_credito = ventas.filter(tipo_pago='credito')
+    # Por tipo de pago
+    ventas_contado_qs = ventas.filter(tipo_pago='contado')
+    ventas_credito_qs = ventas.filter(tipo_pago='credito')
+
+    ventas_contado = list(ventas_contado_qs)
+    ventas_credito = list(ventas_credito_qs)
 
     # Stats rápidas
     total_ventas = ventas.count()
-    total_contado = ventas_contado.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
-    total_credito = ventas_credito.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+    total_contado = ventas_contado_qs.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+    total_credito = ventas_credito_qs.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
     total_general = total_contado + total_credito
     
     # Promedio y completadas
@@ -1311,9 +1454,25 @@ def listar_ventas_tienda(request):
         return generar_pdf_lista(ventas_contado, 'contado')
 
     # Obtener tipo de tienda (principal o sucursal)
-    es_tienda_principal = False
-    if hasattr(perfil, 'tienda') and perfil.tienda:
-        es_tienda_principal = perfil.tienda.tipo == 'principal'
+    es_tienda_principal = es_tienda_principal_usuario(request.user)
+
+    for venta in ventas_contado:
+        venta.total_display = convertir_monto_para_mostrar(venta, venta.total)
+
+    for venta in ventas_credito:
+        total_amortizado = AmortizacionCredito.objects.filter(
+            venta=venta
+        ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        saldo_pendiente = max(venta.total - total_amortizado, Decimal('0.00'))
+
+        venta.total_display = convertir_monto_para_mostrar(venta, venta.total)
+        venta.total_amortizado = convertir_monto_para_mostrar(venta, total_amortizado)
+        venta.saldo_pendiente = convertir_monto_para_mostrar(venta, saldo_pendiente)
+        venta.mostrar_boton_amortizacion = (
+            es_tienda_principal
+            and venta.estado not in ['cancelada', 'anulada']
+            and saldo_pendiente > 0
+        )
     context = {
         'ventas_contado': ventas_contado,
         'ventas_credito': ventas_credito,
@@ -1323,7 +1482,10 @@ def listar_ventas_tienda(request):
         'total_general': total_general,
         'promedio': promedio,
         'ventas_completadas': ventas_completadas,
-        'creditos_pendientes': 0,  # Tienda no usa crédito
+        'creditos_pendientes': sum(
+            1 for venta in ventas_credito
+            if getattr(venta, 'saldo_pendiente', Decimal('0.00')) > 0
+        ),
         'perfil': perfil,
         'es_tienda': True,
         'es_tienda_principal': es_tienda_principal,
@@ -1467,30 +1629,49 @@ def guardar_venta_tienda(request):
             for item in items:
                 producto_id = item.get('producto_id')
                 cantidad = int(item.get('cantidad', 0))
-                modalidad = item.get('modalidad', 'unidad')  # unidad | caja | mayor
-                precio_unitario = Decimal(str(item.get('precio_unitario', '0')))
+                modalidad = (item.get('modalidad') or 'unidad').strip().lower()
 
                 if cantidad <= 0:
                     raise ValueError(f'Cantidad inválida para el producto ID {producto_id}.')
+                if modalidad not in ['unidad', 'caja', 'mayor']:
+                    raise ValueError(f'Modalidad inválida para el producto ID {producto_id}.')
 
                 producto = Producto.objects.get(id=producto_id)
+                unidades_por_caja = int(producto.unidades_por_caja or 1)
+
+                if modalidad == 'caja':
+                    unidades_a_descontar = cantidad * unidades_por_caja
+                else:
+                    unidades_a_descontar = cantidad
+
+                precio_base_bs = obtener_precio_base_producto(producto, modalidad)
+                if precio_base_bs <= 0:
+                    raise ValueError(
+                        f'El producto "{producto.nombre}" no tiene un precio configurado para la modalidad "{modalidad}".'
+                    )
+
+                precio_unitario = convertir_bs_a_moneda_venta(precio_base_bs, moneda, tipo_cambio)
 
                 # VALIDAR MODALIDAD MATEMÁTICAMENTE (solo para tienda)
                 # Para depósito, permitir cualquier cantidad entre 1 y stock disponible
                 if tipo_venta == 'tienda':
                     if modalidad == 'mayor':
-                        if cantidad < 3 or cantidad >= producto.unidades_por_caja:
+                        if cantidad < 3 or cantidad >= unidades_por_caja:
                             raise ValueError(
-                                f'Venta por mayor debe estar entre 3 y {producto.unidades_por_caja - 1} unidades. '
+                                f'Venta por mayor debe estar entre 3 y {unidades_por_caja - 1} unidades. '
                                 f'Recibido: {cantidad}.'
                             )
                     elif modalidad == 'caja':
-                        if cantidad % producto.unidades_por_caja != 0:
+                        if cantidad < 1:
                             raise ValueError(
-                                f'Venta por caja debe ser múltiplo de {producto.unidades_por_caja}. '
+                                'Venta por caja debe ser al menos 1 caja. '
                                 f'Recibido: {cantidad}.'
                             )
-                    # modalidad == 'unidad' acepta cualquier cantidad >= 1
+                    elif modalidad == 'unidad' and cantidad > 2:
+                        raise ValueError(
+                            'Venta por unidad solo permite entre 1 y 2 unidades. '
+                            f'Recibido: {cantidad}.'
+                        )
                 else:
                     # Para depósito: validación simple, cualquier cantidad >= 1
                     pass
@@ -1508,31 +1689,36 @@ def guardar_venta_tienda(request):
                     # Fallback: usar stock universal
                     stock_disponible = producto.stock
                 
-                if stock_disponible < cantidad:
+                if stock_disponible < unidades_a_descontar:
                     raise ValueError(
                         f'Stock insuficiente en {tipo_venta} para "{producto.nombre}". '
-                        f'Disponible: {stock_disponible}, Solicitado: {cantidad}.'
+                        f'Disponible: {stock_disponible}, Solicitado: {unidades_a_descontar}.'
                     )
                 
                 # Ahora bloquear el producto
                 producto = Producto.objects.select_for_update().get(id=producto_id)
 
                 subtotal_item = precio_unitario * cantidad
+                cantidad_guardada = unidades_a_descontar
+                precio_guardado = precio_unitario
+
+                if modalidad == 'caja' and unidades_a_descontar > 0:
+                    precio_guardado = (subtotal_item / Decimal(str(unidades_a_descontar))).quantize(Decimal('0.01'))
 
                 # Guardar DetalleVenta (con cantidad total, sin desglose)
                 DetalleVenta.objects.create(
                     venta=venta,
                     producto=producto,
-                    cantidad=cantidad,
-                    precio_unitario=precio_unitario,
+                    cantidad=cantidad_guardada,
+                    precio_unitario=precio_guardado,
                     subtotal=subtotal_item,
                 )
 
                 # Si es venta tienda o deposito, descontar del Inventario según tipo_venta
                 if tipo_venta in ['tienda', 'deposito']:
-                    descontar_stock_desde_inventario(producto, cantidad, tipo_venta)
+                    descontar_stock_desde_inventario(producto, unidades_a_descontar, tipo_venta)
                 # También descontar del stock universal (ProductoContenedor)
-                descontar_stock_desde_contenedores(producto, cantidad)
+                descontar_stock_desde_contenedores(producto, unidades_a_descontar)
 
                 total_venta += subtotal_item
 
@@ -1574,22 +1760,38 @@ def obtener_saldo_pendiente(request, id):
     """
     try:
         venta = Venta.objects.get(id=id)
+
+        if venta.tipo_pago != 'credito':
+            return JsonResponse({
+                'success': False,
+                'error': 'Esta venta no es a crédito.'
+            }, status=400)
+
+        if not puede_ver_amortizaciones(request.user, venta):
+            return JsonResponse({
+                'success': False,
+                'error': 'No tienes permisos para consultar esta amortización.'
+            }, status=403)
         
         # Calcular total amortizado
         total_amortizado = AmortizacionCredito.objects.filter(
             venta=venta
         ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
         
-        saldo_pendiente = venta.total - total_amortizado
+        saldo_pendiente = max(venta.total - total_amortizado, Decimal('0.00'))
         
         # Determinar símbolo de moneda
-        moneda_simbolo = '$' if venta.moneda == 'USD' else 'Bs.'
+        moneda_simbolo = obtener_simbolo_moneda(venta.moneda)
         
         return JsonResponse({
             'success': True,
             'total_pagado': f"{moneda_simbolo} {convertir_monto_para_mostrar(venta, total_amortizado):.2f}",
             'saldo_pendiente': f"{convertir_monto_para_mostrar(venta, saldo_pendiente):.2f}",
+            'saldo_pendiente_formateado': f"{moneda_simbolo} {convertir_monto_para_mostrar(venta, saldo_pendiente):.2f}",
+            'venta_total': f"{moneda_simbolo} {convertir_monto_para_mostrar(venta, venta.total):.2f}",
             'moneda_simbolo': moneda_simbolo,
+            'moneda_codigo': venta.moneda,
+            'moneda_descripcion': obtener_descripcion_moneda(venta.moneda),
         })
     except Venta.DoesNotExist:
         return JsonResponse({
@@ -1611,6 +1813,12 @@ def registrar_amortizacion_tienda(request, id):
     """
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    if not es_tienda_principal_usuario(request.user):
+        return JsonResponse({
+            'success': False,
+            'error': 'Solo la tienda principal puede registrar amortizaciones.'
+        }, status=403)
 
     try:
         venta = Venta.objects.get(id=id)
@@ -1650,12 +1858,21 @@ def registrar_amortizacion_tienda(request, id):
             venta=venta
         ).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
 
-        saldo_pendiente = venta.total - total_amortizado
+        saldo_pendiente = max(venta.total - total_amortizado, Decimal('0.00'))
+
+        if saldo_pendiente <= 0:
+            return JsonResponse({
+                'success': False,
+                'error': 'Esta venta ya no tiene saldo pendiente.'
+            })
 
         if monto > saldo_pendiente:
             return JsonResponse({
                 'success': False,
-                'error': f'El monto excede el saldo pendiente ({venta.moneda} {saldo_pendiente:.2f}).'
+                'error': (
+                    f'El monto excede el saldo pendiente '
+                    f'({obtener_descripcion_moneda(venta.moneda)} {saldo_pendiente:.2f}).'
+                )
             })
 
         with transaction.atomic():
@@ -1663,6 +1880,7 @@ def registrar_amortizacion_tienda(request, id):
             amortizacion = AmortizacionCredito(
                 venta=venta,
                 monto=monto,
+                moneda=venta.moneda,
                 observaciones=observaciones,
                 registrado_por=request.user,
                 comprobante=comprobante,
@@ -1681,6 +1899,12 @@ def registrar_amortizacion_tienda(request, id):
             'success': True,
             'message': 'Pago registrado exitosamente.',
             'nuevo_saldo': str(nuevo_saldo),
+            'nuevo_saldo_formateado': (
+                f"{obtener_simbolo_moneda(venta.moneda)} "
+                f"{convertir_monto_para_mostrar(venta, nuevo_saldo):.2f}"
+            ),
+            'moneda_codigo': venta.moneda,
+            'moneda_simbolo': obtener_simbolo_moneda(venta.moneda),
             'venta_completada': nuevo_total_amortizado >= venta.total,
         })
 

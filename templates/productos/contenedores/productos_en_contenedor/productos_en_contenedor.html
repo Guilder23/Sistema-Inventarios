@@ -58,8 +58,8 @@
                     {% for pc in productos_contenedor %}
                     <tr>
                         <td class="text-center">
-                            {% if producto.foto %}
-                                <img src="{{ producto.foto.url }}" alt="{{ producto.nombre }}" class="img-producto">
+                            {% if pc.producto.foto %}
+                                <img src="{{ pc.producto.foto.url }}" alt="{{ pc.producto.nombre }}" class="img-producto">
                             {% else %}
                                 <div class="img-placeholder">
                                     <i class="fas fa-image"></i>

@@ -636,66 +636,236 @@ def cambiar_estado_traspaso(request, id):
 @login_required
 def generar_pdf_traspaso(request, id):
     """Generar PDF del traspaso"""
+    import os
+    from django.conf import settings
     from reportlab.lib.pagesizes import letter
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import inch
     from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
     from io import BytesIO
-    
+
     traspaso = get_object_or_404(Traspaso, id=id)
-    
+
     ubicacion_actual = request.user.perfil if hasattr(request.user, 'perfil') else None
     if traspaso.origen != ubicacion_actual and traspaso.destino != ubicacion_actual:
         messages.error(request, 'No tiene permisos')
         return redirect('listar_traspasos')
-    
+
+    now = timezone.localtime()
+    fecha = now.strftime('%d/%m/%Y')
+    hora = now.strftime('%H:%M')
+
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.3*inch, bottomMargin=0.3*inch, leftMargin=0.3*inch, rightMargin=0.3*inch)
     elements = []
-    
+
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=16,
-        textColor=colors.HexColor('#003366'),
-        spaceAfter=20,
-    )
+    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor('#003366'), alignment=TA_CENTER, spaceAfter=12, fontName='Helvetica-Bold')
+    label_style = ParagraphStyle('Label', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, textColor=colors.HexColor('#1f2937'))
+    value_style = ParagraphStyle('Value', parent=styles['Normal'], fontName='Helvetica', fontSize=9, textColor=colors.HexColor('#1f2937'))
+    table_header_style = ParagraphStyle('TableHeader', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, textColor=colors.white, alignment=TA_CENTER)
+    table_value_style = ParagraphStyle('TableValue', parent=styles['Normal'], fontName='Helvetica', fontSize=9, textColor=colors.HexColor('#0f172a'))
+    table_quantity_style = ParagraphStyle('TableQuantity', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, textColor=colors.HexColor('#0f172a'), alignment=TA_RIGHT)
+
+    logo_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'logoAlmacen.png')
+    logo = None
+    if os.path.exists(logo_path):
+        try:
+            logo = RLImage(logo_path, width=0.75*inch, height=0.75*inch)
+        except Exception:
+            logo = None
+
+    company_name = Paragraph('ALMAZEN', ParagraphStyle('CompanyTitle', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor('#111827'), fontName='Helvetica-Bold'))
+    company_tagline = Paragraph('Importadora por mayor y menor', ParagraphStyle('CompanyTagline', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor('#4b5563'), italic=True))
+
+    intro_table = Table([[logo or '', [company_name, company_tagline]]], colWidths=[0.9*inch, 5.6*inch])
+    intro_table.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), ('LEFTPADDING', (0, 0), (-1, -1), 0), ('RIGHTPADDING', (0, 0), (-1, -1), 0), ('BOTTOMPADDING', (0, 0), (-1, -1), 0), ('TOPPADDING', (0, 0), (-1, -1), 0)]))
+    elements.append(intro_table)
+    elements.append(Spacer(1, 0.08*inch))
+
+    elements.append(Paragraph('COMPROBANTE DE TRASPASO', ParagraphStyle('DocTitle', parent=styles['Heading1'], fontSize=18, alignment=TA_CENTER, textColor=colors.HexColor('#111827'), fontName='Helvetica-Bold')))
+    elements.append(Spacer(1, 0.18*inch))
+
+    # Información en formato de texto normal con etiquetas en negrilla
+    info_text = []
+    info_text.append(Paragraph('<b>Código:</b> ' + str(traspaso.codigo), value_style))
+    info_text.append(Paragraph('<b>Fecha:</b> ' + f'{fecha} {hora}', value_style))
+    info_text.append(Paragraph('<b>Origen:</b> ' + str(traspaso.origen), value_style))
+    info_text.append(Paragraph('<b>Destino:</b> ' + str(traspaso.destino), value_style))
+    info_text.append(Paragraph('<b>Estado:</b> ' + traspaso.get_estado_display(), value_style))
+    info_text.append(Paragraph('<b>Tipo:</b> ' + traspaso.get_tipo_display(), value_style))
     
-    elements.append(Paragraph('Traspaso de Productos', title_style))
-    elements.append(Spacer(1, 0.3*inch))
+    for paragraph in info_text:
+        elements.append(paragraph)
+        elements.append(Spacer(1, 0.03*inch))
     
-    info_data = [
-        ['Código:', traspaso.codigo],
-        ['Tipo:', traspaso.get_tipo_display()],
-        ['Origen:', str(traspaso.origen)],
-        ['Destino:', str(traspaso.destino)],
-        ['Estado:', traspaso.get_estado_display()],
-    ]
-    
-    info_table = Table(info_data)
-    info_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-    ]))
-    
-    elements.append(info_table)
-    elements.append(Spacer(1, 0.3*inch))
-    
-    productos_data = [['Código', 'Producto', 'Cantidad']]
+    elements.append(Spacer(1, 0.1*inch))
+
+    # Tabla de productos (foto, código, producto, stock actual, stock final, cantidad, subtotal)
+    productos_data = [[
+        Paragraph('<b>Foto</b>', table_header_style),
+        Paragraph('<b>Código</b>', table_header_style),
+        Paragraph('<b>Producto</b>', table_header_style),
+        Paragraph('<b>Stock Actual</b>', table_header_style),
+        Paragraph('<b>Stock Final</b>', table_header_style),
+        Paragraph('<b>Cantidad</b>', table_header_style),
+        Paragraph('<b>Subtotal</b>', table_header_style),
+    ]]
+
+    origen_stock_perfil = _perfil_stock_objetivo(traspaso.origen)
+    total_traspaso = 0
+
+    def resolve_image(detalle):
+        if not detalle.producto.foto:
+            return Paragraph('Sin imagen', ParagraphStyle('NoImage', parent=styles['Normal'], fontSize=7, textColor=colors.HexColor('#9ca3af'), alignment=TA_CENTER))
+        
+        try:
+            # Intentar obtener la URL de la imagen (para Blackblaze u otros storages remotos)
+            if hasattr(detalle.producto.foto, 'url'):
+                img_url = detalle.producto.foto.url
+                try:
+                    # Descargar la imagen desde la URL
+                    import requests
+                    from io import BytesIO as BIO
+                    response = requests.get(img_url, timeout=5)
+                    if response.status_code == 200:
+                        img_buffer = BIO(response.content)
+                        img = RLImage(img_buffer, width=0.3*inch, height=0.3*inch)
+                        return img
+                except Exception as e:
+                    print(f"Error loading image from URL {img_url}: {str(e)}")
+            
+            # Fallback: intentar obtener archivo local
+            path_img = None
+            try:
+                if hasattr(detalle.producto.foto, 'path'):
+                    path_img = detalle.producto.foto.path
+            except Exception:
+                pass
+            
+            # Si no se obtuvo por .path, construir manualmente
+            if not path_img or not os.path.exists(path_img):
+                if detalle.producto.foto.name:
+                    path_img = os.path.join(settings.MEDIA_ROOT, detalle.producto.foto.name)
+            
+            # Validar que el archivo local exista
+            if path_img and os.path.exists(path_img):
+                try:
+                    img = RLImage(path_img, width=0.3*inch, height=0.3*inch)
+                    return img
+                except Exception as e:
+                    print(f"Error loading local image {path_img}: {str(e)}")
+        
+        except Exception as e:
+            print(f"Error in resolve_image: {str(e)}")
+        
+        return Paragraph('Sin imagen', ParagraphStyle('NoImage', parent=styles['Normal'], fontSize=7, textColor=colors.HexColor('#9ca3af'), alignment=TA_CENTER))
+
     for detalle in traspaso.detalles.all():
-        productos_data.append([detalle.producto.codigo, detalle.producto.nombre, str(detalle.cantidad)])
-    
-    productos_table = Table(productos_data)
+        try:
+            inventario = Inventario.objects.filter(producto=detalle.producto, ubicacion=origen_stock_perfil).first()
+            stock_actual = inventario.cantidad if inventario else detalle.producto.stock or 0
+        except Exception:
+            stock_actual = detalle.producto.stock or 0
+        stock_final = max(0, stock_actual - (detalle.cantidad or 0))
+        subtotal_detalle = float(detalle.producto.precio_unidad or 0) * float(detalle.cantidad or 0)
+        total_traspaso += subtotal_detalle
+
+        productos_data.append([
+            resolve_image(detalle),
+            Paragraph(str(detalle.producto.codigo), table_value_style),
+            Paragraph(str(detalle.producto.nombre), table_value_style),
+            Paragraph(f'{int(stock_actual):,}', table_value_style),
+            Paragraph(f'{int(stock_final):,}', table_value_style),
+            Paragraph(str(detalle.cantidad), table_quantity_style),
+            Paragraph(f'{subtotal_detalle:,.2f}', table_quantity_style),
+        ])
+
+    productos_table = Table(productos_data, colWidths=[0.5*inch, 0.7*inch, 1.8*inch, 0.7*inch, 0.7*inch, 0.8*inch, 0.8*inch], repeatRows=1)
+    table_style = [
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#ffffff")),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f2937')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (3, 1), (4, -1), 'RIGHT'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('ROWHEIGHTS', (0, 1), (-1, -1), 0.35*inch),
+    ]
+
+    for i in range(1, len(productos_data)):
+        color_fila = colors.HexColor('#f8fafc') if i % 2 == 1 else colors.white
+        table_style.append(('BACKGROUND', (0, i), (-1, i), color_fila))
+
+    productos_table.setStyle(TableStyle(table_style))
     elements.append(productos_table)
-    
+
+    # Fila de total con la misma estructura de columnas que la tabla de productos
+    total_table = Table(
+        [[
+            Paragraph('', value_style),
+            Paragraph('', value_style),
+            Paragraph('', value_style),
+            Paragraph('', value_style),
+            Paragraph('', value_style),
+            Paragraph('<b>Total:</b>', ParagraphStyle('TotalLabel', parent=styles['Normal'], alignment=TA_RIGHT, fontSize=10, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold')),
+            Paragraph(f'<b>{total_traspaso:,.2f}</b>', ParagraphStyle('TotalStyle', parent=styles['Normal'], alignment=TA_RIGHT, fontSize=11, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold'))
+        ]],
+        colWidths=[0.5*inch, 0.7*inch, 1.8*inch, 0.7*inch, 0.7*inch, 0.8*inch, 0.8*inch]
+    )
+    total_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (6, 0), (6, 0), 'RIGHT'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ]))
+    elements.append(total_table)
+    elements.append(Spacer(1, 0.28*inch))
+    elements.append(Spacer(1, 0.28*inch))
+
+    # Firma con lineas y etiquetas (origen/destino al nivel de 'Nombre y firma')
+    firma_line = Paragraph('___________________________', ParagraphStyle('FirmaLine', parent=styles['Normal'], fontSize=11, textColor=colors.HexColor('#0f172a'), alignment=TA_CENTER))
+    firma_label = Paragraph('Nombre y firma', ParagraphStyle('FirmaLabel', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor('#4b5563'), alignment=TA_CENTER))
+
+    firma_table = Table([
+        [firma_line, firma_line],
+        [Paragraph(f'{traspaso.origen}', ParagraphStyle('FirmaTitulo', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#1f2937'), fontName='Helvetica-Bold', alignment=TA_CENTER)),
+         Paragraph(f'{traspaso.destino}', ParagraphStyle('FirmaTitulo', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#1f2937'), fontName='Helvetica-Bold', alignment=TA_CENTER))],
+        [firma_label, firma_label],
+    ], colWidths=[3.4*inch, 3.4*inch], hAlign='LEFT')
+
+    firma_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+    ]))
+    elements.append(firma_table)
+    elements.append(Spacer(1, 0.2*inch))
+
+    comentario_texto = str(traspaso.comentario) if traspaso.comentario else 'Sin comentario'
+    comment_box = Table([[Paragraph('<b>Comentario</b>', label_style)], [Paragraph(comentario_texto, value_style)]], colWidths=[7.0*inch], hAlign='LEFT')
+    comment_box.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f1f5f9')),
+        ('BOX', (0, 0), (-1, -1), 0.75, colors.HexColor('#cbd5e1')),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+    ]))
+    elements.append(comment_box)
+    elements.append(Spacer(1, 0.18*inch))
+
     doc.build(elements)
     buffer.seek(0)
-    
+
     response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="traspaso_{traspaso.codigo}.pdf"'
     return response
