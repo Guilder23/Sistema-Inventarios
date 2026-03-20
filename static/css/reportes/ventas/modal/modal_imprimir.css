@@ -247,3 +247,148 @@
         margin: 5mm;
     }
 }
+
+@media (max-width: 991.98px) {
+    .modal-dialog.modal-xl {
+        max-width: 100%;
+        margin: 0;
+        height: 100%;
+        min-height: 100vh;
+    }
+
+    .modal-content {
+        height: 100%;
+        min-height: 100vh;
+        border-radius: 0;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .modal-header {
+        flex: 0 0 auto;
+        z-index: 1050;
+    }
+
+    .modal-body {
+        flex: 1 1 auto;
+        padding: 0;
+        overflow-y: auto;
+        height: auto;
+        display: block;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .row.h-100 {
+        display: flex;
+        flex-direction: column;
+        height: auto !important;
+        margin: 0;
+        min-height: 100%;
+    }
+
+    .col-md-3.border-right {
+        width: 100%;
+        height: auto !important;
+        flex: 0 0 auto;
+        border-right: none !important;
+        border-bottom: 2px solid #dee2e6;
+        background-color: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 1030;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .config-panel-header,
+    .config-panel-footer {
+        padding: 10px 15px;
+    }
+
+    .config-columns-scroll {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 10px 15px;
+        max-height: 120px;
+        overflow-y: auto;
+        border-bottom: 1px solid #eee;
+    }
+
+    .config-columns-scroll .custom-control {
+        width: 45%;
+        margin-bottom: 0;
+        font-size: 0.85rem;
+    }
+
+    .config-panel-footer .btn {
+        font-size: 0.9rem;
+        padding: 0.375rem 0.75rem;
+    }
+
+    .config-panel-footer {
+        position: relative;
+        z-index: 10;
+        background: #fff;
+    }
+
+    .col-md-9 {
+        width: 100%;
+        height: auto !important;
+        flex: 1 1 auto;
+        padding: 15px 10px 60px 10px !important;
+        background-color: #f0f0f0;
+        overflow: visible;
+    }
+
+    .preview-container {
+        display: block;
+        width: 100%;
+        height: auto !important;
+        padding: 0 !important;
+        background-color: transparent;
+        border: none;
+        overflow: visible;
+    }
+
+    .preview-paper {
+        width: 100% !important;
+        min-height: auto;
+        padding: 15px !important;
+        margin: 0 !important;
+        box-shadow: 0 0.15rem 0.5rem 0 rgba(0, 0, 0, 0.1) !important;
+        border-radius: 4px;
+    }
+
+    .preview-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-top: 5px;
+        border: 1px solid #dee2e6;
+        background: #fff;
+    }
+
+    #tablaVistaPreviaVentas {
+        font-size: 10px !important;
+        min-width: 600px;
+        margin-bottom: 0;
+    }
+
+    .config-panel-footer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .config-panel-footer .btn-block {
+        display: inline-block;
+        width: 48%;
+        margin: 0 !important;
+    }
+
+    .config-panel-footer .btn-secondary {
+        width: 100%;
+        margin-top: 5px !important;
+    }
+}
