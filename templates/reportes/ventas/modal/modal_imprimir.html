@@ -87,11 +87,24 @@
 
                     <div class="col-md-9 bg-light p-4 preview-container">
                         <div class="preview-paper myshadow" id="contenedorVistaPreviaVentas">
-                            <div class="header-reporte mb-4 text-center">
-                                <h3 class="font-weight-bold text-dark">REPORTE DE VENTAS</h3>
-                                <div class="d-flex justify-content-center align-items-center mb-1">
-                                    <p class="text-muted mb-0 mr-3">Generado el: <span id="fechaImpresion">{% now "d/m/Y H:i" %}</span></p>
-                                    <p class="text-muted mb-0">Por: {{ user.get_full_name|default:user.username }}</p>
+                            <div class="header-reporte mb-3">
+                                <div class="header-grid">
+                                    <!-- Izquierda: Datos -->
+                                    <div class="header-left">
+                                        <p class="text-muted mb-0" style="font-size: 0.85rem;"><strong>Generado:</strong> <span id="fechaImpresion">{% now "d/m/Y H:i" %}</span></p>
+                                        <p class="text-muted mb-0" style="font-size: 0.85rem;"><strong>Por:</strong> {{ user.get_full_name|default:user.username }}</p>
+                                    </div>
+                                    <!-- Centro: Título -->
+                                    <div class="header-center">
+                                        <h4 class="font-weight-bold text-dark mb-0">REPORTE DE VENTAS</h4>
+                                    </div>
+                                    <!-- Derecha: Logo + Frase -->
+                                    <div class="header-right">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <img src="{% static 'img/logoAlmacen.png' %}" alt="Logo Almazen" class="logo-header-compact mb-1">
+                                            <p class="text-muted mb-0" style="font-size: 0.7rem; text-align: center; max-width: 80px;">Venta por mayor y menor</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
