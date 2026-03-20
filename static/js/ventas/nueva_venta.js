@@ -25,9 +25,29 @@ function getCookie(name) {
     return cookieValue;
 }
 
+// UTILIDADES: CONVERSIÓN DE MONEDA
+function obtenerMonedaActual() {
+    return document.getElementById('inputMoneda')?.value || 'BOB';
+}
+
+function obtenerTipoCambioActual() {
+    return parseFloat(document.getElementById('tipoCambioActual')?.value || 1) || 1;
+}
+
+function convertirBsAMoneda(montoBs) {
+    const monto = parseFloat(montoBs || 0);
+    return obtenerMonedaActual() === 'USD' ? (monto / obtenerTipoCambioActual()) : monto;
+}
+
+function convertirMonedaABs(monto) {
+    const valor = parseFloat(monto || 0);
+    return obtenerMonedaActual() === 'USD' ? (valor * obtenerTipoCambioActual()) : valor;
+}
+
 // ESTADO GLOBAL: CARRITO
 let carrito = [];  // Array de { productoId, codigo, nombre, precioUnitario, cantidad, stock }
 let debounceTimer = null;
+let ultimosProductosBusqueda = [];  // Guardar últimos resultados para re-renderizar al cambiar moneda
 
 // INICIALIZACIÓN
 $(document).ready(function () {
@@ -61,7 +81,11 @@ function initSelectorMoneda() {
         const monedaSeleccionada = $(this).val();
         $('#inputMoneda').val(monedaSeleccionada);
         
-        // Actualizar resumen (convertir totales si es USD)
+        // Re-renderizar carrito Y re-renderizar resultados de búsqueda
+        renderCarrito();
+        if (ultimosProductosBusqueda.length > 0) {
+            renderResultadosBusqueda(ultimosProductosBusqueda);
+        }
         actualizarResumen();
     });
 }
@@ -238,6 +262,9 @@ function buscarProductos(query) {
 function renderResultadosBusqueda(productos) {
     const $resultados = $('#resultadosBusqueda');
     $resultados.empty();
+    
+    // Guardar para re-renderización al cambiar moneda
+    ultimosProductosBusqueda = productos;
 
     if (productos.length === 0) {
         $resultados.html(`
@@ -249,8 +276,10 @@ function renderResultadosBusqueda(productos) {
         return;
     }
 
-    // Obtener tipo de cambio del formulario
+    // Obtener moneda y tipo de cambio
+    const monedaElement = document.getElementById('inputMoneda');
     const tipoCambioElement = document.getElementById('tipoCambioActual');
+    const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
     const tipoCambio = tipoCambioElement ? parseFloat(tipoCambioElement.value) || 1 : 1;
 
     productos.forEach(p => {
@@ -260,9 +289,19 @@ function renderResultadosBusqueda(productos) {
         const btnDisabled = enCarrito ? 'disabled' : '';
         const btnClass = enCarrito ? 'btn-secondary' : 'btn-success';
         
-        // Calcular precio en dólares
+        // Calcular precios (siempre calcular ambos para poder mostrar referencia)
         const precioUnitario = parseFloat(p.precio_unidad);
         const precioDolares = (precioUnitario / tipoCambio).toFixed(2);
+        
+        // Mostrar precio según moneda seleccionada
+        const precioDisplay = moneda === 'BOB' 
+            ? `<div style="font-weight: bold; color: #28a745; font-size: 1rem;">Bs. ${precioUnitario.toFixed(2)}</div>`
+            : `<div style="font-weight: bold; color: #28a745; font-size: 1rem;">$ ${precioDolares}</div>`;
+        
+        // Mostrar segunda moneda en gris como referencia
+        const segundaMonedaDisplay = moneda === 'BOB'
+            ? `<div style="font-size: 0.85rem; color: #666;">$ ${precioDolares}</div>`
+            : `<div style="font-size: 0.85rem; color: #666;">Bs. ${precioUnitario.toFixed(2)}</div>`;
 
         const item = $(`
             <div class="resultado-item">
@@ -272,8 +311,8 @@ function renderResultadosBusqueda(productos) {
                 </div>
                 <div class="producto-meta">
                     <div class="producto-precio">
-                        <div style="font-weight: bold; color: #28a745; font-size: 1rem;">Bs. ${precioUnitario.toFixed(2)}</div>
-                        <div style="font-size: 0.85rem; color: #666;">$ ${precioDolares}</div>
+                        ${precioDisplay}
+                        ${segundaMonedaDisplay}
                     </div>
                     <div class="producto-stock">Stock: ${p.stock} uds.</div>
                 </div>
@@ -358,7 +397,11 @@ function renderCarrito() {
     $btnLimpiar.show();
 
     carrito.forEach((item, index) => {
-        const tipoCambio = parseFloat($('#tipoCambioActual').val() || 1);
+        const monedaElement = document.getElementById('inputMoneda');
+        const tipoCambioElement = document.getElementById('tipoCambioActual');
+        const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
+        const tipoCambio = tipoCambioElement ? parseFloat(tipoCambioElement.value) || 1 : 1;
+        
         const subtotal = (item.precioUnitario * item.cantidad).toFixed(2);
         const precioEnDolares = (item.precioUnitario / tipoCambio).toFixed(2);
         const subtotalEnDolares = (parseFloat(subtotal) / tipoCambio).toFixed(2);
@@ -371,8 +414,8 @@ function renderCarrito() {
                 </td>
                 <td class="text-center">
                     <div class="precio-dual">
-                        <div>Bs. ${item.precioUnitario.toFixed(2)}</div>
-                        <div style="font-size: 0.85rem; color: #666;">$ ${precioEnDolares}</div>
+                        ${moneda === 'BOB' ? `<div>Bs. ${item.precioUnitario.toFixed(2)}</div>` : `<div>$ ${precioEnDolares}</div>`}
+                        ${moneda === 'USD' ? `<div style="font-size: 0.85rem; color: #666;">Bs. ${item.precioUnitario.toFixed(2)}</div>` : `<div style="font-size: 0.85rem; color: #666;">$ ${precioEnDolares}</div>`}
                     </div>
                 </td>
                 <td class="text-center">
@@ -390,8 +433,8 @@ function renderCarrito() {
                 </td>
                 <td class="text-right carrito-subtotal">
                     <div class="subtotal-dual">
-                        <div>Bs. ${subtotal}</div>
-                        <div style="font-size: 0.85rem; color: #666;">$ ${subtotalEnDolares}</div>
+                        ${moneda === 'BOB' ? `<div>Bs. ${subtotal}</div>` : `<div>$ ${subtotalEnDolares}</div>`}
+                        ${moneda === 'USD' ? `<div style="font-size: 0.85rem; color: #666;">Bs. ${subtotal}</div>` : `<div style="font-size: 0.85rem; color: #666;">$ ${subtotalEnDolares}</div>`}
                     </div>
                 </td>
                 <td class="text-center pr-3">
