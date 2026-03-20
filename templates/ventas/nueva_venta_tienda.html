@@ -27,7 +27,7 @@
         guardarVentaTienda: "{% url 'ventas:guardar_venta_tienda' %}",
         listaTienda: "{% url 'ventas:listar_ventas_tienda' %}",
     };
-    const tipoCambioActual = {{ tipo_cambio_actual|default:1 }};
+    const tipoCambioActual = {{ tipo_cambio_actual|default:'6.93'|stringformat:'f' }};
 </script>
 {% endblock %}
 {% block contenido %}
@@ -133,7 +133,7 @@
                             <option value="USD">Dolares (USD)</option>
                         </select>
                         <input type="hidden" id="inputMoneda" value="BOB">
-                        <input type="hidden" id="tipoCambioActual" value="{{ tipo_cambio_actual }}">
+                        <input type="hidden" id="tipoCambioActual" value="{{ tipo_cambio_actual|default:'6.93'|stringformat:'f' }}">
                         <div class="alert alert-info mt-2 mb-0" style="font-size: 0.9rem;">
                             <i class="fas fa-info-circle mr-2"></i>
                             <strong>Tipo de Cambio Actual:</strong> 1 USD = Bs. <span id="tipoCambioDisplay">{{ tipo_cambio_actual|floatformat:2 }}</span>
