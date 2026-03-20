@@ -43,6 +43,18 @@
             form.reset();
             document.getElementById('previewFotoModal').innerHTML = '';
         }
+        // Recalcular unidades después de limpiar
+        calcularUnidadesTotal();
+    }
+    
+    // Función para calcular unidades totales
+    function calcularUnidadesTotal() {
+        const cantidadCajas = parseInt(document.getElementById('cantidad_cajas_modal').value) || 0;
+        const unidadesPorCaja = parseInt(document.getElementById('unidades_por_caja_modal').value) || 1;
+        const totalUnidades = cantidadCajas * unidadesPorCaja;
+        
+        const cantidadInput = document.getElementById('cantidad_modal');
+        cantidadInput.value = totalUnidades;
     }
     
     // Hacer accesible globalmente si es necesario
@@ -111,7 +123,7 @@
     
     // Esperar a que el DOM esté listo para asignar event listeners
     document.addEventListener('DOMContentLoaded', function() {
-        
+
         // Botón para abrir modal de nuevo producto
         const btnAgregarNuevo = document.getElementById('btnAgregarNuevo');
         if (btnAgregarNuevo) {
@@ -120,7 +132,19 @@
                 abrirModalAgregarNuevoProducto(contenedorId);
             });
         }
-        
+
+        // Event listeners para cálculo automático de unidades
+        const cantidadCajasInput = document.getElementById('cantidad_cajas_modal');
+        const unidadesPorCajaInput = document.getElementById('unidades_por_caja_modal');
+        if (cantidadCajasInput) {
+            cantidadCajasInput.addEventListener('input', calcularUnidadesTotal);
+            cantidadCajasInput.addEventListener('change', calcularUnidadesTotal);
+        }
+        if (unidadesPorCajaInput) {
+            unidadesPorCajaInput.addEventListener('input', calcularUnidadesTotal);
+            unidadesPorCajaInput.addEventListener('change', calcularUnidadesTotal);
+        }
+
         // Botón para crear nuevas categorías
         const btnAgregarCategoria = document.getElementById('btnAgregarCategoria');
         if (btnAgregarCategoria) {
@@ -129,50 +153,49 @@
                 $('#modalCrearCategoriaProducto').modal('show');
             });
         }
-        
+
         // Formulario para crear categoría
         const formCrearCategoria = document.getElementById('formCrearCategoriaDesdeProducto');
         if (formCrearCategoria) {
             formCrearCategoria.addEventListener('submit', function(e) {
                 e.preventDefault();
-                
+
                 const nombre = document.getElementById('nombre_categoria_modal').value.trim();
                 const descripcion = document.getElementById('descripcion_categoria_modal').value.trim();
                 const activo = document.getElementById('activo_categoria_modal').checked;
-                
+
                 if (!nombre) {
                     alert('Por favor ingresa el nombre de la categoría');
                     return;
                 }
-                
+
                 const btnSubmit = formCrearCategoria.querySelector('button[type="submit"]');
                 const textoOriginal = btnSubmit.innerHTML;
                 btnSubmit.disabled = true;
                 btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
-                
+
                 crearNuevaCategoria(nombre, descripcion, activo).then(result => {
                     btnSubmit.disabled = false;
                     btnSubmit.innerHTML = textoOriginal;
-                    
+
                     if (result.success) {
                         alert('Categoría creada exitosamente');
                         $('#modalCrearCategoriaProducto').modal('hide');
                         formCrearCategoria.reset();
-                        // La categoría ya está cargada en el dropdown por cargarCategorias()
                     } else {
                         alert('Error: ' + (result.error || 'No se pudo crear la categoría'));
                     }
                 });
             });
         }
-        
+
         // Preview de imagen
         const inputFoto = document.getElementById('foto_modal');
         if (inputFoto) {
             inputFoto.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 const preview = document.getElementById('previewFotoModal');
-                
+
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = function(event) {
@@ -194,55 +217,49 @@
                 }
             });
         }
-        
+
         // Envío de formulario - Agregar nuevo producto
         const formAgregarNuevo = document.getElementById('formAgregarNuevoProducto');
         if (formAgregarNuevo) {
             formAgregarNuevo.addEventListener('submit', function(e) {
                 e.preventDefault();
-                
-                // Validar campos obligatorios
+
                 const codigo = document.getElementById('codigo_modal').value.trim();
                 const nombre = document.getElementById('nombre_modal').value.trim();
                 const categoria = document.getElementById('categoria_modal').value;
                 const unidadesPorCaja = document.getElementById('unidades_por_caja_modal').value;
                 const precioUnidad = document.getElementById('precio_unidad_modal').value;
                 const cantidad = document.getElementById('cantidad_modal').value;
-                
+
                 if (!codigo || !nombre) {
                     alert('Por favor completa el código y nombre del producto');
                     return;
                 }
-                
                 if (!categoria) {
                     alert('Por favor selecciona una categoría');
                     return;
                 }
-                
                 if (!unidadesPorCaja || unidadesPorCaja < 1) {
                     alert('Las unidades por caja deben ser mayor a 0');
                     return;
                 }
-                
                 if (!precioUnidad || precioUnidad < 0) {
                     alert('El precio unitario debe ser un número válido y mayor o igual a 0');
                     return;
                 }
-                
                 if (!cantidad || cantidad < 1) {
                     alert('La cantidad debe ser mayor a 0');
                     return;
                 }
-                
-                // Mostrar indicador de carga
+
                 const btnSubmit = formAgregarNuevo.querySelector('button[type="submit"]');
                 const textoOriginal = btnSubmit.innerHTML;
                 btnSubmit.disabled = true;
                 btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
-                
+
                 const formData = new FormData(this);
                 const url = `/productos/contenedores/${contenedorActualId}/agregar-producto/`;
-                
+
                 fetch(url, {
                     method: 'POST',
                     headers: {
@@ -258,10 +275,9 @@
                 .then(data => {
                     btnSubmit.disabled = false;
                     btnSubmit.innerHTML = textoOriginal;
-                    
+
                     if (data.success) {
                         $('#modalAgregarNuevoProducto').modal('hide');
-                        // Mostrar notificación y recargar
                         const alertDiv = document.createElement('div');
                         alertDiv.className = 'alert alert-success alert-dismissible fade show';
                         alertDiv.innerHTML = `
@@ -271,8 +287,6 @@
                         document.body.insertBefore(alertDiv, document.body.firstChild);
                         setTimeout(() => location.reload(), 1500);
                     } else {
-                        btnSubmit.disabled = false;
-                        btnSubmit.innerHTML = textoOriginal;
                         alert('Error: ' + (data.error || 'No se pudo agregar el producto'));
                     }
                 })

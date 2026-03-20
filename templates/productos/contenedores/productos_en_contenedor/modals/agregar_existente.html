@@ -31,20 +31,54 @@
                     </div>
 
                     <div class="form-group mb-3">
+                        <label for="unidades_por_caja_existente_modal" class="form-label">
+                            <i class="fas fa-box"></i> Unidades x Caja
+                        </label>
+                        <input 
+                            type="number" 
+                            class="form-control" 
+                            id="unidades_por_caja_existente_modal" 
+                            name="unidades_por_caja" 
+                            min="1" 
+                            value="1" 
+                            readonly
+                        >
+                        <small class="form-text text-muted">
+                            Se carga automáticamente según el producto seleccionado
+                        </small>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="cantidad_cajas_existente_modal" class="form-label">
+                            <i class="fas fa-boxes"></i> Cantidad de Cajas <span class="text-danger">*</span>
+                        </label>
+                        <input 
+                            type="number" 
+                            class="form-control" 
+                            id="cantidad_cajas_existente_modal" 
+                            min="1" 
+                            value="1" 
+                            required
+                        >
+                        <small class="form-text text-muted">
+                            Número de cajas que agregará al contenedor
+                        </small>
+                    </div>
+
+                    <div class="form-group mb-3">
                         <label for="cantidad_existente_modal" class="form-label">
-                            <i class="fas fa-boxes"></i> Cantidad
+                            <i class="fas fa-cube"></i> Unidades Totales Calculadas
                         </label>
                         <input 
                             type="number" 
                             class="form-control" 
                             id="cantidad_existente_modal" 
                             name="cantidad" 
-                            min="1" 
+                            readonly
                             value="1" 
-                            required
                         >
-                        <small class="form-text text-muted">
-                            Si el producto ya existe en el contenedor, la cantidad se sumará
+                        <small class="form-text text-success">
+                            <i class="fas fa-info-circle"></i> Se calcula automáticamente (Cajas × Unidades x Caja)
                         </small>
                     </div>
                 </div>

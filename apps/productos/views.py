@@ -1461,6 +1461,26 @@ def json_categorias(request):
 
 @login_required
 @require_http_methods(["GET"])
+def datos_basicos_producto(request, id):
+    """API JSON para obtener datos básicos de un producto (unidades por caja, etc)"""
+    try:
+        producto = get_object_or_404(Producto, id=id, activo=True)
+        
+        data = {
+            'id': producto.id,
+            'codigo': producto.codigo,
+            'nombre': producto.nombre,
+            'unidades_por_caja': producto.unidades_por_caja,
+            'precio_unitario': float(producto.precio_unitario) if producto.precio_unitario else 0,
+            'stock': producto.stock,
+        }
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
 def json_productos_disponibles(request, contenedor_id):
     """API JSON para obtener productos disponibles para un contenedor"""
     if not es_almacen(request):
@@ -1473,9 +1493,13 @@ def json_productos_disponibles(request, contenedor_id):
         contenedor=contenedor
     ).values_list('producto_id', flat=True)
     
-    # Todos los productos activos
-    productos = Producto.objects.filter(activo=True).values(
-        'id', 'codigo', 'nombre'
+    # Productos activos que aun no estan en el contenedor
+    productos = Producto.objects.filter(
+        activo=True
+    ).exclude(
+        id__in=productos_en_contenedor
+    ).values(
+        'id', 'codigo', 'nombre', 'unidades_por_caja'
     ).order_by('nombre')
     
     return JsonResponse({

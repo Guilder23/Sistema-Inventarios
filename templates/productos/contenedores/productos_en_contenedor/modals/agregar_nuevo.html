@@ -100,20 +100,6 @@
                             </h6>
 
                             <div class="form-group">
-                                <label for="cantidad_modal" class="form-label">Cantidad en Contenedor <span class="text-danger">*</span></label>
-                                <input 
-                                    type="number" 
-                                    class="form-control" 
-                                    id="cantidad_modal" 
-                                    name="cantidad" 
-                                    required
-                                    value="1"
-                                    min="1"
-                                >
-                                <small class="form-text text-muted">Unidades que agregará al contenedor (será el stock inicial del producto)</small>
-                            </div>
-
-                            <div class="form-group">
                                 <label for="unidades_por_caja_modal" class="form-label">Unidades x Caja <span class="text-danger">*</span></label>
                                 <input 
                                     type="number" 
@@ -123,7 +109,37 @@
                                     required
                                     value="1"
                                     min="1"
+                                    class="unidades-por-caja-input"
                                 >
+                                <small class="form-text text-muted">Cuántas unidades hay en cada caja</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cantidad_cajas_modal" class="form-label">Cantidad de Cajas <span class="text-danger">*</span></label>
+                                <input 
+                                    type="number" 
+                                    class="form-control" 
+                                    id="cantidad_cajas_modal" 
+                                    name="cantidad_cajas" 
+                                    required
+                                    value="1"
+                                    min="1"
+                                    class="cantidad-cajas-input"
+                                >
+                                <small class="form-text text-muted">Número de cajas que agregará al contenedor</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cantidad_modal" class="form-label">Unidades Totales Calculadas</label>
+                                <input 
+                                    type="number" 
+                                    class="form-control" 
+                                    id="cantidad_modal" 
+                                    name="cantidad" 
+                                    readonly
+                                    value="1"
+                                >
+                                <small class="form-text text-success"><i class="fas fa-info-circle"></i> Se calcula automáticamente (Cajas × Unidades x Caja)</small>
                             </div>
 
                             <div class="form-group">
