@@ -5,6 +5,7 @@
 
 {% block estilos_extra %}
 <link rel="stylesheet" href="{% static 'css/reportes/traspasos/traspasos.css' %}">
+<link rel="stylesheet" href="{% static 'css/reportes/traspasos/modal/modal_detalle.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -240,6 +241,7 @@
                         <th style="width: 10%;">CREADO POR</th>
                         <th style="width: 8%;" class="text-center">PRODUCTOS</th>
                         <th style="width: 16%;">COMENTARIO</th>
+                        <th style="width: 6%;" class="text-center">ACCIONES</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -357,10 +359,18 @@
                                 {% endif %}
                             </small>
                         </td>
+                        <td class="text-center" style="vertical-align: middle;">
+                            <button 
+                                class="btn btn-sm btn-info btn-ver-detalle" 
+                                data-toggle="modal" data-target="#modalVerTraspaso"
+                                data-traspaso-id="{{ traspaso.id }}" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="text-center py-4">
+                        <td colspan="10" class="text-center py-4">
                             <div class="tabla-vacia">
                                 <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
                                 <p class="text-muted mb-0">No se encontraron traspasos</p>
@@ -428,8 +438,13 @@
     </div>
     {% endif %}
 </div>
+
+<!-- Incluir modal de detalles -->
+{% include 'reportes/traspasos/modal/modal_detalle.html' %}
+
 {% endblock %}
 
 {% block scripts_extra %}
 <script src="{% static 'js/reportes/traspasos/traspasos.js' %}"></script>
+<script src="{% static 'js/reportes/traspasos/modal/modal_detalle.js' %}"></script>
 {% endblock %}

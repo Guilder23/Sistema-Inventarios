@@ -328,3 +328,24 @@
     line-height: 1.5;
 }
 
+/* Botón Ver en la tabla */
+.btn-ver-detalle {
+    background-color: #36b9cc;
+    border-color: #36b9cc;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-ver-detalle:hover {
+    background-color: #2c9faf;
+    border-color: #2a96a5;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.btn-ver-detalle:active {
+    transform: translateY(0);
+}

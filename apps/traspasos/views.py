@@ -995,3 +995,74 @@ def obtener_destinos_traspaso(request):
         return JsonResponse(data, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def obtener_detalle_traspaso(request, id):
+    """Obtener detalles completos de un traspaso en formato JSON"""
+    try:
+        # Verificar que el usuario está autenticado
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'No autenticado'}, status=401)
+        
+        print(f"[DEBUG] Buscando traspaso con ID: {id}")
+        traspaso = get_object_or_404(Traspaso, id=id)
+        print(f"[DEBUG] Traspaso encontrado: {traspaso.codigo}")
+        
+        # Asegurarse que origen y destino existen
+        if not traspaso.origen or not traspaso.destino:
+            return JsonResponse({'error': 'Traspaso sin origen o destino'}, status=400)
+        
+        # Obtener detalles
+        detalles = DetalleTraspaso.objects.filter(traspaso=traspaso).select_related('producto')
+        
+        productos = []
+        for detalle in detalles:
+            try:
+                print(f"[DEBUG] Procesando detalle: {detalle.id}, producto: {detalle.producto.nombre}, cantidad: {detalle.cantidad}")
+                productos.append({
+                    'codigo_producto': detalle.producto.codigo,
+                    'nombre_producto': detalle.producto.nombre,
+                    'cantidad': detalle.cantidad,
+                })
+            except Exception as prod_error:
+                print(f"[ERROR] Error procesando producto {detalle.id}: {prod_error}")
+                continue
+        
+        # Obtener nombre de quien creó
+        creado_por_nombre = 'Sistema'
+        if traspaso.creado_por:
+            creado_por_nombre = traspaso.creado_por.get_full_name() or traspaso.creado_por.username
+        
+        # Obtener nombres de ubicaciones
+        origen_nombre = traspaso.origen.nombre_ubicacion or 'Sin nombre'
+        destino_nombre = traspaso.destino.nombre_ubicacion or 'Sin nombre'
+        
+        # Preparar respuesta
+        data = {
+            'id': traspaso.id,
+            'codigo': traspaso.codigo,
+            'estado': traspaso.estado,
+            'tipo': traspaso.tipo,
+            'origen': {
+                'nombre_ubicacion': origen_nombre,
+                'rol': traspaso.origen.rol,
+            },
+            'destino': {
+                'nombre_ubicacion': destino_nombre,
+                'rol': traspaso.destino.rol,
+            },
+            'productos': productos,
+            'creado_por': creado_por_nombre,
+            'fecha_creacion': traspaso.fecha_creacion.isoformat(),
+            'comentario': traspaso.comentario or '',
+        }
+        
+        print(f"[DEBUG] Respuesta JSON preparada exitosamente")
+        return JsonResponse(data)
+        
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Error en obtener_detalle_traspaso: {e}")
+        traceback.print_exc()
+        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
