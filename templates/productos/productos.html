@@ -73,7 +73,8 @@
                         <!--<th style="width: 14%;">Nombre</th> -->
                         <th style="width: 12%;">Detalle</th>
                         <th style="width: 12%;">Categoría</th>
-                        <th style="width: 12%;">Stock Cajas</th>
+                        <th style="width: 10%;">Stock Cajas</th>
+                        <th style="width: 10%;">Stock Unidad</th>
                         <th style="width: 9%;">Unid/Caja</th>
                         <th style="width: 12%;">Precio USD</th>
                         <!--<th style="width: 12%;">Contenedores</th>
@@ -114,12 +115,15 @@
                             </div>
                         </td>
                         <td>
+                            <span class="badge-stock badge-stock-normal">{{ producto.stock_cajas|floatformat:"-2" }} cajas</span>
+                        </td>
+                        <td>
                             {% if producto.stock <= producto.stock_critico %}
                                 <span class="badge-stock badge-stock-critico">{{ producto.stock }} unidades</span>
                             {% elif producto.stock <= producto.stock_bajo %}
                                 <span class="badge-stock badge-stock-bajo">{{ producto.stock }} unidades</span>
                             {% else %}
-                                <span class="badge-stock badge-stock-normal">{{ producto.stock_cajas | floatformat:0 }} cajas</span>
+                                <span class="badge-stock badge-stock-normal">{{ producto.stock }} unidades</span>
                             {% endif %}
                         </td>
                         <td class="text-center">
@@ -200,7 +204,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="10" class="text-center py-4">
+                        <td colspan="11" class="text-center py-4">
                             <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
                             <p class="text-muted">No hay productos registrados</p>
                         </td>
