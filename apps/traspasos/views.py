@@ -703,19 +703,15 @@ def generar_pdf_traspaso(request, id):
     
     elements.append(Spacer(1, 0.1*inch))
 
-    # Tabla de productos (foto, código, producto, stock actual, stock final, cantidad, subtotal)
+    # Tabla de productos (imagen, código, nombre, descripción, cantidad unidad, cantidad caja)
     productos_data = [[
-        Paragraph('<b>Foto</b>', table_header_style),
+        Paragraph('<b>Imagen</b>', table_header_style),
         Paragraph('<b>Código</b>', table_header_style),
-        Paragraph('<b>Producto</b>', table_header_style),
-        Paragraph('<b>Stock Actual</b>', table_header_style),
-        Paragraph('<b>Stock Final</b>', table_header_style),
-        Paragraph('<b>Cantidad</b>', table_header_style),
-        Paragraph('<b>Subtotal</b>', table_header_style),
+        Paragraph('<b>Nombre Producto</b>', table_header_style),
+        Paragraph('<b>Descripción</b>', table_header_style),
+        Paragraph('<b>Cantidad Unidad</b>', table_header_style),
+        Paragraph('<b>Cantidad Caja</b>', table_header_style),
     ]]
-
-    origen_stock_perfil = _perfil_stock_objetivo(traspaso.origen)
-    total_traspaso = 0
 
     def resolve_image(detalle):
         if not detalle.producto.foto:
@@ -763,34 +759,36 @@ def generar_pdf_traspaso(request, id):
         
         return Paragraph('Sin imagen', ParagraphStyle('NoImage', parent=styles['Normal'], fontSize=7, textColor=colors.HexColor('#9ca3af'), alignment=TA_CENTER))
 
+    def cantidad_cajas(detalle):
+        unidades_por_caja = int(detalle.producto.unidades_por_caja or 0)
+        if unidades_por_caja <= 0:
+            return '0'
+
+        cajas = float(detalle.cantidad or 0) / unidades_por_caja
+        if cajas.is_integer():
+            return str(int(cajas))
+        return f'{cajas:.2f}'
+
     for detalle in traspaso.detalles.all():
-        try:
-            inventario = Inventario.objects.filter(producto=detalle.producto, ubicacion=origen_stock_perfil).first()
-            stock_actual = inventario.cantidad if inventario else detalle.producto.stock or 0
-        except Exception:
-            stock_actual = detalle.producto.stock or 0
-        stock_final = max(0, stock_actual - (detalle.cantidad or 0))
-        subtotal_detalle = float(detalle.producto.precio_unidad or 0) * float(detalle.cantidad or 0)
-        total_traspaso += subtotal_detalle
+        descripcion = (detalle.producto.descripcion or '').strip() or '-'
 
         productos_data.append([
             resolve_image(detalle),
             Paragraph(str(detalle.producto.codigo), table_value_style),
             Paragraph(str(detalle.producto.nombre), table_value_style),
-            Paragraph(f'{int(stock_actual):,}', table_value_style),
-            Paragraph(f'{int(stock_final):,}', table_value_style),
+            Paragraph(descripcion, table_value_style),
             Paragraph(str(detalle.cantidad), table_quantity_style),
-            Paragraph(f'{subtotal_detalle:,.2f}', table_quantity_style),
+            Paragraph(cantidad_cajas(detalle), table_quantity_style),
         ])
 
-    productos_table = Table(productos_data, colWidths=[0.5*inch, 0.7*inch, 1.8*inch, 0.7*inch, 0.7*inch, 0.8*inch, 0.8*inch], repeatRows=1)
+    productos_table = Table(productos_data, colWidths=[0.55*inch, 0.85*inch, 1.55*inch, 2.35*inch, 0.9*inch, 0.8*inch], repeatRows=1)
     table_style = [
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#ffffff")),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('ALIGN', (0, 0), (0, -1), 'CENTER'),
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f2937')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (3, 1), (4, -1), 'RIGHT'),
+        ('ALIGN', (4, 1), (5, -1), 'RIGHT'),
         ('LEFTPADDING', (0, 0), (-1, -1), 4),
         ('RIGHTPADDING', (0, 0), (-1, -1), 4),
         ('TOPPADDING', (0, 0), (-1, -1), 4),
@@ -804,29 +802,6 @@ def generar_pdf_traspaso(request, id):
 
     productos_table.setStyle(TableStyle(table_style))
     elements.append(productos_table)
-
-    # Fila de total con la misma estructura de columnas que la tabla de productos
-    total_table = Table(
-        [[
-            Paragraph('', value_style),
-            Paragraph('', value_style),
-            Paragraph('', value_style),
-            Paragraph('', value_style),
-            Paragraph('', value_style),
-            Paragraph('<b>Total:</b>', ParagraphStyle('TotalLabel', parent=styles['Normal'], alignment=TA_RIGHT, fontSize=10, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold')),
-            Paragraph(f'<b>{total_traspaso:,.2f}</b>', ParagraphStyle('TotalStyle', parent=styles['Normal'], alignment=TA_RIGHT, fontSize=11, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold'))
-        ]],
-        colWidths=[0.5*inch, 0.7*inch, 1.8*inch, 0.7*inch, 0.7*inch, 0.8*inch, 0.8*inch]
-    )
-    total_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('ALIGN', (6, 0), (6, 0), 'RIGHT'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 4),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-    ]))
-    elements.append(total_table)
     elements.append(Spacer(1, 0.28*inch))
     elements.append(Spacer(1, 0.28*inch))
 
@@ -1020,3 +995,74 @@ def obtener_destinos_traspaso(request):
         return JsonResponse(data, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def obtener_detalle_traspaso(request, id):
+    """Obtener detalles completos de un traspaso en formato JSON"""
+    try:
+        # Verificar que el usuario está autenticado
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'No autenticado'}, status=401)
+        
+        print(f"[DEBUG] Buscando traspaso con ID: {id}")
+        traspaso = get_object_or_404(Traspaso, id=id)
+        print(f"[DEBUG] Traspaso encontrado: {traspaso.codigo}")
+        
+        # Asegurarse que origen y destino existen
+        if not traspaso.origen or not traspaso.destino:
+            return JsonResponse({'error': 'Traspaso sin origen o destino'}, status=400)
+        
+        # Obtener detalles
+        detalles = DetalleTraspaso.objects.filter(traspaso=traspaso).select_related('producto')
+        
+        productos = []
+        for detalle in detalles:
+            try:
+                print(f"[DEBUG] Procesando detalle: {detalle.id}, producto: {detalle.producto.nombre}, cantidad: {detalle.cantidad}")
+                productos.append({
+                    'codigo_producto': detalle.producto.codigo,
+                    'nombre_producto': detalle.producto.nombre,
+                    'cantidad': detalle.cantidad,
+                })
+            except Exception as prod_error:
+                print(f"[ERROR] Error procesando producto {detalle.id}: {prod_error}")
+                continue
+        
+        # Obtener nombre de quien creó
+        creado_por_nombre = 'Sistema'
+        if traspaso.creado_por:
+            creado_por_nombre = traspaso.creado_por.get_full_name() or traspaso.creado_por.username
+        
+        # Obtener nombres de ubicaciones
+        origen_nombre = traspaso.origen.nombre_ubicacion or 'Sin nombre'
+        destino_nombre = traspaso.destino.nombre_ubicacion or 'Sin nombre'
+        
+        # Preparar respuesta
+        data = {
+            'id': traspaso.id,
+            'codigo': traspaso.codigo,
+            'estado': traspaso.estado,
+            'tipo': traspaso.tipo,
+            'origen': {
+                'nombre_ubicacion': origen_nombre,
+                'rol': traspaso.origen.rol,
+            },
+            'destino': {
+                'nombre_ubicacion': destino_nombre,
+                'rol': traspaso.destino.rol,
+            },
+            'productos': productos,
+            'creado_por': creado_por_nombre,
+            'fecha_creacion': traspaso.fecha_creacion.isoformat(),
+            'comentario': traspaso.comentario or '',
+        }
+        
+        print(f"[DEBUG] Respuesta JSON preparada exitosamente")
+        return JsonResponse(data)
+        
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Error en obtener_detalle_traspaso: {e}")
+        traceback.print_exc()
+        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)

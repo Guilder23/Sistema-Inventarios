@@ -43,12 +43,18 @@ class Traspaso(models.Model):
     
     @classmethod
     def generar_codigo(cls):
-        """Genera código único para traspaso"""
-        from datetime import datetime
-        prefijo = "TRP"
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        aleatorio = str(uuid.uuid4())[:8].upper()
-        return f"{prefijo}-{timestamp}-{aleatorio}"
+        """Genera un código corto y único para traspaso."""
+        fecha_corta = timezone.now().strftime("%y%m%d")
+
+        for _ in range(10):
+            aleatorio = uuid.uuid4().hex[:6].upper()
+            codigo = f"TRP-{fecha_corta}-{aleatorio}"
+            if not cls.objects.filter(codigo=codigo).exists():
+                return codigo
+
+        # Fallback improbable en caso de muchas colisiones.
+        aleatorio = uuid.uuid4().hex[:10].upper()
+        return f"TRP-{aleatorio}"
     
     @property
     def total(self):

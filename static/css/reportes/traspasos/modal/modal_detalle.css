@@ -1,0 +1,519 @@
+/* ===== ESTILOS DEL MODAL DE DETALLE DE TRASPASO ===== */
+/* Basado en el estilo del modal de ventas */
+
+#modalVerTraspaso .modal-header {
+    background: #1e3a8a;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-bottom: 3px solid #065f46;
+}
+
+#modalVerTraspaso .modal-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+#modalVerTraspaso .close {
+    color: white;
+    opacity: 0.9;
+    text-shadow: none;
+}
+
+#modalVerTraspaso .close:hover {
+    opacity: 1;
+}
+
+#modalVerTraspaso .modal-body {
+    padding: 1.5rem;
+    background: #f8f9fa;
+}
+
+/* SECCIONES DE INFORMACIÓN */
+#modalVerTraspaso .info-section {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+#modalVerTraspaso .section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e3a8a;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #dbeafe;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#modalVerTraspaso .info-item {
+    margin-bottom: 0.75rem;
+}
+
+#modalVerTraspaso .info-item:last-child {
+    margin-bottom: 0;
+}
+
+#modalVerTraspaso .info-item label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#modalVerTraspaso .info-item p {
+    font-size: 0.875rem;
+    color: #111827;
+    margin-bottom: 0;
+    line-height: 1.4;
+}
+
+/* CÓDIGO TRASPASO BADGE */
+.codigo-traspaso-badge {
+    display: inline-block;
+    padding: 0.5rem 1.25rem;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1e40af;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    font-family: 'Courier New', monospace;
+    border: 1px solid #93c5fd;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+/* BADGES COMPACTOS DE ESTADO - Sin espacios excesivos */
+.estado-badge-traspaso {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    margin: 0.25rem 0;
+}
+
+.estado-badge-traspaso i {
+    margin-right: 0.3rem;
+}
+
+.estado-pendiente {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+.estado-transito {
+    background: #cffafe;
+    color: #0c4a6e;
+    border: 1px solid #a5f3fc;
+}
+
+.estado-recibido {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.estado-rechazado {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.estado-cancelado {
+    background: #e5e7eb;
+    color: #374151;
+    border: 1px solid #9ca3af;
+}
+
+/* BADGES COMPACTOS DE TIPO - Sin espacios excesivos */
+.tipo-badge-traspaso {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    margin: 0.25rem 0;
+}
+
+.tipo-badge-traspaso i {
+    margin-right: 0.3rem;
+}
+
+.tipo-normal {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+
+.tipo-devolucion {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+/* ESTADO TRASPASO - BADGES (antiguas - se mantienen para compatibilidad) */
+.estado-traspaso-completado {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+    border: 1px solid #6ee7b7;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15);
+}
+
+.estado-traspaso-pendiente {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+    border: 1px solid #fcd34d;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15);
+}
+
+.estado-traspaso-cancelado {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+    border: 1px solid #fca5a5;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.15);
+}
+
+.estado-traspaso-anulado {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+    color: #374151;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+    border: 1px solid #9ca3af;
+    box-shadow: 0 2px 6px rgba(107, 114, 128, 0.15);
+}
+
+/* TIPO TRASPASO - BADGES (antigua - se mantiene para compatibilidad) */
+.tipo-traspaso-badge {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+    color: #6b21a8;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+    border: 1px solid #d8b4fe;
+    box-shadow: 0 2px 6px rgba(147, 51, 234, 0.15);
+}
+
+/* CARD SHADOW */
+#modalVerTraspaso .card {
+    background: white;
+}
+
+#modalVerTraspaso .card-body {
+    padding: 1.25rem;
+}
+
+/* Tabla de Productos */
+.tabla-productos-wrapper {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.tabla-productos {
+    margin-bottom: 0;
+}
+
+.tabla-productos thead {
+    background-color: #f8f9fc;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.tabla-productos th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #5a5c69;
+    font-weight: 700;
+    border-bottom: 2px solid #e3e6f0;
+    padding: 0.5rem 0.5rem;
+}
+
+.tabla-productos td {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.875rem;
+    color: #5a5c69;
+    vertical-align: middle;
+}
+
+.tabla-productos tbody tr:hover {
+    background-color: #f8f9fc;
+}
+
+.producto-codigo {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #4e73df;
+    font-size: 0.8rem;
+}
+
+.producto-nombre {
+    font-weight: 500;
+}
+
+.producto-cantidad {
+    font-weight: 600;
+    color: #1cc88a;
+}
+
+/* Ubicaciones */
+.ubicacion-origen {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 4px solid #ffc107;
+}
+
+.ubicacion-destino {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 4px solid #17a2b8;
+}
+
+.ubicacion-origen label,
+.ubicacion-destino label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0.3rem;
+}
+
+.ubicacion-origen p,
+.ubicacion-destino p {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #212529;
+    margin: 0.3rem 0;
+}
+
+.badge-rol {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-left: 3px solid;
+    margin-top: 0.4rem;
+}
+
+#detalleOrigenRol {
+    background-color: #fff3cd;
+    color: #856404;
+    border-left-color: #ffc107;
+}
+
+#detalleDestinoRol {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border-left-color: #17a2b8;
+}
+
+/* ============================================
+   TABLA DE PRODUCTOS
+   ============================================ */
+
+.tabla-container {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.tabla-modal {
+    margin: 0;
+    width: 100%;
+}
+
+.tabla-modal thead {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.tabla-modal th {
+    font-weight: 600;
+    color: #495057;
+    padding: 12px 10px;
+    text-align: left;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tabla-modal th.text-center {
+    text-align: center;
+}
+
+.tabla-modal td {
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9rem;
+}
+
+.tabla-modal td.text-center {
+    text-align: center;
+    font-weight: 500;
+}
+
+.tabla-modal tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.tabla-modal tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.tabla-modal tbody tr td:first-child {
+    font-weight: 500;
+    color: #212529;
+}
+
+/* ============================================
+   COMENTARIO
+   ============================================ */
+
+.box-comentario {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    border-left: 4px solid #007bff;
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #212529;
+    min-height: 60px;
+}
+
+.box-comentario p {
+    margin: 0;
+}
+
+/* ============================================
+   SPINNER Y LOADING
+   ============================================ */
+
+.spinner-border-sm {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-width: 0.25em;
+}
+
+/* ============================================
+   UTILIDADES DE BOOTSTRAP
+   ============================================ */
+
+.py-3 {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+}
+
+.py-5 {
+    padding-top: 3rem !important;
+    padding-bottom: 3rem !important;
+}
+
+.mt-2 {
+    margin-top: 0.5rem !important;
+}
+
+.mt-3 {
+    margin-top: 1rem !important;
+}
+
+.mt-4 {
+    margin-top: 1.5rem !important;
+}
+
+.mb-0 {
+    margin-bottom: 0 !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+/* ============================================
+   RESPONSIVO
+   ============================================ */
+
+@media (max-width: 992px) {
+    .modal-body {
+        padding: 1rem;
+    }
+
+    .card-header-badges {
+        padding: 1rem;
+    }
+
+    .info-section {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .badge-codigo {
+        padding: 10px 16px;
+        min-width: 140px;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-body {
+        padding: 0.75rem;
+    }
+
+    .section-title {
+        font-size: 0.85rem;
+    }
+
+    .tabla-modal th,
+    .tabla-modal td {
+        padding: 8px;
+        font-size: 0.8rem;
+    }
+
+    .badge-codigo {
+        padding: 8px 12px;
+        min-width: 120px;
+        font-size: 0.95rem;
+    }
+}
+
