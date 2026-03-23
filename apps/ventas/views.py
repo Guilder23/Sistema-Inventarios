@@ -477,7 +477,6 @@ def guardar_venta(request):
     razon_social = data.get('razon_social', '').strip()
     direccion = data.get('direccion', '').strip()
     tipo_pago = data.get('tipo_pago', 'contado')
-    tipo_venta = data.get('tipo_venta', '').strip().lower()  # 'tienda' o 'deposito'
     moneda = data.get('moneda', 'BOB').upper()
     tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd() or 1)))
     vendedor_id = data.get('vendedor_id', None)  # Para vendedores de almacén
@@ -492,8 +491,6 @@ def guardar_venta(request):
         return JsonResponse({'success': False, 'error': 'Moneda inválida.'})
     if tipo_cambio <= 0:
         return JsonResponse({'success': False, 'error': 'Tipo de cambio inválido.'})
-    if tipo_venta and tipo_venta not in ['tienda', 'deposito']:
-        return JsonResponse({'success': False, 'error': 'Tipo de venta inválido.'})
     if not items:
         return JsonResponse({'success': False, 'error': 'Debe agregar al menos un producto.'})
 
@@ -566,9 +563,6 @@ def guardar_venta(request):
                     precio_unitario=precio_unitario,
                     subtotal=subtotal_item,
                 )
-                # Si es venta tienda o deposito, descontar del Inventario según tipo_venta
-                if tipo_venta in ['tienda', 'deposito']:
-                    descontar_stock_desde_inventario(producto, cantidad, tipo_venta)
                 # También descontar del stock universal (ProductoContenedor)
                 descontar_stock_desde_contenedores(producto, cantidad)
 
@@ -1716,7 +1710,12 @@ def guardar_venta_tienda(request):
 
                 # Si es venta tienda o deposito, descontar del Inventario según tipo_venta
                 if tipo_venta in ['tienda', 'deposito']:
-                    descontar_stock_desde_inventario(producto, unidades_a_descontar, tipo_venta)
+                    descontar_stock_desde_inventario_tienda(
+                        producto=producto,
+                        cantidad=unidades_a_descontar,
+                        perfil=perfil,
+                        tipo_venta=tipo_venta,
+                    )
                 # También descontar del stock universal (ProductoContenedor)
                 descontar_stock_desde_contenedores(producto, unidades_a_descontar)
 
