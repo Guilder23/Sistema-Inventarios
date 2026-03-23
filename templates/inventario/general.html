@@ -212,17 +212,16 @@
                         <th style="width: 6%;" class="text-center">FOTO</th>
                         <th style="width: 9%;">CÓDIGO</th>
                         <th style="width: 18%;">PRODUCTO</th>
-                        <th style="width: 12%;">CATEGORÍA</th>
+                        <th style="width: 15%;">DESCRIPCIÓN</th>
                         <th style="width: 9%;">ROL</th>
                         <th style="width: 13%;">NOMBRE DEL ROL</th>
                         <th style="width: 10%;" class="text-center">STOCK</th>
-                        <th style="width: 10%;" class="text-center">ESTADO</th>
                         <th style="width: 13%;" class="text-center">ACTUALIZADO</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in inventario_expandido %}
-                    <tr>
+                    <tr class="fila-estado-{% if item.estado == 'normal' %}normal{% elif item.estado == 'bajo' %}bajo{% else %}critico{% endif %}">
                         <td class="text-center">
                             {% if item.producto.foto %}
                                 <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="producto-imagen-tabla">
@@ -234,19 +233,20 @@
                         </td>
                         <td><span class="codigo-badge">{{ item.producto.codigo }}</span></td>
                         <td><strong>{{ item.producto.nombre }}</strong></td>
-                        <td>{{ item.producto.categoria.nombre|default:'Sin categoría' }}</td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 220px;" title="{{ item.producto.descripcion|default:'Sin descripción' }}">
+                                {{ item.producto.descripcion|default:'Sin descripción' }}
+                            </div>
+                        </td>
                         <td>{{ item.tipo_rol }}</td>
                         <td>{{ item.nombre_ubicacion }}</td>
                         <td class="text-center">
-                            <span class="badge-stock-normal">{{ item.stock }} unidades</span>
-                        </td>
-                        <td class="text-center">
                             {% if item.estado == 'normal' %}
-                                <span class="badge-estado badge-estado-activo">Normal</span>
+                                <span class="badge-stock badge-stock-normal">{{ item.stock }} unidades</span>
                             {% elif item.estado == 'bajo' %}
-                                <span class="badge-estado badge-estado-bajo">Bajo</span>
+                                <span class="badge-stock badge-stock-bajo">{{ item.stock }} unidades</span>
                             {% else %}
-                                <span class="badge-estado badge-estado-inactivo">Crítico</span>
+                                <span class="badge-stock badge-stock-critico">{{ item.stock }} unidades</span>
                             {% endif %}
                         </td>
                         <td class="text-center text-muted">
@@ -255,7 +255,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="text-center py-4">
+                        <td colspan="8" class="text-center py-4">
                             <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
                             <p class="text-muted mb-0">No hay productos con stock en las ubicaciones</p>
                         </td>
@@ -273,13 +273,12 @@
                         <th rowspan="2" style="width: 5%;" class="text-center">Foto</th>
                         <th rowspan="2" style="width: 7%;">Código</th>
                         <th rowspan="2" style="width: 13%;">Producto</th>
-                        <th rowspan="2" style="width: 9%;">Categoría</th>
+                        <th rowspan="2" style="width: 12%;">Descripción</th>
                         <th colspan="2" class="ubicaciones-header">Almacén</th>
                         <th rowspan="2" class="ubicaciones-header" style="width: 8%;">Depósitos</th>
                         <th rowspan="2" class="ubicaciones-header" style="width: 8%;">Tiendas</th>
                         <th rowspan="2" class="ubicaciones-header" style="width: 8%;">T. Online</th>
                         <th rowspan="2" style="width: 9%;">Total</th>
-                        <th rowspan="2" style="width: 7%;">Estado</th>
                         <th rowspan="2" style="width: 5%;">Detalle</th>
                     </tr>
                     <tr>
@@ -289,7 +288,7 @@
                 </thead>
                 <tbody>
                     {% for item in inventario_consolidado %}
-                    <tr>
+                    <tr class="fila-estado-{% if item.estado_stock == 'normal' %}normal{% elif item.estado_stock == 'bajo' %}bajo{% else %}critico{% endif %}">
                         <td class="text-center">
                             {% if item.producto.foto %}
                                 <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="producto-imagen-tabla">
@@ -303,23 +302,18 @@
                             <span class="codigo-badge">{{ item.producto.codigo }}</span>
                         </td>
                         <td>{{ item.producto.nombre }}</td>
-                        <td>{{ item.producto.categoria.nombre|default:'Sin categoría' }}</td>
-                        <td><small>{{ item.nombre_almacenes }}</small></td>
-                        <td class="stock-cell">{{ item.stock_almacen }}</td>
-                        <td class="stock-cell">{{ item.stock_depositos }}</td>
-                        <td class="stock-cell">{{ item.stock_tiendas }}</td>
-                        <td class="stock-cell">{{ item.stock_tiendas_virtuales }}</td>
-                        <td class="stock-cell stock-total">
-                            <strong>{{ item.total_stock }}</strong>
+                        <td>
+                            <div class="text-truncate" style="max-width: 220px;" title="{{ item.producto.descripcion|default:'Sin descripción' }}">
+                                {{ item.producto.descripcion|default:'Sin descripción' }}
+                            </div>
                         </td>
-                        <td class="text-center">
-                            {% if item.estado_stock == 'normal' %}
-                                <span class="badge-estado badge-estado-activo">Normal</span>
-                            {% elif item.estado_stock == 'bajo' %}
-                                <span class="badge-estado badge-estado-bajo">Bajo</span>
-                            {% else %}
-                                <span class="badge-estado badge-estado-inactivo">Crítico</span>
-                            {% endif %}
+                        <td><small>{{ item.nombre_almacenes }}</small></td>
+                        <td class="stock-cell stock-cell-{% if item.estado_stock == 'normal' %}normal{% elif item.estado_stock == 'bajo' %}bajo{% else %}critico{% endif %}">{{ item.stock_almacen }}</td>
+                        <td class="stock-cell stock-cell-{% if item.estado_stock == 'normal' %}normal{% elif item.estado_stock == 'bajo' %}bajo{% else %}critico{% endif %}">{{ item.stock_depositos }}</td>
+                        <td class="stock-cell stock-cell-{% if item.estado_stock == 'normal' %}normal{% elif item.estado_stock == 'bajo' %}bajo{% else %}critico{% endif %}">{{ item.stock_tiendas }}</td>
+                        <td class="stock-cell stock-cell-{% if item.estado_stock == 'normal' %}normal{% elif item.estado_stock == 'bajo' %}bajo{% else %}critico{% endif %}">{{ item.stock_tiendas_virtuales }}</td>
+                        <td class="stock-cell stock-total stock-cell-{% if item.estado_stock == 'normal' %}normal{% elif item.estado_stock == 'bajo' %}bajo{% else %}critico{% endif %}">
+                            <strong>{{ item.total_stock }}</strong>
                         </td>
                         <td class="text-center">
                             {% if item.ubicaciones_detalle %}
@@ -332,7 +326,7 @@
                     </tr>
                     {% if item.ubicaciones_detalle %}
                     <tr class="collapse" id="detalle-{{ item.producto.id }}">
-                        <td colspan="12" style="background-color: #f8f9fa; padding: 1rem;">
+                        <td colspan="11" style="background-color: #f8f9fa; padding: 1rem;">
                             <div class="row">
                                 <div class="col-12">
                                     <h6 class="mb-3"><i class="fas fa-map-marker-alt"></i> Detalle por Ubicación</h6>
@@ -355,7 +349,7 @@
                     {% endif %}
                     {% empty %}
                     <tr>
-                        <td colspan="12" class="text-center py-4">
+                        <td colspan="11" class="text-center py-4">
                             <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
                             <p class="text-muted mb-0">No hay productos en el inventario</p>
                         </td>

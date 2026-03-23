@@ -144,10 +144,34 @@
     box-shadow: 0 2px 8px rgba(78, 115, 223, 0.1);
 }
 
+.tabla-simplificada tbody tr.fila-estado-normal:hover td {
+    background-color: #86efac;
+}
+
+.tabla-simplificada tbody tr.fila-estado-bajo:hover td {
+    background-color: #fcd34d;
+}
+
+.tabla-simplificada tbody tr.fila-estado-critico:hover td {
+    background-color: #fca5a5;
+}
+
 .tabla-simplificada tbody td {
     padding: 1rem 0.75rem;
     vertical-align: middle;
     border-top: 1px solid #e3e6f0;
+}
+
+.tabla-simplificada tbody tr.fila-estado-normal td {
+    background-color: #bbf7d0;
+}
+
+.tabla-simplificada tbody tr.fila-estado-bajo td {
+    background-color: #fef3c7;
+}
+
+.tabla-simplificada tbody tr.fila-estado-critico td {
+    background-color: #fee2e2;
 }
 
 .tabla-simplificada .codigo-badge {
@@ -271,6 +295,30 @@
 .inventario-general-table td {
     vertical-align: middle;
     padding: 0.6rem 0.5rem;
+}
+
+.inventario-general-table tbody tr.fila-estado-normal td {
+    background-color: #bbf7d0;
+}
+
+.inventario-general-table tbody tr.fila-estado-bajo td {
+    background-color: #fef3c7;
+}
+
+.inventario-general-table tbody tr.fila-estado-critico td {
+    background-color: #fee2e2;
+}
+
+.inventario-general-table tbody tr.fila-estado-normal:hover td {
+    background-color: #86efac;
+}
+
+.inventario-general-table tbody tr.fila-estado-bajo:hover td {
+    background-color: #fcd34d;
+}
+
+.inventario-general-table tbody tr.fila-estado-critico:hover td {
+    background-color: #fca5a5;
 }
 
 .stock-cell {
