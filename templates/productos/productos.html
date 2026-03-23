@@ -73,9 +73,9 @@
                         <!--<th style="width: 14%;">Nombre</th> -->
                         <th style="width: 12%;">Detalle</th>
                         <th style="width: 12%;">Categoría</th>
-                        <th style="width: 10%;">Stock Cajas</th>
                         <th style="width: 10%;">Stock Unidad</th>
                         <th style="width: 9%;">Unid/Caja</th>
+                        <th style="width: 10%;">Stock por Caja</th>
                         <th style="width: 12%;">Precio USD</th>
                         <!--<th style="width: 12%;">Contenedores</th>
                         <th style="width: 10%;">Stock</th>-->
@@ -115,9 +115,6 @@
                             </div>
                         </td>
                         <td>
-                            <span class="badge-stock badge-stock-normal">{{ producto.stock_cajas|floatformat:"-2" }} cajas</span>
-                        </td>
-                        <td>
                             {% if producto.stock <= producto.stock_critico %}
                                 <span class="badge-stock badge-stock-critico">{{ producto.stock }} unidades</span>
                             {% elif producto.stock <= producto.stock_bajo %}
@@ -128,6 +125,15 @@
                         </td>
                         <td class="text-center">
                             {{ producto.unidades_por_caja }}
+                        </td>
+                        <td>
+                            {% if producto.stock <= producto.stock_critico %}
+                                <span class="badge-stock badge-stock-critico">{{ producto.stock_cajas|floatformat:"-2" }} cajas</span>
+                            {% elif producto.stock <= producto.stock_bajo %}
+                                <span class="badge-stock badge-stock-bajo">{{ producto.stock_cajas|floatformat:"-2" }} cajas</span>
+                            {% else %}
+                                <span class="badge-stock badge-stock-normal">{{ producto.stock_cajas|floatformat:"-2" }} cajas</span>
+                            {% endif %}
                         </td>
                         <td>
                              <div class="text-truncate" style="max-width: 200px;" title="{{ producto.nombre }}">
