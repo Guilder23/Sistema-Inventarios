@@ -22,11 +22,11 @@ reportlab==4.0.9
 # djangorestframework==3.14.0
 
 # Almacenamiento en Blackblaze B2 (COMENTADO - no se usa)
-# django-storages==1.14.2
-# boto3==1.42.58
+django-storages==1.14.2
+boto3==1.42.58
 
 # Almacenamiento en Blackblaze B2 (S3)
 django-storages[s3]==1.14.2
 
 # Generación de PDFs (solo cuando lo necesites, descomenta)
-# reportlab==4.0.9
+reportlab==4.0.9
