@@ -31,6 +31,10 @@
     flex-wrap: wrap;
 }
 
+.venta-page-header .btn {
+    flex-shrink: 0;
+}
+
 .venta-layout {
     display: flex;
     flex-direction: column;
@@ -100,6 +104,15 @@
 .card-carrito .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+}
+
+.card-carrito .card-header {
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.venta-layout-section--search .card-buscador {
+    width: 100%;
 }
 
 /*SELECTOR TIPO DE PAGO*/
@@ -258,7 +271,7 @@
 
 /* Tabla del carrito */
 #tablaCarrito {
-    min-width: 860px;
+    min-width: 980px;
 }
 
 #tablaCarrito thead th {
@@ -300,6 +313,32 @@
     font-family: 'Courier New', monospace;
 }
 
+.carrito-chip-vendedor {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 88px;
+    padding: 0.42rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    border: 1px solid transparent;
+}
+
+.carrito-chip-vendedor--tienda {
+    background: rgba(44, 111, 187, 0.12);
+    border-color: rgba(44, 111, 187, 0.2);
+    color: var(--nv-primary);
+}
+
+.carrito-chip-vendedor--deposito {
+    background: rgba(240, 173, 78, 0.18);
+    border-color: rgba(240, 173, 78, 0.28);
+    color: #9a5c00;
+}
+
 /* Input de cantidad */
 .input-cantidad-wrapper {
     display: flex;
@@ -332,6 +371,10 @@
     border-color: var(--nv-primary);
     outline: none;
     box-shadow: 0 0 0 2px rgba(44, 111, 187, 0.15);
+}
+
+.input-cantidad-wrapper--cajas .input-cantidad {
+    width: 60px;
 }
 
 /* Subtotal en carrito */
@@ -370,6 +413,80 @@
     font-size: 1.35rem;
     font-weight: 800;
     color: var(--nv-success);
+}
+
+.descuento-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.descuento-toolbar-label {
+    font-weight: 700;
+    color: var(--nv-text-dark);
+}
+
+.descuento-toggle-group {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.35rem;
+    border: 1px solid var(--nv-border);
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    flex-wrap: nowrap;
+    width: fit-content;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.descuento-toggle-group .btn-check {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.descuento-toggle-group .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 0.6rem 1.15rem;
+    white-space: nowrap;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #198754;
+    transition: all 0.18s ease;
+}
+
+.descuento-toggle-group > label.btn {
+    border-radius: 999px !important;
+    margin-left: 0 !important;
+}
+
+.descuento-toggle-group .btn:hover {
+    background: rgba(25, 135, 84, 0.08);
+    border-color: rgba(25, 135, 84, 0.14);
+}
+
+.descuento-toggle-group .btn-check:checked + .btn {
+    color: #fff;
+    background: linear-gradient(135deg, #198754 0%, #157347 100%);
+    border-color: #157347;
+    box-shadow: none;
+}
+
+.descuento-feedback {
+    border: 1px solid var(--nv-border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    background: #fbfcff;
 }
 
 /* Botón registrar venta */
@@ -425,8 +542,22 @@
 }
 
 @media (max-width: 768px) {
+    .venta-page {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
     .venta-page-header {
+        flex-direction: column;
         align-items: flex-start !important;
+    }
+
+    .venta-page-header > * {
+        width: 100%;
+    }
+
+    .venta-page-header .btn {
+        width: 100%;
     }
 
     .venta-form-grid--tienda {
@@ -445,6 +576,7 @@
     .page-title {
         font-size: 1.2rem;
     }
+
     .total-valor {
         font-size: 1.1rem;
     }
@@ -452,9 +584,23 @@
     #tablaCarrito {
         min-width: 720px;
     }
+
+    #btnLimpiarCarrito {
+        width: 100%;
+    }
+
+    .descuento-toggle-group {
+        width: 100%;
+        justify-content: stretch;
+    }
 }
 
 @media (max-width: 576px) {
+    .venta-page {
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+    }
+
     .resultado-item {
         flex-wrap: wrap;
         gap: 0.5rem;
@@ -469,5 +615,29 @@
     .card-buscador .card-header,
     .card-carrito .card-header {
         padding: 1.1rem 1rem;
+    }
+
+    .descuento-toolbar {
+        align-items: stretch;
+    }
+
+    .descuento-toggle-group {
+        display: flex;
+        width: 100%;
+    }
+
+    .descuento-toggle-group .btn {
+        flex: 1 1 0;
+        text-align: center;
+        justify-content: center;
+        padding: 0.6rem 0.75rem;
+    }
+
+    .tipo-pago-option {
+        padding-right: 2.5rem;
+    }
+
+    .check-icon {
+        right: 0.6rem;
     }
 }
