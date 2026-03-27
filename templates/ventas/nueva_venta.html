@@ -20,10 +20,11 @@
 </script>
 {% endblock %}
 {% block contenido %}
-<div class="container-fluid py-4">
+<div class="container-fluid venta-page py-4">
+    <div class="venta-page-shell">
 
 {#Header#}
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="venta-page-header d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="page-title mb-1">
                 <i class="fas fa-cart-plus mr-2"></i>Nueva Venta
@@ -37,13 +38,12 @@
         </a>
     </div>
 
-    <div class="row g-3">
+    <div class="venta-layout venta-layout--stacked">
+        <section class="venta-layout-section venta-layout-section--form">
+            <div class="venta-form-grid venta-form-grid--almacen">
 
-{# COLUMNA IZQUIERDA: DATOS DEL CLIENTE Y BUSCADOR#}
-        <div class="col-lg-5 col-md-12 mb-4">
-
-            {# Card Datos de la Venta #}
-            <div class="card card-datos-venta shadow-sm mb-4">
+                {# Card Datos de la Venta #}
+                <div class="card card-datos-venta shadow-sm venta-form-card venta-form-card--datos">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
                         <i class="fas fa-user mr-2 text-primary"></i>Datos de la Venta
@@ -178,8 +178,8 @@
                 </div>
             </div>
 
-{# Card Buscador de Productos#}
-            <div class="card card-buscador shadow-sm">
+                {# Card Buscador de Productos#}
+                <div class="card card-buscador shadow-sm venta-form-card venta-form-card--buscador">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
                         <i class="fas fa-search mr-2 text-primary"></i>Buscar Producto
@@ -217,12 +217,10 @@
                     </div>
                 </div>
             </div>
+            </div>
+        </section>
 
-        </div>
-
-{# COLUMNA DERECHA: CARRITO DE COMPRAS#}
-        <div class="col-lg-7 col-md-12 mb-4">
-
+        <section class="venta-layout-section venta-layout-section--cart">
             <div class="card card-carrito shadow-sm">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 font-weight-bold d-flex align-items-center">
@@ -286,11 +284,10 @@
                 </div>
 
             </div>{# /card-carrito #}
+        </section>
+    </div>{# /venta-layout #}
 
-        </div>{# /col-lg-7 #}
-
-    </div>{# /row #}
-
+    </div>
 </div>{# /container-fluid #}
 {% endblock %}
 
