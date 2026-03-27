@@ -178,6 +178,16 @@
     border-radius: 4px;
 }
 
+.card-tabla .badge,
+.tabla-detalle-items .badge,
+.detalle-info-grid .badge,
+.seccion-amortizaciones .badge {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    vertical-align: middle !important;
+}
+
 /*Badges de Estado*/
 .badge-estado {
     display: inline-flex;
@@ -393,27 +403,140 @@
 /*
 Responsive
 */
-@media (max-width: 768px) {
+@media (max-width: 991.98px) {
+    .ventas-page-header {
+        align-items: flex-start !important;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .ventas-header-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        width: 100%;
+    }
+
+    .ventas-header-actions .btn {
+        margin-right: 0 !important;
+    }
+
+    .ventas-tabs-scroll {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+    }
+
+    .ventas-tabs-scroll .nav-item {
+        flex: 0 0 auto;
+    }
+
+    .ventas-tabs-scroll .nav-link {
+        white-space: nowrap;
+    }
+
+    .detalle-info-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
     .page-title {
         font-size: 1.2rem;
     }
-    .btn-nueva-venta {
+
+    .btn-nueva-venta,
+    .ventas-header-actions .btn {
+        width: 100%;
         padding: 0.4rem 0.8rem;
         font-size: 0.85rem;
     }
+
     .stat-value {
         font-size: 1rem;
     }
+
     .stat-icon {
         width: 40px;
         height: 40px;
         font-size: 1rem;
     }
-    .card-header-tabs .nav-link {
+
+    .ventas-filter-form {
+        row-gap: 0.85rem;
+    }
+
+    .filtro-bar {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    .filtro-bar [class*="col-"] {
+        width: 100%;
+        max-width: 100%;
+        flex: 0 0 100%;
+    }
+
+    .filtro-bar .btn {
+        width: 100%;
+    }
+
+    .card-header-tabs .nav-link,
+    .nav-tabs-ventas .nav-link {
         padding: 0.5rem 0.8rem;
         font-size: 0.82rem;
     }
-    .detalle-info-grid {
-        grid-template-columns: 1fr;
+
+    .tabla-productos tbody td,
+    .tabla-productos thead th {
+        padding-left: 0.85rem;
+        padding-right: 0.85rem;
+    }
+
+    .tabla-productos .btn-group {
+        display: inline-flex;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+    }
+
+    .modal-dialog {
+        margin: 0.75rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .container-fluid.py-4 {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    .card-stat .card-body {
+        padding: 1rem;
+    }
+
+    .stat-value {
+        font-size: 0.98rem;
+    }
+
+    .card-header-tabs .nav-link,
+    .nav-tabs-ventas .nav-link {
+        padding: 0.65rem 0.85rem;
+    }
+
+    .saldo-chip,
+    .badge-estado {
+        font-size: 0.72rem !important;
+    }
+
+    .detalle-info-item .value {
+        font-size: 0.9rem;
+        word-break: break-word;
+    }
+
+    .tabla-detalle-items {
+        min-width: 640px;
     }
 }
