@@ -451,7 +451,7 @@
 {# Modal: Detalle de Venta #}
 <div class="modal fade" id="modalDetalleVenta" tabindex="-1" role="dialog" aria-labelledby="modalDetalleVentaLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content">
+        <div class="modal-content modal-detalle-venta">
             <div class="modal-header modal-header-detalle">
                 <h5 class="modal-title" id="modalDetalleVentaLabel">
                     <i class="fas fa-file-invoice mr-2"></i>
@@ -587,6 +587,22 @@
     </div>
 </div>
 {% endif %}
+
+<div class="modal fade" id="modalComprobanteAmortizacion" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-image mr-2"></i>Comprobante de amortización</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="imgComprobanteAmortizacion" src="" alt="Comprobante" class="img-fluid" style="max-height: 75vh; object-fit: contain;">
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts_extra %}
@@ -652,6 +668,18 @@
     /* Asegurar que el modal esté mas adelante */
     .modal {
         z-index: 1050 !important;
+    }
+
+    /* Scroll interno para el detalle de venta */
+    #modalDetalleVenta .modal-content.modal-detalle-venta {
+        max-height: calc(100vh - 2rem);
+        display: flex;
+        flex-direction: column;
+    }
+
+    #modalDetalleVenta .modal-body {
+        overflow-y: auto;
+        max-height: calc(100vh - 11rem);
     }
     
     .modal.fade.show {
@@ -779,18 +807,26 @@ function renderDetalleVentaTienda(data) {
                             <th>Moneda</th>
                             <th class="text-right">Monto</th>
                             <th>Observaciones</th>
+                            <th>Comprobante</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
 
             data.amortizaciones.forEach(a => {
+                const comprobanteHtml = a.comprobante
+                    ? `<button type="button" class="btn btn-link p-0 border-0 bg-transparent d-inline-block" title="Ver comprobante" onclick="abrirComprobanteModal('${a.comprobante}')">
+                            <img src="${a.comprobante}" alt="Comprobante" style="width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid #dee2e6; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">
+                       </button>`
+                    : '<span class="text-muted">Sin imagen</span>';
+
                 html += `
                     <tr>
                         <td>${a.fecha}</td>
                         <td>${a.moneda_descripcion || monedaDescripcion}</td>
                         <td class="text-right font-weight-bold text-success">${a.moneda_simbolo || etiqueta} ${parseFloat(a.monto).toFixed(2)}</td>
                         <td>${a.observaciones || '-'}</td>
+                        <td>${comprobanteHtml}</td>
                     </tr>
                 `;
             });
@@ -877,6 +913,12 @@ function cargarDatosAmortizacionTienda(ventaId) {
             document.getElementById('amortMonedaVenta').textContent = data.moneda_descripcion || (data.moneda === 'USD' ? 'USD ($)' : 'BOB (Bs.)');
             document.getElementById('amortMonto').setAttribute('max', saldoPendiente);
         });
+}
+
+function abrirComprobanteModal(src) {
+    const img = document.getElementById('imgComprobanteAmortizacion');
+    img.src = src;
+    $('#modalComprobanteAmortizacion').modal('show');
 }
 
 // Variables para anulación
