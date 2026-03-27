@@ -282,8 +282,45 @@ function abrirComprobanteModal(src) {
     $('#modalComprobanteAmortizacion').modal('show');
 }
 
+function limpiarPreviewAmortizacion() {
+    const previewWrapper = document.getElementById('amortComprobantePreviewWrapper');
+    const previewImg = document.getElementById('amortComprobantePreview');
+
+    if (previewImg) {
+        previewImg.removeAttribute('src');
+    }
+
+    if (previewWrapper) {
+        previewWrapper.classList.add('d-none');
+    }
+}
+
+function actualizarPreviewAmortizacion(input) {
+    const previewWrapper = document.getElementById('amortComprobantePreviewWrapper');
+    const previewImg = document.getElementById('amortComprobantePreview');
+    const archivo = input.files && input.files[0];
+
+    if (!archivo || !archivo.type.startsWith('image/')) {
+        limpiarPreviewAmortizacion();
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        if (previewImg) {
+            previewImg.src = event.target.result;
+        }
+        if (previewWrapper) {
+            previewWrapper.classList.remove('d-none');
+        }
+    };
+    reader.readAsDataURL(archivo);
+}
+
 // MODAL: REGISTRAR AMORTIZACIÓN
 function initBotonesAmortizacion() {
+    const inputComprobante = document.getElementById('amortComprobante');
+
     // Abrir modal
     $(document).on('click', '.btn-registrar-amortizacion', function () {
         const ventaId = $(this).data('venta-id');
@@ -295,6 +332,7 @@ function initBotonesAmortizacion() {
         $('#amortVentaTotal').text(parseFloat(ventaTotal).toFixed(2));
         $('#amortMonto').val('');
         $('#amortObservaciones').val('');
+        limpiarPreviewAmortizacion();
 
 // Cargar datos actuales de amortización
         cargarDatosAmortizacion(ventaId);
@@ -305,6 +343,16 @@ function initBotonesAmortizacion() {
 // Guardar amortización
     $('#btnGuardarAmortizacion').on('click', function () {
         guardarAmortizacion();
+    });
+
+    if (inputComprobante) {
+        inputComprobante.addEventListener('change', function () {
+            actualizarPreviewAmortizacion(this);
+        });
+    }
+
+    $('#modalAmortizacion').on('hidden.bs.modal', function () {
+        limpiarPreviewAmortizacion();
     });
 }
 
