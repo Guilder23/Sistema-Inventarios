@@ -297,11 +297,17 @@
                                     <td class="text-right font-weight-bold">
                                         {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center saldo-cell">
                                         {% if venta.saldo_pendiente > 0 %}
-                                        <span class="badge badge-warning">{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.saldo_pendiente|floatformat:2 }}</span>
+                                        <span class="saldo-chip saldo-chip--pendiente">
+                                            <i class="fas fa-clock mr-1"></i>
+                                            {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.saldo_pendiente|floatformat:2 }}
+                                        </span>
                                         {% else %}
-                                        <span class="badge badge-success">Cancelado</span>
+                                        <span class="saldo-chip saldo-chip--pagado">
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                            Sin saldo
+                                        </span>
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
@@ -684,6 +690,40 @@
     
     .modal.fade.show {
         animation: modalSlideIn 0.3s ease-out;
+    }
+
+    .saldo-cell {
+        vertical-align: middle !important;
+        text-align: center !important;
+    }
+
+    .saldo-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        min-width: 110px;
+        padding: 0.42rem 0.8rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .saldo-chip--pendiente {
+        background: #fff7ed;
+        color: #9a3412;
+        border-color: #fed7aa;
+        box-shadow: 0 1px 2px rgba(154, 52, 18, 0.08);
+    }
+
+    .saldo-chip--pagado {
+        background: #ecfdf5;
+        color: #166534;
+        border-color: #bbf7d0;
+        box-shadow: 0 1px 2px rgba(22, 101, 52, 0.08);
     }
     
     @keyframes modalSlideIn {
