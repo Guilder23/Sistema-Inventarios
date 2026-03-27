@@ -363,7 +363,7 @@
 <div class="modal fade" id="modalDetalleVenta" tabindex="-1" role="dialog"
      aria-labelledby="modalDetalleVentaLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content">
+        <div class="modal-content modal-detalle-venta">
             <div class="modal-header modal-header-detalle">
                 <h5 class="modal-title" id="modalDetalleVentaLabel">
                     <i class="fas fa-file-invoice mr-2"></i>
@@ -476,6 +476,22 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalComprobanteAmortizacion" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-image mr-2"></i>Comprobante de amortización</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="imgComprobanteAmortizacion" src="" alt="Comprobante" class="img-fluid" style="max-height: 75vh; object-fit: contain;">
+            </div>
+        </div>
+    </div>
+</div>
+
 {# Modal: Anular Venta - Almacén #}
 <div class="modal fade" id="modalAnularVenta" tabindex="-1" role="dialog" aria-labelledby="modalAnularVentaLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
@@ -513,6 +529,18 @@
 {% block scripts_extra %}
 <script src="{% static 'js/componentes/modales.js' %}"></script>
 <script src="{% static 'js/ventas/ventas.js' %}"></script>
+<style>
+    #modalDetalleVenta .modal-content.modal-detalle-venta {
+        max-height: calc(100vh - 2rem);
+        display: flex;
+        flex-direction: column;
+    }
+
+    #modalDetalleVenta .modal-body {
+        overflow-y: auto;
+        max-height: calc(100vh - 11rem);
+    }
+</style>
 <script>
 // Utilidad: Obtener CSRF Token
 function getCsrfToken() {
