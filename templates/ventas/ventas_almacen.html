@@ -277,6 +277,7 @@
                                     <th>Cliente</th>
                                     <th>Fecha</th>
                                     <th class="text-right">Total</th>
+                                    <th class="text-center">Saldo</th>
                                     <th class="text-center">Estado</th>
                                     <th class="text-center pr-3">Acciones</th>
                                 </tr>
@@ -291,6 +292,19 @@
                                     <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
                                     <td class="text-right font-weight-bold">
                                         {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total_display|floatformat:2 }}
+                                    </td>
+                                    <td class="text-center saldo-cell">
+                                        {% if venta.saldo_pendiente > 0 %}
+                                        <span class="saldo-chip saldo-chip--pendiente">
+                                            <i class="fas fa-clock mr-1"></i>
+                                            {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.saldo_pendiente|floatformat:2 }}
+                                        </span>
+                                        {% else %}
+                                        <span class="saldo-chip saldo-chip--pagado">
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                            Sin saldo
+                                        </span>
+                                        {% endif %}
                                     </td>
                                     <td class="text-center">
                                         {% if venta.estado == 'completada' %}
