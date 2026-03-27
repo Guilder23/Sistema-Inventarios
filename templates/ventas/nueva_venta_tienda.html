@@ -31,10 +31,11 @@
 </script>
 {% endblock %}
 {% block contenido %}
-<div class="container-fluid py-4">
+<div class="container-fluid venta-page py-4">
+    <div class="venta-page-shell">
 
 {#Header#}
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="venta-page-header d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="page-title mb-1">
                 <i class="fas fa-shopping-cart mr-2"></i>Nueva Venta
@@ -53,13 +54,12 @@
         </a>
     </div>
 
-    <div class="row">
+    <div class="venta-layout venta-layout--stacked">
+        <section class="venta-layout-section venta-layout-section--form">
+            <div class="venta-form-grid venta-form-grid--tienda">
 
-{# COLUMNA IZQUIERDA: DATOS DEL CLIENTE Y BUSCADOR#}
-        <div class="col-lg-6 mb-4">
-
-            {# Card Datos de la Venta #}
-            <div class="card card-datos-venta shadow-sm mb-4">
+                {# Card Datos de la Venta #}
+                <div class="card card-datos-venta shadow-sm venta-form-card venta-form-card--datos">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
                         <i class="fas fa-user mr-2 text-primary"></i>Datos de la Venta
@@ -147,8 +147,8 @@
                 </div>
             </div>
 
-{# Card Tipo de Vendedor #}
-            <div class="card card-tipo-vendedor shadow-sm mb-4" id="cardTipoVendedor">
+                {# Card Tipo de Vendedor #}
+                <div class="card card-tipo-vendedor shadow-sm venta-form-card venta-form-card--tipo-vendedor" id="cardTipoVendedor">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
                         <i class="fas fa-store mr-2 text-primary"></i>Tipo de Vendedor
@@ -172,8 +172,8 @@
                 </div>
             </div>
 
-{# Card Buscador de Productos#}
-            <div class="card card-buscador shadow-sm">
+                {# Card Buscador de Productos#}
+                <div class="card card-buscador shadow-sm venta-form-card venta-form-card--buscador">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
                         <i class="fas fa-search mr-2 text-primary"></i>Buscar Producto
@@ -198,11 +198,11 @@
                     </div>
                 </div>
             </div>
+            </div>
+        </section>
 
-        </div>{# /col-lg-6 #}
-
-{# COLUMNA DERECHA: CARRITO #}
-        <div class="col-lg-6 mb-4">
+        {# COLUMNA DERECHA: CARRITO #}
+        <section class="venta-layout-section venta-layout-section--cart">
             <div class="card card-carrito shadow-sm">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
@@ -271,7 +271,6 @@
                             </div>
                             <small class="form-text text-muted d-block mt-2">💡 Máximo: subtotal (en monto) o 100% (en porcentaje)</small>
                         </div>
-                        </div>
                     </div>
 
                     <button class="btn btn-success btn-block btn-lg mt-3" id="btnGuardarVenta">
@@ -285,11 +284,10 @@
                 </div>
 
             </div>{# /card-carrito #}
+        </section>
+    </div>{# /venta-layout #}
 
-        </div>{# /col-lg-7 #}
-
-    </div>{# /row #}
-
+    </div>
 </div>{# /container-fluid #}
 {% endblock %}
 
