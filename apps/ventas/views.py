@@ -746,6 +746,7 @@ def obtener_detalle_venta(request, id):
                     'moneda_descripcion': obtener_descripcion_moneda(a.moneda or venta.moneda),
                     'fecha': a.fecha.strftime('%d/%m/%Y %H:%M') if a.fecha else '',
                     'observaciones': a.observaciones or '',
+                    'comprobante': a.comprobante.url if a.comprobante else None,
                 })
                 total_amortizado += a.monto
         
@@ -808,6 +809,7 @@ def ver_venta(request, id):
                 'moneda_descripcion': obtener_descripcion_moneda(a.moneda or venta.moneda),
                 'fecha': a.fecha.strftime('%d/%m/%Y %H:%M') if a.fecha else '',
                 'observaciones': a.observaciones or '',
+                'comprobante': a.comprobante.url if a.comprobante else None,
             })
             total_amortizado += a.monto
         saldo_pendiente = venta.total - total_amortizado

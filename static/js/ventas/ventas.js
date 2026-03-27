@@ -236,17 +236,25 @@ function renderDetalleVenta(data) {
                             <th>Moneda</th>
                             <th class="text-right">Monto</th>
                             <th>Observaciones</th>
+                            <th>Comprobante</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
             data.amortizaciones.forEach(a => {
+                const comprobanteHtml = a.comprobante
+                    ? `<button type="button" class="btn btn-link p-0 border-0 bg-transparent d-inline-block" title="Ver comprobante" onclick="abrirComprobanteModal('${a.comprobante}')">
+                            <img src="${a.comprobante}" alt="Comprobante" style="width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid #dee2e6; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">
+                       </button>`
+                    : '<span class="text-muted">Sin imagen</span>';
+
                 html += `
                 <tr>
                     <td>${a.fecha}</td>
                     <td>${a.moneda_descripcion || monedaDescripcion}</td>
                     <td class="text-right font-weight-bold text-success">${a.moneda_simbolo || etiqueta} ${parseFloat(a.monto).toFixed(2)}</td>
                     <td>${a.observaciones || '-'}</td>
+                    <td>${comprobanteHtml}</td>
                 </tr>
             `;
             });
@@ -267,8 +275,52 @@ function renderDetalleVenta(data) {
     return html;
 }
 
+function abrirComprobanteModal(src) {
+    const img = document.getElementById('imgComprobanteAmortizacion');
+    if (!img) return;
+    img.src = src;
+    $('#modalComprobanteAmortizacion').modal('show');
+}
+
+function limpiarPreviewAmortizacion() {
+    const previewWrapper = document.getElementById('amortComprobantePreviewWrapper');
+    const previewImg = document.getElementById('amortComprobantePreview');
+
+    if (previewImg) {
+        previewImg.removeAttribute('src');
+    }
+
+    if (previewWrapper) {
+        previewWrapper.classList.add('d-none');
+    }
+}
+
+function actualizarPreviewAmortizacion(input) {
+    const previewWrapper = document.getElementById('amortComprobantePreviewWrapper');
+    const previewImg = document.getElementById('amortComprobantePreview');
+    const archivo = input.files && input.files[0];
+
+    if (!archivo || !archivo.type.startsWith('image/')) {
+        limpiarPreviewAmortizacion();
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        if (previewImg) {
+            previewImg.src = event.target.result;
+        }
+        if (previewWrapper) {
+            previewWrapper.classList.remove('d-none');
+        }
+    };
+    reader.readAsDataURL(archivo);
+}
+
 // MODAL: REGISTRAR AMORTIZACIÓN
 function initBotonesAmortizacion() {
+    const inputComprobante = document.getElementById('amortComprobante');
+
     // Abrir modal
     $(document).on('click', '.btn-registrar-amortizacion', function () {
         const ventaId = $(this).data('venta-id');
@@ -280,6 +332,7 @@ function initBotonesAmortizacion() {
         $('#amortVentaTotal').text(parseFloat(ventaTotal).toFixed(2));
         $('#amortMonto').val('');
         $('#amortObservaciones').val('');
+        limpiarPreviewAmortizacion();
 
 // Cargar datos actuales de amortización
         cargarDatosAmortizacion(ventaId);
@@ -290,6 +343,16 @@ function initBotonesAmortizacion() {
 // Guardar amortización
     $('#btnGuardarAmortizacion').on('click', function () {
         guardarAmortizacion();
+    });
+
+    if (inputComprobante) {
+        inputComprobante.addEventListener('change', function () {
+            actualizarPreviewAmortizacion(this);
+        });
+    }
+
+    $('#modalAmortizacion').on('hidden.bs.modal', function () {
+        limpiarPreviewAmortizacion();
     });
 }
 
