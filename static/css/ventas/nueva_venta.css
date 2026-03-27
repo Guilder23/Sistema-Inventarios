@@ -20,6 +20,53 @@
     color: var(--nv-text-dark);
 }
 
+.venta-page-shell {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.venta-page-header {
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.venta-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.venta-layout-section {
+    width: 100%;
+}
+
+.venta-form-grid {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.venta-form-grid--almacen {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+}
+
+.venta-form-grid--tienda {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.venta-form-grid--tienda .venta-form-card--datos {
+    grid-column: span 7;
+}
+
+.venta-form-grid--tienda .venta-form-card--tipo-vendedor {
+    grid-column: span 5;
+}
+
+.venta-form-grid--tienda .venta-form-card--buscador {
+    grid-column: 1 / -1;
+}
+
 /*Label de campo*/
 .label-campo {
     font-weight: 600;
@@ -30,6 +77,7 @@
 
 /*CARD DATOS DE VENTA*/
 .card-datos-venta,
+.card-tipo-vendedor,
 .card-buscador,
 .card-carrito {
     border: none;
@@ -37,10 +85,21 @@
     overflow: hidden;
 }
 .card-datos-venta .card-header,
+.card-tipo-vendedor .card-header,
 .card-buscador .card-header,
 .card-carrito .card-header {
     border-bottom: 2px solid var(--nv-border);
     padding: 1.5rem 1.5rem;
+}
+
+.venta-form-card,
+.card-carrito {
+    width: 100%;
+}
+
+.card-carrito .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 /*SELECTOR TIPO DE PAGO*/
@@ -198,6 +257,10 @@
 }
 
 /* Tabla del carrito */
+#tablaCarrito {
+    min-width: 860px;
+}
+
 #tablaCarrito thead th {
     background: var(--nv-bg-light);
     color: var(--nv-text-muted);
@@ -342,7 +405,40 @@
 }
 
 /*Responsive*/
+@media (max-width: 1199.98px) {
+    .venta-form-grid--almacen {
+        grid-template-columns: 1fr;
+    }
+
+    .venta-form-grid--tienda {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .venta-form-grid--tienda .venta-form-card--datos,
+    .venta-form-grid--tienda .venta-form-card--buscador {
+        grid-column: 1 / -1;
+    }
+
+    .venta-form-grid--tienda .venta-form-card--tipo-vendedor {
+        grid-column: span 2;
+    }
+}
+
 @media (max-width: 768px) {
+    .venta-page-header {
+        align-items: flex-start !important;
+    }
+
+    .venta-form-grid--tienda {
+        grid-template-columns: 1fr;
+    }
+
+    .venta-form-grid--tienda .venta-form-card--datos,
+    .venta-form-grid--tienda .venta-form-card--tipo-vendedor,
+    .venta-form-grid--tienda .venta-form-card--buscador {
+        grid-column: auto;
+    }
+
     .tipo-pago-selector {
         flex-direction: column;
     }
@@ -351,6 +447,10 @@
     }
     .total-valor {
         font-size: 1.1rem;
+    }
+
+    #tablaCarrito {
+        min-width: 720px;
     }
 }
 
@@ -362,5 +462,12 @@
     .resultado-item .btn-agregar-producto {
         margin-left: 0;
         width: 100%;
+    }
+
+    .card-datos-venta .card-header,
+    .card-tipo-vendedor .card-header,
+    .card-buscador .card-header,
+    .card-carrito .card-header {
+        padding: 1.1rem 1rem;
     }
 }
