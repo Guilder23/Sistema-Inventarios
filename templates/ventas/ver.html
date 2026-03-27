@@ -142,12 +142,10 @@
                         </p>
                     </div>
                     <div class="col-md-3">
-                        <p><strong>Moneda:</strong> 
-                            {% if venta.moneda == 'USD' %}
-                                <span class="badge badge-success">USD ($)</span>
-                            {% else %}
-                                <span class="badge badge-primary">BOB (Bs.)</span>
-                            {% endif %}
+                        <p><strong>Origen:</strong>
+                            <span class="badge {% if resumen_tipos_vendedor.codigo == 'mixto' %}badge-warning{% else %}badge-info{% endif %}">
+                                {{ resumen_tipos_vendedor.label }}
+                            </span>
                         </p>
                     </div>
                 </div>
@@ -175,6 +173,9 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Producto</th>
+                                <th class="text-center">Origen</th>
+                                <th class="text-center">Modalidad</th>
+                                <th class="text-center">Cajas</th>
                                 <th class="text-center">Cantidad</th>
                                 <th class="text-right">P. Unitario</th>
                                 <th class="text-right">Subtotal</th>
@@ -186,6 +187,9 @@
                                 <td>
                                     <strong>{{ detalle.producto }}</strong>
                                 </td>
+                                <td class="text-center">{{ detalle.tipo_vendedor_label }}</td>
+                                <td class="text-center">{{ detalle.modalidad_label }}</td>
+                                <td class="text-center">{{ detalle.cantidad_cajas }}</td>
                                 <td class="text-center">{{ detalle.cantidad }}</td>
                                 <td class="text-right">{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ detalle.precio_unitario|floatformat:2 }}</td>
                                 <td class="text-right"><strong>{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ detalle.subtotal|floatformat:2 }}</strong></td>
@@ -209,8 +213,12 @@
                         </div>
                         {% if descuento_display > 0 %}
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Descuento:</span>
+                            <span>Descuento {% if descuento_info.aplica %}<small class="text-muted">({{ descuento_info.resumen }})</small>{% endif %}:</span>
                             <span class="text-danger">-{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ descuento_display|floatformat:2 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 small text-muted">
+                            <span>Cálculo:</span>
+                            <span>{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ subtotal_display|floatformat:2 }} - {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ descuento_display|floatformat:2 }}</span>
                         </div>
                         {% endif %}
                         <div class="d-flex justify-content-between total-row border-top pt-2">
