@@ -82,23 +82,6 @@
                                placeholder="Ej: Av. Principal #123" autocomplete="off">
                     </div>
 
-                    <!-- SELECTOR VENDEDOR - Solo para almacén -->
-                    {% if user.perfil.rol == 'almacen' %}
-                    <div class="form-group">
-                        <label for="selectVendedor" class="label-campo">
-                            Vendedor <span class="text-danger">*</span>
-                        </label>
-                        <select class="form-control" id="selectVendedor" required>
-                            <option value="">-- Cargando vendedores... --</option>
-                        </select>
-                        <small class="form-text text-muted mt-1">
-                            <i class="fas fa-info-circle"></i>
-                            Se muestran vendedores del almacén y sus tiendas asociadas
-                        </small>
-                        <input type="hidden" id="inputVendedorId" value="">
-                    </div>
-                    {% endif %}
-
                     <div class="form-group mb-0">
                         <label class="label-campo">Tipo de Pago</label>
                         <div class="tipo-pago-selector">
@@ -178,8 +161,34 @@
                 </div>
             </div>
 
-                {# Card Buscador de Productos#}
-                <div class="card card-buscador shadow-sm venta-form-card venta-form-card--buscador">
+                {# Card Selector de Vendedor #}
+                <div class="card card-tipo-vendedor shadow-sm venta-form-card venta-form-card--tipo-vendedor">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 font-weight-bold">
+                        <i class="fas fa-user-tie mr-2 text-primary"></i>Seleccionar Vendedor
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-0">
+                        <label for="selectVendedor" class="label-campo">
+                            Vendedor <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-control" id="selectVendedor" required>
+                            <option value="">-- Cargando vendedores... --</option>
+                        </select>
+                        <small class="form-text text-muted mt-1">
+                            <i class="fas fa-info-circle"></i>
+                            Se muestran vendedores del almacén y sus tiendas asociadas.
+                        </small>
+                        <input type="hidden" id="inputVendedorId" value="">
+                    </div>
+                </div>
+            </div>
+            </div>
+        </section>
+
+        <section class="venta-layout-section venta-layout-section--search">
+            <div class="card card-buscador shadow-sm venta-form-card venta-form-card--buscador">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
                         <i class="fas fa-search mr-2 text-primary"></i>Buscar Producto
@@ -217,7 +226,6 @@
                     </div>
                 </div>
             </div>
-            </div>
         </section>
 
         <section class="venta-layout-section venta-layout-section--cart">
@@ -226,7 +234,6 @@
                     <h6 class="mb-0 font-weight-bold d-flex align-items-center">
                         <i class="fas fa-shopping-cart mr-2 text-success"></i>
                         Carrito de Compras
-                        <span class="badge badge-primary ml-3" id="carritoContador" style="padding: 0.5rem 0.75rem; font-size: 0.85rem;">0</span>
                     </h6>
                     <button class="btn btn-sm btn-outline-danger" id="btnLimpiarCarrito"
                             title="Vaciar carrito" style="display:none;">
@@ -248,8 +255,9 @@
                                 <thead>
                                     <tr>
                                         <th class="pl-3">Producto</th>
+                                        <th class="text-center" style="width: 130px;">Cajas</th>
                                         <th class="text-center" style="width: 90px;">Precio</th>
-                                        <th class="text-center" style="width: 110px;">Cantidad</th>
+                                        <th class="text-center" style="width: 130px;">Cantidad (unid.)</th>
                                         <th class="text-right" style="width: 100px;">Subtotal</th>
                                         <th class="text-center pr-3" style="width: 50px;"></th>
                                     </tr>
