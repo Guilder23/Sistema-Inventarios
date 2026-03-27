@@ -44,8 +44,22 @@ function convertirMonedaABs(monto) {
     return obtenerMonedaActual() === 'USD' ? (valor * obtenerTipoCambioActual()) : valor;
 }
 
+function obtenerUnidadesPorCajaProducto(producto) {
+    return Math.max(parseInt(producto.unidades_por_caja || 1, 10) || 1, 1);
+}
+
+function obtenerMaximoCajasProducto(producto) {
+    const stock = parseInt(producto.stock || 0, 10) || 0;
+    const unidadesPorCaja = obtenerUnidadesPorCajaProducto(producto);
+    return Math.floor(stock / unidadesPorCaja);
+}
+
+function sincronizarCantidadDesdeCajas(item) {
+    item.cantidad = item.cajas * item.unidadesPorCaja;
+}
+
 // ESTADO GLOBAL: CARRITO
-let carrito = [];  // Array de { productoId, codigo, nombre, precioUnitario, cantidad, stock }
+let carrito = [];  // Array de { productoId, codigo, nombre, precioUnitario, cajas, cantidad, stock, unidadesPorCaja }
 let debounceTimer = null;
 let ultimosProductosBusqueda = [];  // Guardar últimos resultados para re-renderizar al cambiar moneda
 
@@ -285,9 +299,14 @@ function renderResultadosBusqueda(productos) {
     productos.forEach(p => {
         // Verificar si ya está en el carrito
         const enCarrito = carrito.find(item => item.productoId === p.id);
-        const btnTexto = enCarrito ? 'Ya agregado' : '<i class="fas fa-plus mr-1"></i>Agregar';
-        const btnDisabled = enCarrito ? 'disabled' : '';
-        const btnClass = enCarrito ? 'btn-secondary' : 'btn-success';
+        const unidadesPorCaja = obtenerUnidadesPorCajaProducto(p);
+        const cajasDisponibles = obtenerMaximoCajasProducto(p);
+        const sinCajasDisponibles = cajasDisponibles < 1;
+        const btnTexto = enCarrito
+            ? 'Ya agregado'
+            : (sinCajasDisponibles ? 'Sin cajas disponibles' : '<i class="fas fa-plus mr-1"></i>Agregar');
+        const btnDisabled = (enCarrito || sinCajasDisponibles) ? 'disabled' : '';
+        const btnClass = (enCarrito || sinCajasDisponibles) ? 'btn-secondary' : 'btn-success';
         
         // Calcular precios (siempre calcular ambos para poder mostrar referencia)
         const precioUnitario = parseFloat(p.precio_unidad);
@@ -314,7 +333,7 @@ function renderResultadosBusqueda(productos) {
                         ${precioDisplay}
                         ${segundaMonedaDisplay}
                     </div>
-                    <div class="producto-stock">Stock: ${p.stock} uds.</div>
+                    <div class="producto-stock">Stock: ${p.stock} uds. | ${cajasDisponibles} caja(s) de ${unidadesPorCaja}</div>
                 </div>
                 <button class="btn btn-sm ${btnClass} btn-agregar-producto"
                         data-producto='${JSON.stringify(p).replace(/'/g, "&#39;")}'
@@ -358,13 +377,27 @@ function agregarAlCarrito(producto) {
         return;
     }
 
+    const unidadesPorCaja = obtenerUnidadesPorCajaProducto(producto);
+    const maximoCajas = obtenerMaximoCajasProducto(producto);
+    if (maximoCajas < 1) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Sin cajas disponibles',
+            text: `El producto "${producto.nombre}" no tiene stock suficiente para completar una caja.`,
+        });
+        return;
+    }
+
     carrito.push({
         productoId: producto.id,
         codigo: producto.codigo,
         nombre: producto.nombre,
         precioUnitario: parseFloat(producto.precio_unidad),
-        cantidad: 1,
+        cajas: 1,
+        cantidad: unidadesPorCaja,
         stock: producto.stock,
+        unidadesPorCaja: unidadesPorCaja,
+        maximoCajas: maximoCajas,
     });
 
     renderCarrito();
@@ -378,10 +411,8 @@ function renderCarrito() {
     const $contenido = $('#carritoContenido');
     const $footer = $('#carritoFooter');
     const $btnLimpiar = $('#btnLimpiarCarrito');
-    const $contador = $('#carritoContador');
 
     $body.empty();
-    $contador.text(carrito.length);
 
     if (carrito.length === 0) {
         $vacio.show();
@@ -405,12 +436,27 @@ function renderCarrito() {
         const subtotal = (item.precioUnitario * item.cantidad).toFixed(2);
         const precioEnDolares = (item.precioUnitario / tipoCambio).toFixed(2);
         const subtotalEnDolares = (parseFloat(subtotal) / tipoCambio).toFixed(2);
+        const maximoCajas = Math.max(item.maximoCajas || 1, 1);
 
         const $row = $(`
             <tr class="carrito-row-nueva" data-index="${index}">
                 <td class="pl-3">
                     <div class="carrito-producto-nombre">${item.nombre}</div>
                     <div class="carrito-producto-codigo">${item.codigo}</div>
+                    <small class="text-muted d-block mt-1">1 caja = ${item.unidadesPorCaja} unidad(es)</small>
+                </td>
+                <td class="text-center">
+                    <div class="input-cantidad-wrapper input-cantidad-wrapper--cajas">
+                        <button class="btn btn-outline-secondary btn-cajas-menos" data-index="${index}">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input type="number" class="input-cantidad input-cajas" value="${item.cajas}"
+                               min="1" max="${maximoCajas}" data-index="${index}">
+                        <button class="btn btn-outline-secondary btn-cajas-mas" data-index="${index}">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <small class="text-muted d-block mt-1">Disponibles: ${maximoCajas} caja(s)</small>
                 </td>
                 <td class="text-center">
                     <div class="precio-dual">
@@ -419,17 +465,8 @@ function renderCarrito() {
                     </div>
                 </td>
                 <td class="text-center">
-                    <div class="input-cantidad-wrapper">
-                        <button class="btn btn-outline-secondary btn-cantidad-menos" data-index="${index}">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <input type="number" class="input-cantidad" value="${item.cantidad}"
-                               min="1" max="${item.stock}" data-index="${index}">
-                        <button class="btn btn-outline-secondary btn-cantidad-mas" data-index="${index}">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
-                    <small class="text-muted d-block mt-1">Stock: ${item.stock}</small>
+                    <strong>${item.cantidad}</strong>
+                    <small class="text-muted d-block mt-1">Stock: ${item.stock} unidad(es)</small>
                 </td>
                 <td class="text-right carrito-subtotal">
                     <div class="subtotal-dual">
@@ -448,21 +485,22 @@ function renderCarrito() {
         $body.append($row);
     });
 
-    // Eventos de cantidad
-    $body.find('.btn-cantidad-menos').off('click').on('click', function () {
+    // Eventos de cajas
+    $body.find('.btn-cajas-menos').off('click').on('click', function () {
         const idx = $(this).data('index');
-        cambiarCantidad(idx, -1);
+        cambiarCajas(idx, -1);
     });
-    $body.find('.btn-cantidad-mas').off('click').on('click', function () {
+    $body.find('.btn-cajas-mas').off('click').on('click', function () {
         const idx = $(this).data('index');
-        cambiarCantidad(idx, 1);
+        cambiarCajas(idx, 1);
     });
-    $body.find('.input-cantidad').off('change').on('change', function () {
+    $body.find('.input-cajas').off('change').on('change', function () {
         const idx = $(this).data('index');
         let val = parseInt($(this).val());
         if (isNaN(val) || val < 1) val = 1;
-        if (val > carrito[idx].stock) val = carrito[idx].stock;
-        carrito[idx].cantidad = val;
+        if (val > carrito[idx].maximoCajas) val = carrito[idx].maximoCajas;
+        carrito[idx].cajas = val;
+        sincronizarCantidadDesdeCajas(carrito[idx]);
         renderCarrito();
         actualizarResumen();
     });
@@ -475,23 +513,24 @@ function renderCarrito() {
 }
 
 // CARRITO: CAMBIAR CANTIDAD
-function cambiarCantidad(index, delta) {
+function cambiarCajas(index, delta) {
     const item = carrito[index];
-    const nuevaCantidad = item.cantidad + delta;
+    const nuevaCantidad = item.cajas + delta;
 
     if (nuevaCantidad < 1) return;
-    if (nuevaCantidad > item.stock) {
+    if (nuevaCantidad > item.maximoCajas) {
         Swal.fire({
             icon: 'warning',
             title: 'Stock insuficiente',
-            text: `Solo hay ${item.stock} unidades disponibles de "${item.nombre}".`,
+            text: `Solo hay ${item.maximoCajas} caja(s) disponibles de "${item.nombre}".`,
             timer: 2500,
             showConfirmButton: false,
         });
         return;
     }
 
-    item.cantidad = nuevaCantidad;
+    item.cajas = nuevaCantidad;
+    sincronizarCantidadDesdeCajas(item);
     renderCarrito();
     actualizarResumen();
 }
@@ -669,6 +708,9 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
     const items = carrito.map(item => ({
         producto_id: item.productoId,
         cantidad: item.cantidad,
+        cantidad_cajas: item.cajas,
+        modalidad: 'caja',
+        tipo_vendedor: 'almacen',
         precio_unitario: convertirBsAMoneda(item.precioUnitario).toFixed(2),
     }));
     
