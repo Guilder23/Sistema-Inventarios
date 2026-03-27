@@ -12,6 +12,7 @@ let productosActuales = {};
 let tipoVendedorActual = null;
 let tipoDescuentoActual = 'fijo';
 let debounceBusqueda = null;
+let secuenciaBusqueda = 0;
 
 function obtenerURLs() {
     if (typeof URLS !== 'undefined' && URLS) {
@@ -89,6 +90,58 @@ function obtenerEtiquetaModalidad(modalidad) {
     return 'Unidad';
 }
 
+function normalizarTipoVendedor(tipoVendedor) {
+    const valor = (tipoVendedor || '').toString().trim().toLowerCase();
+
+    if (['deposito', 'depósito', 'almacen', 'almacén'].includes(valor)) {
+        return 'deposito';
+    }
+
+    if (valor === 'tienda') {
+        return 'tienda';
+    }
+
+    return '';
+}
+
+function obtenerEtiquetaTipoVendedor(tipoVendedor) {
+    const tipoNormalizado = normalizarTipoVendedor(tipoVendedor);
+
+    if (tipoNormalizado === 'deposito') return 'Depósito';
+    return 'Tienda';
+}
+
+function obtenerClaseTipoVendedor(tipoVendedor) {
+    return normalizarTipoVendedor(tipoVendedor) === 'deposito'
+        ? 'carrito-chip-vendedor carrito-chip-vendedor--deposito'
+        : 'carrito-chip-vendedor carrito-chip-vendedor--tienda';
+}
+
+function obtenerClaveProductoBusqueda(productoId, tipoVendedor) {
+    return `${tipoVendedor || 'tienda'}_${productoId}`;
+}
+
+function obtenerIdContextoBusqueda(productoId, tipoVendedor) {
+    return `${tipoVendedor || 'tienda'}_${productoId}`;
+}
+
+function obtenerTipoVendedorItem(item) {
+    return normalizarTipoVendedor(item?.tipo_vendedor)
+        || normalizarTipoVendedor(item?.tipo_vendedor_label)
+        || normalizarTipoVendedor(item?.producto?.tipo_vendedor_busqueda)
+        || normalizarTipoVendedor(tipoVendedorActual)
+        || 'tienda';
+}
+
+function esTiendaPrincipalActual() {
+    return document.getElementById('inputEsTiendaPrincipal')?.value === '1';
+}
+
+function puedeAplicarDescuento() {
+    const tipoPago = document.getElementById('inputTipoPago')?.value || 'contado';
+    return tipoPago === 'contado';
+}
+
 function obtenerResumenModalidad(producto, cantidad, modalidad) {
     const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
 
@@ -133,6 +186,55 @@ function actualizarUnidadDescuento() {
     unidad.textContent = tipoDescuentoActual === 'porcentaje'
         ? '%'
         : (obtenerMonedaActual() === 'USD' ? '$' : 'Bs.');
+}
+
+function obtenerDetalleDescuentoActual(subtotalBs) {
+    const descuentoInput = parseFloat(document.getElementById('inputDescuento')?.value || 0) || 0;
+    const descuentoHabilitado = puedeAplicarDescuento();
+    let descuentoBs = 0;
+    let resumen = 'Sin descuento';
+
+    if (descuentoHabilitado && descuentoInput > 0) {
+        if (tipoDescuentoActual === 'porcentaje') {
+            const porcentaje = Math.min(descuentoInput, 100);
+            descuentoBs = (subtotalBs * porcentaje) / 100;
+            resumen = `${porcentaje.toFixed(2).replace(/\.00$/, '')}% (${formatearMonto(descuentoBs)})`;
+        } else {
+            descuentoBs = Math.min(convertirMonedaABs(descuentoInput), subtotalBs);
+            resumen = formatearMonto(descuentoBs);
+        }
+    }
+
+    return {
+        descuentoBs,
+        resumen,
+        valorIngresado: descuentoInput,
+        habilitado: descuentoHabilitado
+    };
+}
+
+function actualizarVisibilidadDescuento() {
+    const descuentoSection = document.getElementById('descuentoSection');
+    const descuentoBloqueado = document.getElementById('descuentoBloqueado');
+    const inputDescuento = document.getElementById('inputDescuento');
+
+    if (!descuentoSection || !inputDescuento) return;
+
+    const habilitado = puedeAplicarDescuento();
+    descuentoSection.style.display = habilitado ? '' : 'none';
+    if (descuentoBloqueado) {
+        descuentoBloqueado.style.display = habilitado ? 'none' : 'block';
+    }
+
+    if (!habilitado) {
+        inputDescuento.value = '0';
+        tipoDescuentoActual = 'fijo';
+        const descuentoFijo = document.getElementById('descuentoFijo');
+        if (descuentoFijo) descuentoFijo.checked = true;
+    }
+
+    actualizarUnidadDescuento();
+    actualizarTotales();
 }
 
 function mostrarAlerta(mensaje, tipo = 'warning', titulo = '') {
@@ -220,9 +322,12 @@ function recalcularItemCarrito(item) {
     item.subtotal_bs = item.cantidad * item.precio_unitario_bs;
 }
 
-function agregarAlCarrito(producto, cantidad, modalidad) {
+function agregarAlCarrito(producto, cantidad, modalidad, tipoVendedor = tipoVendedorActual) {
+    const tipoVendedorFinal = normalizarTipoVendedor(
+        tipoVendedor || producto?.tipo_vendedor_busqueda || tipoVendedorActual
+    ) || 'tienda';
     const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
-    const validacionCantidad = validarCantidadSegunModalidad(cantidad, modalidad, unidadesPorCaja, tipoVendedorActual);
+    const validacionCantidad = validarCantidadSegunModalidad(cantidad, modalidad, unidadesPorCaja, tipoVendedorFinal);
     if (!validacionCantidad.valido) {
         mostrarAlerta(validacionCantidad.mensaje);
         return false;
@@ -235,7 +340,7 @@ function agregarAlCarrito(producto, cantidad, modalidad) {
     }
 
     const existenteIndex = carrito.findIndex((item) =>
-        item.producto.id === producto.id && item.modalidad === modalidad
+        item.producto.id === producto.id && item.modalidad === modalidad && obtenerTipoVendedorItem(item) === tipoVendedorFinal
     );
     const cantidadExistente = existenteIndex >= 0 ? carrito[existenteIndex].cantidad : 0;
     const validacionStock = validarStockDisponible(producto, cantidad, modalidad, cantidadExistente);
@@ -246,6 +351,8 @@ function agregarAlCarrito(producto, cantidad, modalidad) {
 
     if (existenteIndex >= 0) {
         carrito[existenteIndex].cantidad += cantidad;
+        carrito[existenteIndex].tipo_vendedor = tipoVendedorFinal;
+        carrito[existenteIndex].tipo_vendedor_label = obtenerEtiquetaTipoVendedor(tipoVendedorFinal);
         carrito[existenteIndex].precio_unitario_bs = precioBaseBs;
         recalcularItemCarrito(carrito[existenteIndex]);
     } else {
@@ -253,6 +360,8 @@ function agregarAlCarrito(producto, cantidad, modalidad) {
             producto,
             cantidad,
             modalidad,
+            tipo_vendedor: tipoVendedorFinal,
+            tipo_vendedor_label: obtenerEtiquetaTipoVendedor(tipoVendedorFinal),
             precio_unitario_bs: precioBaseBs,
             unidades_operativas: 0,
             subtotal_bs: 0
@@ -277,7 +386,7 @@ function renderCarrito() {
     if (!tbody) return;
 
     if (carrito.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="fas fa-inbox mr-2"></i>Carrito vacio</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="fas fa-inbox mr-2"></i>Carrito vacio</td></tr>';
         if (footer) footer.style.display = 'none';
         actualizarTotales();
         return;
@@ -288,11 +397,16 @@ function renderCarrito() {
     tbody.innerHTML = carrito.map((item, index) => `
         <tr class="carrito-row-nueva">
             <td class="pl-3">
-                <div class="font-weight-bold">${escapeHtml(item.producto.nombre)}</div>
-                <div class="small text-muted">${escapeHtml(item.producto.codigo || '')}</div>
+                <div class="carrito-producto-nombre">${escapeHtml(item.producto.nombre)}</div>
+                <div class="carrito-producto-codigo">${escapeHtml(item.producto.codigo || '')}</div>
             </td>
             <td class="text-center">
-                <span class="badge badge-info">${obtenerEtiquetaModalidad(item.modalidad)}</span>
+                <span class="${obtenerClaseTipoVendedor(obtenerTipoVendedorItem(item))}">
+                    ${escapeHtml(item.tipo_vendedor_label || obtenerEtiquetaTipoVendedor(obtenerTipoVendedorItem(item)))}
+                </span>
+            </td>
+            <td class="text-center">
+                <div class="font-weight-bold">${escapeHtml(obtenerEtiquetaModalidad(item.modalidad))}</div>
                 <div class="small text-muted mt-1">${escapeHtml(obtenerResumenModalidad(item.producto, item.cantidad, item.modalidad))}</div>
             </td>
             <td class="text-center">
@@ -316,34 +430,33 @@ function renderCarrito() {
 function actualizarTotales() {
     const subtotalBs = carrito.reduce((sum, item) => sum + item.subtotal_bs, 0);
     const cantidadItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
-    const descuentoInput = parseFloat(document.getElementById('inputDescuento')?.value || 0) || 0;
-
-    let descuentoBs = 0;
-    if (tipoDescuentoActual === 'porcentaje') {
-        const porcentaje = Math.min(descuentoInput, 100);
-        descuentoBs = (subtotalBs * porcentaje) / 100;
-    } else {
-        descuentoBs = Math.min(convertirMonedaABs(descuentoInput), subtotalBs);
-    }
+    const detalleDescuento = obtenerDetalleDescuentoActual(subtotalBs);
+    const descuentoBs = detalleDescuento.descuentoBs;
 
     const totalBs = subtotalBs - descuentoBs;
 
     const resumenCantItems = document.getElementById('resumenCantItems');
     const resumenSubtotal = document.getElementById('resumenSubtotal');
     const resumenTotal = document.getElementById('resumenTotal');
+    const descuentoResumen = document.getElementById('descuentoResumen');
+    const descuentoCalculo = document.getElementById('descuentoCalculo');
 
     if (resumenCantItems) resumenCantItems.textContent = cantidadItems;
     if (resumenSubtotal) resumenSubtotal.textContent = formatearMonto(subtotalBs);
     if (resumenTotal) resumenTotal.innerHTML = `<strong style="font-size: 1.3rem; display: block;">${formatearMonto(totalBs)}</strong>`;
+    if (descuentoResumen) descuentoResumen.textContent = detalleDescuento.resumen;
+    if (descuentoCalculo) descuentoCalculo.textContent = `${formatearMonto(subtotalBs)} - ${formatearMonto(descuentoBs)} = ${formatearMonto(totalBs)}`;
 }
 
-function actualizarPreviewProducto(productoId) {
-    const producto = productosActuales[productoId];
+function actualizarPreviewProducto(productoId, tipoVendedorContexto = tipoVendedorActual) {
+    const claveProducto = obtenerClaveProductoBusqueda(productoId, tipoVendedorContexto);
+    const producto = productosActuales[claveProducto];
     if (!producto) return;
 
-    const modalidad = document.querySelector(`input[name="modalidad_${productoId}"]:checked`)?.value || 'unidad';
-    const cantidadInput = document.getElementById(`cantidad_${productoId}`);
-    const resumen = document.getElementById(`preview_modalidad_${productoId}`);
+    const contextoId = obtenerIdContextoBusqueda(productoId, tipoVendedorContexto);
+    const modalidad = document.querySelector(`input[name="modalidad_${contextoId}"]:checked`)?.value || 'unidad';
+    const cantidadInput = document.getElementById(`cantidad_${contextoId}`);
+    const resumen = document.getElementById(`preview_modalidad_${contextoId}`);
     const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
     const precioBs = obtenerPrecioBasePorModalidad(producto, modalidad);
 
@@ -381,39 +494,73 @@ function renderTarjetaProducto(producto) {
                 <label class="small font-weight-bold text-muted d-block">Modalidad</label>
                 <div class="d-flex flex-wrap">
                     <div class="form-check form-check-inline mr-3">
-                        <input class="form-check-input" type="radio" name="modalidad_${producto.id}" id="unidad_${producto.id}" value="unidad" checked>
-                        <label class="form-check-label" for="unidad_${producto.id}">Unidad</label>
+                        <input class="form-check-input" type="radio" name="modalidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" id="unidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" value="unidad" checked>
+                        <label class="form-check-label" for="unidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}">Unidad</label>
                     </div>
                     <div class="form-check form-check-inline mr-3">
-                        <input class="form-check-input" type="radio" name="modalidad_${producto.id}" id="caja_${producto.id}" value="caja">
-                        <label class="form-check-label" for="caja_${producto.id}">Caja</label>
+                        <input class="form-check-input" type="radio" name="modalidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" id="caja_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" value="caja">
+                        <label class="form-check-label" for="caja_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}">Caja</label>
                     </div>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="modalidad_${producto.id}" id="mayor_${producto.id}" value="mayor">
-                        <label class="form-check-label" for="mayor_${producto.id}">Mayor</label>
+                        <input class="form-check-input" type="radio" name="modalidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" id="mayor_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" value="mayor">
+                        <label class="form-check-label" for="mayor_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}">Mayor</label>
                     </div>
                 </div>
-                <div class="small text-muted mt-2" id="preview_modalidad_${producto.id}"></div>
+                <div class="small text-muted mt-2" id="preview_modalidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}"></div>
             </div>
             <div class="col-md-3">
-                <label for="cantidad_${producto.id}" class="small font-weight-bold text-muted">Cantidad</label>
-                <input type="number" class="form-control form-control-sm" id="cantidad_${producto.id}" min="1" value="1">
+                <label for="cantidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" class="small font-weight-bold text-muted">Cantidad</label>
+                <input type="number" class="form-control form-control-sm" id="cantidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" min="1" value="1">
             </div>
             <div class="col-md-4">
-                <button type="button" class="btn btn-primary btn-sm btn-block" onclick="agregarDesdeResultados(${producto.id})">
+                <button type="button" class="btn btn-primary btn-sm btn-block" onclick="agregarDesdeResultados(${producto.id}, '${tipoVendedorActual}')">
                     <i class="fas fa-plus mr-1"></i>Agregar al carrito
                 </button>
             </div>
         `
         : `
             <div class="col-md-3">
-                <label for="cantidad_${producto.id}" class="small font-weight-bold text-muted">Cantidad</label>
-                <input type="number" class="form-control form-control-sm" id="cantidad_${producto.id}" min="1" value="1">
+                <label for="cantidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" class="small font-weight-bold text-muted">Cantidad</label>
+                <input type="number" class="form-control form-control-sm" id="cantidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" min="1" value="1">
             </div>
             <div class="col-md-9">
-                <button type="button" class="btn btn-primary btn-sm btn-block" onclick="agregarDesdeResultadosDeposito(${producto.id})">
+                <button type="button" class="btn btn-primary btn-sm btn-block" onclick="agregarDesdeResultadosDeposito(${producto.id}, '${tipoVendedorActual}')">
                     <i class="fas fa-plus mr-1"></i>Agregar al carrito
                 </button>
+            </div>
+        `;
+
+    const bloquePrecios = tipoVendedorActual === 'tienda'
+        ? `
+            <div class="row mb-3">
+                <div class="col-md-4 mb-2">
+                    <div class="border rounded p-2 h-100">
+                        <div class="small text-muted">P. Unitario</div>
+                        ${renderMontoDual(precioUnidad)}
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="border rounded p-2 h-100">
+                        <div class="small text-muted">P. Caja</div>
+                        ${renderMontoDual(precioCaja)}
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="border rounded p-2 h-100">
+                        <div class="small text-muted">P. Mayor</div>
+                        ${renderMontoDual(precioMayor)}
+                    </div>
+                </div>
+            </div>
+        `
+        : `
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="border rounded p-2 h-100">
+                        <div class="small text-muted">P. Unitario</div>
+                        ${renderMontoDual(precioUnidad)}
+                    </div>
+                </div>
             </div>
         `;
 
@@ -426,32 +573,15 @@ function renderTarjetaProducto(producto) {
                         <div class="small text-muted">${escapeHtml(producto.codigo || '')}</div>
                     </div>
                     <div class="small text-muted text-right">
+                        <div>Origen: <strong>${obtenerEtiquetaTipoVendedor(tipoVendedorActual)}</strong></div>
                         <div>Stock: <strong>${stock}</strong> unidad(es)</div>
-                        <div>Caja: <strong>${unidadesPorCaja}</strong> unidad(es)</div>
-                        <div>Cajas disponibles: <strong>${stockCajas}</strong></div>
+                        ${tipoVendedorActual === 'tienda'
+                            ? `<div>Caja: <strong>${unidadesPorCaja}</strong> unidad(es)</div><div>Cajas disponibles: <strong>${stockCajas}</strong></div>`
+                            : '<div>Modalidad disponible: <strong>Unidad</strong></div>'}
                     </div>
                 </div>
 
-                <div class="row mb-3">
-                    <div class="col-md-4 mb-2">
-                        <div class="border rounded p-2 h-100">
-                            <div class="small text-muted">P. Unitario</div>
-                            ${renderMontoDual(precioUnidad)}
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-2">
-                        <div class="border rounded p-2 h-100">
-                            <div class="small text-muted">P. Caja</div>
-                            ${renderMontoDual(precioCaja)}
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-2">
-                        <div class="border rounded p-2 h-100">
-                            <div class="small text-muted">P. Mayor</div>
-                            ${renderMontoDual(precioMayor)}
-                        </div>
-                    </div>
-                </div>
+                ${bloquePrecios}
 
                 <div class="small text-muted mb-3">
                     <span class="mr-3"><strong>P. Compra:</strong> ${formatearMonto(parseFloat(producto.precio_compra || 0) || 0)}</span>
@@ -483,7 +613,11 @@ function renderResultadosBusqueda(productos) {
     }
 
     productos.forEach((producto) => {
-        productosActuales[producto.id] = producto;
+        const claveProducto = obtenerClaveProductoBusqueda(producto.id, tipoVendedorActual);
+        productosActuales[claveProducto] = {
+            ...producto,
+            tipo_vendedor_busqueda: normalizarTipoVendedor(tipoVendedorActual) || 'tienda'
+        };
     });
 
     resultados.innerHTML = productos.map((producto) => renderTarjetaProducto(producto)).join('');
@@ -491,10 +625,11 @@ function renderResultadosBusqueda(productos) {
 
     if (tipoVendedorActual === 'tienda') {
         productos.forEach((producto) => {
-            document.querySelectorAll(`input[name="modalidad_${producto.id}"]`).forEach((radio) => {
-                radio.addEventListener('change', () => actualizarPreviewProducto(producto.id));
+            const contextoId = obtenerIdContextoBusqueda(producto.id, tipoVendedorActual);
+            document.querySelectorAll(`input[name="modalidad_${contextoId}"]`).forEach((radio) => {
+                radio.addEventListener('change', () => actualizarPreviewProducto(producto.id, tipoVendedorActual));
             });
-            actualizarPreviewProducto(producto.id);
+            actualizarPreviewProducto(producto.id, tipoVendedorActual);
         });
     }
 }
@@ -502,16 +637,26 @@ function renderResultadosBusqueda(productos) {
 function buscarProductos(query) {
     const urls = obtenerURLs();
     const resultados = document.getElementById('resultadosBusqueda');
+    const tipoVendedorConsulta = tipoVendedorActual;
 
-    if (!tipoVendedorActual) {
+    if (!tipoVendedorConsulta) {
         resultados.innerHTML = '<div class="alert alert-warning mb-0">Selecciona primero el tipo de vendedor.</div>';
         resultados.style.display = 'block';
         return;
     }
 
-    fetch(`${urls.buscarProductos}?q=${encodeURIComponent(query)}&tipo_venta=${encodeURIComponent(tipoVendedorActual)}`)
+    const tokenBusqueda = ++secuenciaBusqueda;
+    resultados.innerHTML = '<div class="alert alert-light mb-0"><i class="fas fa-spinner fa-spin mr-2"></i>Actualizando resultados...</div>';
+    resultados.style.display = 'block';
+
+    fetch(`${urls.buscarProductos}?q=${encodeURIComponent(query)}&tipo_venta=${encodeURIComponent(tipoVendedorConsulta)}`)
         .then((response) => response.json())
-        .then((data) => renderResultadosBusqueda(data.productos || []))
+        .then((data) => {
+            if (tokenBusqueda !== secuenciaBusqueda || tipoVendedorConsulta !== tipoVendedorActual) {
+                return;
+            }
+            renderResultadosBusqueda(data.productos || []);
+        })
         .catch((error) => {
             console.error(error);
             resultados.innerHTML = '<div class="alert alert-danger mb-0">No se pudo buscar productos en este momento.</div>';
@@ -521,11 +666,19 @@ function buscarProductos(query) {
 
 function refrescarBusquedaActual() {
     const inputBuscar = document.getElementById('inputBuscarProducto');
+    const resultados = document.getElementById('resultadosBusqueda');
     if (!inputBuscar) return;
 
     const query = inputBuscar.value.trim();
     if (query.length >= 2) {
         buscarProductos(query);
+        return;
+    }
+
+    productosActuales = {};
+    if (resultados) {
+        resultados.innerHTML = '';
+        resultados.style.display = 'none';
     }
 }
 
@@ -542,6 +695,8 @@ function inicializarSelectorTipoPago() {
             if (inputTipoPago) {
                 inputTipoPago.value = this.dataset.tipo || 'contado';
             }
+
+            actualizarVisibilidadDescuento();
         });
     });
 }
@@ -558,8 +713,7 @@ function inicializarBusqueda() {
 
         selectTipoVendedor.addEventListener('change', function () {
             tipoVendedorActual = this.value || 'tienda';
-            carrito = [];
-            renderCarrito();
+            secuenciaBusqueda += 1;
             refrescarBusquedaActual();
         });
     }
@@ -619,57 +773,57 @@ function inicializarBusqueda() {
     });
 }
 
-function agregarDesdeResultados(productoId) {
-    const producto = productosActuales[productoId];
+function agregarDesdeResultados(productoId, tipoVendedorContexto = tipoVendedorActual) {
+    const claveProducto = obtenerClaveProductoBusqueda(productoId, tipoVendedorContexto);
+    const producto = productosActuales[claveProducto];
     if (!producto) {
         mostrarAlerta('Producto no encontrado.');
         return;
     }
 
-    const modalidad = document.querySelector(`input[name="modalidad_${productoId}"]:checked`)?.value || 'unidad';
-    const cantidad = parseInt(document.getElementById(`cantidad_${productoId}`)?.value || 0, 10);
+    const contextoId = obtenerIdContextoBusqueda(productoId, tipoVendedorContexto);
+    const modalidad = document.querySelector(`input[name="modalidad_${contextoId}"]:checked`)?.value || 'unidad';
+    const cantidad = parseInt(document.getElementById(`cantidad_${contextoId}`)?.value || 0, 10);
 
     if (!cantidad || cantidad < 1) {
         mostrarAlerta('Ingresa una cantidad mayor a 0.');
         return;
     }
 
-    if (agregarAlCarrito(producto, cantidad, modalidad)) {
-        document.getElementById(`cantidad_${productoId}`).value = '1';
+    if (agregarAlCarrito(producto, cantidad, modalidad, tipoVendedorContexto || 'tienda')) {
+        document.getElementById(`cantidad_${contextoId}`).value = '1';
         mostrarAlerta(`${producto.nombre} fue agregado al carrito.`, 'success', 'Agregado');
     }
 }
 
-function agregarDesdeResultadosDeposito(productoId) {
-    const producto = productosActuales[productoId];
+function agregarDesdeResultadosDeposito(productoId, tipoVendedorContexto = 'deposito') {
+    const claveProducto = obtenerClaveProductoBusqueda(productoId, tipoVendedorContexto);
+    const producto = productosActuales[claveProducto];
     if (!producto) {
         mostrarAlerta('Producto no encontrado.');
         return;
     }
 
-    const cantidad = parseInt(document.getElementById(`cantidad_${productoId}`)?.value || 0, 10);
+    const contextoId = obtenerIdContextoBusqueda(productoId, tipoVendedorContexto);
+    const cantidad = parseInt(document.getElementById(`cantidad_${contextoId}`)?.value || 0, 10);
 
     if (!cantidad || cantidad < 1) {
         mostrarAlerta('Ingresa una cantidad mayor a 0.');
         return;
     }
 
-    if (agregarAlCarrito(producto, cantidad, 'unidad')) {
-        document.getElementById(`cantidad_${productoId}`).value = '1';
+    if (agregarAlCarrito(producto, cantidad, 'unidad', tipoVendedorContexto || 'deposito')) {
+        document.getElementById(`cantidad_${contextoId}`).value = '1';
         mostrarAlerta(`${producto.nombre} fue agregado al carrito.`, 'success', 'Agregado');
     }
 }
 
 function construirPayloadVenta() {
     const subtotalBs = carrito.reduce((sum, item) => sum + item.subtotal_bs, 0);
-    const descuentoValue = parseFloat(document.getElementById('inputDescuento')?.value || 0) || 0;
-
-    let descuentoBs = 0;
-    if (tipoDescuentoActual === 'porcentaje') {
-        descuentoBs = (subtotalBs * Math.min(descuentoValue, 100)) / 100;
-    } else {
-        descuentoBs = Math.min(convertirMonedaABs(descuentoValue), subtotalBs);
-    }
+    const detalleDescuento = obtenerDetalleDescuentoActual(subtotalBs);
+    const descuentoTipo = detalleDescuento.habilitado && detalleDescuento.valorIngresado > 0
+        ? tipoDescuentoActual
+        : 'ninguno';
 
     return {
         cliente: document.getElementById('inputCliente')?.value.trim() || '',
@@ -680,11 +834,14 @@ function construirPayloadVenta() {
         tipo_venta: tipoVendedorActual || 'tienda',
         moneda: obtenerMonedaActual(),
         tipo_cambio: obtenerTipoCambioActual(),
-        descuento: convertirBsAMoneda(descuentoBs).toFixed(2),
+        descuento: convertirBsAMoneda(detalleDescuento.descuentoBs).toFixed(2),
+        descuento_tipo: descuentoTipo,
+        descuento_valor: detalleDescuento.habilitado ? detalleDescuento.valorIngresado : 0,
         items: carrito.map((item) => ({
             producto_id: item.producto.id,
             cantidad: item.cantidad,
             modalidad: item.modalidad,
+            tipo_vendedor: obtenerTipoVendedorItem(item),
             precio_unitario: convertirBsAMoneda(item.precio_unitario_bs).toFixed(2)
         }))
     };
@@ -709,8 +866,16 @@ function inicializarGuardarVenta() {
         }
 
         const subtotalBs = carrito.reduce((sum, item) => sum + item.subtotal_bs, 0);
-        const descuentoBs = convertirMonedaABs(payload.descuento);
+        const detalleDescuento = obtenerDetalleDescuentoActual(subtotalBs);
+        const descuentoBs = detalleDescuento.descuentoBs;
         const totalBs = subtotalBs - descuentoBs;
+        const tiposVendedor = [...new Set(carrito.map((item) => obtenerEtiquetaTipoVendedor(obtenerTipoVendedorItem(item))))].join(', ');
+        const descuentoHtml = descuentoBs > 0
+            ? `
+                <p class="mb-1"><strong>Descuento:</strong> ${detalleDescuento.resumen}</p>
+                <p class="mb-0"><strong>Calculo:</strong> ${formatearMonto(subtotalBs)} - ${formatearMonto(descuentoBs)} = ${formatearMonto(totalBs)}</p>
+            `
+            : '<p class="mb-0"><strong>Descuento:</strong> Sin descuento</p>';
 
         const confirmarVenta = () => {
             const urls = obtenerURLs();
@@ -761,11 +926,12 @@ function inicializarGuardarVenta() {
                 html: `
                     <div class="text-left">
                         <p><strong>Cliente:</strong> ${escapeHtml(payload.cliente)}</p>
-                        <p><strong>Tipo de vendedor:</strong> ${escapeHtml(tipoVendedorActual || 'tienda')}</p>
+                        <p><strong>Origenes en carrito:</strong> ${escapeHtml(tiposVendedor || 'Tienda')}</p>
                         <p><strong>Moneda:</strong> ${escapeHtml(payload.moneda)}</p>
                         <p><strong>Items:</strong> ${carrito.length}</p>
                         <hr>
                         <p class="mb-1"><strong>Subtotal:</strong> ${formatearMonto(subtotalBs)}</p>
+                        ${descuentoHtml}
                         <p class="mb-0"><strong>Total:</strong> ${formatearMonto(totalBs)}</p>
                     </div>
                 `,
@@ -830,6 +996,7 @@ function init() {
     inicializarGuardarVenta();
     inicializarLimpiarCarrito();
     actualizarUnidadDescuento();
+    actualizarVisibilidadDescuento();
     renderCarrito();
 }
 

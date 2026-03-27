@@ -67,6 +67,149 @@ def obtener_precio_base_producto(producto, modalidad):
     return precio_unidad
 
 
+def normalizar_tipo_vendedor(valor, fallback=''):
+    tipo = (valor or fallback or '').strip().lower()
+    if tipo in {'deposito', 'depósito'}:
+        return 'deposito'
+    if tipo in {'tienda', 'almacen', 'almacén'}:
+        return 'almacen' if tipo in {'almacen', 'almacén'} else 'tienda'
+    return fallback or ''
+
+
+def obtener_label_tipo_vendedor(tipo):
+    etiquetas = {
+        'almacen': 'Almacén',
+        'tienda': 'Tienda',
+        'deposito': 'Depósito',
+        'mixto': 'Mixta',
+    }
+    return etiquetas.get(tipo or '', 'Sin especificar')
+
+
+def normalizar_modalidad(valor, fallback='unidad'):
+    modalidad = (valor or fallback or 'unidad').strip().lower()
+    return modalidad if modalidad in {'unidad', 'caja', 'mayor'} else fallback
+
+
+def obtener_label_modalidad(modalidad):
+    etiquetas = {
+        'unidad': 'Unidad',
+        'caja': 'Caja',
+        'mayor': 'Mayor',
+    }
+    return etiquetas.get(normalizar_modalidad(modalidad), 'Unidad')
+
+
+def obtener_tipo_vendedor_fallback_venta(venta):
+    if getattr(venta.ubicacion, 'rol', '') == 'tienda':
+        return 'tienda'
+    return 'almacen'
+
+
+def obtener_tipo_vendedor_detalle(detalle):
+    tipo = normalizar_tipo_vendedor(getattr(detalle, 'tipo_vendedor', ''), '')
+    if tipo:
+        return tipo
+    return obtener_tipo_vendedor_fallback_venta(detalle.venta)
+
+
+def obtener_modalidad_detalle(detalle):
+    return normalizar_modalidad(getattr(detalle, 'modalidad', ''), 'unidad')
+
+
+def obtener_cantidad_cajas_detalle(detalle):
+    cajas_guardadas = int(getattr(detalle, 'cantidad_cajas', 0) or 0)
+    if cajas_guardadas > 0:
+        return cajas_guardadas
+
+    modalidad = obtener_modalidad_detalle(detalle)
+    unidades_por_caja = int(getattr(detalle.producto, 'unidades_por_caja', 1) or 1)
+    cantidad = int(getattr(detalle, 'cantidad', 0) or 0)
+
+    if modalidad == 'caja' and unidades_por_caja > 0 and cantidad > 0:
+        return max(cantidad // unidades_por_caja, 0)
+
+    return 0
+
+
+def obtener_resumen_tipos_vendedor_venta(venta):
+    tipos = []
+    for detalle in venta.detalles.all():
+        tipo = obtener_tipo_vendedor_detalle(detalle)
+        if tipo and tipo not in tipos:
+            tipos.append(tipo)
+
+    if not tipos:
+        tipo = obtener_tipo_vendedor_fallback_venta(venta)
+        return {'codigo': tipo, 'label': obtener_label_tipo_vendedor(tipo)}
+
+    if len(tipos) == 1:
+        return {'codigo': tipos[0], 'label': obtener_label_tipo_vendedor(tipos[0])}
+
+    return {'codigo': 'mixto', 'label': 'Mixta'}
+
+
+def obtener_info_descuento(venta):
+    monto_descuento = convertir_monto_para_mostrar(venta, getattr(venta, 'descuento', Decimal('0.00')) or Decimal('0.00'))
+    tipo_descuento = (getattr(venta, 'descuento_tipo', '') or '').strip().lower()
+    valor_descuento = Decimal(str(getattr(venta, 'descuento_valor', Decimal('0.00')) or Decimal('0.00'))).quantize(Decimal('0.01'))
+
+    if monto_descuento <= 0:
+        return {
+            'aplica': False,
+            'tipo': 'ninguno',
+            'tipo_label': 'Sin descuento',
+            'valor': Decimal('0.00'),
+            'valor_display': '0.00',
+            'monto': Decimal('0.00'),
+            'monto_display': '0.00',
+            'resumen': 'Sin descuento',
+        }
+
+    if tipo_descuento == 'porcentaje' and valor_descuento > 0:
+        valor_porcentaje = f'{valor_descuento:f}'.rstrip('0').rstrip('.')
+        resumen = f'{valor_porcentaje}% ({obtener_simbolo_moneda(venta.moneda)} {monto_descuento:.2f})'
+        valor_display = f'{valor_porcentaje}%'
+        tipo_label = 'Porcentaje'
+    else:
+        tipo_descuento = 'fijo'
+        if valor_descuento <= 0:
+            valor_descuento = monto_descuento
+        resumen = f'{obtener_simbolo_moneda(venta.moneda)} {valor_descuento:.2f}'
+        valor_display = f'{obtener_simbolo_moneda(venta.moneda)} {valor_descuento:.2f}'
+        tipo_label = 'Monto fijo'
+
+    return {
+        'aplica': True,
+        'tipo': tipo_descuento,
+        'tipo_label': tipo_label,
+        'valor': valor_descuento,
+        'valor_display': valor_display,
+        'monto': monto_descuento,
+        'monto_display': f'{monto_descuento:.2f}',
+        'resumen': resumen,
+    }
+
+
+def serializar_detalle_venta(venta, detalle):
+    tipo_vendedor = obtener_tipo_vendedor_detalle(detalle)
+    modalidad = obtener_modalidad_detalle(detalle)
+    cantidad_cajas = obtener_cantidad_cajas_detalle(detalle)
+
+    return {
+        'codigo': detalle.producto.codigo,
+        'producto': detalle.producto.nombre,
+        'cantidad': detalle.cantidad,
+        'cantidad_cajas': cantidad_cajas,
+        'precio_unitario': str(convertir_monto_para_mostrar(venta, detalle.precio_unitario)),
+        'subtotal': str(convertir_monto_para_mostrar(venta, detalle.subtotal)),
+        'tipo_vendedor': tipo_vendedor,
+        'tipo_vendedor_label': obtener_label_tipo_vendedor(tipo_vendedor),
+        'modalidad': modalidad,
+        'modalidad_label': obtener_label_modalidad(modalidad),
+    }
+
+
 def es_tienda_principal_usuario(user):
     if not hasattr(user, 'perfil') or user.perfil.rol != 'tienda':
         return False
@@ -347,7 +490,7 @@ def listar_ventas(request):
     # Se filtran ventas por la ubicación/almacén del usuario
     ventas = Venta.objects.filter(
         ubicacion=perfil
-    ).select_related('ubicacion', 'vendedor').order_by('-fecha_elaboracion')
+    ).select_related('ubicacion', 'vendedor').prefetch_related('detalles__producto').order_by('-fecha_elaboracion')
 
     # Filtros GET
     fecha_desde = request.GET.get('fecha_desde')
@@ -392,9 +535,13 @@ def listar_ventas(request):
     ventas_credito = list(ventas_credito_qs)
     for venta in ventas_contado:
         venta.total_display = convertir_monto_para_mostrar(venta, venta.total)
+        venta.resumen_tipos_vendedor = obtener_resumen_tipos_vendedor_venta(venta)
+        venta.descuento_info = obtener_info_descuento(venta)
 
     for venta in ventas_credito:
         venta.total_display = convertir_monto_para_mostrar(venta, venta.total)
+        venta.resumen_tipos_vendedor = obtener_resumen_tipos_vendedor_venta(venta)
+        venta.descuento_info = obtener_info_descuento(venta)
 
     total_ventas = ventas.count()
     total_contado = ventas_contado_qs.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
@@ -537,11 +684,23 @@ def guardar_venta(request):
 
             for item in items:
                 producto_id = item.get('producto_id')
-                cantidad = int(item.get('cantidad', 0))
                 precio_unitario = Decimal(str(item.get('precio_unitario', '0')))
+                producto = Producto.objects.get(id=producto_id)
+                unidades_por_caja = int(producto.unidades_por_caja or 1)
+                cantidad_cajas = int(item.get('cantidad_cajas', 0) or 0)
+                modalidad = normalizar_modalidad(item.get('modalidad'), 'unidad')
+                tipo_vendedor = normalizar_tipo_vendedor(item.get('tipo_vendedor'), 'almacen') or 'almacen'
+
+                if cantidad_cajas > 0:
+                    cantidad = cantidad_cajas * unidades_por_caja
+                    modalidad = 'caja'
+                else:
+                    cantidad = int(item.get('cantidad', 0))
+                    if modalidad == 'caja' and unidades_por_caja > 0 and cantidad > 0:
+                        cantidad_cajas = max(cantidad // unidades_por_caja, 0)
+
                 if cantidad <= 0:
                     raise ValueError(f'Cantidad inválida para el producto ID {producto_id}.')
-                producto = Producto.objects.get(id=producto_id)
                 
                 # Validar stock usando ProductoContenedor
                 stock_disponible = producto.stock
@@ -560,6 +719,9 @@ def guardar_venta(request):
                     venta=venta,
                     producto=producto,
                     cantidad=cantidad,
+                    cantidad_cajas=cantidad_cajas,
+                    tipo_vendedor=tipo_vendedor,
+                    modalidad=modalidad,
                     precio_unitario=precio_unitario,
                     subtotal=subtotal_item,
                 )
@@ -751,6 +913,8 @@ def obtener_detalle_venta(request, id):
                 total_amortizado += a.monto
         
         saldo_pendiente = venta.total - total_amortizado
+        descuento_info = obtener_info_descuento(venta)
+        resumen_tipos_vendedor = obtener_resumen_tipos_vendedor_venta(venta)
         
         datos = {
             'venta_id': venta.id,
@@ -763,17 +927,17 @@ def obtener_detalle_venta(request, id):
             'moneda_descripcion': obtener_descripcion_moneda(venta.moneda),
             'subtotal': str(convertir_monto_para_mostrar(venta, venta.subtotal)),
             'descuento': str(convertir_monto_para_mostrar(venta, venta.descuento if hasattr(venta, 'descuento') else Decimal('0.00'))),
+            'descuento_info': {
+                'aplica': descuento_info['aplica'],
+                'tipo': descuento_info['tipo'],
+                'tipo_label': descuento_info['tipo_label'],
+                'valor_display': descuento_info['valor_display'],
+                'monto_display': descuento_info['monto_display'],
+                'resumen': descuento_info['resumen'],
+            },
             'total': str(convertir_monto_para_mostrar(venta, venta.total)),
-            'detalles': [
-                {
-                    'codigo': d.producto.codigo,
-                    'producto': d.producto.nombre,
-                    'cantidad': d.cantidad,
-                    'precio_unitario': str(convertir_monto_para_mostrar(venta, d.precio_unitario)),
-                    'subtotal': str(convertir_monto_para_mostrar(venta, d.subtotal))
-                }
-                for d in detalles
-            ],
+            'resumen_tipos_vendedor': resumen_tipos_vendedor,
+            'detalles': [serializar_detalle_venta(venta, d) for d in detalles],
             'mostrar_amortizaciones': mostrar_amortizaciones,
             'amortizaciones': amortizaciones,
             'total_amortizado': str(convertir_monto_para_mostrar(venta, total_amortizado)),
@@ -834,8 +998,7 @@ def ver_venta(request, id):
         'venta': venta,
         'detalles_display': [
             {
-                'producto': d.producto.nombre,
-                'cantidad': d.cantidad,
+                **serializar_detalle_venta(venta, d),
                 'precio_unitario': convertir_monto_para_mostrar(venta, d.precio_unitario),
                 'subtotal': convertir_monto_para_mostrar(venta, d.subtotal),
             }
@@ -843,7 +1006,9 @@ def ver_venta(request, id):
         ],
         'subtotal_display': convertir_monto_para_mostrar(venta, venta.subtotal),
         'descuento_display': convertir_monto_para_mostrar(venta, venta.descuento),
+        'descuento_info': obtener_info_descuento(venta),
         'total_display': convertir_monto_para_mostrar(venta, venta.total),
+        'resumen_tipos_vendedor': obtener_resumen_tipos_vendedor_venta(venta),
         'mostrar_amortizaciones': mostrar_amortizaciones,
         'amortizaciones': amortizaciones,
         'total_amortizado': convertir_monto_para_mostrar(venta, total_amortizado),
@@ -945,6 +1110,7 @@ def generar_pdf_lista(ventas, tipo_pago='contado'):
             ['Teléfono', venta.telefono or '-', 'Fecha', venta.fecha_elaboracion.strftime('%d/%m/%Y %H:%M')],
             ['Razón Social', venta.razon_social or '-', 'Estado', venta.get_estado_display()],
             ['Dirección', venta.direccion or '-', 'Vendedor', venta.vendedor.get_full_name() if venta.vendedor else '-'],
+            ['Origen', obtener_resumen_tipos_vendedor_venta(venta)['label'], 'Descuento', obtener_info_descuento(venta)['resumen']],
         ]
         
         info_table = Table(info_data, colWidths=[1.2*inch, 2*inch, 1.2*inch, 2*inch])
@@ -969,8 +1135,15 @@ def generar_pdf_lista(ventas, tipo_pago='contado'):
         total_items = Decimal('0.00')
         
         for detalle in venta.detalles.all():
+            tipo_vendedor = obtener_label_tipo_vendedor(obtener_tipo_vendedor_detalle(detalle))
+            modalidad = obtener_label_modalidad(obtener_modalidad_detalle(detalle))
+            cantidad_cajas = obtener_cantidad_cajas_detalle(detalle)
+            descripcion_detalle = f'{tipo_vendedor} | {modalidad}'
+            if cantidad_cajas > 0:
+                descripcion_detalle += f' | {cantidad_cajas} caja(s)'
+
             productos_data.append([
-                detalle.producto.nombre,
+                f'{detalle.producto.nombre}\n{descripcion_detalle}',
                 str(detalle.cantidad),
                 f"Bs. {detalle.precio_unitario:.2f}",
                 f"Bs. {detalle.subtotal:.2f}"
@@ -1401,7 +1574,7 @@ def listar_ventas_tienda(request):
     ventas = Venta.objects.filter(
         ubicacion=perfil,
         vendedor=request.user
-    ).select_related('ubicacion', 'vendedor').order_by('-fecha_elaboracion')
+    ).select_related('ubicacion', 'vendedor').prefetch_related('detalles__producto').order_by('-fecha_elaboracion')
 
     # Filtros GET
     fecha_desde = request.GET.get('fecha_desde')
@@ -1454,6 +1627,8 @@ def listar_ventas_tienda(request):
 
     for venta in ventas_contado:
         venta.total_display = convertir_monto_para_mostrar(venta, venta.total)
+        venta.resumen_tipos_vendedor = obtener_resumen_tipos_vendedor_venta(venta)
+        venta.descuento_info = obtener_info_descuento(venta)
 
     for venta in ventas_credito:
         total_amortizado = AmortizacionCredito.objects.filter(
@@ -1464,6 +1639,8 @@ def listar_ventas_tienda(request):
         venta.total_display = convertir_monto_para_mostrar(venta, venta.total)
         venta.total_amortizado = convertir_monto_para_mostrar(venta, total_amortizado)
         venta.saldo_pendiente = convertir_monto_para_mostrar(venta, saldo_pendiente)
+        venta.resumen_tipos_vendedor = obtener_resumen_tipos_vendedor_venta(venta)
+        venta.descuento_info = obtener_info_descuento(venta)
         venta.mostrar_boton_amortizacion = (
             es_tienda_principal
             and venta.estado not in ['cancelada', 'anulada']
@@ -1568,10 +1745,11 @@ def guardar_venta_tienda(request):
     razon_social = data.get('razon_social', '').strip()
     direccion = data.get('direccion', '').strip()
     tipo_pago = data.get('tipo_pago', 'contado')
-    tipo_venta = data.get('tipo_venta', '').strip().lower()  # 'tienda' o 'deposito'
+    tipo_venta = data.get('tipo_venta', '').strip().lower()  # compatibilidad con payload antiguo
     moneda = data.get('moneda', 'BOB').upper()
     tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd() or 1)))
-    descuento = Decimal(str(data.get('descuento', '0')))
+    descuento_tipo = (data.get('descuento_tipo') or '').strip().lower()
+    descuento_valor = Decimal(str(data.get('descuento_valor', data.get('descuento', '0')) or '0'))
     items = data.get('items', [])
 
     # Validaciones
@@ -1583,6 +1761,8 @@ def guardar_venta_tienda(request):
         return JsonResponse({'success': False, 'error': 'Moneda inválida.'})
     if tipo_cambio <= 0:
         return JsonResponse({'success': False, 'error': 'Tipo de cambio inválido.'})
+    if descuento_tipo and descuento_tipo not in ['ninguno', 'fijo', 'porcentaje']:
+        return JsonResponse({'success': False, 'error': 'Tipo de descuento inválido.'})
     
     # Validar tipo de tienda
     perfil = request.user.perfil
@@ -1596,6 +1776,12 @@ def guardar_venta_tienda(request):
             'success': False,
             'error': f'Sucursales y puntos de venta solo pueden hacer ventas al contado. Tipo de tienda: {perfil.tienda.get_tipo_display()}'
         })
+
+    if tipo_pago != 'contado':
+        descuento_tipo = 'ninguno'
+        descuento_valor = Decimal('0.00')
+    elif not descuento_tipo:
+        descuento_tipo = 'fijo' if descuento_valor > 0 else 'ninguno'
     
     if not items:
         return JsonResponse({'success': False, 'error': 'Debe agregar al menos un producto.'})
@@ -1626,11 +1812,14 @@ def guardar_venta_tienda(request):
                 producto_id = item.get('producto_id')
                 cantidad = int(item.get('cantidad', 0))
                 modalidad = (item.get('modalidad') or 'unidad').strip().lower()
+                tipo_vendedor_item = normalizar_tipo_vendedor(item.get('tipo_vendedor'), tipo_venta or 'tienda') or 'tienda'
 
                 if cantidad <= 0:
                     raise ValueError(f'Cantidad inválida para el producto ID {producto_id}.')
                 if modalidad not in ['unidad', 'caja', 'mayor']:
                     raise ValueError(f'Modalidad inválida para el producto ID {producto_id}.')
+                if tipo_vendedor_item not in ['tienda', 'deposito']:
+                    raise ValueError(f'Tipo de vendedor inválido para el producto ID {producto_id}.')
 
                 producto = Producto.objects.get(id=producto_id)
                 unidades_por_caja = int(producto.unidades_por_caja or 1)
@@ -1650,7 +1839,7 @@ def guardar_venta_tienda(request):
 
                 # VALIDAR MODALIDAD MATEMÁTICAMENTE (solo para tienda)
                 # Para depósito, permitir cualquier cantidad entre 1 y stock disponible
-                if tipo_venta == 'tienda':
+                if tipo_vendedor_item == 'tienda':
                     if modalidad == 'mayor':
                         if cantidad < 3 or cantidad >= unidades_por_caja:
                             raise ValueError(
@@ -1674,11 +1863,11 @@ def guardar_venta_tienda(request):
 
                 # Validar stock ANTES de bloquear
                 # Para tienda/deposito: validar contra el inventario específico
-                if tipo_venta in ['tienda', 'deposito']:
+                if tipo_vendedor_item in ['tienda', 'deposito']:
                     inventarios = obtener_inventarios_venta_tienda(
                         producto=producto,
                         perfil=perfil,
-                        tipo_venta=tipo_venta
+                        tipo_venta=tipo_vendedor_item
                     )
                     stock_disponible = sum(inv.cantidad for inv in inventarios)
                 else:
@@ -1687,7 +1876,7 @@ def guardar_venta_tienda(request):
                 
                 if stock_disponible < unidades_a_descontar:
                     raise ValueError(
-                        f'Stock insuficiente en {tipo_venta} para "{producto.nombre}". '
+                        f'Stock insuficiente en {tipo_vendedor_item} para "{producto.nombre}". '
                         f'Disponible: {stock_disponible}, Solicitado: {unidades_a_descontar}.'
                     )
                 
@@ -1706,17 +1895,20 @@ def guardar_venta_tienda(request):
                     venta=venta,
                     producto=producto,
                     cantidad=cantidad_guardada,
+                    cantidad_cajas=cantidad if modalidad == 'caja' else 0,
+                    tipo_vendedor=tipo_vendedor_item,
+                    modalidad=modalidad,
                     precio_unitario=precio_guardado,
                     subtotal=subtotal_item,
                 )
 
                 # Si es venta tienda o deposito, descontar del Inventario según tipo_venta
-                if tipo_venta in ['tienda', 'deposito']:
+                if tipo_vendedor_item in ['tienda', 'deposito']:
                     descontar_stock_desde_inventario_tienda(
                         producto=producto,
                         cantidad=unidades_a_descontar,
                         perfil=perfil,
-                        tipo_venta=tipo_venta,
+                        tipo_venta=tipo_vendedor_item,
                     )
                 # También descontar del stock universal (ProductoContenedor)
                 descontar_stock_desde_contenedores(producto, unidades_a_descontar)
@@ -1725,14 +1917,26 @@ def guardar_venta_tienda(request):
 
             # Aplicar descuento
             actual_descuento = Decimal('0.00')
-            if descuento > 0:
-                # Validar que el descuento no sea mayor que el subtotal
-                actual_descuento = min(descuento, total_venta)
+            descuento_tipo_guardado = 'ninguno'
+            descuento_valor_guardado = Decimal('0.00')
+            if tipo_pago == 'contado' and descuento_tipo in ['fijo', 'porcentaje'] and descuento_valor > 0:
+                descuento_valor_guardado = descuento_valor.quantize(Decimal('0.01'))
+                descuento_tipo_guardado = descuento_tipo
+                if descuento_tipo == 'porcentaje':
+                    porcentaje = min(descuento_valor_guardado, Decimal('100.00'))
+                    actual_descuento = (total_venta * porcentaje / Decimal('100')).quantize(Decimal('0.01'))
+                    descuento_valor_guardado = porcentaje
+                else:
+                    actual_descuento = min(descuento_valor_guardado, total_venta)
+                    descuento_valor_guardado = actual_descuento
+                actual_descuento = min(actual_descuento, total_venta)
             
             total_final = total_venta - actual_descuento
 
             venta.subtotal = total_venta
             venta.descuento = actual_descuento
+            venta.descuento_tipo = descuento_tipo_guardado if actual_descuento > 0 else 'ninguno'
+            venta.descuento_valor = descuento_valor_guardado if actual_descuento > 0 else Decimal('0.00')
             venta.total = total_final
             venta.save()
 

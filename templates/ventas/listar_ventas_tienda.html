@@ -15,7 +15,8 @@
     /* Asegurar que el contenido respete los límites */
     .main-container {
         overflow-x: hidden !important;
-        width: calc(100% - 220px) !important;
+        width: auto !important;
+        max-width: 100% !important;
     }
     
     .content {
@@ -66,7 +67,7 @@
 <div class="container-fluid py-4">
 
     {# Header + Botón para nueva venta #}
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 ventas-page-header">
         <div>
             <h2 class="page-title mb-1">
                 <i class="fas fa-shopping-cart mr-2"></i>Mis Ventas
@@ -147,7 +148,7 @@
         <div class="card-body p-0">
             {# Filtro rápido #}
             <div class="filtro-bar px-4 py-4 border-bottom">
-                <form method="GET" action="{% url 'ventas:listar_ventas_tienda' %}" class="row align-items-end">
+                <form method="GET" action="{% url 'ventas:listar_ventas_tienda' %}" class="row align-items-end ventas-filter-form">
                     <div class="col-md-3">
                         <label for="inputClienteTienda" class="small font-weight-bold">Cliente</label>
                         <input type="text" class="form-control form-control-sm" id="inputClienteTienda"
@@ -181,7 +182,7 @@
 
             {# TABS: Contado - Crédito (Solo para Tienda Principal) #}
             {% if es_tienda_principal %}
-            <ul class="nav nav-tabs nav-tabs-ventas" id="ventasTabs" role="tablist" style="border-bottom: 2px solid #dee2e6;">
+            <ul class="nav nav-tabs nav-tabs-ventas ventas-tabs-scroll" id="ventasTabs" role="tablist" style="border-bottom: 2px solid #dee2e6;">
                 <li class="nav-item">
                     <a class="nav-link active" id="contado-tab" data-toggle="tab" href="#contado" role="tab" aria-controls="contado" aria-selected="true">
                         <i class="fas fa-money-bill-wave mr-2"></i>Al Contado
@@ -204,6 +205,7 @@
                                     <th class="pl-3">Código</th>
                                     <th>Cliente</th>
                                     <th>Fecha</th>
+                                    <th class="text-center">Origen</th>
                                     <th class="text-right">Total</th>
                                     <th class="text-center">Estado</th>
                                     <th class="text-center pr-3">Acciones</th>
@@ -217,6 +219,15 @@
                                     </td>
                                     <td>{{ venta.cliente }}</td>
                                     <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-center">
+                                        {% if venta.resumen_tipos_vendedor.codigo != 'tienda' %}
+                                        <span class="badge {% if venta.resumen_tipos_vendedor.codigo == 'mixto' %}badge-warning{% else %}badge-info{% endif %}">
+                                            {{ venta.resumen_tipos_vendedor.label }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
                                     <td class="text-right font-weight-bold">
                                         {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}
                                     </td>
@@ -260,7 +271,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="6" class="text-center py-5 text-muted">
+                                    <td colspan="7" class="text-center py-5 text-muted">
                                         <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
                                         No hay ventas al contado.
                                     </td>
@@ -280,6 +291,7 @@
                                     <th class="pl-3">Código</th>
                                     <th>Cliente</th>
                                     <th>Fecha</th>
+                                    <th class="text-center">Origen</th>
                                     <th class="text-right">Total</th>
                                     <th class="text-center">Saldo</th>
                                     <th class="text-center">Estado</th>
@@ -294,6 +306,15 @@
                                     </td>
                                     <td>{{ venta.cliente }}</td>
                                     <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-center">
+                                        {% if venta.resumen_tipos_vendedor.codigo != 'tienda' %}
+                                        <span class="badge {% if venta.resumen_tipos_vendedor.codigo == 'mixto' %}badge-warning{% else %}badge-info{% endif %}">
+                                            {{ venta.resumen_tipos_vendedor.label }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
                                     <td class="text-right font-weight-bold">
                                         {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}
                                     </td>
@@ -359,7 +380,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="7" class="text-center py-5 text-muted">
+                                    <td colspan="8" class="text-center py-5 text-muted">
                                         <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
                                         No hay ventas a crédito.
                                     </td>
@@ -379,6 +400,7 @@
                             <th class="pl-3">Código</th>
                             <th>Cliente</th>
                             <th>Fecha</th>
+                            <th class="text-center">Origen</th>
                             <th class="text-right">Total</th>
                             <th class="text-center">Estado</th>
                             <th class="text-center pr-3">Acciones</th>
@@ -392,6 +414,15 @@
                             </td>
                             <td>{{ venta.cliente }}</td>
                             <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
+                            <td class="text-center">
+                                {% if venta.resumen_tipos_vendedor.codigo != 'tienda' %}
+                                <span class="badge {% if venta.resumen_tipos_vendedor.codigo == 'mixto' %}badge-warning{% else %}badge-info{% endif %}">
+                                    {{ venta.resumen_tipos_vendedor.label }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
                             <td class="text-right font-weight-bold">
                                 {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total|floatformat:2 }}
                             </td>
@@ -435,7 +466,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
                                 No hay ventas registradas.
                                 <div class="mt-2">
@@ -801,6 +832,14 @@ function renderDetalleVentaTienda(data) {
                 <div class="label">Moneda</div>
                 <div class="value">${monedaDescripcion}</div>
             </div>
+            <div class="detalle-info-item">
+                <div class="label">Origen</div>
+                <div class="value">${data.resumen_tipos_vendedor?.label || 'Tienda'}</div>
+            </div>
+            <div class="detalle-info-item">
+                <div class="label">Descuento</div>
+                <div class="value">${data.descuento_info?.resumen || 'Sin descuento'}</div>
+            </div>
         </div>
         <h6 class="font-weight-bold mt-3 mb-2">
             <i class="fas fa-list mr-1"></i> Productos vendidos
@@ -810,6 +849,9 @@ function renderDetalleVentaTienda(data) {
                 <thead>
                     <tr>
                         <th>Producto</th>
+                        <th class="text-center">Origen</th>
+                        <th class="text-center">Modalidad</th>
+                        <th class="text-center">Cajas</th>
                         <th class="text-center">Cant.</th>
                         <th class="text-right">P. Unit.</th>
                         <th class="text-right">Subtotal</th>
@@ -823,6 +865,9 @@ function renderDetalleVentaTienda(data) {
             html += `
                 <tr>
                     <td><strong>${item.producto}</strong></td>
+                    <td class="text-center">${item.tipo_vendedor_label || 'Tienda'}</td>
+                    <td class="text-center">${item.modalidad_label || 'Unidad'}</td>
+                    <td class="text-center">${item.cantidad_cajas || 0}</td>
                     <td class="text-center">${item.cantidad}</td>
                     <td class="text-right">${etiqueta} ${parseFloat(item.precio_unitario).toFixed(2)}</td>
                     <td class="text-right font-weight-bold">${etiqueta} ${parseFloat(item.subtotal).toFixed(2)}</td>
@@ -831,9 +876,18 @@ function renderDetalleVentaTienda(data) {
         });
     }
 
+    if (parseFloat(data.descuento || 0) > 0) {
+        html += `
+                    <tr>
+                        <td colspan="6" class="text-right"><strong>Descuento:</strong></td>
+                        <td class="text-right text-danger"><strong>- ${etiqueta} ${parseFloat(data.descuento).toFixed(2)}</strong></td>
+                    </tr>
+        `;
+    }
+
     html += `
                     <tr class="total-row">
-                        <td colspan="3" class="text-right"><strong>TOTAL:</strong></td>
+                        <td colspan="6" class="text-right"><strong>TOTAL:</strong></td>
                         <td class="text-right"><strong>${etiqueta} ${parseFloat(data.total).toFixed(2)}</strong></td>
                     </tr>
                 </tbody>

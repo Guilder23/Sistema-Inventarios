@@ -176,6 +176,14 @@ function renderDetalleVenta(data) {
                 <div class="label">Moneda</div>
                 <div class="value">${monedaDescripcion}</div>
             </div>
+            <div class="detalle-info-item">
+                <div class="label">Origen</div>
+                <div class="value">${data.resumen_tipos_vendedor?.label || 'Almacén'}</div>
+            </div>
+            <div class="detalle-info-item">
+                <div class="label">Descuento</div>
+                <div class="value">${data.descuento_info?.resumen || 'Sin descuento'}</div>
+            </div>
         </div>
     `;
 
@@ -189,6 +197,9 @@ function renderDetalleVenta(data) {
                 <thead>
                     <tr>
                         <th>Producto</th>
+                        <th class="text-center">Origen</th>
+                        <th class="text-center">Modalidad</th>
+                        <th class="text-center">Cajas</th>
                         <th class="text-center">Cant.</th>
                         <th class="text-right">P. Unit.</th>
                         <th class="text-right">Subtotal</th>
@@ -202,6 +213,9 @@ function renderDetalleVenta(data) {
             html += `
                 <tr>
                     <td><strong>${item.producto}</strong></td>
+                    <td class="text-center">${item.tipo_vendedor_label || 'Almacén'}</td>
+                    <td class="text-center">${item.modalidad_label || 'Unidad'}</td>
+                    <td class="text-center">${item.cantidad_cajas || 0}</td>
                     <td class="text-center">${item.cantidad}</td>
                     <td class="text-right">${etiqueta} ${parseFloat(item.precio_unitario).toFixed(2)}</td>
                     <td class="text-right font-weight-bold">${etiqueta} ${parseFloat(item.subtotal).toFixed(2)}</td>
@@ -210,9 +224,18 @@ function renderDetalleVenta(data) {
         });
     }
 
+    if (parseFloat(data.descuento || 0) > 0) {
+        html += `
+                    <tr>
+                        <td colspan="6" class="text-right"><strong>Descuento:</strong></td>
+                        <td class="text-right text-danger"><strong>- ${etiqueta} ${parseFloat(data.descuento).toFixed(2)}</strong></td>
+                    </tr>
+        `;
+    }
+
     html += `
                     <tr class="total-row">
-                        <td colspan="3" class="text-right"><strong>TOTAL:</strong></td>
+                        <td colspan="6" class="text-right"><strong>TOTAL:</strong></td>
                         <td class="text-right"><strong>${etiqueta} ${parseFloat(data.total).toFixed(2)}</strong></td>
                     </tr>
                 </tbody>

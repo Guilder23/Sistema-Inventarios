@@ -5,19 +5,6 @@
 
 {% block estilos_extra %}
 <link rel="stylesheet" href="{% static 'css/ventas/nueva_venta.css' %}">
-<style>
-    .badge-modalidad {
-        font-size: 0.75rem;
-        padding: 0.3rem 0.6rem;
-    }
-    .desglose-info {
-        background: #f0f8ff;
-        border-left: 4px solid #667eea;
-        padding: 0.75rem;
-        border-radius: 4px;
-        font-size: 0.9rem;
-    }
-</style>
 {% endblock %}
 
 {% block scripts_globales %}
@@ -31,10 +18,11 @@
 </script>
 {% endblock %}
 {% block contenido %}
-<div class="container-fluid py-4">
+<div class="container-fluid venta-page py-4">
+    <div class="venta-page-shell">
 
 {#Header#}
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="venta-page-header d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="page-title mb-1">
                 <i class="fas fa-shopping-cart mr-2"></i>Nueva Venta
@@ -53,19 +41,19 @@
         </a>
     </div>
 
-    <div class="row">
+    <div class="venta-layout venta-layout--stacked">
+        <section class="venta-layout-section venta-layout-section--form">
+            <div class="venta-form-grid venta-form-grid--tienda">
 
-{# COLUMNA IZQUIERDA: DATOS DEL CLIENTE Y BUSCADOR#}
-        <div class="col-lg-6 mb-4">
-
-            {# Card Datos de la Venta #}
-            <div class="card card-datos-venta shadow-sm mb-4">
+                {# Card Datos de la Venta #}
+                <div class="card card-datos-venta shadow-sm venta-form-card venta-form-card--datos">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
                         <i class="fas fa-user mr-2 text-primary"></i>Datos de la Venta
                     </h6>
                 </div>
                 <div class="card-body">
+                    <input type="hidden" id="inputEsTiendaPrincipal" value="{% if es_tienda_principal %}1{% else %}0{% endif %}">
                     <div class="form-group">
                         <label for="inputCliente" class="label-campo">
                             Nombre del Cliente <span class="text-danger">*</span>
@@ -147,8 +135,8 @@
                 </div>
             </div>
 
-{# Card Tipo de Vendedor #}
-            <div class="card card-tipo-vendedor shadow-sm mb-4" id="cardTipoVendedor">
+                {# Card Tipo de Vendedor #}
+                <div class="card card-tipo-vendedor shadow-sm venta-form-card venta-form-card--tipo-vendedor" id="cardTipoVendedor">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
                         <i class="fas fa-store mr-2 text-primary"></i>Tipo de Vendedor
@@ -172,8 +160,8 @@
                 </div>
             </div>
 
-{# Card Buscador de Productos#}
-            <div class="card card-buscador shadow-sm">
+                {# Card Buscador de Productos#}
+                <div class="card card-buscador shadow-sm venta-form-card venta-form-card--buscador">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
                         <i class="fas fa-search mr-2 text-primary"></i>Buscar Producto
@@ -198,11 +186,11 @@
                     </div>
                 </div>
             </div>
+            </div>
+        </section>
 
-        </div>{# /col-lg-6 #}
-
-{# COLUMNA DERECHA: CARRITO #}
-        <div class="col-lg-6 mb-4">
+        {# COLUMNA DERECHA: CARRITO #}
+        <section class="venta-layout-section venta-layout-section--cart">
             <div class="card card-carrito shadow-sm">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
@@ -217,6 +205,7 @@
                             <thead>
                                 <tr>
                                     <th class="pl-3">Producto</th>
+                                    <th class="text-center" style="width: 120px;">Vendedor</th>
                                     <th class="text-center" style="width: 80px;">Modalidad</th>
                                     <th class="text-center" style="width: 110px;">Precio Unit.</th>
                                     <th class="text-center" style="width: 70px;">Cantidad</th>
@@ -239,22 +228,22 @@
                             <span class="font-weight-bold" id="resumenSubtotal">Bs. 0.00</span>
                         </div>
 
-                        <div class="form-group my-3 pb-3 border-bottom">
+                        <div class="form-group my-3 pb-3 border-bottom" id="descuentoSection">
                             <label class="label-campo">
                                 <i class="fas fa-percentage text-success mr-1"></i>Descuento (opcional)
                             </label>
                             
                             {# Toggle para tipo de descuento #}
-                            <div class="mb-3 d-flex align-items-center justify-content-between">
-                                <label style="margin-bottom: 0; font-weight: 600;">Tipo de Descuento:</label>
-                                <div class="btn-group btn-group-sm" role="group" style="box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <div class="mb-3 descuento-toolbar">
+                                <label class="descuento-toolbar-label mb-0">Tipo de Descuento:</label>
+                                <div class="btn-group btn-group-sm descuento-toggle-group" role="group">
                                     <input type="radio" class="btn-check" name="tipoDescuento" id="descuentoFijo" value="fijo" checked>
-                                    <label class="btn btn-outline-success" for="descuentoFijo" style="font-size: 0.9rem; font-weight: 500; padding: 0.5rem 1rem;">
+                                    <label class="btn btn-outline-success" for="descuentoFijo">
                                         <i class="fas fa-coins mr-1"></i>Monto fijo
                                     </label>
                                     
                                     <input type="radio" class="btn-check" name="tipoDescuento" id="descuentoPorcentaje" value="porcentaje">
-                                    <label class="btn btn-outline-success" for="descuentoPorcentaje" style="font-size: 0.9rem; font-weight: 500; padding: 0.5rem 1rem;">
+                                    <label class="btn btn-outline-success" for="descuentoPorcentaje">
                                         <i class="fas fa-percent mr-1"></i>Porcentaje (%)
                                     </label>
                                 </div>
@@ -270,8 +259,22 @@
                                 </div>
                             </div>
                             <small class="form-text text-muted d-block mt-2">💡 Máximo: subtotal (en monto) o 100% (en porcentaje)</small>
+                            <div class="descuento-feedback mt-3">
+                                <div class="d-flex justify-content-between align-items-center small">
+                                    <span class="text-muted">Descuento aplicado:</span>
+                                    <strong id="descuentoResumen">Sin descuento</strong>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center small mt-2">
+                                    <span class="text-muted">Cálculo final:</span>
+                                    <strong id="descuentoCalculo">Bs. 0.00 - Bs. 0.00 = Bs. 0.00</strong>
+                                </div>
+                            </div>
                         </div>
-                        </div>
+                    </div>
+
+                    <div class="alert alert-light border descuento-bloqueado mb-3" id="descuentoBloqueado" style="display:none;">
+                        <i class="fas fa-lock mr-2 text-muted"></i>
+                        El descuento solo está disponible para ventas al contado.
                     </div>
 
                     <button class="btn btn-success btn-block btn-lg mt-3" id="btnGuardarVenta">
@@ -285,11 +288,10 @@
                 </div>
 
             </div>{# /card-carrito #}
+        </section>
+    </div>{# /venta-layout #}
 
-        </div>{# /col-lg-7 #}
-
-    </div>{# /row #}
-
+    </div>
 </div>{# /container-fluid #}
 {% endblock %}
 

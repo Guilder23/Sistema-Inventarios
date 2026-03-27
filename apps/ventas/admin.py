@@ -16,15 +16,15 @@ class SolicitudAnulacionVentaInline(admin.TabularInline):
 
 @admin.register(Venta)
 class VentaAdmin(admin.ModelAdmin):
-    list_display = ['codigo', 'cliente', 'ubicacion', 'tipo_pago', 'estado', 'total', 'fecha_elaboracion']
-    list_filter = ['tipo_pago', 'estado', 'fecha_elaboracion']
+    list_display = ['codigo', 'cliente', 'ubicacion', 'tipo_pago', 'descuento_tipo', 'estado', 'total', 'fecha_elaboracion']
+    list_filter = ['tipo_pago', 'descuento_tipo', 'estado', 'fecha_elaboracion']
     search_fields = ['codigo', 'cliente', 'razon_social']
     inlines = [DetalleVentaInline, AmortizacionCreditoInline, SolicitudAnulacionVentaInline]
     list_per_page = 20
 
 @admin.register(DetalleVenta)
 class DetalleVentaAdmin(admin.ModelAdmin):
-    list_display = ['venta', 'producto', 'cantidad', 'precio_unitario', 'subtotal']
+    list_display = ['venta', 'producto', 'tipo_vendedor', 'modalidad', 'cantidad_cajas', 'cantidad', 'precio_unitario', 'subtotal']
     search_fields = ['producto__nombre', 'venta__codigo']
     list_per_page = 20
 

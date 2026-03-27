@@ -14,7 +14,7 @@
 
 {#Header + Botón para nueva venta#}
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 ventas-page-header">
         <div>
             <h2 class="page-title mb-1">
                 <i class="fas fa-shopping-cart mr-2"></i>Ventas del Almacén
@@ -23,7 +23,7 @@
                 Gestión de ventas &mdash; {{ perfil }}
             </p>
         </div>
-        <div>
+        <div class="ventas-header-actions">
             <a href="{% url 'ventas:solicitudes_anulacion' %}" class="btn btn-warning btn-sm mr-2">
                 <i class="fas fa-file-invoice mr-1"></i>Solicitudes de Anulación
             </a>
@@ -93,7 +93,7 @@
     {# Card principal con tabs#}
     <div class="card card-tabla shadow-sm">
         <div class="card-header bg-white py-3">
-            <ul class="nav nav-tabs card-header-tabs" id="ventasTabs" role="tablist">
+            <ul class="nav nav-tabs card-header-tabs ventas-tabs-scroll" id="ventasTabs" role="tablist">
                 <li class="nav-item">
                     <a class="nav-link active" id="contado-tab" data-toggle="tab"
                        href="#tabContado" role="tab" aria-controls="tabContado" aria-selected="true">
@@ -125,7 +125,7 @@
 
                     {# Filtro rápido + Botón PDF #}
                     <div class="filtro-bar px-4 py-4">
-                        <form method="GET" action="{% url 'ventas:listar_ventas' %}" class="row align-items-end">
+                        <form method="GET" action="{% url 'ventas:listar_ventas' %}" class="row align-items-end ventas-filter-form">
                             <div class="col-md-2">
                                 <label for="inputClienteFiltro" class="small font-weight-bold">Cliente</label>
                                 <input type="text" class="form-control form-control-sm" id="inputClienteFiltro"
@@ -164,6 +164,7 @@
                                     <th class="pl-3">Código</th>
                                     <th>Cliente</th>
                                     <th>Fecha</th>
+                                    <th class="text-center">Origen</th>
                                     <th class="text-right">Total</th>
                                     <th class="text-center">Estado</th>
                                     <th class="text-center pr-3">Acciones</th>
@@ -177,6 +178,11 @@
                                     </td>
                                     <td>{{ venta.cliente }}</td>
                                     <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if venta.resumen_tipos_vendedor.codigo == 'mixto' %}badge-warning{% else %}badge-info{% endif %}">
+                                            {{ venta.resumen_tipos_vendedor.label }}
+                                        </span>
+                                    </td>
                                     <td class="text-right font-weight-bold">
                                         {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total_display|floatformat:2 }}
                                     </td>
@@ -220,7 +226,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="6" class="text-center py-5 text-muted">
+                                    <td colspan="7" class="text-center py-5 text-muted">
                                         <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
                                         No hay ventas al contado registradas.
                                     </td>
@@ -236,7 +242,7 @@
 
                     {# Filtro rápido + Botón PDF #}
                     <div class="filtro-bar px-4 py-4">
-                        <form method="GET" action="{% url 'ventas:listar_ventas' %}" class="row align-items-end">
+                        <form method="GET" action="{% url 'ventas:listar_ventas' %}" class="row align-items-end ventas-filter-form">
                             <input type="hidden" name="tab" value="credito">
                             <div class="col-md-2">
                                 <label for="inputClienteFiltroCredito" class="small font-weight-bold">Cliente</label>
@@ -276,6 +282,7 @@
                                     <th class="pl-3">Código</th>
                                     <th>Cliente</th>
                                     <th>Fecha</th>
+                                    <th class="text-center">Origen</th>
                                     <th class="text-right">Total</th>
                                     <th class="text-center">Saldo</th>
                                     <th class="text-center">Estado</th>
@@ -290,6 +297,11 @@
                                     </td>
                                     <td>{{ venta.cliente }}</td>
                                     <td>{{ venta.fecha_elaboracion|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if venta.resumen_tipos_vendedor.codigo == 'mixto' %}badge-warning{% else %}badge-info{% endif %}">
+                                            {{ venta.resumen_tipos_vendedor.label }}
+                                        </span>
+                                    </td>
                                     <td class="text-right font-weight-bold">
                                         {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ venta.total_display|floatformat:2 }}
                                     </td>
@@ -355,7 +367,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="6" class="text-center py-5 text-muted">
+                                    <td colspan="8" class="text-center py-5 text-muted">
                                         <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
                                         No hay ventas a crédito registradas.
                                     </td>
