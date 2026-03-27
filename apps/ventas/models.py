@@ -18,6 +18,12 @@ class Venta(models.Model):
         ('contado', 'Contado'),
         ('credito', 'Crédito'),
     )
+
+    TIPOS_DESCUENTO = (
+        ('ninguno', 'Sin descuento'),
+        ('fijo', 'Monto fijo'),
+        ('porcentaje', 'Porcentaje'),
+    )
     
     codigo = models.CharField(max_length=50, unique=True)
     ubicacion = models.ForeignKey(PerfilUsuario, on_delete=models.CASCADE)
@@ -39,6 +45,8 @@ class Venta(models.Model):
     
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     descuento = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Descuento en valor monetario (solo para tiendas)')
+    descuento_tipo = models.CharField(max_length=20, choices=TIPOS_DESCUENTO, default='ninguno')
+    descuento_valor = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Valor original del descuento ingresado por el usuario')
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
     class Meta:
@@ -52,9 +60,25 @@ class Venta(models.Model):
 
 class DetalleVenta(models.Model):
     """Detalle de productos en la venta"""
+    TIPOS_VENDEDOR = (
+        ('', 'Sin especificar'),
+        ('almacen', 'Almacén'),
+        ('tienda', 'Tienda'),
+        ('deposito', 'Depósito'),
+    )
+
+    MODALIDADES = (
+        ('unidad', 'Unidad'),
+        ('caja', 'Caja'),
+        ('mayor', 'Mayor'),
+    )
+
     venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name='detalles')
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.IntegerField()
+    cantidad_cajas = models.IntegerField(default=0)
+    tipo_vendedor = models.CharField(max_length=20, choices=TIPOS_VENDEDOR, default='', blank=True)
+    modalidad = models.CharField(max_length=20, choices=MODALIDADES, default='unidad', blank=True)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
     
