@@ -23,6 +23,94 @@ def convertir_desde_bob_para_pdf(monto, venta):
     return valor
 
 
+def obtener_label_tipo_vendedor_pdf(tipo):
+    etiquetas = {
+        'almacen': 'Almacén',
+        'tienda': 'Tienda',
+        'deposito': 'Depósito',
+        'mixto': 'Mixta',
+    }
+    return etiquetas.get((tipo or '').strip().lower(), 'Sin especificar')
+
+
+def obtener_tipo_vendedor_detalle_pdf(detalle):
+    tipo = (getattr(detalle, 'tipo_vendedor', '') or '').strip().lower()
+    if tipo:
+        if tipo == 'depósito':
+            return 'deposito'
+        return tipo
+
+    return 'tienda' if getattr(detalle.venta.ubicacion, 'rol', '') == 'tienda' else 'almacen'
+
+
+def obtener_modalidad_detalle_pdf(detalle):
+    modalidad = (getattr(detalle, 'modalidad', '') or 'unidad').strip().lower()
+    return modalidad if modalidad in {'unidad', 'caja', 'mayor'} else 'unidad'
+
+
+def obtener_label_modalidad_pdf(modalidad):
+    etiquetas = {
+        'unidad': 'Unidad',
+        'caja': 'Caja',
+        'mayor': 'Mayor',
+    }
+    return etiquetas.get(modalidad, 'Unidad')
+
+
+def obtener_cantidad_cajas_pdf(detalle):
+    cajas_guardadas = int(getattr(detalle, 'cantidad_cajas', 0) or 0)
+    if cajas_guardadas > 0:
+        return cajas_guardadas
+
+    modalidad = obtener_modalidad_detalle_pdf(detalle)
+    unidades_por_caja = int(getattr(detalle.producto, 'unidades_por_caja', 1) or 1)
+    cantidad = int(getattr(detalle, 'cantidad', 0) or 0)
+
+    if modalidad == 'caja' and unidades_por_caja > 0 and cantidad > 0:
+        return max(cantidad // unidades_por_caja, 0)
+
+    return 0
+
+
+def obtener_resumen_origen_venta_pdf(venta):
+    tipos = []
+    for detalle in venta.detalles.all():
+        tipo = obtener_tipo_vendedor_detalle_pdf(detalle)
+        if tipo and tipo not in tipos:
+            tipos.append(tipo)
+
+    if not tipos:
+        return 'Tienda' if getattr(venta.ubicacion, 'rol', '') == 'tienda' else 'Almacén'
+
+    if len(tipos) == 1:
+        return obtener_label_tipo_vendedor_pdf(tipos[0])
+
+    return 'Mixta'
+
+
+def obtener_descuento_info_pdf(venta):
+    monto_descuento = float(convertir_desde_bob_para_pdf(getattr(venta, 'descuento', 0), venta) or 0)
+    tipo_descuento = (getattr(venta, 'descuento_tipo', '') or '').strip().lower()
+    valor_descuento = Decimal(str(getattr(venta, 'descuento_valor', 0) or 0)).quantize(Decimal('0.01'))
+
+    if monto_descuento <= 0:
+        return {'aplica': False, 'resumen': 'Sin descuento', 'label': 'Descuento'}
+
+    if tipo_descuento == 'porcentaje' and valor_descuento > 0:
+        valor_texto = f'{valor_descuento:f}'.rstrip('0').rstrip('.')
+        return {
+            'aplica': True,
+            'resumen': f'{valor_texto}% ({obtener_etiqueta_moneda(venta.moneda)} {monto_descuento:,.2f})',
+            'label': f'Descuento ({valor_texto}%)',
+        }
+
+    return {
+        'aplica': True,
+        'resumen': f'{obtener_etiqueta_moneda(venta.moneda)} {monto_descuento:,.2f}',
+        'label': 'Descuento',
+    }
+
+
 def generar_pdf_venta_completo(venta):
     """
     Genera PDF completo de una venta (por ahora para tienda Almacén o Tienda).
@@ -162,6 +250,7 @@ def generar_pdf_venta_completo(venta):
     <b>Cliente:</b> {venta.cliente}<br/>
     <b>Vendedor:</b> {vendedor_con_lugar}<br/>
     <b>Tipo Pago:</b> {tipo_pago}<br/>
+    <b>Origen:</b> {obtener_resumen_origen_venta_pdf(venta)}<br/>
     <b>Moneda de liquidación:</b> {moneda_liquidacion}
     """
     elements.append(Paragraph(info_general, style_encabezado))
@@ -170,56 +259,40 @@ def generar_pdf_venta_completo(venta):
     # ===== SECCIÓN 2: TABLA DE DETALLES =====
     
     detalles = venta.detalles.all()
-    datos_tabla = [['Producto', 'Cantidad', 'P. Unitario', 'Subtotal']]
-    
+    datos_tabla = [['Producto', 'Origen', 'Detalle', 'Cantidad', 'P. Unitario', 'Subtotal']]
+
     for detalle in detalles:
         precio = float(convertir_desde_bob_para_pdf(detalle.precio_unitario, venta))
         cantidad = int(detalle.cantidad)
         subtotal_base = detalle.subtotal if hasattr(detalle, 'subtotal') else (detalle.precio_unitario * cantidad)
         subtotal_valor = float(convertir_desde_bob_para_pdf(subtotal_base, venta))
-        
+        tipo_vendedor = obtener_tipo_vendedor_detalle_pdf(detalle)
+        modalidad = obtener_modalidad_detalle_pdf(detalle)
+        cantidad_cajas = obtener_cantidad_cajas_pdf(detalle)
+        detalle_linea = obtener_label_modalidad_pdf(modalidad)
+        if cantidad_cajas > 0:
+            detalle_linea += f' | {cantidad_cajas} caja(s)'
+
         datos_tabla.append([
             detalle.producto.nombre[:40],
+            obtener_label_tipo_vendedor_pdf(tipo_vendedor),
+            detalle_linea,
             str(cantidad),
             f'{etiqueta_moneda} {precio:,.2f}',
             f'{etiqueta_moneda} {subtotal_valor:,.2f}'
         ])
     
-    # Calcular desglose si es tienda con cantidad > unidades_por_caja
-    datos_tabla_final = []
-    if hasattr(venta.vendedor, 'perfil') and venta.vendedor.perfil.rol == 'tienda':
-        for fila in datos_tabla:
-            if fila == datos_tabla[0]:  # Es encabezado
-                datos_tabla_final.append(fila)
-            else:
-                # Calcular desglose
-                try:
-                    cantidad = int(fila[1])
-                    producto_id = next((d.producto.id for d in venta.detalles.all() if d.producto.nombre[:40] == fila[0]), None)
-                    if producto_id:
-                        producto = next((d.producto for d in venta.detalles.all() if d.producto.id == producto_id), None)
-                        if producto and producto.unidades_por_caja and cantidad > producto.unidades_por_caja:
-                            cajas = cantidad // producto.unidades_por_caja
-                            mayoristas = cantidad % producto.unidades_por_caja
-                            cantidad_display = f"{cajas} caja{'s' if cajas > 1 else ''} + {mayoristas} mayor"
-                            datos_tabla_final.append([fila[0], cantidad_display, fila[2], fila[3]])
-                        else:
-                            datos_tabla_final.append(fila)
-                    else:
-                        datos_tabla_final.append(fila)
-                except:
-                    datos_tabla_final.append(fila)
-    else:
-        datos_tabla_final = datos_tabla
+    datos_tabla_final = datos_tabla
     
-    tabla_detalles = Table(datos_tabla_final, colWidths=[2.5*inch, 1*inch, 1.2*inch, 1.3*inch])
+    tabla_detalles = Table(datos_tabla_final, colWidths=[2.1*inch, 0.9*inch, 1.2*inch, 0.8*inch, 1*inch, 1.2*inch])
     tabla_detalles.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f2937')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (0, 0), (2, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
         ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
@@ -228,9 +301,6 @@ def generar_pdf_venta_completo(venta):
     
     elements.append(tabla_detalles)
     elements.append(Spacer(1, 0.2*inch))
-    
-    #TODO: Aquí va desglose de modalidades si aplica (Tienda)
-    # Ejemplo: "1 caja + 8 mayor" para ventas mixtas
     
     # ===== SECCIÓN 3: TOTALES =====
     
@@ -246,7 +316,7 @@ def generar_pdf_venta_completo(venta):
             for d in detalles
         )
     
-    # Descuento (aplicar de campo descuento del modelo)
+    descuento_info = obtener_descuento_info_pdf(venta)
     monto_descuento = float(convertir_desde_bob_para_pdf(venta.descuento, venta)) if hasattr(venta, 'descuento') and venta.descuento else 0
     
     total = subtotal - monto_descuento
@@ -255,8 +325,8 @@ def generar_pdf_venta_completo(venta):
         ['', '', 'Subtotal:', f'{etiqueta_moneda} {subtotal:,.2f}'],
     ]
     
-    if monto_descuento > 0:
-        datos_totales.append(['', '', 'Descuento:', f'-{etiqueta_moneda} {monto_descuento:,.2f}'])
+    if descuento_info['aplica']:
+        datos_totales.append(['', '', f"{descuento_info['label']}:", f'-{etiqueta_moneda} {monto_descuento:,.2f}'])
     
     datos_totales.append(['', '', 'TOTAL:', f'{etiqueta_moneda} {total:,.2f}'])
     

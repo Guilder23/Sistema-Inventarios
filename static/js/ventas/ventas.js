@@ -176,6 +176,14 @@ function renderDetalleVenta(data) {
                 <div class="label">Moneda</div>
                 <div class="value">${monedaDescripcion}</div>
             </div>
+            <div class="detalle-info-item">
+                <div class="label">Origen</div>
+                <div class="value">${data.resumen_tipos_vendedor?.label || 'Almacén'}</div>
+            </div>
+            <div class="detalle-info-item">
+                <div class="label">Descuento</div>
+                <div class="value">${data.descuento_info?.resumen || 'Sin descuento'}</div>
+            </div>
         </div>
     `;
 
@@ -189,6 +197,9 @@ function renderDetalleVenta(data) {
                 <thead>
                     <tr>
                         <th>Producto</th>
+                        <th class="text-center">Origen</th>
+                        <th class="text-center">Modalidad</th>
+                        <th class="text-center">Cajas</th>
                         <th class="text-center">Cant.</th>
                         <th class="text-right">P. Unit.</th>
                         <th class="text-right">Subtotal</th>
@@ -202,6 +213,9 @@ function renderDetalleVenta(data) {
             html += `
                 <tr>
                     <td><strong>${item.producto}</strong></td>
+                    <td class="text-center">${item.tipo_vendedor_label || 'Almacén'}</td>
+                    <td class="text-center">${item.modalidad_label || 'Unidad'}</td>
+                    <td class="text-center">${item.cantidad_cajas || 0}</td>
                     <td class="text-center">${item.cantidad}</td>
                     <td class="text-right">${etiqueta} ${parseFloat(item.precio_unitario).toFixed(2)}</td>
                     <td class="text-right font-weight-bold">${etiqueta} ${parseFloat(item.subtotal).toFixed(2)}</td>
@@ -210,9 +224,18 @@ function renderDetalleVenta(data) {
         });
     }
 
+    if (parseFloat(data.descuento || 0) > 0) {
+        html += `
+                    <tr>
+                        <td colspan="6" class="text-right"><strong>Descuento:</strong></td>
+                        <td class="text-right text-danger"><strong>- ${etiqueta} ${parseFloat(data.descuento).toFixed(2)}</strong></td>
+                    </tr>
+        `;
+    }
+
     html += `
                     <tr class="total-row">
-                        <td colspan="3" class="text-right"><strong>TOTAL:</strong></td>
+                        <td colspan="6" class="text-right"><strong>TOTAL:</strong></td>
                         <td class="text-right"><strong>${etiqueta} ${parseFloat(data.total).toFixed(2)}</strong></td>
                     </tr>
                 </tbody>
@@ -236,17 +259,25 @@ function renderDetalleVenta(data) {
                             <th>Moneda</th>
                             <th class="text-right">Monto</th>
                             <th>Observaciones</th>
+                            <th>Comprobante</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
             data.amortizaciones.forEach(a => {
+                const comprobanteHtml = a.comprobante
+                    ? `<button type="button" class="btn btn-link p-0 border-0 bg-transparent d-inline-block" title="Ver comprobante" onclick="abrirComprobanteModal('${a.comprobante}')">
+                            <img src="${a.comprobante}" alt="Comprobante" style="width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid #dee2e6; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">
+                       </button>`
+                    : '<span class="text-muted">Sin imagen</span>';
+
                 html += `
                 <tr>
                     <td>${a.fecha}</td>
                     <td>${a.moneda_descripcion || monedaDescripcion}</td>
                     <td class="text-right font-weight-bold text-success">${a.moneda_simbolo || etiqueta} ${parseFloat(a.monto).toFixed(2)}</td>
                     <td>${a.observaciones || '-'}</td>
+                    <td>${comprobanteHtml}</td>
                 </tr>
             `;
             });
@@ -267,8 +298,52 @@ function renderDetalleVenta(data) {
     return html;
 }
 
+function abrirComprobanteModal(src) {
+    const img = document.getElementById('imgComprobanteAmortizacion');
+    if (!img) return;
+    img.src = src;
+    $('#modalComprobanteAmortizacion').modal('show');
+}
+
+function limpiarPreviewAmortizacion() {
+    const previewWrapper = document.getElementById('amortComprobantePreviewWrapper');
+    const previewImg = document.getElementById('amortComprobantePreview');
+
+    if (previewImg) {
+        previewImg.removeAttribute('src');
+    }
+
+    if (previewWrapper) {
+        previewWrapper.classList.add('d-none');
+    }
+}
+
+function actualizarPreviewAmortizacion(input) {
+    const previewWrapper = document.getElementById('amortComprobantePreviewWrapper');
+    const previewImg = document.getElementById('amortComprobantePreview');
+    const archivo = input.files && input.files[0];
+
+    if (!archivo || !archivo.type.startsWith('image/')) {
+        limpiarPreviewAmortizacion();
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        if (previewImg) {
+            previewImg.src = event.target.result;
+        }
+        if (previewWrapper) {
+            previewWrapper.classList.remove('d-none');
+        }
+    };
+    reader.readAsDataURL(archivo);
+}
+
 // MODAL: REGISTRAR AMORTIZACIÓN
 function initBotonesAmortizacion() {
+    const inputComprobante = document.getElementById('amortComprobante');
+
     // Abrir modal
     $(document).on('click', '.btn-registrar-amortizacion', function () {
         const ventaId = $(this).data('venta-id');
@@ -280,6 +355,7 @@ function initBotonesAmortizacion() {
         $('#amortVentaTotal').text(parseFloat(ventaTotal).toFixed(2));
         $('#amortMonto').val('');
         $('#amortObservaciones').val('');
+        limpiarPreviewAmortizacion();
 
 // Cargar datos actuales de amortización
         cargarDatosAmortizacion(ventaId);
@@ -290,6 +366,16 @@ function initBotonesAmortizacion() {
 // Guardar amortización
     $('#btnGuardarAmortizacion').on('click', function () {
         guardarAmortizacion();
+    });
+
+    if (inputComprobante) {
+        inputComprobante.addEventListener('change', function () {
+            actualizarPreviewAmortizacion(this);
+        });
+    }
+
+    $('#modalAmortizacion').on('hidden.bs.modal', function () {
+        limpiarPreviewAmortizacion();
     });
 }
 

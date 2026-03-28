@@ -20,10 +20,11 @@
 </script>
 {% endblock %}
 {% block contenido %}
-<div class="container-fluid py-4">
+<div class="container-fluid venta-page py-4">
+    <div class="venta-page-shell">
 
 {#Header#}
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="venta-page-header d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="page-title mb-1">
                 <i class="fas fa-cart-plus mr-2"></i>Nueva Venta
@@ -37,13 +38,12 @@
         </a>
     </div>
 
-    <div class="row g-3">
+    <div class="venta-layout venta-layout--stacked">
+        <section class="venta-layout-section venta-layout-section--form">
+            <div class="venta-form-grid venta-form-grid--almacen">
 
-{# COLUMNA IZQUIERDA: DATOS DEL CLIENTE Y BUSCADOR#}
-        <div class="col-lg-5 col-md-12 mb-4">
-
-            {# Card Datos de la Venta #}
-            <div class="card card-datos-venta shadow-sm mb-4">
+                {# Card Datos de la Venta #}
+                <div class="card card-datos-venta shadow-sm venta-form-card venta-form-card--datos">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
                         <i class="fas fa-user mr-2 text-primary"></i>Datos de la Venta
@@ -81,23 +81,6 @@
                         <input type="text" class="form-control" id="inputDireccion"
                                placeholder="Ej: Av. Principal #123" autocomplete="off">
                     </div>
-
-                    <!-- SELECTOR VENDEDOR - Solo para almacén -->
-                    {% if user.perfil.rol == 'almacen' %}
-                    <div class="form-group">
-                        <label for="selectVendedor" class="label-campo">
-                            Vendedor <span class="text-danger">*</span>
-                        </label>
-                        <select class="form-control" id="selectVendedor" required>
-                            <option value="">-- Cargando vendedores... --</option>
-                        </select>
-                        <small class="form-text text-muted mt-1">
-                            <i class="fas fa-info-circle"></i>
-                            Se muestran vendedores del almacén y sus tiendas asociadas
-                        </small>
-                        <input type="hidden" id="inputVendedorId" value="">
-                    </div>
-                    {% endif %}
 
                     <div class="form-group mb-0">
                         <label class="label-campo">Tipo de Pago</label>
@@ -178,8 +161,34 @@
                 </div>
             </div>
 
-{# Card Buscador de Productos#}
-            <div class="card card-buscador shadow-sm">
+                {# Card Selector de Vendedor #}
+                <div class="card card-tipo-vendedor shadow-sm venta-form-card venta-form-card--tipo-vendedor">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 font-weight-bold">
+                        <i class="fas fa-user-tie mr-2 text-primary"></i>Seleccionar Vendedor
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-0">
+                        <label for="selectVendedor" class="label-campo">
+                            Vendedor <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-control" id="selectVendedor" required>
+                            <option value="">-- Cargando vendedores... --</option>
+                        </select>
+                        <small class="form-text text-muted mt-1">
+                            <i class="fas fa-info-circle"></i>
+                            Se muestran vendedores del almacén y sus tiendas asociadas.
+                        </small>
+                        <input type="hidden" id="inputVendedorId" value="">
+                    </div>
+                </div>
+            </div>
+            </div>
+        </section>
+
+        <section class="venta-layout-section venta-layout-section--search">
+            <div class="card card-buscador shadow-sm venta-form-card venta-form-card--buscador">
                 <div class="card-header bg-white">
                     <h6 class="mb-0 font-weight-bold">
                         <i class="fas fa-search mr-2 text-primary"></i>Buscar Producto
@@ -217,18 +226,14 @@
                     </div>
                 </div>
             </div>
+        </section>
 
-        </div>
-
-{# COLUMNA DERECHA: CARRITO DE COMPRAS#}
-        <div class="col-lg-7 col-md-12 mb-4">
-
+        <section class="venta-layout-section venta-layout-section--cart">
             <div class="card card-carrito shadow-sm">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 font-weight-bold d-flex align-items-center">
                         <i class="fas fa-shopping-cart mr-2 text-success"></i>
                         Carrito de Compras
-                        <span class="badge badge-primary ml-3" id="carritoContador" style="padding: 0.5rem 0.75rem; font-size: 0.85rem;">0</span>
                     </h6>
                     <button class="btn btn-sm btn-outline-danger" id="btnLimpiarCarrito"
                             title="Vaciar carrito" style="display:none;">
@@ -250,8 +255,9 @@
                                 <thead>
                                     <tr>
                                         <th class="pl-3">Producto</th>
+                                        <th class="text-center" style="width: 130px;">Cajas</th>
                                         <th class="text-center" style="width: 90px;">Precio</th>
-                                        <th class="text-center" style="width: 110px;">Cantidad</th>
+                                        <th class="text-center" style="width: 130px;">Cantidad (unid.)</th>
                                         <th class="text-right" style="width: 100px;">Subtotal</th>
                                         <th class="text-center pr-3" style="width: 50px;"></th>
                                     </tr>
@@ -286,11 +292,10 @@
                 </div>
 
             </div>{# /card-carrito #}
+        </section>
+    </div>{# /venta-layout #}
 
-        </div>{# /col-lg-7 #}
-
-    </div>{# /row #}
-
+    </div>
 </div>{# /container-fluid #}
 {% endblock %}
 

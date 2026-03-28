@@ -50,6 +50,14 @@
             color: #666;
             font-style: italic;
         }
+        .amortizacion-comprobante {
+            width: 96px;
+            height: 96px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
     </style>
 </head>
 <body>
@@ -134,12 +142,10 @@
                         </p>
                     </div>
                     <div class="col-md-3">
-                        <p><strong>Moneda:</strong> 
-                            {% if venta.moneda == 'USD' %}
-                                <span class="badge badge-success">USD ($)</span>
-                            {% else %}
-                                <span class="badge badge-primary">BOB (Bs.)</span>
-                            {% endif %}
+                        <p><strong>Origen:</strong>
+                            <span class="badge {% if resumen_tipos_vendedor.codigo == 'mixto' %}badge-warning{% else %}badge-info{% endif %}">
+                                {{ resumen_tipos_vendedor.label }}
+                            </span>
                         </p>
                     </div>
                 </div>
@@ -167,6 +173,9 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Producto</th>
+                                <th class="text-center">Origen</th>
+                                <th class="text-center">Modalidad</th>
+                                <th class="text-center">Cajas</th>
                                 <th class="text-center">Cantidad</th>
                                 <th class="text-right">P. Unitario</th>
                                 <th class="text-right">Subtotal</th>
@@ -178,6 +187,9 @@
                                 <td>
                                     <strong>{{ detalle.producto }}</strong>
                                 </td>
+                                <td class="text-center">{{ detalle.tipo_vendedor_label }}</td>
+                                <td class="text-center">{{ detalle.modalidad_label }}</td>
+                                <td class="text-center">{{ detalle.cantidad_cajas }}</td>
                                 <td class="text-center">{{ detalle.cantidad }}</td>
                                 <td class="text-right">{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ detalle.precio_unitario|floatformat:2 }}</td>
                                 <td class="text-right"><strong>{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ detalle.subtotal|floatformat:2 }}</strong></td>
@@ -201,8 +213,12 @@
                         </div>
                         {% if descuento_display > 0 %}
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Descuento:</span>
+                            <span>Descuento {% if descuento_info.aplica %}<small class="text-muted">({{ descuento_info.resumen }})</small>{% endif %}:</span>
                             <span class="text-danger">-{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ descuento_display|floatformat:2 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 small text-muted">
+                            <span>Cálculo:</span>
+                            <span>{% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ subtotal_display|floatformat:2 }} - {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ descuento_display|floatformat:2 }}</span>
                         </div>
                         {% endif %}
                         <div class="d-flex justify-content-between total-row border-top pt-2">
@@ -215,6 +231,54 @@
         </div>
 
         <!-- BOTONES DE ACCIÓN -->
+        {% if venta.tipo_pago == 'credito' and mostrar_amortizaciones %}
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-hand-holding-usd"></i> Amortizaciones</h5>
+            </div>
+            <div class="card-body">
+                {% if amortizaciones %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Monto</th>
+                                <th>Observaciones</th>
+                                <th>Comprobante</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for amortizacion in amortizaciones %}
+                            <tr>
+                                <td>{{ amortizacion.fecha }}</td>
+                                <td>{{ amortizacion.moneda_simbolo }} {{ amortizacion.monto|floatformat:2 }}</td>
+                                <td>{{ amortizacion.observaciones|default:"-" }}</td>
+                                <td>
+                                    {% if amortizacion.comprobante %}
+                                    <button type="button" class="btn btn-link p-0 border-0 bg-transparent" onclick="abrirComprobanteModal('{{ amortizacion.comprobante }}')">
+                                        <img src="{{ amortizacion.comprobante }}" alt="Comprobante de amortización" class="amortizacion-comprobante">
+                                    </button>
+                                    {% else %}
+                                    <span class="text-muted">Sin imagen</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-between mt-3">
+                    <span><strong>Total amortizado:</strong> {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ total_amortizado|floatformat:2 }}</span>
+                    <span><strong>Saldo pendiente:</strong> {% if venta.moneda == 'USD' %}${% else %}Bs.{% endif %} {{ saldo_pendiente|floatformat:2 }}</span>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No hay amortizaciones registradas.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <div class="btn-descargar">
             <a href="{% url 'ventas:pdf_venta' venta.id %}" class="btn btn-info btn-lg" target="_blank">
                 <i class="fas fa-file-pdf"></i> Descargar PDF
@@ -273,6 +337,22 @@
         </div>
         {% endif %}
 
+        <div class="modal fade" id="modalComprobanteAmortizacion" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fas fa-image mr-2"></i>Comprobante de amortización</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img id="imgComprobanteAmortizacion" src="" alt="Comprobante" class="img-fluid" style="max-height: 75vh; object-fit: contain;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -302,6 +382,12 @@ function anularVenta(ventaId) {
         }
     })
     .catch(err => alert('Error: ' + err));
+}
+
+function abrirComprobanteModal(src) {
+    const img = document.getElementById('imgComprobanteAmortizacion');
+    img.src = src;
+    $('#modalComprobanteAmortizacion').modal('show');
 }
 
 {% if venta.tipo_pago == 'credito' %}
