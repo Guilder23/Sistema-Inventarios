@@ -6,6 +6,7 @@ urlpatterns = [
     path('', views.ver_inventario, name='ver_inventario'),
     path('general/', views.ver_inventario_general, name='ver_inventario_general'), #Para inventario general consolidado
     path('deposito/', views.ver_inventario_deposito, name='ver_inventario_deposito'),
+    path('almacen/', views.ver_inventario_almacen, name='ver_inventario_almacen'),
     path('ubicacion/<int:ubicacion_id>/', views.ver_inventario_ubicacion, name='ver_inventario_ubicacion'),
     path('producto/<int:producto_id>/asignar-precio/', views.asignar_precio, name='asignar_precio'),
     

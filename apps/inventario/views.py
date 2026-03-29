@@ -173,6 +173,89 @@ def ver_inventario_deposito(request):
     }
     return render(request, 'inventario/ver.html', context)
 
+
+@login_required
+def ver_inventario_almacen(request):
+    perfil = getattr(request.user, 'perfil', None)
+
+    if not perfil or perfil.rol != 'tienda':
+        messages.error(request, 'Solo el personal de tienda puede acceder al inventario de almacén')
+        return redirect('dashboard')
+
+    if not perfil.tienda_id or not perfil.tienda or not perfil.tienda.almacen_id:
+        messages.error(request, 'Su tienda no tiene un almacén asociado')
+        return redirect('ver_inventario')
+
+    buscar = request.GET.get('buscar', '').strip()
+    estado = request.GET.get('estado', '').strip()
+
+    perfil_almacen = PerfilUsuario.objects.filter(
+        rol='almacen',
+        almacen_id=perfil.tienda.almacen_id,
+    ).select_related('almacen').order_by('id').first()
+
+    if not perfil_almacen:
+        messages.error(request, 'No existe un perfil de almacén asociado a esta tienda')
+        return redirect('ver_inventario')
+
+    productos_almacen = Producto.objects.filter(activo=True).select_related('categoria').annotate(
+        stock_total=Sum('productos_contenedores__cantidad')
+    )
+
+    if buscar:
+        productos_almacen = productos_almacen.filter(
+            Q(codigo__icontains=buscar)
+            | Q(nombre__icontains=buscar)
+            | Q(descripcion__icontains=buscar)
+            | Q(categoria__nombre__icontains=buscar)
+        )
+
+    inventarios_lista = []
+    for prod in productos_almacen:
+        stock_total = prod.stock_total or 0
+
+        clase_inventario = type('InventarioAlmacen', (), {
+            'producto': prod,
+            'cantidad': stock_total,
+            'ubicacion': perfil_almacen,
+            'id': f"almacen_{prod.id}",
+            'fecha_actualizacion': prod.fecha_actualizacion,
+            'estado_stock': 'critico' if stock_total <= prod.stock_critico
+                           else 'bajo' if stock_total <= prod.stock_bajo
+                           else 'normal'
+        })()
+
+        if not estado or clase_inventario.estado_stock == estado:
+            inventarios_lista.append(clase_inventario)
+
+    valor_dolar = obtener_tipo_cambio_usd()
+    for item in inventarios_lista:
+        producto = item.producto
+        calcular_precios_usd(producto, valor_dolar)
+        stock_en_cajas(producto, cantidad=getattr(item, 'cantidad', None), target=item)
+
+    nombre_almacen = (
+        perfil_almacen.almacen.nombre
+        if perfil_almacen.almacen
+        else perfil_almacen.nombre_ubicacion or 'Almacén'
+    )
+
+    context = {
+        'inventarios': inventarios_lista,
+        'buscar': buscar,
+        'estado': estado,
+        'ubicacion_actual': perfil_almacen,
+        'nombre_ubicacion': nombre_almacen,
+        'tipo_inventario': 'almacen',
+        'titulo_inventario': 'Inventario Almacén',
+        'label_stock': 'Stock Almacén',
+        'es_tienda': True,
+        'es_almacen': True,
+        'total_items': len(inventarios_lista),
+        'total_unidades': sum(item.cantidad for item in inventarios_lista),
+    }
+    return render(request, 'inventario/ver_inventario_almacen.html', context)
+
 @login_required
 def ver_inventario_ubicacion(request, ubicacion_id):
     perfil = getattr(request.user, 'perfil', None)

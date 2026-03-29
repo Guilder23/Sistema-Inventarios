@@ -118,6 +118,12 @@
                     <span>Inventario Depósito</span>
                 </a>
             </li>
+                        <li class="sidebar-item">
+                <a href="{% url 'ver_inventario_almacen' %}" class="sidebar-link {% if request.resolver_match.url_name == 'ver_inventario_almacen' %}active{% endif %}" title="Inventario Almacen">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Inventario Almacen</span>
+                </a>
+            </li>
             {% elif user.perfil.rol == 'almacen' %}
             <!-- Inventario con submenú solo para almacen -->
             {% with url_actual=request.resolver_match.url_name %}
