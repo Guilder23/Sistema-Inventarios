@@ -426,7 +426,7 @@
                 <!-- Botón Anterior -->
                 {% if ventas.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ ventas.previous_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if tipo_pago %}&tipo_pago={{ tipo_pago }}{% endif %}{% if vendedor_id %}&vendedor={{ vendedor_id }}{% endif %}{% if moneda %}&moneda={{ moneda }}{% endif %}{% if monto_minimo %}&monto_minimo={{ monto_minimo }}{% endif %}{% if monto_maximo %}&monto_maximo={{ monto_maximo }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}" aria-label="Anterior">
+                    <a class="page-link" href="?page={{ ventas.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}" aria-label="Anterior">
                         <i class="fas fa-chevron-left"></i>
                     </a>
                 </li>
@@ -442,7 +442,7 @@
                         <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                     {% elif num > ventas.number|add:'-3' and num < ventas.number|add:'3' %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ num }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if tipo_pago %}&tipo_pago={{ tipo_pago }}{% endif %}{% if vendedor_id %}&vendedor={{ vendedor_id }}{% endif %}{% if moneda %}&moneda={{ moneda }}{% endif %}{% if monto_minimo %}&monto_minimo={{ monto_minimo }}{% endif %}{% if monto_maximo %}&monto_maximo={{ monto_maximo }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}">{{ num }}</a>
+                            <a class="page-link" href="?page={{ num }}{% if querystring %}&{{ querystring }}{% endif %}">{{ num }}</a>
                         </li>
                     {% endif %}
                 {% endfor %}
@@ -450,7 +450,7 @@
                 <!-- Botón Siguiente -->
                 {% if ventas.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ ventas.next_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if tipo_pago %}&tipo_pago={{ tipo_pago }}{% endif %}{% if vendedor_id %}&vendedor={{ vendedor_id }}{% endif %}{% if moneda %}&moneda={{ moneda }}{% endif %}{% if monto_minimo %}&monto_minimo={{ monto_minimo }}{% endif %}{% if monto_maximo %}&monto_maximo={{ monto_maximo }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}" aria-label="Siguiente">
+                    <a class="page-link" href="?page={{ ventas.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}" aria-label="Siguiente">
                         <i class="fas fa-chevron-right"></i>
                     </a>
                 </li>
