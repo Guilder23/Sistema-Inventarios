@@ -212,14 +212,14 @@ def listar_movimientos(request):
 
     return render(request, 'inventario/movimientos.html', {'movimientos': movimientos})
 
-# INVENTARIO GENERAL CONSOLIDADO PARA ADMIN, ALMACÉN Y TIENDA ONLINE
+# INVENTARIO GENERAL CONSOLIDADO PARA ADMIN, ALMACÉN, TIENDA ONLINE Y TIENDA
 @login_required
 def ver_inventario_general(request):
-    """Vista de inventario general consolidado para Admin, Almacén y Tienda Online"""
+    """Vista de inventario general consolidado para Admin, Almacén, Tienda Online y Tienda"""
     perfil = getattr(request.user, 'perfil', None)
     
-    # Verificar permisos: solo admin, almacen y tienda_online
-    if not perfil or perfil.rol not in ['administrador', 'almacen', 'tienda_online']:
+    # Verificar permisos: solo admin, almacen, tienda_online y tienda
+    if not perfil or perfil.rol not in ['administrador', 'almacen', 'tienda_online', 'tienda']:
         messages.error(request, 'No tiene permisos para acceder al inventario general')
         return redirect('dashboard')
     
