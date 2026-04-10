@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
-    inicializarBusquedaPedidos();
+    restaurarFocoBuscadorSiCorresponde();
+    inicializarBusquedaTiempoReal();
+    inicializarFiltroEstado();
 
     if (typeof inicializarModalCrearPedido === 'function') {
         inicializarModalCrearPedido();
@@ -10,47 +12,70 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function inicializarBusquedaPedidos() {
-    const inputBuscar = document.getElementById('buscar');
-    const filtroEstado = document.getElementById('estado');
-
-    if (inputBuscar) {
-        let timeoutId;
-        inputBuscar.addEventListener('input', function() {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => aplicarFiltrosPedidos(), 200);
-        });
-    }
-
-    if (filtroEstado) {
-        filtroEstado.addEventListener('change', aplicarFiltrosPedidos);
+function marcarAutofocusBuscador() {
+    try {
+        sessionStorage.setItem('pedidos_autofocus_buscar', '1');
+    } catch (e) {
+        // noop
     }
 }
 
-function aplicarFiltrosPedidos() {
-    const buscar = (document.getElementById('buscar')?.value || '').toLowerCase().trim();
-    const estado = document.getElementById('estado')?.value || '';
+function restaurarFocoBuscadorSiCorresponde() {
+    const inputBuscar = document.getElementById('buscar');
+    if (!inputBuscar) return;
 
-    const filas = document.querySelectorAll('.tabla-pedidos tbody tr');
+    let debeEnfocar = false;
+    try {
+        debeEnfocar = sessionStorage.getItem('pedidos_autofocus_buscar') === '1';
+    } catch (e) {
+        debeEnfocar = false;
+    }
 
-    filas.forEach(fila => {
-        if (fila.querySelector('td[colspan]')) {
-            return;
+    if (!debeEnfocar) return;
+
+    try {
+        sessionStorage.removeItem('pedidos_autofocus_buscar');
+    } catch (e) {
+        // noop
+    }
+
+    inputBuscar.focus();
+    const valor = inputBuscar.value || '';
+    inputBuscar.setSelectionRange(valor.length, valor.length);
+}
+
+function inicializarBusquedaTiempoReal() {
+    const inputBuscar = document.getElementById('buscar');
+    const form = document.getElementById('formFiltrosPedidos');
+    if (!inputBuscar || !form) return;
+
+    let timeoutId;
+
+    inputBuscar.addEventListener('input', function() {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            marcarAutofocusBuscador();
+            form.submit();
+        }, 500);
+    });
+
+    inputBuscar.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(timeoutId);
+            marcarAutofocusBuscador();
+            form.submit();
         }
+    });
+}
 
-        const textoFila = fila.textContent.toLowerCase();
-        const estadoFila = fila.dataset.estado || '';
+function inicializarFiltroEstado() {
+    const filtroEstado = document.getElementById('estado');
+    const form = document.getElementById('formFiltrosPedidos');
+    if (!filtroEstado || !form) return;
 
-        let mostrar = true;
-
-        if (buscar && !textoFila.includes(buscar)) {
-            mostrar = false;
-        }
-
-        if (estado && estado !== estadoFila) {
-            mostrar = false;
-        }
-
-        fila.style.display = mostrar ? '' : 'none';
+    filtroEstado.addEventListener('change', function() {
+        marcarAutofocusBuscador();
+        form.submit();
     });
 }

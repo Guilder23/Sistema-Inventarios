@@ -3,7 +3,8 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.contrib import messages
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, F, IntegerField, ExpressionWrapper
+from django.core.paginator import Paginator
 from django.db import transaction
 from apps.usuarios.models import PerfilUsuario
 from apps.productos.models import Producto, HistorialProducto
@@ -73,23 +74,38 @@ def listar_devoluciones(request):
             'error': 'No tiene un perfil asignado'
         })
     
-    devoluciones = Devolucion.objects.filter(ubicacion=perfil).select_related('producto', 'registrado_por')
+    devoluciones_qs = Devolucion.objects.filter(ubicacion=perfil).select_related('producto', 'registrado_por')
     
     # Filtros
-    busqueda = request.GET.get('busqueda', '').strip()
-    if busqueda:
-        devoluciones = devoluciones.filter(
-            Q(producto__codigo__icontains=busqueda) |
-            Q(producto__nombre__icontains=busqueda) |
-            Q(comentario__icontains=busqueda)
+    buscar = (request.GET.get('buscar', '') or request.GET.get('busqueda', '')).strip()
+    if buscar:
+        devoluciones_qs = devoluciones_qs.filter(
+            Q(producto__codigo__icontains=buscar) |
+            Q(producto__nombre__icontains=buscar) |
+            Q(comentario__icontains=buscar)
         )
     
     estado_filter = request.GET.get('estado', '').strip()
     if estado_filter:
-        devoluciones = devoluciones.filter(estado=estado_filter)
-    
-    # Agregar stock disponible a cada producto en la lista de devoluciones
-    for item in devoluciones:
+        devoluciones_qs = devoluciones_qs.filter(estado=estado_filter)
+
+    devoluciones_qs = devoluciones_qs.order_by('-fecha_registro')
+
+    # Estadísticas (sobre el queryset filtrado completo)
+    total_registros = devoluciones_qs.count()
+    pendiente_expr = ExpressionWrapper(
+        F('cantidad') - F('cantidad_recuperada') - F('cantidad_repuesta'),
+        output_field=IntegerField()
+    )
+    total_pendientes = devoluciones_qs.aggregate(total=Sum(pendiente_expr)).get('total') or 0
+
+    # Paginación
+    paginator = Paginator(devoluciones_qs, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Agregar stock disponible solo a los elementos de la página actual
+    for item in page_obj.object_list:
         item.producto.stock_disponible = _obtener_stock_disponible(item.producto, perfil)
     
     # Obtener productos según el rol
@@ -111,14 +127,17 @@ def listar_devoluciones(request):
                 inv.producto.stock_disponible = inv.cantidad
                 productos.append(inv.producto)
     
-    # Estadísticas
-    total_registros = devoluciones.count()
-    total_pendientes = sum(d.cantidad_pendiente for d in devoluciones)
-    
     context = {
-        'devoluciones': devoluciones,
+        'devoluciones': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
         'total_registros': total_registros,
-        'total_pendientes': total_pendientes,        'productos': productos,    }
+        'total_pendientes': total_pendientes,
+        'productos': productos,
+        'buscar': buscar,
+        'estado': estado_filter,
+    }
     
     return render(request, 'devoluciones/devoluciones.html', context)
 

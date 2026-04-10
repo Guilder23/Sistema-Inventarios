@@ -123,7 +123,7 @@
                             </div>
                             <div class="col-md-4 mb-2">
                                 <label class="small text-muted mb-1"><i class="fas fa-building"></i> Ubicación Específica</label>
-                                <select class="form-control form-control-sm" name="ubicacion_filtro" id="ubicacionFiltro" {% if not rol_filtro %}disabled{% endif %}>
+                                <select class="form-control form-control-sm" name="ubicacion_filtro" id="ubicacionFiltro" data-selected="{{ ubicacion_filtro_id }}" {% if not rol_filtro %}disabled{% endif %}>
                                     <option value="">Seleccione primero un rol</option>
                                 </select>
                             </div>
@@ -263,6 +263,42 @@
                     {% endfor %}
                 </tbody>
             </table>
+
+            {% if is_paginated_normal %}
+            <nav aria-label="Page navigation" class="mt-3">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj_normal.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="{% if querystring %}?{{ querystring }}&page=1{% else %}?page=1{% endif %}">Primera</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{% if querystring %}?{{ querystring }}&page={{ page_obj_normal.previous_page_number }}{% else %}?page={{ page_obj_normal.previous_page_number }}{% endif %}">Anterior</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj_normal.paginator.page_range %}
+                        {% if page_obj_normal.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{% if querystring %}?{{ querystring }}&page={{ num }}{% else %}?page={{ num }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj_normal.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{% if querystring %}?{{ querystring }}&page={{ page_obj_normal.next_page_number }}{% else %}?page={{ page_obj_normal.next_page_number }}{% endif %}">Siguiente</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{% if querystring %}?{{ querystring }}&page={{ page_obj_normal.paginator.num_pages }}{% else %}?page={{ page_obj_normal.paginator.num_pages }}{% endif %}">Última</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
         </div>
         
         <!-- TABLA COMPLETA - Vista Avanzada (Filtros Avanzados) -->
@@ -357,6 +393,42 @@
                     {% endfor %}
                 </tbody>
             </table>
+
+            {% if is_paginated_avanzada %}
+            <nav aria-label="Page navigation" class="mt-3">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj_avanzada.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="{% if querystring %}?{{ querystring }}&page=1{% else %}?page=1{% endif %}">Primera</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{% if querystring %}?{{ querystring }}&page={{ page_obj_avanzada.previous_page_number }}{% else %}?page={{ page_obj_avanzada.previous_page_number }}{% endif %}">Anterior</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj_avanzada.paginator.page_range %}
+                        {% if page_obj_avanzada.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{% if querystring %}?{{ querystring }}&page={{ num }}{% else %}?page={{ num }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj_avanzada.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{% if querystring %}?{{ querystring }}&page={{ page_obj_avanzada.next_page_number }}{% else %}?page={{ page_obj_avanzada.next_page_number }}{% endif %}">Siguiente</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{% if querystring %}?{{ querystring }}&page={{ page_obj_avanzada.paginator.num_pages }}{% else %}?page={{ page_obj_avanzada.paginator.num_pages }}{% endif %}">Última</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
         </div>
     </div>
 </div>

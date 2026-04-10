@@ -1,42 +1,78 @@
-document.addEventListener('DOMContentLoaded', function () {
-    inicializarFiltrosDevoluciones();
-});
+// Devoluciones: búsqueda en tiempo real + paginación server-side
+(function() {
+    'use strict';
 
-function inicializarFiltrosDevoluciones() {
-    const inputBuscar = document.getElementById('buscar');
-    const selectEstado = document.getElementById('estado');
-
-    if (inputBuscar) {
-        inputBuscar.addEventListener('input', filtrarTablaDevoluciones);
-    }
-
-    if (selectEstado) {
-        selectEstado.addEventListener('change', filtrarTablaDevoluciones);
-    }
-}
-
-function filtrarTablaDevoluciones() {
-    const buscar = (document.getElementById('buscar')?.value || '').toLowerCase().trim();
-    const estado = document.getElementById('estado')?.value || '';
-
-    const filas = document.querySelectorAll('#tablaDevoluciones tbody tr');
-
-    filas.forEach((fila) => {
-        if (fila.querySelector('td[colspan]')) return;
-
-        const textoFila = fila.textContent.toLowerCase();
-        const estadoTexto = (fila.children[6]?.textContent || '').toLowerCase();
-
-        let mostrar = true;
-
-        if (buscar && !textoFila.includes(buscar)) {
-            mostrar = false;
-        }
-
-        if (estado && !estadoTexto.includes(estado)) {
-            mostrar = false;
-        }
-
-        fila.style.display = mostrar ? '' : 'none';
+    document.addEventListener('DOMContentLoaded', function() {
+        restaurarFocoBuscadorSiCorresponde();
+        inicializarBusquedaTiempoReal();
+        inicializarFiltroEstado();
     });
-}
+
+    function marcarAutofocusBuscador() {
+        try {
+            sessionStorage.setItem('devoluciones_autofocus_buscar', '1');
+        } catch (e) {
+            // noop
+        }
+    }
+
+    function restaurarFocoBuscadorSiCorresponde() {
+        const inputBuscar = document.getElementById('buscar');
+        if (!inputBuscar) return;
+
+        let debeEnfocar = false;
+        try {
+            debeEnfocar = sessionStorage.getItem('devoluciones_autofocus_buscar') === '1';
+        } catch (e) {
+            debeEnfocar = false;
+        }
+
+        if (!debeEnfocar) return;
+
+        try {
+            sessionStorage.removeItem('devoluciones_autofocus_buscar');
+        } catch (e) {
+            // noop
+        }
+
+        inputBuscar.focus();
+        const valor = inputBuscar.value || '';
+        inputBuscar.setSelectionRange(valor.length, valor.length);
+    }
+
+    function inicializarBusquedaTiempoReal() {
+        const inputBuscar = document.getElementById('buscar');
+        const form = document.getElementById('formFiltrosDevoluciones');
+        if (!inputBuscar || !form) return;
+
+        let timeoutId;
+
+        inputBuscar.addEventListener('input', function() {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                marcarAutofocusBuscador();
+                form.submit();
+            }, 500);
+        });
+
+        inputBuscar.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(timeoutId);
+                marcarAutofocusBuscador();
+                form.submit();
+            }
+        });
+    }
+
+    function inicializarFiltroEstado() {
+        const selectEstado = document.getElementById('estado');
+        const form = document.getElementById('formFiltrosDevoluciones');
+        if (!selectEstado || !form) return;
+
+        selectEstado.addEventListener('change', function() {
+            marcarAutofocusBuscador();
+            form.submit();
+        });
+    }
+})();

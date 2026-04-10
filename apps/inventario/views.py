@@ -472,49 +472,49 @@ def ver_inventario_general(request):
     # Determinar si es vista normal (Filtros Normales) o avanzada
     vista_normal = (vista_tipo == 'normal')
     
-    # Crear inventario expandido para vista normal (una fila por ubicación)
+    # Crear inventario expandido (una fila por ubicación)
     inventario_expandido = []
-    
+
+    for item in inventario_consolidado:
+        producto = item['producto']
+
+        # Expandir por cada ubicación que tenga stock
+        for ubicacion in item['ubicaciones_detalle']:
+            if ubicacion['cantidad'] > 0:
+                # Determinar tipo de rol y nombre
+                tipo_rol = ""
+                if ubicacion['rol'] == 'almacen':
+                    tipo_rol = 'Almacén'
+                elif ubicacion['rol'] == 'deposito':
+                    tipo_rol = 'Depósito'
+                elif ubicacion['rol'] == 'tienda':
+                    tipo_rol = 'Tienda'
+                elif ubicacion['rol'] == 'tienda_online':
+                    tipo_rol = 'Tienda Online'
+
+                # Extraer solo el nombre de la ubicación (sin el prefijo "Almacén -", etc.)
+                nombre_ubicacion = ubicacion['nombre']
+                if ' - ' in nombre_ubicacion:
+                    nombre_ubicacion = nombre_ubicacion.split(' - ', 1)[1]
+
+                # Determinar estado según el stock
+                if ubicacion['cantidad'] <= producto.stock_critico:
+                    estado_item = 'critico'
+                elif ubicacion['cantidad'] <= producto.stock_bajo:
+                    estado_item = 'bajo'
+                else:
+                    estado_item = 'normal'
+
+                inventario_expandido.append({
+                    'producto': producto,
+                    'tipo_rol': tipo_rol,
+                    'nombre_ubicacion': nombre_ubicacion,
+                    'stock': ubicacion['cantidad'],
+                    'estado': estado_item,
+                    'fecha_actualizacion': item['fecha_actualizacion'],
+                })
+
     if vista_normal:
-        for item in inventario_consolidado:
-            producto = item['producto']
-            
-            # Expandir por cada ubicación que tenga stock
-            for ubicacion in item['ubicaciones_detalle']:
-                if ubicacion['cantidad'] > 0:
-                    # Determinar tipo de rol y nombre
-                    tipo_rol = ""
-                    if ubicacion['rol'] == 'almacen':
-                        tipo_rol = 'Almacén'
-                    elif ubicacion['rol'] == 'deposito':
-                        tipo_rol = 'Depósito'
-                    elif ubicacion['rol'] == 'tienda':
-                        tipo_rol = 'Tienda'
-                    elif ubicacion['rol'] == 'tienda_online':
-                        tipo_rol = 'Tienda Online'
-                    
-                    # Extraer solo el nombre de la ubicación (sin el prefijo "Almacén -", etc.)
-                    nombre_ubicacion = ubicacion['nombre']
-                    if ' - ' in nombre_ubicacion:
-                        nombre_ubicacion = nombre_ubicacion.split(' - ', 1)[1]
-                    
-                    # Determinar estado según el stock
-                    if ubicacion['cantidad'] <= producto.stock_critico:
-                        estado_item = 'critico'
-                    elif ubicacion['cantidad'] <= producto.stock_bajo:
-                        estado_item = 'bajo'
-                    else:
-                        estado_item = 'normal'
-                    
-                    inventario_expandido.append({
-                        'producto': producto,
-                        'tipo_rol': tipo_rol,
-                        'nombre_ubicacion': nombre_ubicacion,
-                        'stock': ubicacion['cantidad'],
-                        'estado': estado_item,
-                        'fecha_actualizacion': item['fecha_actualizacion'],
-                    })
-        
         # Aplicar filtros de rol si están activos
         if rol_filtro:
             rol_map = {
@@ -578,9 +578,23 @@ def ver_inventario_general(request):
         1 if ubicacion_filtro_id else 0
     ])
     
+    # Paginación (para ambas vistas)
+    page_number = request.GET.get('page')
+
+    paginator_normal = Paginator(inventario_expandido, 10)
+    page_obj_normal = paginator_normal.get_page(page_number)
+
+    paginator_avanzada = Paginator(inventario_consolidado, 10)
+    page_obj_avanzada = paginator_avanzada.get_page(page_number)
+
+    params = request.GET.copy()
+    if 'page' in params:
+        params.pop('page')
+    querystring = params.urlencode()
+
     context = {
-        'inventario_consolidado': inventario_consolidado,
-        'inventario_expandido': inventario_expandido,
+        'inventario_consolidado': page_obj_avanzada,
+        'inventario_expandido': page_obj_normal,
         'vista_normal': vista_normal,
         'vista_tipo': vista_tipo,
         'buscar': buscar,
@@ -604,6 +618,14 @@ def ver_inventario_general(request):
         'vista_simplificada': vista_simplificada,
         'nombre_ubicacion_filtrada': nombre_ubicacion_filtrada,
         'tipo_rol_filtrado': tipo_rol_filtrado,
+
+        'page_obj_normal': page_obj_normal,
+        'is_paginated_normal': page_obj_normal.has_other_pages(),
+        'paginator_normal': paginator_normal,
+        'page_obj_avanzada': page_obj_avanzada,
+        'is_paginated_avanzada': page_obj_avanzada.has_other_pages(),
+        'paginator_avanzada': paginator_avanzada,
+        'querystring': querystring,
     }
     
     return render(request, 'inventario/general.html', context)

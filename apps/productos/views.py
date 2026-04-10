@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
-from django.db.models import Q
+from django.db.models import Q, F, Sum, IntegerField, ExpressionWrapper
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -831,26 +831,34 @@ def listar_danados(request):
     buscar = request.GET.get('buscar', '').strip()
     estado = request.GET.get('estado', '').strip()
 
-    danados = ProductoDanado.objects.select_related('producto', 'registrado_por', 'ubicacion').filter(ubicacion=perfil)
+    danados_qs = ProductoDanado.objects.select_related('producto', 'registrado_por', 'ubicacion').filter(ubicacion=perfil)
 
     if buscar:
-        danados = danados.filter(
+        danados_qs = danados_qs.filter(
             Q(producto__codigo__icontains=buscar) |
             Q(producto__nombre__icontains=buscar) |
             Q(comentario__icontains=buscar)
         )
 
     if estado in ['pendiente', 'parcial', 'cerrado']:
-        danados = danados.filter(estado=estado)
+        danados_qs = danados_qs.filter(estado=estado)
 
-    danados = danados.order_by('-fecha_registro')
+    danados_qs = danados_qs.order_by('-fecha_registro')
 
-    # Agregar stock disponible a cada producto en la lista de danados
-    for item in danados:
+    total_registros = danados_qs.count()
+    pendiente_expr = ExpressionWrapper(
+        F('cantidad') - F('cantidad_recuperada') - F('cantidad_repuesta'),
+        output_field=IntegerField()
+    )
+    total_pendientes = danados_qs.aggregate(total=Sum(pendiente_expr)).get('total') or 0
+
+    paginator = Paginator(danados_qs, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Agregar stock disponible solo a los elementos de la página actual
+    for item in page_obj.object_list:
         item.producto.stock_disponible = _obtener_stock_disponible(item.producto, perfil)
-
-    total_registros = danados.count()
-    total_pendientes = sum(item.cantidad_pendiente for item in danados)
 
     # Obtener productos según el rol
     if perfil.rol == 'almacen':
@@ -873,7 +881,10 @@ def listar_danados(request):
                 productos.append(inv.producto)
 
     context = {
-        'danados': danados,
+        'danados': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
         'productos': productos,
         'buscar': buscar,
         'estado': estado,

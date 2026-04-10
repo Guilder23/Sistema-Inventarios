@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
 from django.http import JsonResponse
+from django.db.models import Q
+from django.core.paginator import Paginator
 
 from .models import Pedido, DetallePedido
 from apps.productos.models import Producto
@@ -105,19 +107,62 @@ def listar_pedidos(request):
     proveedor = None
     productos_disponibles = []
 
+    buscar = request.GET.get('buscar', '').strip()
+    estado = request.GET.get('estado', '').strip()
+
     if perfil.rol == 'tienda':
         perfil_tienda = _perfil_tienda_canonico(perfil)
-        pedidos_solicitados = Pedido.objects.filter(solicitante=perfil_tienda).prefetch_related('detalles')
+        pedidos_solicitados = (
+            Pedido.objects.filter(solicitante=perfil_tienda)
+            .select_related('solicitante', 'proveedor')
+            .prefetch_related('detalles')
+        )
         proveedor = _obtener_proveedor_almacen_para_tienda(perfil_tienda)
         if proveedor:
             productos_disponibles = _obtener_productos_disponibles_para_pedido(proveedor)
 
     elif perfil.rol == 'almacen':
         perfil_almacen = _perfil_almacen_canonico(perfil)
-        pedidos_recibidos = Pedido.objects.filter(proveedor=perfil_almacen).prefetch_related('detalles')
+        pedidos_recibidos = (
+            Pedido.objects.filter(proveedor=perfil_almacen)
+            .select_related('solicitante', 'proveedor')
+            .prefetch_related('detalles')
+        )
 
     elif perfil.rol == 'administrador' or request.user.is_superuser:
-        pedidos_solicitados = Pedido.objects.all().prefetch_related('detalles')
+        pedidos_solicitados = (
+            Pedido.objects.all()
+            .select_related('solicitante', 'proveedor')
+            .prefetch_related('detalles')
+        )
+
+    # Aplicar filtros (server-side)
+    pedidos_qs = pedidos_recibidos if perfil.rol == 'almacen' else pedidos_solicitados
+
+    if buscar:
+        pedidos_qs = pedidos_qs.filter(
+            Q(codigo__icontains=buscar) |
+            Q(estado__icontains=buscar) |
+            Q(solicitante__nombre_ubicacion__icontains=buscar) |
+            Q(proveedor__nombre_ubicacion__icontains=buscar) |
+            Q(solicitante__usuario__username__icontains=buscar) |
+            Q(proveedor__usuario__username__icontains=buscar)
+        )
+
+    estados_validos = {'pendiente', 'aceptado', 'enviado', 'recibido', 'cancelado'}
+    if estado in estados_validos:
+        pedidos_qs = pedidos_qs.filter(estado=estado)
+
+    pedidos_qs = pedidos_qs.order_by('-fecha_solicitud')
+
+    paginator = Paginator(pedidos_qs, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    if perfil.rol == 'almacen':
+        pedidos_recibidos = page_obj
+    else:
+        pedidos_solicitados = page_obj
 
     context = {
         'perfil': perfil,
@@ -125,6 +170,11 @@ def listar_pedidos(request):
         'pedidos_recibidos': pedidos_recibidos,
         'proveedor': proveedor,
         'productos_disponibles': productos_disponibles,
+        'buscar': buscar,
+        'estado': estado,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
     }
     return render(request, 'pedidos/listar.html', context)
 
