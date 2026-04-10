@@ -1,6 +1,12 @@
-/* Estilos para Modal Nuevo Traspaso Fase 1 */
+/*
+LEGACY (comentado): Estilos para Modal Nuevo Traspaso Fase 1.
+El flujo por fases fue reemplazado por un modal único.
+*/
 
-/* Estilos del modal */
+/*
+/* Estilos para Modal Nuevo Traspaso Fase 1 * /
+
+/* Estilos del modal * /
 #modalNuevoTraspaso .modal-header {
     background: #1e3a8a;
     color: white;
@@ -73,7 +79,7 @@
     border-color: #4b5563;
 }
 
-/* Tabla de productos en modal */
+/* Tabla de productos en modal * /
 .tabla-productos {
     background-color: #f9fafb;
     border: 1px solid #d1d5db;
@@ -130,7 +136,7 @@
     width: 70px;
 }
 
-/* Productos seleccionados */
+/* Productos seleccionados * /
 .tabla-productos-seleccionados {
     background-color: #d1fae5;
     border: 1px solid #6ee7b7;
@@ -184,7 +190,7 @@
     font-size: 12px;
 }
 
-/* Búsqueda de productos */
+/* Búsqueda de productos * /
 #buscarProducto {
     border: 1px solid #d1d5db;
     border-radius: 0.25rem;
@@ -196,7 +202,7 @@
     box-shadow: 0 0 0 0.15rem rgba(30, 58, 138, 0.15);
 }
 
-/* Responsive para modal fase 1 */
+/* Responsive para modal fase 1 * /
 @media (max-width: 768px) {
     .tabla-productos-seleccionados .producto-seleccionado {
         flex-direction: column;
@@ -212,3 +218,4 @@
         flex: 1;
     }
 }
+*/

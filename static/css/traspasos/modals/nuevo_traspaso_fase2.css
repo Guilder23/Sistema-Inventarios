@@ -1,6 +1,12 @@
-/* Estilos para Modal Nuevo Traspaso Fase 2 */
+/*
+LEGACY (comentado): Estilos para Modal Nuevo Traspaso Fase 2.
+El flujo por fases fue reemplazado por un modal único.
+*/
 
-/* Estilos del modal */
+/*
+/* Estilos para Modal Nuevo Traspaso Fase 2 * /
+
+/* Estilos del modal * /
 #modalTraspasoFase2 .modal-header {
     background: #1e3a8a;
     color: white;
@@ -73,7 +79,7 @@
     border-color: #4b5563;
 }
 
-/* Resumen de productos */
+/* Resumen de productos * /
 #resumenProductos {
     min-height: 100px;
     max-height: 300px;
@@ -99,7 +105,7 @@
     color: #374151;
 }
 
-/* Campos de formulario */
+/* Campos de formulario * /
 #formFase2Traspaso .form-control:disabled {
     background-color: #f5f5f5;
     cursor: not-allowed;
@@ -114,7 +120,7 @@
     min-height: 80px;
 }
 
-/* Responsive para modal fase 2 */
+/* Responsive para modal fase 2 * /
 @media (max-width: 768px) {
     #resumenProductos .producto-resumen {
         flex-direction: column;
@@ -131,3 +137,4 @@
         padding-right: 0;
     }
 }
+*/

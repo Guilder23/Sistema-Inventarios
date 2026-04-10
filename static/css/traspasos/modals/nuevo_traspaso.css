@@ -1,0 +1,20 @@
+/* Estilos específicos del modal unificado: Nuevo Traspaso */
+
+/* Encabezados con color solicitado */
+#modalNuevoTraspaso .modal-header {
+    background-color: #1e3a8a;
+}
+
+#modalEditarCantidad .modal-header {
+    background-color: #1e3a8a;
+}
+
+/* Scrollbars del listado dentro del modal */
+.scroll-y::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scroll-y::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 10px;
+}
