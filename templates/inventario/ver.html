@@ -82,101 +82,182 @@
             <table class="table table-sm tabla-productos tabla-inventario {% if es_almacen %}almacen-view{% else %}tienda-view{% endif %} mb-0">
                 <thead>
                     <tr>
-                        {% if es_almacen %}<th style="width: 7%;">Foto</th>{% endif %}
-                        <th style="width: 12%;">Código</th>
-                        <th style="width: 22%;">Producto</th>
-                        <th style="width: 16%;">{% if es_almacen %}Descripción{% else %}Categoría{% endif %}</th>
-                        {% if not es_almacen %}<th style="width: 16%;">Contenedor</th>{% endif %}
-                        <th class="col-stock-almacen">{{ label_stock|default:'Stock unidades' }}</th>
-                        <th style="width: 8%;">Unid/Caja</th>
-                        <th class="col-stock-almacen">Stock caja</th>
-                        <th class="col-precio-usd">Precio por caja<br>USD</th>
-                        <th class="col-precio-bs">Precio por caja<br>Bs</th>
-                        <th style="width: 10%;">Estado</th>
-                        <th style="width: 14%;">Actualizado</th>
-                        <th class="text-center" style="width: 6%;">Ver</th>
+                        {% if es_almacen %}
+                            <th style="width: 7%;">Foto</th>
+                            <th style="width: 12%;">Código</th>
+                            <th style="width: 22%;">Producto</th>
+                            <th style="width: 16%;">Descripción</th>
+                            <th class="col-stock-almacen">{{ label_stock|default:'Stock unidades' }}</th>
+                            <th style="width: 8%;">Unid/Caja</th>
+                            <th class="col-stock-almacen">Stock caja</th>
+                            <th class="col-precio-usd">Precio por caja<br>USD</th>
+                            <th class="col-precio-bs">Precio por caja<br>Bs</th>
+                            <th style="width: 10%;">Estado</th>
+                            <th style="width: 14%;">Actualizado</th>
+                            <th class="text-center" style="width: 6%;">Ver</th>
+                        {% else %}
+                            <!-- Mismas columnas que Gestión de Productos -->
+                            <th style="width: 6%;">Foto</th>
+                            <th style="width: 9%;">Código</th>
+                            <th style="width: 12%;">Detalle</th>
+                            <th style="width: 12%;">Categoría</th>
+                            <th style="width: 10%;">Stock Unidad</th>
+                            <th style="width: 9%;">Unid/Caja</th>
+                            <th style="width: 10%;">Stock por Caja</th>
+                            <th style="width: 12%;">Precio USD</th>
+                            <th style="width: 10%;">Precio por Caja</th>
+                            <th style="width: 8%;">Estado</th>
+                            <th class="text-center" style="width: 10%;">Acciones</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in inventarios %}
                     <tr>
                         {% if es_almacen %}
-                        <td class="text-center">
-                            {% if item.producto.foto %}
-                                <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="img-producto">
-                            {% else %}
-                                <div class="img-placeholder">
-                                    <i class="fas fa-image"></i>
-                                </div>
-                            {% endif %}
-                        </td>
-                        {% endif %}
-                        <td>
-                            <span class="codigo-badge">{{ item.producto.codigo }}</span>
-                        </td>
-                        <td>{{ item.producto.nombre }}</td>
-                        <td>
-                            {% if es_almacen %}
+                            <td class="text-center">
+                                {% if item.producto.foto %}
+                                    <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="img-producto">
+                                {% else %}
+                                    <div class="img-placeholder">
+                                        <i class="fas fa-image"></i>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="codigo-badge">{{ item.producto.codigo }}</span>
+                            </td>
+                            <td>{{ item.producto.nombre }}</td>
+                            <td>
                                 <div class="text-truncate" style="max-width: 220px;" title="{{ item.producto.descripcion|default:'Sin descripción' }}">
                                     {{ item.producto.descripcion|default:'Sin descripción' }}
                                 </div>
-                            {% else %}
-                                {{ item.producto.categoria.nombre|default:'Sin categoría' }}
-                            {% endif %}
-                        </td>
-                        {% if not es_almacen %}<td>{{ item.producto.contenedor.nombre|default:'Sin contenedor' }}</td>{% endif %}
-                        <td>
-                            {% if item.estado_stock == 'normal' %}
-                                <span class="badge-stock badge-stock-normal">{{ item.cantidad }} unidades</span>
-                            {% elif item.estado_stock == 'bajo' %}
-                                <span class="badge-stock badge-stock-bajo">{{ item.cantidad }} unidades</span>
-                            {% else %}
-                                <span class="badge-stock badge-stock-critico">{{ item.cantidad}} unidades</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">{{ item.producto.unidades_por_caja }}</td>
-                        <td>
-                            {% if item.estado_stock == 'normal' %}
-                                <span class="badge-stock badge-stock-normal">{{ item.stock_cajas|floatformat:"-2" }} cajas</span>
-                            {% elif item.estado_stock == 'bajo' %}
-                                <span class="badge-stock badge-stock-bajo">{{ item.stock_cajas|floatformat:"-2" }} cajas</span>
-                            {% else %}
-                                <span class="badge-stock badge-stock-critico">{{ item.stock_cajas|floatformat:"-2" }} cajas</span>
-                            {% endif %}
-                        </td>
-                        <td class="col-precio-usd">
-                            <span >{{ item.producto.precio_caja_usd | floatformat:2 }} Usd</span>
-                        </td>
-                        <td class="col-precio-bs">
-                            <span >{{ item.producto.precio_caja | floatformat:2 }} Bs</span>
-                        </td>
-                        <td>
-                            {% if item.estado_stock == 'normal' %}
-                                <span class="badge-estado badge-estado-activo">Normal</span>
-                            {% elif item.estado_stock == 'bajo' %}
-                                <span class="badge-estado badge-estado-bajo">Bajo</span>
-                            {% else %}
-                                <span class="badge-estado badge-estado-inactivo">Crítico</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ item.fecha_actualizacion|date:'d/m/Y H:i' }}</td>
-                        <td class="text-center">
-                            <button
-                                type="button"
-                                class="btn btn-info btn-sm btn-ver-producto"
-                                data-toggle="modal"
-                                data-target="#modalVerProducto"
-                                data-producto-id="{{ item.producto.id }}"
-                                data-ubicacion-id="{{ item.ubicacion.id }}"
-                                title="Ver detalles"
-                            >
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </td>
+                            </td>
+                            <td>
+                                {% if item.estado_stock == 'normal' %}
+                                    <span class="badge-stock badge-stock-normal">{{ item.cantidad }} unidades</span>
+                                {% elif item.estado_stock == 'bajo' %}
+                                    <span class="badge-stock badge-stock-bajo">{{ item.cantidad }} unidades</span>
+                                {% else %}
+                                    <span class="badge-stock badge-stock-critico">{{ item.cantidad}} unidades</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">{{ item.producto.unidades_por_caja }}</td>
+                            <td>
+                                {% if item.estado_stock == 'normal' %}
+                                    <span class="badge-stock badge-stock-normal">{{ item.stock_cajas|floatformat:"-2" }} cajas</span>
+                                {% elif item.estado_stock == 'bajo' %}
+                                    <span class="badge-stock badge-stock-bajo">{{ item.stock_cajas|floatformat:"-2" }} cajas</span>
+                                {% else %}
+                                    <span class="badge-stock badge-stock-critico">{{ item.stock_cajas|floatformat:"-2" }} cajas</span>
+                                {% endif %}
+                            </td>
+                            <td class="col-precio-usd">
+                                <span>{{ item.producto.precio_caja_usd|floatformat:2 }} Usd</span>
+                            </td>
+                            <td class="col-precio-bs">
+                                <span>{{ item.producto.precio_caja|floatformat:2 }} Bs</span>
+                            </td>
+                            <td>
+                                {% if item.estado_stock == 'normal' %}
+                                    <span class="badge-estado badge-estado-activo">Normal</span>
+                                {% elif item.estado_stock == 'bajo' %}
+                                    <span class="badge-estado badge-estado-bajo">Bajo</span>
+                                {% else %}
+                                    <span class="badge-estado badge-estado-inactivo">Crítico</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.fecha_actualizacion|date:'d/m/Y H:i' }}</td>
+                            <td class="text-center">
+                                <button
+                                    type="button"
+                                    class="btn btn-info btn-sm btn-ver-producto"
+                                    data-toggle="modal"
+                                    data-target="#modalVerProducto"
+                                    data-producto-id="{{ item.producto.id }}"
+                                    data-ubicacion-id="{{ item.ubicacion.id }}"
+                                    title="Ver detalles"
+                                >
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        {% else %}
+                            <td class="text-center">
+                                {% if item.producto.foto %}
+                                    <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="img-producto">
+                                {% else %}
+                                    <div class="img-placeholder">
+                                        <i class="fas fa-image"></i>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="codigo-badge">{{ item.producto.codigo }}</span>
+                            </td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 200px;" title="{{ item.producto.descripcion|default:'Sin detalle' }}">
+                                    {{ item.producto.descripcion|default:'Sin detalle' }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 170px;" title="{{ item.producto.categoria.nombre|default:'Sin categoría' }}">
+                                    {{ item.producto.categoria.nombre|default:'Sin categoría' }}
+                                </div>
+                            </td>
+                            <td>
+                                {% if item.estado_stock == 'normal' %}
+                                    <span class="badge-stock badge-stock-normal">{{ item.cantidad }} unidades</span>
+                                {% elif item.estado_stock == 'bajo' %}
+                                    <span class="badge-stock badge-stock-bajo">{{ item.cantidad }} unidades</span>
+                                {% else %}
+                                    <span class="badge-stock badge-stock-critico">{{ item.cantidad }} unidades</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">{{ item.producto.unidades_por_caja }}</td>
+                            <td>
+                                {% if item.estado_stock == 'normal' %}
+                                    <span class="badge-stock badge-stock-normal">{{ item.stock_cajas|floatformat:"-2" }} cajas</span>
+                                {% elif item.estado_stock == 'bajo' %}
+                                    <span class="badge-stock badge-stock-bajo">{{ item.stock_cajas|floatformat:"-2" }} cajas</span>
+                                {% else %}
+                                    <span class="badge-stock badge-stock-critico">{{ item.stock_cajas|floatformat:"-2" }} cajas</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 200px;" title="{{ item.producto.nombre }}">
+                                    USD {{ item.producto.precio_caja_usd|floatformat:2 }}
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="precio-badge">Bs. {{ item.producto.precio_caja|floatformat:2 }}</span>
+                            </td>
+                            <td class="text-center">
+                                {% if item.estado_stock == 'normal' %}
+                                    <span class="badge-estado badge-estado-activo">Normal</span>
+                                {% elif item.estado_stock == 'bajo' %}
+                                    <span class="badge-estado badge-estado-bajo">Bajo</span>
+                                {% else %}
+                                    <span class="badge-estado badge-estado-inactivo">Crítico</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center acciones-col">
+                                <button
+                                    type="button"
+                                    class="btn btn-info btn-sm btn-ver-producto"
+                                    data-toggle="modal"
+                                    data-target="#modalVerProducto"
+                                    data-producto-id="{{ item.producto.id }}"
+                                    data-ubicacion-id="{{ item.ubicacion.id }}"
+                                    title="Ver detalles"
+                                >
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        {% endif %}
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="12" class="text-center py-4">
+                        <td colspan="{% if es_almacen %}12{% else %}11{% endif %}" class="text-center py-4">
                             <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
                             <p class="text-muted mb-0">No hay stock disponible para esta ubicación</p>
                         </td>

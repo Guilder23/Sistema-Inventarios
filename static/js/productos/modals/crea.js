@@ -91,10 +91,7 @@
         const codigo = $('#codigo').val().trim();
         const nombre = $('#nombre').val().trim();
         const categoria = $('#categoria').val();
-        const contenedor = $('#contenedor').val();
-        const stock = $('#stock').val();
         const unidades_por_caja = $('#unidades_por_caja').val();
-        const precio_unidad = $('#precio_unidad').val();
         
         if (!codigo) {
             mostrarNotificacion('El código del producto es requerido', 'warning');
@@ -113,28 +110,10 @@
             $('#categoria').focus();
             return false;
         }
-
-        if (!contenedor) {
-            mostrarNotificacion('Debe seleccionar un contenedor', 'warning');
-            $('#contenedor').focus();
-            return false;
-        }
-        
-        if (!stock || parseInt(stock) < 0) {
-            mostrarNotificacion('El stock debe ser un número válido', 'warning');
-            $('#stock').focus();
-            return false;
-        }
         
         if (!unidades_por_caja || parseInt(unidades_por_caja) < 1) {
             mostrarNotificacion('Las unidades por caja deben ser al menos 1', 'warning');
             $('#unidades_por_caja').focus();
-            return false;
-        }
-        
-        if (!precio_unidad || parseFloat(precio_unidad) < 0) {
-            mostrarNotificacion('El precio unitario debe ser un número válido', 'warning');
-            $('#precio_unidad').focus();
             return false;
         }
         
