@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.core.paginator import Paginator
 from .models import TiendaVirtual
 
 @login_required
@@ -32,11 +33,22 @@ def listar_tiendas_virtuales(request):
     if plataforma:
         tiendas_virtuales = tiendas_virtuales.filter(plataforma=plataforma)
     
+    paginator = Paginator(tiendas_virtuales, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+
     context = {
-        'tiendas_virtuales': tiendas_virtuales,
+        'tiendas_virtuales': page_obj,
         'buscar': buscar,
         'estado': estado,
         'plataforma': plataforma,
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'is_paginated': page_obj.has_other_pages(),
+        'querystring': query_params.urlencode(),
     }
     
     return render(request, 'tiendas_virtuales/tiendas_virtuales.html', context)
