@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, F, Sum
 from django.http import JsonResponse
+from django.core.paginator import Paginator
 
 from .models import Inventario, MovimientoInventario
 from apps.usuarios.models import PerfilUsuario
@@ -80,16 +81,23 @@ def ver_inventario(request):
     total_items = len(inventarios_lista)
     total_unidades = sum(item.cantidad for item in inventarios_lista)
 
-    # Aplicamos el cálculo a cada producto
-    valor_dolar = obtener_tipo_cambio_usd()
+    # Paginación
+    paginator = Paginator(inventarios_lista, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
-    for item in inventarios_lista:
+    # Aplicamos el cálculo solo a los productos de la página actual
+    valor_dolar = obtener_tipo_cambio_usd()
+    for item in page_obj.object_list:
         producto = item.producto
         calcular_precios_usd(producto, valor_dolar)
         stock_en_cajas(producto, cantidad=getattr(item, 'cantidad', None), target=item)
 
     context = {
-        'inventarios': inventarios_lista,
+        'inventarios': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
         'buscar': buscar,
         'estado': estado,
         'ubicacion_actual': perfil,
@@ -140,7 +148,6 @@ def ver_inventario_deposito(request):
             Q(producto__codigo__icontains=buscar)
             | Q(producto__nombre__icontains=buscar)
             | Q(producto__categoria__nombre__icontains=buscar)
-            | Q(producto__contenedor__nombre__icontains=buscar)
         )
 
     inventarios_lista = list(inventarios)
@@ -148,9 +155,17 @@ def ver_inventario_deposito(request):
     if estado in ['normal', 'bajo', 'critico']:
         inventarios_lista = [item for item in inventarios_lista if item.estado_stock == estado]
 
-    # Aplicar cálculo de precios y stock en cajas por ubicación (depósito)
+    total_items = len(inventarios_lista)
+    total_unidades = sum(item.cantidad for item in inventarios_lista)
+
+    # Paginación
+    paginator = Paginator(inventarios_lista, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Aplicar cálculo de precios y stock en cajas por ubicación (depósito) solo para la página actual
     valor_dolar = obtener_tipo_cambio_usd()
-    for item in inventarios_lista:
+    for item in page_obj.object_list:
         producto = item.producto
         calcular_precios_usd(producto, valor_dolar)
         stock_en_cajas(producto, cantidad=getattr(item, 'cantidad', None), target=item)
@@ -158,7 +173,10 @@ def ver_inventario_deposito(request):
     nombre_deposito = ', '.join(nombres_depositos) if nombres_depositos else 'Depósito no configurado'
 
     context = {
-        'inventarios': inventarios_lista,
+        'inventarios': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
         'buscar': buscar,
         'estado': estado,
         'ubicacion_actual': perfil,
@@ -167,8 +185,8 @@ def ver_inventario_deposito(request):
         'titulo_inventario': 'Inventario Depósito',
         'label_stock': 'Stock Depósito',
         'es_tienda': True,
-        'total_items': len(inventarios_lista),
-        'total_unidades': sum(item.cantidad for item in inventarios_lista),
+        'total_items': total_items,
+        'total_unidades': total_unidades,
         'sin_depositos_vinculados': not tiene_depositos_vinculados,
     }
     return render(request, 'inventario/ver.html', context)
@@ -181,14 +199,25 @@ def ver_inventario_ubicacion(request, ubicacion_id):
         return redirect('ver_inventario')
 
     ubicacion = get_object_or_404(PerfilUsuario, id=ubicacion_id)
-    inventarios = Inventario.objects.select_related('producto', 'ubicacion').filter(ubicacion=ubicacion)
+    inventarios_qs = Inventario.objects.select_related('producto', 'ubicacion').filter(ubicacion=ubicacion)
+
+    inventarios_lista = list(inventarios_qs)
+    total_items = len(inventarios_lista)
+    total_unidades = sum(item.cantidad for item in inventarios_lista)
+
+    paginator = Paginator(inventarios_lista, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        'inventarios': inventarios,
+        'inventarios': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
         'ubicacion_actual': ubicacion,
         'es_tienda': ubicacion.rol == 'tienda',
-        'total_items': inventarios.count(),
-        'total_unidades': sum(item.cantidad for item in inventarios),
+        'total_items': total_items,
+        'total_unidades': total_unidades,
         'buscar': '',
         'estado': '',
     }
