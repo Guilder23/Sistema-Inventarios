@@ -6,6 +6,7 @@ from django.db.models import Q
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.core.paginator import Paginator
 import json
 from .models import Categoria, Contenedor, Producto, HistorialProducto, ProductoDanado, ProductoContenedor
 from apps.moneda.models import TipoCambio
@@ -411,11 +412,11 @@ def listar_productos(request):
     estado = request.GET.get('estado', '')
     
     # Query base
-    productos = Producto.objects.select_related('categoria').all().order_by('-fecha_creacion')
+    productos_qs = Producto.objects.select_related('categoria').all().order_by('-fecha_creacion')
     
     # Aplicar filtros
     if buscar:
-        productos = productos.filter(
+        productos_qs = productos_qs.filter(
             Q(codigo__icontains=buscar) |
             Q(nombre__icontains=buscar) |
             Q(descripcion__icontains=buscar) |
@@ -423,20 +424,26 @@ def listar_productos(request):
         )
     
     if estado == 'activo':
-        productos = productos.filter(activo=True)
+        productos_qs = productos_qs.filter(activo=True)
     elif estado == 'inactivo':
-        productos = productos.filter(activo=False)
+        productos_qs = productos_qs.filter(activo=False)
     
+    # Paginación
+    paginator = Paginator(productos_qs, 10)  # Mostrar 10 productos por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
-    # Aplicamos el cálculo a cada producto
+    # Aplicamos el cálculo solo a los productos de la página actual
     valor_dolar = obtener_tipo_cambio_usd()
-    for producto in productos:
+    for producto in page_obj.object_list:
         calcular_precios_usd(producto, valor_dolar)
         stock_en_cajas(producto)
-        print(producto.nombre, producto.precio_caja, producto.precio_caja_usd)
 
     context = {
-        'productos': productos,
+        'productos': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
         'categorias': Categoria.objects.filter(activo=True).order_by('nombre'),
         'contenedores': Contenedor.objects.filter(activo=True).order_by('nombre'),
         'buscar': buscar,
