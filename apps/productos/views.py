@@ -110,8 +110,15 @@ def listar_categorias(request):
     elif estado == 'inactivo':
         categorias = categorias.filter(activo=False)
 
+    paginator = Paginator(categorias, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        'categorias': categorias,
+        'categorias': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
         'buscar': buscar,
         'estado': estado,
     }
@@ -269,8 +276,15 @@ def listar_contenedores(request):
     elif estado == 'inactivo':
         contenedores = contenedores.filter(activo=False)
 
+    paginator = Paginator(contenedores, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        'contenedores': contenedores,
+        'contenedores': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
         'buscar': buscar,
         'estado': estado,
     }
@@ -1210,12 +1224,35 @@ def listar_contenedores_producto(request, producto_id):
         return redirect('dashboard')
     
     producto = get_object_or_404(Producto, id=producto_id, activo=True)
-    productos_contenedores = producto.productos_contenedores.all().select_related('contenedor').order_by('-fecha_creacion')
+    buscar = request.GET.get('buscar', '')
+    estado = request.GET.get('estado', '')
+
+    productos_contenedores_qs = producto.productos_contenedores.all().select_related('contenedor').order_by('-fecha_creacion')
+
+    if buscar:
+        productos_contenedores_qs = productos_contenedores_qs.filter(
+            Q(contenedor__nombre__icontains=buscar) |
+            Q(contenedor__proveedor__icontains=buscar)
+        )
+
+    if estado == 'activo':
+        productos_contenedores_qs = productos_contenedores_qs.filter(contenedor__activo=True)
+    elif estado == 'inactivo':
+        productos_contenedores_qs = productos_contenedores_qs.filter(contenedor__activo=False)
+
+    paginator = Paginator(productos_contenedores_qs, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
     
     context = {
         'producto': producto,
-        'productos_contenedores': productos_contenedores,
+        'productos_contenedores': page_obj,
         'stock_total': producto.stock,
+        'buscar': buscar,
+        'estado': estado,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
     }
     return render(request, 'productos/contenedores/listar_contenedores_producto.html', context)
 
@@ -1534,16 +1571,35 @@ def productos_en_contenedor(request, contenedor_id):
         return redirect('dashboard')
     
     contenedor = get_object_or_404(Contenedor, id=contenedor_id)
+
+    buscar = request.GET.get('buscar', '')
+    estado = request.GET.get('estado', '')
     
     # Obtener productos del contenedor
-    productos_contenedor = ProductoContenedor.objects.filter(
+    productos_contenedor_qs = ProductoContenedor.objects.filter(
         contenedor=contenedor
     ).select_related('producto').order_by('-fecha_creacion')
+
+    if buscar:
+        productos_contenedor_qs = productos_contenedor_qs.filter(
+            Q(producto__codigo__icontains=buscar) |
+            Q(producto__nombre__icontains=buscar) |
+            Q(producto__descripcion__icontains=buscar)
+        )
+
+    if estado == 'activo':
+        productos_contenedor_qs = productos_contenedor_qs.filter(producto__activo=True)
+    elif estado == 'inactivo':
+        productos_contenedor_qs = productos_contenedor_qs.filter(producto__activo=False)
+
+    paginator = Paginator(productos_contenedor_qs, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     # calcular valor del dolar
     valor_dolar = obtener_tipo_cambio_usd()
 
-    for pc in productos_contenedor:
+    for pc in page_obj.object_list:
         producto = pc.producto
 
         # precios USD
@@ -1558,7 +1614,12 @@ def productos_en_contenedor(request, contenedor_id):
     #fin calcular valor de dolar y stock en cajas
     context = {
         'contenedor': contenedor,
-        'productos_contenedor': productos_contenedor,
+        'productos_contenedor': page_obj,
+        'buscar': buscar,
+        'estado': estado,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
     }
     return render(request, 'productos/contenedores/productos_en_contenedor/productos_en_contenedor.html', context)
 
