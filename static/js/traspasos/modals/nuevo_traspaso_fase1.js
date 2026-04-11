@@ -1,3 +1,9 @@
+/*
+LEGACY (comentado): Script para Fase 1 (selección de productos).
+El flujo por fases fue reemplazado por un modal único.
+*/
+
+/*
 // Script para Fase 1: Seleccionar Productos
 
 let fase1Inicializada = false;
@@ -324,3 +330,4 @@ function validarYContinuarFase2() {
 
     modalFase1.modal('hide');
 }
+*/

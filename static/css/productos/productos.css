@@ -107,6 +107,15 @@
     border-radius: 4px;
     object-fit: cover;
     border: 1px solid #e0e0e0;
+    transition: transform 0.2s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.img-producto:hover {
+    transform: scale(1.8);
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .img-placeholder {

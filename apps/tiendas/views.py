@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.core.paginator import Paginator
 from .models import Tienda
 from apps.almacenes.models import Almacen
 
@@ -35,12 +36,23 @@ def listar_tiendas(request):
     # Obtener todos los almacenes para el filtro
     almacenes = Almacen.objects.filter(estado='activo').order_by('nombre')
     
+    paginator = Paginator(tiendas, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+
     context = {
-        'tiendas': tiendas,
+        'tiendas': page_obj,
         'almacenes': almacenes,
         'buscar': buscar,
         'estado': estado,
         'almacen_id': almacen_id,
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'is_paginated': page_obj.has_other_pages(),
+        'querystring': query_params.urlencode(),
     }
     
     return render(request, 'tiendas/tiendas.html', context)

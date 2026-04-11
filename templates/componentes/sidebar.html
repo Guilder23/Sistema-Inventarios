@@ -118,6 +118,12 @@
                     <span>Inventario Depósito</span>
                 </a>
             </li>
+            <li class="sidebar-item">
+                <a href="{% url 'ver_inventario_general' %}" class="sidebar-link {% if request.resolver_match.url_name == 'ver_inventario_general' %}active{% endif %}" title="Inventario General">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Inventario General</span>
+                </a>
+            </li>
             {% elif user.perfil.rol == 'almacen' %}
             <!-- Inventario con submenú solo para almacen -->
             {% with url_actual=request.resolver_match.url_name %}
@@ -275,19 +281,19 @@
             <li class="sidebar-item sidebar-item-with-submenu">
                 <a
                     href="{% url 'index_reportes' %}"
-                    class="sidebar-link sidebar-link-toggle {% if 'reporte' in url_actual %}active{% endif %}"
+                    class="sidebar-link sidebar-link-toggle {% if 'reporte' in url_actual or url_actual == 'ver_inventario_general' %}active{% endif %}"
                     title="Reportes"
                     data-submenu-toggle="submenuReportes"
-                    aria-expanded="{% if 'reporte' in url_actual %}true{% else %}false{% endif %}"
+                    aria-expanded="{% if 'reporte' in url_actual or url_actual == 'ver_inventario_general' %}true{% else %}false{% endif %}"
                 >
                     <i class="fas fa-chart-bar"></i>
                     <span>Reportes</span>
                     <i class="fas fa-chevron-down submenu-chevron"></i>
                 </a>
-                <ul id="submenuReportes" class="sidebar-submenu {% if 'reporte' in url_actual %}open{% endif %}">
+                <ul id="submenuReportes" class="sidebar-submenu {% if 'reporte' in url_actual or url_actual == 'ver_inventario_general' %}open{% endif %}">
                     <li class="sidebar-submenu-item">
-                        <a href="{% url 'reporte_inventario' %}" class="sidebar-submenu-link {% if url_actual == 'reporte_inventario' %}active{% endif %}">
-                            Reporte de Inventario
+                        <a href="{% url 'ver_inventario_general' %}" class="sidebar-submenu-link {% if url_actual == 'ver_inventario_general' %}active{% endif %}">
+                            Inventario General
                         </a>
                     </li>
                     <li class="sidebar-submenu-item">

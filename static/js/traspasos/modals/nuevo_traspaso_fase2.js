@@ -1,3 +1,9 @@
+/*
+LEGACY (comentado): Script para Fase 2 (completar información).
+El flujo por fases fue reemplazado por un modal único.
+*/
+
+/*
 // Script para Fase 2: Completar Información del Traspaso
 
 let ubicacionActual = null;
@@ -265,3 +271,4 @@ function crearTraspaso() {
         btnCrear.innerHTML = textoOriginal;
     });
 }
+*/

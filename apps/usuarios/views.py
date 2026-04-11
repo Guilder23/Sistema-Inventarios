@@ -7,6 +7,7 @@ from django.db.models import Q, Sum, F
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.core.paginator import Paginator
 from decimal import Decimal
 from .models import PerfilUsuario
 
@@ -165,13 +166,24 @@ def listar_usuarios(request):
     if rol:
         usuarios = usuarios.filter(perfil__rol=rol)
     
+    paginator = Paginator(usuarios, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+
     context = {
-        'usuarios': usuarios,
+        'usuarios': page_obj,
         'buscar': buscar,
         'estado': estado,
         'rol': rol,
         'almacenes': Almacen.objects.filter(estado='activo'),
         'tiendas': Tienda.objects.filter(estado='activo'),
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'is_paginated': page_obj.has_other_pages(),
+        'querystring': query_params.urlencode(),
     }
     
     return render(request, 'usuarios/usuarios.html', context)

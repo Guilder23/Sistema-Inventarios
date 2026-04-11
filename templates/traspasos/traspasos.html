@@ -5,8 +5,7 @@
 
 {% block estilos_extra %}
 <link rel="stylesheet" href="{% static 'css/traspasos/traspasos.css' %}">
-<link rel="stylesheet" href="{% static 'css/traspasos/modals/nuevo_traspaso_fase1.css' %}">
-<link rel="stylesheet" href="{% static 'css/traspasos/modals/nuevo_traspaso_fase2.css' %}">
+<link rel="stylesheet" href="{% static 'css/traspasos/modals/nuevo_traspaso.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -212,14 +211,12 @@
 </div>
 
 <!-- Modales -->
-{% include 'traspasos/modals/nuevo_traspaso_fase1.html' %}
-{% include 'traspasos/modals/nuevo_traspaso_fase2.html' %}
+{% include 'traspasos/modals/nuevo_traspaso.html' %}
 
 {% endblock %}
 
 {% block scripts_extra %}
 <script src="{% static 'js/traspasos/config.js' %}"></script>
 <script src="{% static 'js/traspasos/traspasos.js' %}"></script>
-<script src="{% static 'js/traspasos/modals/nuevo_traspaso_fase1.js' %}"></script>
-<script src="{% static 'js/traspasos/modals/nuevo_traspaso_fase2.js' %}"></script>
+<script src="{% static 'js/traspasos/modals/nuevo_traspaso.js' %}"></script>
 {% endblock %}

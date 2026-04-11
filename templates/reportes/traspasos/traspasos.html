@@ -400,7 +400,7 @@
                 <!-- Botón Anterior -->
                 {% if traspasos.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ traspasos.previous_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if origen_id %}&origen={{ origen_id }}{% endif %}{% if destino_id %}&destino={{ destino_id }}{% endif %}{% if creado_por_id %}&creado_por={{ creado_por_id }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}" aria-label="Anterior">
+                    <a class="page-link" href="?page={{ traspasos.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}" aria-label="Anterior">
                         <i class="fas fa-chevron-left"></i>
                     </a>
                 </li>
@@ -416,7 +416,7 @@
                         <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                     {% elif num > traspasos.number|add:'-3' and num < traspasos.number|add:'3' %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ num }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if origen_id %}&origen={{ origen_id }}{% endif %}{% if destino_id %}&destino={{ destino_id }}{% endif %}{% if creado_por_id %}&creado_por={{ creado_por_id }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}">{{ num }}</a>
+                            <a class="page-link" href="?page={{ num }}{% if querystring %}&{{ querystring }}{% endif %}">{{ num }}</a>
                         </li>
                     {% endif %}
                 {% endfor %}
@@ -424,7 +424,7 @@
                 <!-- Botón Siguiente -->
                 {% if traspasos.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ traspasos.next_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if origen_id %}&origen={{ origen_id }}{% endif %}{% if destino_id %}&destino={{ destino_id }}{% endif %}{% if creado_por_id %}&creado_por={{ creado_por_id }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}" aria-label="Siguiente">
+                    <a class="page-link" href="?page={{ traspasos.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}" aria-label="Siguiente">
                         <i class="fas fa-chevron-right"></i>
                     </a>
                 </li>

@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.core.paginator import Paginator
 from .models import Vendedor
 
 
@@ -40,8 +41,15 @@ def listar_vendedores(request):
     elif ubicacion_tipo == 'tienda' and ubicacion_id:
         vendedores = vendedores.filter(tienda_id=ubicacion_id)
     
+    paginator = Paginator(vendedores, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+
     context = {
-        'vendedores': vendedores,
+        'vendedores': page_obj,
         'buscar': buscar,
         'estado': estado,
         'ubicacion_tipo': ubicacion_tipo,
@@ -49,6 +57,10 @@ def listar_vendedores(request):
         'almacenes': Almacen.objects.filter(estado='activo'),
         'tiendas': Tienda.objects.filter(estado='activo'),
         'estados': Vendedor.ESTADO_CHOICES,
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'is_paginated': page_obj.has_other_pages(),
+        'querystring': query_params.urlencode(),
     }
     
     return render(request, 'vendedores/vendedores.html', context)
