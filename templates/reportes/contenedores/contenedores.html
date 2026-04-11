@@ -319,7 +319,7 @@
                 <!-- Botón Anterior -->
                 {% if items_reporte.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ items_reporte.previous_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if contenedor_id %}&contenedor={{ contenedor_id }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}{% if proveedor %}&proveedor={{ proveedor }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if stock_minimo %}&stock_minimo={{ stock_minimo }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}" aria-label="Anterior">
+                    <a class="page-link" href="?page={{ items_reporte.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}" aria-label="Anterior">
                         <i class="fas fa-chevron-left"></i>
                     </a>
                 </li>
@@ -335,7 +335,7 @@
                         <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                     {% elif num > items_reporte.number|add:'-3' and num < items_reporte.number|add:'3' %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ num }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if contenedor_id %}&contenedor={{ contenedor_id }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}{% if proveedor %}&proveedor={{ proveedor }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if stock_minimo %}&stock_minimo={{ stock_minimo }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}">{{ num }}</a>
+                            <a class="page-link" href="?page={{ num }}{% if querystring %}&{{ querystring }}{% endif %}">{{ num }}</a>
                         </li>
                     {% endif %}
                 {% endfor %}
@@ -343,7 +343,7 @@
                 <!-- Botón Siguiente -->
                 {% if items_reporte.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ items_reporte.next_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}{% if contenedor_id %}&contenedor={{ contenedor_id }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}{% if proveedor %}&proveedor={{ proveedor }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if stock_minimo %}&stock_minimo={{ stock_minimo }}{% endif %}{% if ordenar_por %}&ordenar={{ ordenar_por }}{% endif %}" aria-label="Siguiente">
+                    <a class="page-link" href="?page={{ items_reporte.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}" aria-label="Siguiente">
                         <i class="fas fa-chevron-right"></i>
                     </a>
                 </li>

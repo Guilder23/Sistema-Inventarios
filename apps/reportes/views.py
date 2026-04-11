@@ -142,8 +142,8 @@ def reporte_ventas(request):
         bool(monto_maximo),
     ])
     
-    # Configurar paginación (20 items por página)
-    paginator = Paginator(ventas, 20)
+    # Configurar paginación (10 items por página)
+    paginator = Paginator(ventas, 10)
     page = request.GET.get('page', 1)
     
     try:
@@ -152,6 +152,10 @@ def reporte_ventas(request):
         ventas_paginadas = paginator.page(1)
     except EmptyPage:
         ventas_paginadas = paginator.page(paginator.num_pages)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    querystring = query_params.urlencode()
     
     context = {
         'ventas': ventas_paginadas,
@@ -177,6 +181,7 @@ def reporte_ventas(request):
         'monto_minimo': monto_minimo,
         'monto_maximo': monto_maximo,
         'ordenar_por': ordenar_por,
+        'querystring': querystring,
     }
     
     return render(request, 'reportes/ventas/ventas.html', context)
@@ -287,8 +292,8 @@ def reporte_traspasos(request):
         bool(creado_por_id),
     ])
     
-    # Configurar paginación (20 items por página)
-    paginator = Paginator(traspasos, 20)
+    # Configurar paginación (10 items por página)
+    paginator = Paginator(traspasos, 10)
     page = request.GET.get('page', 1)
     
     try:
@@ -297,6 +302,10 @@ def reporte_traspasos(request):
         traspasos_paginados = paginator.page(1)
     except EmptyPage:
         traspasos_paginados = paginator.page(paginator.num_pages)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    querystring = query_params.urlencode()
     
     context = {
         'traspasos': traspasos_paginados,
@@ -322,6 +331,7 @@ def reporte_traspasos(request):
         'destino_id': destino_id,
         'creado_por_id': creado_por_id,
         'ordenar_por': ordenar_por,
+        'querystring': querystring,
     }
     
     return render(request, 'reportes/traspasos/traspasos.html', context)
@@ -451,8 +461,8 @@ def reporte_contenedores(request):
         bool(stock_minimo),
     ])
     
-    # Configurar paginación (20 items por página)
-    paginator = Paginator(items_reporte, 20)
+    # Configurar paginación (10 items por página)
+    paginator = Paginator(items_reporte, 10)
     page = request.GET.get('page', 1)
     
     try:
@@ -461,6 +471,10 @@ def reporte_contenedores(request):
         items_paginados = paginator.page(1)
     except EmptyPage:
         items_paginados = paginator.page(paginator.num_pages)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    querystring = query_params.urlencode()
     
     context = {
         'items_reporte': items_paginados,
@@ -481,6 +495,7 @@ def reporte_contenedores(request):
         'fecha_hasta': fecha_hasta,
         'ordenar_por': ordenar_por,
         'stock_minimo': stock_minimo,
+        'querystring': querystring,
     }
     
     return render(request, 'reportes/contenedores/contenedores.html', context)

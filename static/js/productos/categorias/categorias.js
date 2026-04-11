@@ -1,101 +1,78 @@
-document.addEventListener('DOMContentLoaded', function() {
-    inicializarBusquedaFrontend();
-    inicializarFiltrosFrontend();
-});
+// Categorías: búsqueda en tiempo real + paginación server-side
+(function() {
+    'use strict';
 
-function inicializarBusquedaFrontend() {
-    const inputBuscar = document.getElementById('buscar');
+    document.addEventListener('DOMContentLoaded', function() {
+        restaurarFocoBuscadorSiCorresponde();
+        inicializarBusquedaTiempoReal();
+        inicializarFiltroEstado();
+    });
 
-    if (inputBuscar) {
+    function marcarAutofocusBuscador() {
+        try {
+            sessionStorage.setItem('categorias_autofocus_buscar', '1');
+        } catch (e) {
+            // noop
+        }
+    }
+
+    function restaurarFocoBuscadorSiCorresponde() {
+        const inputBuscar = document.getElementById('buscar');
+        if (!inputBuscar) return;
+
+        let debeEnfocar = false;
+        try {
+            debeEnfocar = sessionStorage.getItem('categorias_autofocus_buscar') === '1';
+        } catch (e) {
+            debeEnfocar = false;
+        }
+
+        if (!debeEnfocar) return;
+
+        try {
+            sessionStorage.removeItem('categorias_autofocus_buscar');
+        } catch (e) {
+            // noop
+        }
+
+        inputBuscar.focus();
+        const valor = inputBuscar.value || '';
+        inputBuscar.setSelectionRange(valor.length, valor.length);
+    }
+
+    function inicializarBusquedaTiempoReal() {
+        const inputBuscar = document.getElementById('buscar');
+        const form = document.getElementById('formFiltrosCategorias');
+        if (!inputBuscar || !form) return;
+
         let timeoutId;
+
         inputBuscar.addEventListener('input', function() {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => {
-                aplicarFiltrosFrontend();
-            }, 200);
+                marcarAutofocusBuscador();
+                form.submit();
+            }, 500);
+        });
+
+        inputBuscar.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(timeoutId);
+                marcarAutofocusBuscador();
+                form.submit();
+            }
         });
     }
-}
 
-function inicializarFiltrosFrontend() {
-    const filtroEstado = document.getElementById('estado');
+    function inicializarFiltroEstado() {
+        const selectEstado = document.getElementById('estado');
+        const form = document.getElementById('formFiltrosCategorias');
+        if (!selectEstado || !form) return;
 
-    if (filtroEstado) {
-        filtroEstado.addEventListener('change', () => aplicarFiltrosFrontend());
+        selectEstado.addEventListener('change', function() {
+            marcarAutofocusBuscador();
+            form.submit();
+        });
     }
-}
-
-function aplicarFiltrosFrontend() {
-    const buscar = (document.getElementById('buscar')?.value || '').toLowerCase().trim();
-    const estado = document.getElementById('estado')?.value || '';
-
-    const filas = document.querySelectorAll('.tabla-categorias tbody tr');
-    let contadorVisible = 0;
-
-    filas.forEach(fila => {
-        if (fila.querySelector('td[colspan]')) {
-            return;
-        }
-
-        const textoFila = fila.textContent.toLowerCase();
-        const estadoFila = fila.querySelector('.badge-estado-activo, .badge-estado-inactivo');
-
-        let mostrar = true;
-
-        if (buscar && !textoFila.includes(buscar)) {
-            mostrar = false;
-        }
-
-        if (estado && estadoFila) {
-            if (estado === 'activo' && !estadoFila.classList.contains('badge-estado-activo')) {
-                mostrar = false;
-            }
-            if (estado === 'inactivo' && !estadoFila.classList.contains('badge-estado-inactivo')) {
-                mostrar = false;
-            }
-        }
-
-        fila.style.display = mostrar ? '' : 'none';
-        if (mostrar) contadorVisible++;
-    });
-
-    mostrarMensajeSinResultados(contadorVisible, buscar, estado);
-}
-
-function mostrarMensajeSinResultados(cantidad, buscar, estado) {
-    const tbody = document.querySelector('.tabla-categorias tbody');
-    if (!tbody) return;
-
-    const mensajeAnterior = tbody.querySelector('.mensaje-sin-resultados');
-    if (mensajeAnterior) {
-        mensajeAnterior.remove();
-    }
-
-    if (cantidad > 0) return;
-
-    let mensaje = 'No se encontraron categorías';
-    const filtros = [];
-
-    if (buscar) {
-        filtros.push(`que coincidan con "${buscar}"`);
-    }
-    if (estado) {
-        filtros.push(`con estado "${estado}"`);
-    }
-
-    if (filtros.length > 0) {
-        mensaje += ' ' + filtros.join(' y ');
-    }
-
-    const filaMensaje = document.createElement('tr');
-    filaMensaje.className = 'mensaje-sin-resultados';
-    filaMensaje.innerHTML = `
-        <td colspan="5" class="text-center py-4">
-            <i class="fas fa-search fa-3x text-muted mb-2" style="display: block;"></i>
-            <p class="text-muted mb-0"><strong>${mensaje}</strong></p>
-            <p class="text-muted small">Intente con otros criterios de búsqueda</p>
-        </td>
-    `;
-
-    tbody.appendChild(filaMensaje);
-}
+})();

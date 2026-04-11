@@ -1,6 +1,7 @@
 // JavaScript específico para Inventario General
 
 document.addEventListener('DOMContentLoaded', function() {
+    restaurarFocoBuscadorSiCorresponde();
     // Sincronizar cambio de pestañas con visibilidad de tablas
     const tabNormal = document.querySelector('a[href="#filtros-normales"]');
     const tabAvanzado = document.querySelector('a[href="#filtros-avanzados"]');
@@ -28,10 +29,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const filtrosFormAvanzado = document.getElementById('filtrosFormAvanzado');
     const rolFiltro = document.getElementById('rolFiltro');
     const ubicacionFiltro = document.getElementById('ubicacionFiltro');
+    const inputBuscarAvanzado = filtrosFormAvanzado ? filtrosFormAvanzado.querySelector('input[name="buscar"]') : null;
     
     // Cargar ubicaciones si ya hay un rol seleccionado al cargar la página
     if (rolFiltro && rolFiltro.value) {
-        cargarUbicacionesPorRol(rolFiltro.value, '{{ ubicacion_filtro_id }}');
+        const seleccionInicial = ubicacionFiltro ? (ubicacionFiltro.dataset.selected || '') : '';
+        cargarUbicacionesPorRol(rolFiltro.value, seleccionInicial);
     }
     
     // Evento para cuando cambia el rol
@@ -77,6 +80,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 campo.addEventListener('input', function() {
                     clearTimeout(timeoutId);
                     timeoutId = setTimeout(() => {
+                        if (inputBuscarAvanzado) {
+                            marcarAutofocusBuscador();
+                        }
                         filtrosFormAvanzado.submit();
                     }, 500); // Esperar 500ms después de que el usuario deje de escribir
                 });
@@ -89,6 +95,39 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+function marcarAutofocusBuscador() {
+    try {
+        sessionStorage.setItem('inventario_general_autofocus_buscar', '1');
+    } catch (e) {
+        // noop
+    }
+}
+
+function restaurarFocoBuscadorSiCorresponde() {
+    let debeEnfocar = false;
+    try {
+        debeEnfocar = sessionStorage.getItem('inventario_general_autofocus_buscar') === '1';
+    } catch (e) {
+        debeEnfocar = false;
+    }
+
+    if (!debeEnfocar) return;
+
+    try {
+        sessionStorage.removeItem('inventario_general_autofocus_buscar');
+    } catch (e) {
+        // noop
+    }
+
+    const form = document.getElementById('filtrosFormAvanzado');
+    const inputBuscar = form ? form.querySelector('input[name="buscar"]') : null;
+    if (!inputBuscar) return;
+
+    inputBuscar.focus();
+    const valor = inputBuscar.value || '';
+    inputBuscar.setSelectionRange(valor.length, valor.length);
+}
 
 /**
  * Cargar ubicaciones según el rol seleccionado

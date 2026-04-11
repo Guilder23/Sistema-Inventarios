@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, F, Sum
 from django.http import JsonResponse
+from django.core.paginator import Paginator
 
 from .models import Inventario, MovimientoInventario
 from apps.usuarios.models import PerfilUsuario
@@ -80,16 +81,23 @@ def ver_inventario(request):
     total_items = len(inventarios_lista)
     total_unidades = sum(item.cantidad for item in inventarios_lista)
 
-    # Aplicamos el cálculo a cada producto
-    valor_dolar = obtener_tipo_cambio_usd()
+    # Paginación
+    paginator = Paginator(inventarios_lista, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
-    for item in inventarios_lista:
+    # Aplicamos el cálculo solo a los productos de la página actual
+    valor_dolar = obtener_tipo_cambio_usd()
+    for item in page_obj.object_list:
         producto = item.producto
         calcular_precios_usd(producto, valor_dolar)
         stock_en_cajas(producto, cantidad=getattr(item, 'cantidad', None), target=item)
 
     context = {
-        'inventarios': inventarios_lista,
+        'inventarios': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
         'buscar': buscar,
         'estado': estado,
         'ubicacion_actual': perfil,
@@ -140,7 +148,6 @@ def ver_inventario_deposito(request):
             Q(producto__codigo__icontains=buscar)
             | Q(producto__nombre__icontains=buscar)
             | Q(producto__categoria__nombre__icontains=buscar)
-            | Q(producto__contenedor__nombre__icontains=buscar)
         )
 
     inventarios_lista = list(inventarios)
@@ -148,9 +155,17 @@ def ver_inventario_deposito(request):
     if estado in ['normal', 'bajo', 'critico']:
         inventarios_lista = [item for item in inventarios_lista if item.estado_stock == estado]
 
-    # Aplicar cálculo de precios y stock en cajas por ubicación (depósito)
+    total_items = len(inventarios_lista)
+    total_unidades = sum(item.cantidad for item in inventarios_lista)
+
+    # Paginación
+    paginator = Paginator(inventarios_lista, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Aplicar cálculo de precios y stock en cajas por ubicación (depósito) solo para la página actual
     valor_dolar = obtener_tipo_cambio_usd()
-    for item in inventarios_lista:
+    for item in page_obj.object_list:
         producto = item.producto
         calcular_precios_usd(producto, valor_dolar)
         stock_en_cajas(producto, cantidad=getattr(item, 'cantidad', None), target=item)
@@ -158,7 +173,10 @@ def ver_inventario_deposito(request):
     nombre_deposito = ', '.join(nombres_depositos) if nombres_depositos else 'Depósito no configurado'
 
     context = {
-        'inventarios': inventarios_lista,
+        'inventarios': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
         'buscar': buscar,
         'estado': estado,
         'ubicacion_actual': perfil,
@@ -167,8 +185,8 @@ def ver_inventario_deposito(request):
         'titulo_inventario': 'Inventario Depósito',
         'label_stock': 'Stock Depósito',
         'es_tienda': True,
-        'total_items': len(inventarios_lista),
-        'total_unidades': sum(item.cantidad for item in inventarios_lista),
+        'total_items': total_items,
+        'total_unidades': total_unidades,
         'sin_depositos_vinculados': not tiene_depositos_vinculados,
     }
     return render(request, 'inventario/ver.html', context)
@@ -181,14 +199,25 @@ def ver_inventario_ubicacion(request, ubicacion_id):
         return redirect('ver_inventario')
 
     ubicacion = get_object_or_404(PerfilUsuario, id=ubicacion_id)
-    inventarios = Inventario.objects.select_related('producto', 'ubicacion').filter(ubicacion=ubicacion)
+    inventarios_qs = Inventario.objects.select_related('producto', 'ubicacion').filter(ubicacion=ubicacion)
+
+    inventarios_lista = list(inventarios_qs)
+    total_items = len(inventarios_lista)
+    total_unidades = sum(item.cantidad for item in inventarios_lista)
+
+    paginator = Paginator(inventarios_lista, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        'inventarios': inventarios,
+        'inventarios': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
         'ubicacion_actual': ubicacion,
         'es_tienda': ubicacion.rol == 'tienda',
-        'total_items': inventarios.count(),
-        'total_unidades': sum(item.cantidad for item in inventarios),
+        'total_items': total_items,
+        'total_unidades': total_unidades,
         'buscar': '',
         'estado': '',
     }
@@ -212,14 +241,14 @@ def listar_movimientos(request):
 
     return render(request, 'inventario/movimientos.html', {'movimientos': movimientos})
 
-# INVENTARIO GENERAL CONSOLIDADO PARA ADMIN, ALMACÉN Y TIENDA ONLINE
+# INVENTARIO GENERAL CONSOLIDADO PARA ADMIN, ALMACÉN, TIENDA ONLINE Y TIENDA
 @login_required
 def ver_inventario_general(request):
-    """Vista de inventario general consolidado para Admin, Almacén y Tienda Online"""
+    """Vista de inventario general consolidado para Admin, Almacén, Tienda Online y Tienda"""
     perfil = getattr(request.user, 'perfil', None)
     
-    # Verificar permisos: solo admin, almacen y tienda_online
-    if not perfil or perfil.rol not in ['administrador', 'almacen', 'tienda_online']:
+    # Verificar permisos: solo admin, almacen, tienda_online y tienda
+    if not perfil or perfil.rol not in ['administrador', 'almacen', 'tienda_online', 'tienda']:
         messages.error(request, 'No tiene permisos para acceder al inventario general')
         return redirect('dashboard')
     
@@ -443,49 +472,49 @@ def ver_inventario_general(request):
     # Determinar si es vista normal (Filtros Normales) o avanzada
     vista_normal = (vista_tipo == 'normal')
     
-    # Crear inventario expandido para vista normal (una fila por ubicación)
+    # Crear inventario expandido (una fila por ubicación)
     inventario_expandido = []
-    
+
+    for item in inventario_consolidado:
+        producto = item['producto']
+
+        # Expandir por cada ubicación que tenga stock
+        for ubicacion in item['ubicaciones_detalle']:
+            if ubicacion['cantidad'] > 0:
+                # Determinar tipo de rol y nombre
+                tipo_rol = ""
+                if ubicacion['rol'] == 'almacen':
+                    tipo_rol = 'Almacén'
+                elif ubicacion['rol'] == 'deposito':
+                    tipo_rol = 'Depósito'
+                elif ubicacion['rol'] == 'tienda':
+                    tipo_rol = 'Tienda'
+                elif ubicacion['rol'] == 'tienda_online':
+                    tipo_rol = 'Tienda Online'
+
+                # Extraer solo el nombre de la ubicación (sin el prefijo "Almacén -", etc.)
+                nombre_ubicacion = ubicacion['nombre']
+                if ' - ' in nombre_ubicacion:
+                    nombre_ubicacion = nombre_ubicacion.split(' - ', 1)[1]
+
+                # Determinar estado según el stock
+                if ubicacion['cantidad'] <= producto.stock_critico:
+                    estado_item = 'critico'
+                elif ubicacion['cantidad'] <= producto.stock_bajo:
+                    estado_item = 'bajo'
+                else:
+                    estado_item = 'normal'
+
+                inventario_expandido.append({
+                    'producto': producto,
+                    'tipo_rol': tipo_rol,
+                    'nombre_ubicacion': nombre_ubicacion,
+                    'stock': ubicacion['cantidad'],
+                    'estado': estado_item,
+                    'fecha_actualizacion': item['fecha_actualizacion'],
+                })
+
     if vista_normal:
-        for item in inventario_consolidado:
-            producto = item['producto']
-            
-            # Expandir por cada ubicación que tenga stock
-            for ubicacion in item['ubicaciones_detalle']:
-                if ubicacion['cantidad'] > 0:
-                    # Determinar tipo de rol y nombre
-                    tipo_rol = ""
-                    if ubicacion['rol'] == 'almacen':
-                        tipo_rol = 'Almacén'
-                    elif ubicacion['rol'] == 'deposito':
-                        tipo_rol = 'Depósito'
-                    elif ubicacion['rol'] == 'tienda':
-                        tipo_rol = 'Tienda'
-                    elif ubicacion['rol'] == 'tienda_online':
-                        tipo_rol = 'Tienda Online'
-                    
-                    # Extraer solo el nombre de la ubicación (sin el prefijo "Almacén -", etc.)
-                    nombre_ubicacion = ubicacion['nombre']
-                    if ' - ' in nombre_ubicacion:
-                        nombre_ubicacion = nombre_ubicacion.split(' - ', 1)[1]
-                    
-                    # Determinar estado según el stock
-                    if ubicacion['cantidad'] <= producto.stock_critico:
-                        estado_item = 'critico'
-                    elif ubicacion['cantidad'] <= producto.stock_bajo:
-                        estado_item = 'bajo'
-                    else:
-                        estado_item = 'normal'
-                    
-                    inventario_expandido.append({
-                        'producto': producto,
-                        'tipo_rol': tipo_rol,
-                        'nombre_ubicacion': nombre_ubicacion,
-                        'stock': ubicacion['cantidad'],
-                        'estado': estado_item,
-                        'fecha_actualizacion': item['fecha_actualizacion'],
-                    })
-        
         # Aplicar filtros de rol si están activos
         if rol_filtro:
             rol_map = {
@@ -549,9 +578,23 @@ def ver_inventario_general(request):
         1 if ubicacion_filtro_id else 0
     ])
     
+    # Paginación (para ambas vistas)
+    page_number = request.GET.get('page')
+
+    paginator_normal = Paginator(inventario_expandido, 10)
+    page_obj_normal = paginator_normal.get_page(page_number)
+
+    paginator_avanzada = Paginator(inventario_consolidado, 10)
+    page_obj_avanzada = paginator_avanzada.get_page(page_number)
+
+    params = request.GET.copy()
+    if 'page' in params:
+        params.pop('page')
+    querystring = params.urlencode()
+
     context = {
-        'inventario_consolidado': inventario_consolidado,
-        'inventario_expandido': inventario_expandido,
+        'inventario_consolidado': page_obj_avanzada,
+        'inventario_expandido': page_obj_normal,
         'vista_normal': vista_normal,
         'vista_tipo': vista_tipo,
         'buscar': buscar,
@@ -575,6 +618,14 @@ def ver_inventario_general(request):
         'vista_simplificada': vista_simplificada,
         'nombre_ubicacion_filtrada': nombre_ubicacion_filtrada,
         'tipo_rol_filtrado': tipo_rol_filtrado,
+
+        'page_obj_normal': page_obj_normal,
+        'is_paginated_normal': page_obj_normal.has_other_pages(),
+        'paginator_normal': paginator_normal,
+        'page_obj_avanzada': page_obj_avanzada,
+        'is_paginated_avanzada': page_obj_avanzada.has_other_pages(),
+        'paginator_avanzada': paginator_avanzada,
+        'querystring': querystring,
     }
     
     return render(request, 'inventario/general.html', context)

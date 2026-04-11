@@ -1,0 +1,171 @@
+<!-- Modal Nuevo Traspaso Único -->
+<div class="modal fade" id="modalNuevoTraspaso" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header text-white">
+                <h5 class="modal-title"><i class="fas fa-exchange-alt"></i> Nuevo Traspaso</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="nuevoTraspasoAlert" class="alert alert-danger" style="display:none;"></div>
+                <form id="formNuevoTraspaso">
+                    <!-- SECCIÓN 1: SELECCIÓN DE PRODUCTOS -->
+                    <div id="seccion-productos">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="tipoTraspaso">Tipo de Traspaso</label>
+                                    <select class="form-control" id="tipoTraspaso" name="tipo" required>
+                                        <option value="">Seleccionar...</option>
+                                        <option value="normal">Transferencia Normal</option>
+                                        <option value="devolucion">Devolución</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="origenTraspaso">Origen</label>
+                                    <select class="form-control" id="origenTraspaso" name="origen" required>
+                                        <option value="">Seleccionar origen...</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-7">
+                                <div class="form-group">
+                                    <label for="buscarProducto">Buscar Productos</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control" id="buscarProducto" placeholder="Nombre o código de barras...">
+                                    </div>
+                                </div>
+                                <div id="listaProductos" class="tabla-productos scroll-y" style="max-height: 400px; overflow-y: auto;">
+                                    <!-- Se llena con AJAX -->
+                                    <div class="text-center p-5 text-muted">
+                                        <i class="fas fa-box-open fa-3x mb-3"></i>
+                                        <p>Seleccione un origen para ver productos disponibles</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="font-weight-bold">Productos Seleccionados</label>
+                                <div id="productosSeleccionados" class="tabla-productos-seleccionados border rounded p-2 bg-light scroll-y" style="max-height: 400px; min-height: 400px; overflow-y: auto;">
+                                    <!-- Se llena dinámicamente -->
+                                    <div class="text-center p-5 text-muted">
+                                        <p>No hay productos seleccionados</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN 2: DETALLES Y DESTINO -->
+                    <div id="seccion-detalles">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label><strong>Código:</strong></label>
+                                    <input type="text" class="form-control" id="codigo" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label><strong>Fecha:</strong></label>
+                                    <input type="text" class="form-control" id="fechaCreacion" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label><strong>Origen Seleccionado:</strong></label>
+                                    <input type="text" class="form-control" id="origenDisplay" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="card shadow-sm">
+                                    <div class="card-header bg-primary text-white py-2">
+                                        <h6 class="mb-0">Destino del Traspaso</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            <label for="tipoDestino">Tipo de destino</label>
+                                            <select class="form-control" id="tipoDestino" name="tipo_destino" required>
+                                                <option value="">Seleccionar tipo...</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="destino">Destino específico</label>
+                                            <select class="form-control" id="destino" name="destino" required>
+                                                <option value="">Seleccionar destino...</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="comentario">Comentario (Opcional)</label>
+                                    <textarea class="form-control" id="comentario" name="comentario" rows="5" placeholder="Agregue comentarios sobre este traspaso..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6 class="font-weight-bold">Resumen de Productos:</h6>
+                                <div id="resumenProductos" class="border rounded p-3 bg-white">
+                                    <!-- Se llena dinámicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+
+                <button type="button" class="btn btn-success" id="btnGuardarTraspaso">
+                    <i class="fas fa-save mr-1"></i> Crear Traspaso
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pequeño: Editar cantidad -->
+<div class="modal fade" id="modalEditarCantidad" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header text-white">
+                <h6 class="modal-title" id="modalEditarCantidadTitulo">
+                    <i class="fas fa-edit"></i> Editar cantidad
+                </h6>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="editarCantidadAlert" class="alert alert-danger" style="display:none;"></div>
+                <input type="hidden" id="editarCantidadIndex" value="">
+                <div class="form-group mb-0">
+                    <label for="editarCantidadInput" class="mb-1">Cantidad</label>
+                    <input type="number" class="form-control" id="editarCantidadInput" min="1" step="1" required>
+                    <small class="text-muted" id="editarCantidadHelp"></small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnGuardarCantidad">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
