@@ -112,6 +112,23 @@
                         <input type="hidden" name="vista_tipo" value="normal">
                         <div class="row mb-2">
                             <div class="col-md-4 mb-2">
+                                <label class="small text-muted mb-1"><i class="fas fa-search"></i> Buscar</label>
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-white border-right-0">
+                                            <i class="fas fa-search text-muted"></i>
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        class="form-control form-control-sm border-left-0"
+                                        name="buscar"
+                                        placeholder="Buscar por código, nombre o categoría..."
+                                        value="{{ buscar }}"
+                                    >
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
                                 <label class="small text-muted mb-1"><i class="fas fa-filter"></i> Filtrar por Rol</label>
                                 <select class="form-control form-control-sm" name="rol_filtro" id="rolFiltro">
                                     <option value="" {% if not rol_filtro %}selected{% endif %}>Todos los roles</option>
@@ -211,7 +228,7 @@
                     <tr>
                         <th style="width: 6%;" class="text-center">FOTO</th>
                         <th style="width: 9%;">CÓDIGO</th>
-                        <th style="width: 18%;">PRODUCTO</th>
+                        <th style="width: 18%;" class="col-producto">PRODUCTO</th>
                         <th style="width: 15%;">DESCRIPCIÓN</th>
                         <th style="width: 9%;">ROL</th>
                         <th style="width: 13%;">NOMBRE DEL ROL</th>
@@ -224,7 +241,18 @@
                     <tr class="fila-estado-{% if item.estado == 'normal' %}normal{% elif item.estado == 'bajo' %}bajo{% else %}critico{% endif %}">
                         <td class="text-center">
                             {% if item.producto.foto %}
-                                <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="producto-imagen-tabla">
+                                <img
+                                    src="{{ item.producto.foto.url }}"
+                                    alt="{{ item.producto.nombre }}"
+                                    class="producto-imagen-tabla"
+                                    role="button"
+                                    tabindex="0"
+                                    data-toggle="modal"
+                                    data-target="#modalImagenProducto"
+                                    data-img-src="{{ item.producto.foto.url }}"
+                                    data-img-alt="{{ item.producto.nombre }}"
+                                    data-producto-nombre="{{ item.producto.nombre }}"
+                                >
                             {% else %}
                                 <div class="producto-sin-imagen">
                                     <i class="fas fa-image"></i>
@@ -232,7 +260,7 @@
                             {% endif %}
                         </td>
                         <td><span class="codigo-badge">{{ item.producto.codigo }}</span></td>
-                        <td><strong>{{ item.producto.nombre }}</strong></td>
+                        <td class="col-producto"><strong>{{ item.producto.nombre }}</strong></td>
                         <td>
                             <div class="text-truncate" style="max-width: 220px;" title="{{ item.producto.descripcion|default:'Sin descripción' }}">
                                 {{ item.producto.descripcion|default:'Sin descripción' }}
@@ -308,7 +336,7 @@
                     <tr>
                         <th rowspan="2" style="width: 5%;" class="text-center">Foto</th>
                         <th rowspan="2" style="width: 7%;">Código</th>
-                        <th rowspan="2" style="width: 13%;">Producto</th>
+                        <th rowspan="2" style="width: 13%;" class="col-producto">Producto</th>
                         <th rowspan="2" style="width: 12%;">Descripción</th>
                         <th colspan="2" class="ubicaciones-header">Almacén</th>
                         <th rowspan="2" class="ubicaciones-header" style="width: 8%;">Depósitos</th>
@@ -327,7 +355,18 @@
                     <tr class="fila-estado-{% if item.estado_stock == 'normal' %}normal{% elif item.estado_stock == 'bajo' %}bajo{% else %}critico{% endif %}">
                         <td class="text-center">
                             {% if item.producto.foto %}
-                                <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="producto-imagen-tabla">
+                                <img
+                                    src="{{ item.producto.foto.url }}"
+                                    alt="{{ item.producto.nombre }}"
+                                    class="producto-imagen-tabla"
+                                    role="button"
+                                    tabindex="0"
+                                    data-toggle="modal"
+                                    data-target="#modalImagenProducto"
+                                    data-img-src="{{ item.producto.foto.url }}"
+                                    data-img-alt="{{ item.producto.nombre }}"
+                                    data-producto-nombre="{{ item.producto.nombre }}"
+                                >
                             {% else %}
                                 <div class="producto-sin-imagen">
                                     <i class="fas fa-image"></i>
@@ -337,7 +376,7 @@
                         <td>
                             <span class="codigo-badge">{{ item.producto.codigo }}</span>
                         </td>
-                        <td>{{ item.producto.nombre }}</td>
+                        <td class="col-producto">{{ item.producto.nombre }}</td>
                         <td>
                             <div class="text-truncate" style="max-width: 220px;" title="{{ item.producto.descripcion|default:'Sin descripción' }}">
                                 {{ item.producto.descripcion|default:'Sin descripción' }}
@@ -433,6 +472,20 @@
     </div>
 </div>
     {% include 'inventario/modal/modal_imprimir.html' %}
+
+    <!-- Modal para visualizar imagen del producto -->
+    <div class="modal fade" id="modalImagenProducto" tabindex="-1" role="dialog" aria-labelledby="modalImagenProductoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-imagen-producto" role="document">
+            <div class="modal-content">
+                <button type="button" class="close modal-imagen-cerrar" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <div class="modal-body text-center">
+                    <img id="modalImagenProductoImg" src="" alt="" class="img-fluid modal-producto-img">
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block scripts_extra %}

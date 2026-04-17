@@ -1,6 +1,7 @@
 // JavaScript específico para Inventario General
 
 document.addEventListener('DOMContentLoaded', function() {
+    restaurarFocoBuscadorNormalSiCorresponde();
     restaurarFocoBuscadorSiCorresponde();
     // Sincronizar cambio de pestañas con visibilidad de tablas
     const tabNormal = document.querySelector('a[href="#filtros-normales"]');
@@ -30,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const rolFiltro = document.getElementById('rolFiltro');
     const ubicacionFiltro = document.getElementById('ubicacionFiltro');
     const inputBuscarAvanzado = filtrosFormAvanzado ? filtrosFormAvanzado.querySelector('input[name="buscar"]') : null;
+    const inputBuscarNormal = filtrosFormNormal ? filtrosFormNormal.querySelector('input[name="buscar"]') : null;
     
     // Cargar ubicaciones si ya hay un rol seleccionado al cargar la página
     if (rolFiltro && rolFiltro.value) {
@@ -67,6 +69,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 filtrosFormNormal.submit();
             });
         });
+
+        if (inputBuscarNormal) {
+            let timeoutId;
+            inputBuscarNormal.addEventListener('input', function() {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    marcarAutofocusBuscadorNormal();
+                    filtrosFormNormal.submit();
+                }, 500);
+            });
+        }
     }
     
     // Aplicar filtros en tiempo real para formulario avanzado
@@ -94,7 +107,57 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Modal de imagen del producto
+    const modalImg = document.getElementById('modalImagenProductoImg');
+
+    document.addEventListener('click', function(e) {
+        const trigger = e.target.closest('.producto-imagen-tabla[data-target="#modalImagenProducto"]');
+        if (!trigger) return;
+
+        const src = trigger.getAttribute('data-img-src') || trigger.getAttribute('src') || '';
+        const alt = trigger.getAttribute('data-img-alt') || trigger.getAttribute('alt') || '';
+        const nombre = trigger.getAttribute('data-producto-nombre') || alt || '';
+
+        if (modalImg) {
+            modalImg.src = src;
+            modalImg.alt = alt;
+        }
+    });
 });
+
+function marcarAutofocusBuscadorNormal() {
+    try {
+        sessionStorage.setItem('inventario_general_autofocus_buscar_normal', '1');
+    } catch (e) {
+        // noop
+    }
+}
+
+function restaurarFocoBuscadorNormalSiCorresponde() {
+    let debeEnfocar = false;
+    try {
+        debeEnfocar = sessionStorage.getItem('inventario_general_autofocus_buscar_normal') === '1';
+    } catch (e) {
+        debeEnfocar = false;
+    }
+
+    if (!debeEnfocar) return;
+
+    try {
+        sessionStorage.removeItem('inventario_general_autofocus_buscar_normal');
+    } catch (e) {
+        // noop
+    }
+
+    const form = document.getElementById('filtrosFormNormal');
+    const inputBuscar = form ? form.querySelector('input[name="buscar"]') : null;
+    if (!inputBuscar) return;
+
+    inputBuscar.focus();
+    const valor = inputBuscar.value || '';
+    inputBuscar.setSelectionRange(valor.length, valor.length);
+}
 
 function marcarAutofocusBuscador() {
     try {
@@ -194,55 +257,59 @@ function exportarTabla() {
     const fecha = new Date().toISOString().split('T')[0];
     
     if (tablaSimplificada) {
-        // Exportar tabla expandida (vista normal con 9 columnas, foto no se exporta)
+        // Exportar tabla expandida (vista normal, foto no se exporta)
         nombreArchivo = `inventario_expandido_${fecha}.csv`;
         
         // Encabezados
-        csvContent += 'Código,Producto,Categoría,Rol,Nombre del Rol,Stock,Estado,Actualizado\n';
+        csvContent += 'Código,Producto,Descripción,Rol,Nombre del Rol,Stock,Estado,Actualizado\n';
         
         // Datos
         const filas = tablaSimplificada.querySelectorAll('tbody tr');
         filas.forEach(fila => {
             const celdas = fila.querySelectorAll('td');
-            if (celdas.length >= 9) {
-                // Ahora la columna 0 es la foto, así que empezamos desde 1
+            // Columnas esperadas: Foto(0), Código(1), Producto(2 - oculto), Descripción(3), Rol(4), Nombre Rol(5), Stock(6), Actualizado(7)
+            if (celdas.length >= 8) {
                 const codigo = celdas[1].textContent.trim();
                 const producto = celdas[2].textContent.trim();
-                const categoria = celdas[3].textContent.trim();
+                const descripcion = celdas[3].textContent.trim();
                 const rol = celdas[4].textContent.trim();
                 const nombreRol = celdas[5].textContent.trim();
                 const stock = celdas[6].textContent.trim().replace(' unidades', '');
-                const estado = celdas[7].textContent.trim();
-                const actualizado = celdas[8].textContent.trim();
-                
-                csvContent += `"${codigo}","${producto}","${categoria}","${rol}","${nombreRol}","${stock}","${estado}","${actualizado}"\n`;
+                const actualizado = celdas[7].textContent.trim();
+                const estado = fila.classList.contains('fila-estado-critico')
+                    ? 'critico'
+                    : (fila.classList.contains('fila-estado-bajo') ? 'bajo' : 'normal');
+
+                csvContent += `"${codigo}","${producto}","${descripcion}","${rol}","${nombreRol}","${stock}","${estado}","${actualizado}"\n`;
             }
         });
     } else if (tablaCompleta) {
-        // Exportar tabla completa (vista avanzada con 12 columnas, foto no se exporta)
+        // Exportar tabla completa (vista avanzada, foto no se exporta)
         nombreArchivo = `inventario_general_${fecha}.csv`;
         
         // Encabezados
-        csvContent += 'Código,Producto,Categoría,Almacén,Stock Almacén,Stock Depósitos,Stock Tiendas,Stock T.Online,Total,Estado\n';
+        csvContent += 'Código,Producto,Descripción,Almacén,Stock Almacén,Stock Depósitos,Stock Tiendas,Stock T.Online,Total,Estado\n';
         
         // Datos
         const filas = tablaCompleta.querySelectorAll('tbody tr:not(.collapse)');
         filas.forEach(fila => {
             const celdas = fila.querySelectorAll('td');
-            if (celdas.length > 0) {
-                // Ahora la columna 0 es la foto, así que empezamos desde 1
+            // Columnas esperadas: Foto(0), Código(1), Producto(2 - oculto), Descripción(3), Almacén(nombre)(4), Stock Almacén(5), Depósitos(6), Tiendas(7), Online(8), Total(9), Detalle(10)
+            if (celdas.length >= 11) {
                 const codigo = celdas[1].textContent.trim();
                 const producto = celdas[2].textContent.trim();
-                const categoria = celdas[3].textContent.trim();
+                const descripcion = celdas[3].textContent.trim();
                 const almacen = celdas[4].textContent.trim();
                 const stockAlmacen = celdas[5].textContent.trim();
                 const stockDepositos = celdas[6].textContent.trim();
                 const stockTiendas = celdas[7].textContent.trim();
                 const stockOnline = celdas[8].textContent.trim();
                 const total = celdas[9].textContent.trim();
-                const estado = celdas[10].textContent.trim();
-                
-                csvContent += `"${codigo}","${producto}","${categoria}","${almacen}",${stockAlmacen},${stockDepositos},${stockTiendas},${stockOnline},${total},"${estado}"\n`;
+                const estado = fila.classList.contains('fila-estado-critico')
+                    ? 'critico'
+                    : (fila.classList.contains('fila-estado-bajo') ? 'bajo' : 'normal');
+
+                csvContent += `"${codigo}","${producto}","${descripcion}","${almacen}",${stockAlmacen},${stockDepositos},${stockTiendas},${stockOnline},${total},"${estado}"\n`;
             }
         });
     } else {
