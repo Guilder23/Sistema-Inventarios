@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{% static 'css/productos/modals/edita.css' %}">
     <link rel="stylesheet" href="{% static 'css/productos/modals/edita_precio.css' %}">
     <link rel="stylesheet" href="{% static 'css/productos/modals/elimina.css' %}">
+    <link rel="stylesheet" href="{% static 'css/componentes/modal_imagen_producto.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -91,7 +92,9 @@
                     <tr {% if not producto.activo %}class="fila-inactiva"{% endif %}>
                         <td class="text-center">
                             {% if producto.foto %}
-                                <img src="{{ producto.foto.url }}" alt="{{ producto.nombre }}" class="img-producto">
+                                <img src="{{ producto.foto.url }}" alt="{{ producto.nombre }}" class="img-producto producto-imagen-tabla" role="button" tabindex="0"
+                                    data-toggle="modal" data-target="#modalImagenProducto"
+                                    data-img-src="{{ producto.foto.url }}" data-img-alt="{{ producto.nombre }}">
                             {% else %}
                                 <div class="img-placeholder">
                                     <i class="fas fa-image"></i>
@@ -268,10 +271,24 @@
         {% include 'productos/modals/edita_precio.html' %}
     {% endif %}
     {% include 'productos/modals/ver.html' %}
+    <!-- Modal universal para imagen de producto -->
+    <div class="modal fade" id="modalImagenProducto" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-imagen-producto" role="document">
+            <div class="modal-content">
+                <button type="button" class="close modal-imagen-cerrar" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <div class="modal-body text-center">
+                    <img id="modalImagenProductoImg" src="" alt="" class="img-fluid modal-producto-img">
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts_extra %}
+<script src="{% static 'js/componentes/modal_imagen_producto.js' %}"></script>
     <!-- Scripts de Modals -->
     {% if es_almacen %}
         <script src="{% static 'js/productos/modals/crea.js' %}"></script>

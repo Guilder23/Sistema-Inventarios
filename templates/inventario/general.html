@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{% static 'css/inventario/ver.css' %}">
 <link rel="stylesheet" href="{% static 'css/inventario/general.css' %}">
 <link rel="stylesheet" href="{% static 'css/inventario/modal/modal_imprimir.css' %}">
+<link rel="stylesheet" href="{% static 'css/componentes/modal_imagen_producto.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -474,7 +475,7 @@
     {% include 'inventario/modal/modal_imprimir.html' %}
 
     <!-- Modal para visualizar imagen del producto -->
-    <div class="modal fade" id="modalImagenProducto" tabindex="-1" role="dialog" aria-labelledby="modalImagenProductoLabel" aria-hidden="true">
+    <div class="modal fade" id="modalImagenProducto" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-imagen-producto" role="document">
             <div class="modal-content">
                 <button type="button" class="close modal-imagen-cerrar" data-dismiss="modal" aria-label="Close">
@@ -490,5 +491,6 @@
 
 {% block scripts_extra %}
 <script src="{% static 'js/inventario/general.js' %}"></script>
+<script src="{% static 'js/componentes/modal_imagen_producto.js' %}"></script>
 <script src="{% static 'js/inventario/modal/modal_imprimir.js' %}"></script>
 {% endblock %}

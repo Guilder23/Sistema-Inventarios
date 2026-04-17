@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="{% static 'css/productos/productos.css' %}">
 <link rel="stylesheet" href="{% static 'css/productos/modals/ver.css' %}">
 <link rel="stylesheet" href="{% static 'css/inventario/ver.css' %}">
+<link rel="stylesheet" href="{% static 'css/componentes/modal_imagen_producto.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -115,7 +116,9 @@
                         {% if es_almacen %}
                             <td class="text-center">
                                 {% if item.producto.foto %}
-                                    <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="img-producto">
+                                    <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="img-producto producto-imagen-tabla" role="button" tabindex="0"
+                                        data-toggle="modal" data-target="#modalImagenProducto"
+                                        data-img-src="{{ item.producto.foto.url }}" data-img-alt="{{ item.producto.nombre }}">
                                 {% else %}
                                     <div class="img-placeholder">
                                         <i class="fas fa-image"></i>
@@ -182,7 +185,9 @@
                         {% else %}
                             <td class="text-center">
                                 {% if item.producto.foto %}
-                                    <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="img-producto">
+                                    <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="img-producto producto-imagen-tabla" role="button" tabindex="0"
+                                        data-toggle="modal" data-target="#modalImagenProducto"
+                                        data-img-src="{{ item.producto.foto.url }}" data-img-alt="{{ item.producto.nombre }}">
                                 {% else %}
                                     <div class="img-placeholder">
                                         <i class="fas fa-image"></i>
@@ -302,10 +307,24 @@
     </nav>
     {% endif %}
 </div>
+    <!-- Modal universal para imagen de producto -->
+    <div class="modal fade" id="modalImagenProducto" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-imagen-producto" role="document">
+            <div class="modal-content">
+                <button type="button" class="close modal-imagen-cerrar" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <div class="modal-body text-center">
+                    <img id="modalImagenProductoImg" src="" alt="" class="img-fluid modal-producto-img">
+                </div>
+            </div>
+        </div>
+    </div>
 {% include 'productos/modals/ver.html' %}
 {% endblock %}
 
 {% block scripts_extra %}
+<script src="{% static 'js/componentes/modal_imagen_producto.js' %}"></script>
 <script src="{% static 'js/productos/modals/ver.js' %}"></script>
 <script src="{% static 'js/inventario/ver.js' %}"></script>
 {% endblock %}

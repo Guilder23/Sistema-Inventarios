@@ -1,0 +1,133 @@
+/* Modal universal: visor de imagen de producto (reutilizable) */
+
+/* Miniaturas que abren el modal */
+.producto-imagen-tabla {
+    cursor: pointer;
+}
+
+/* Modal pequeño (desktop) */
+#modalImagenProducto .modal-dialog.modal-imagen-producto {
+    max-width: 520px;
+    width: 98vw;
+}
+
+#modalImagenProducto .modal-content {
+    background: #fff;
+    border: 0;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
+    padding: 0;
+    border-radius: 12px;
+}
+
+#modalImagenProducto .modal-body {
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.modal-imagen-cerrar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    opacity: 1;
+    text-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-imagen-cerrar:hover {
+    color: #fff;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.modal-producto-img {
+    max-width: 100%;
+    max-height: 70vh;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+    border: 6px solid #fff;
+    box-shadow: 0 2px 18px rgba(0, 0, 0, 0.18);
+    border-radius: 12px;
+}
+
+/* Móvil: visor a pantalla completa, imagen como protagonista */
+@media (max-width: 600px) {
+    #modalImagenProducto .modal-dialog.modal-imagen-producto {
+        max-width: 100vw !important;
+        width: 100vw !important;
+        margin: 0 !important;
+        height: 100vh !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #modalImagenProducto .modal-content {
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        width: 100vw !important;
+        min-height: 100vh !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 !important;
+    }
+
+    #modalImagenProducto .modal-body {
+        padding: 0 !important;
+        background: transparent !important;
+        border-radius: 0 !important;
+        min-height: 100vh !important;
+        width: 100vw !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-producto-img {
+        max-width: 100vw !important;
+        max-height: 100vh !important;
+        width: 100vw !important;
+        height: auto !important;
+        object-fit: contain !important;
+        margin: 0 auto !important;
+        display: block;
+        border-width: 4px !important;
+        border-radius: 8px !important;
+        box-shadow: 0 1px 8px rgba(0, 0, 0, 0.13) !important;
+    }
+
+    .modal-imagen-cerrar {
+        position: fixed !important;
+        top: 12px !important;
+        right: 16px !important;
+        z-index: 9999 !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 2rem !important;
+        background: rgba(0, 0, 0, 0.55) !important;
+        color: #fff !important;
+        border-radius: 50% !important;
+        opacity: 1 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}

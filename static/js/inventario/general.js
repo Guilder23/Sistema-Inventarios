@@ -108,22 +108,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Modal de imagen del producto
-    const modalImg = document.getElementById('modalImagenProductoImg');
-
-    document.addEventListener('click', function(e) {
-        const trigger = e.target.closest('.producto-imagen-tabla[data-target="#modalImagenProducto"]');
-        if (!trigger) return;
-
-        const src = trigger.getAttribute('data-img-src') || trigger.getAttribute('src') || '';
-        const alt = trigger.getAttribute('data-img-alt') || trigger.getAttribute('alt') || '';
-        const nombre = trigger.getAttribute('data-producto-nombre') || alt || '';
-
-        if (modalImg) {
-            modalImg.src = src;
-            modalImg.alt = alt;
-        }
-    });
 });
 
 function marcarAutofocusBuscadorNormal() {
