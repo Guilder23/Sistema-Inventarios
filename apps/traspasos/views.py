@@ -724,7 +724,7 @@ def generar_pdf_traspaso(request, id):
                     response = requests.get(img_url, timeout=5)
                     if response.status_code == 200:
                         img_buffer = BIO(response.content)
-                        img = RLImage(img_buffer, width=0.3*inch, height=0.3*inch)
+                        img = RLImage(img_buffer, width=0.45*inch, height=0.45*inch)
                         return img
                 except Exception as e:
                     print(f"Error loading image from URL {img_url}: {str(e)}")
@@ -745,7 +745,7 @@ def generar_pdf_traspaso(request, id):
             # Validar que el archivo local exista
             if path_img and os.path.exists(path_img):
                 try:
-                    img = RLImage(path_img, width=0.3*inch, height=0.3*inch)
+                    img = RLImage(path_img, width=0.45*inch, height=0.45*inch)
                     return img
                 except Exception as e:
                     print(f"Error loading local image {path_img}: {str(e)}")
@@ -777,7 +777,7 @@ def generar_pdf_traspaso(request, id):
             Paragraph(cantidad_cajas(detalle), table_quantity_style),
         ])
 
-    productos_table = Table(productos_data, colWidths=[0.55*inch, 0.85*inch, 1.55*inch, 2.35*inch, 0.9*inch, 0.8*inch], repeatRows=1)
+    productos_table = Table(productos_data, colWidths=[0.7*inch, 0.85*inch, 1.55*inch, 2.2*inch, 0.9*inch, 0.8*inch], repeatRows=1)
     table_style = [
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#ffffff")),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -789,7 +789,7 @@ def generar_pdf_traspaso(request, id):
         ('RIGHTPADDING', (0, 0), (-1, -1), 4),
         ('TOPPADDING', (0, 0), (-1, -1), 4),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('ROWHEIGHTS', (0, 1), (-1, -1), 0.35*inch),
+        ('ROWHEIGHTS', (0, 1), (-1, -1), 0.5*inch),
     ]
 
     for i in range(1, len(productos_data)):
@@ -800,6 +800,19 @@ def generar_pdf_traspaso(request, id):
     elements.append(productos_table)
     elements.append(Spacer(1, 0.28*inch))
     elements.append(Spacer(1, 0.28*inch))
+
+    comentario_texto = str(traspaso.comentario) if traspaso.comentario else 'Sin comentario'
+    comment_box = Table([[Paragraph('<b>Comentario</b>', label_style)], [Paragraph(comentario_texto, value_style)]], colWidths=[7.0*inch], hAlign='LEFT')
+    comment_box.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f1f5f9')),
+        ('BOX', (0, 0), (-1, -1), 0.75, colors.HexColor('#cbd5e1')),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+    ]))
+    elements.append(comment_box)
+    elements.append(Spacer(1, 0.35*inch))
 
     # Firma con lineas y etiquetas (origen/destino al nivel de 'Nombre y firma')
     firma_line = Paragraph('___________________________', ParagraphStyle('FirmaLine', parent=styles['Normal'], fontSize=11, textColor=colors.HexColor('#0f172a'), alignment=TA_CENTER))
@@ -820,19 +833,6 @@ def generar_pdf_traspaso(request, id):
     ]))
     elements.append(firma_table)
     elements.append(Spacer(1, 0.2*inch))
-
-    comentario_texto = str(traspaso.comentario) if traspaso.comentario else 'Sin comentario'
-    comment_box = Table([[Paragraph('<b>Comentario</b>', label_style)], [Paragraph(comentario_texto, value_style)]], colWidths=[7.0*inch], hAlign='LEFT')
-    comment_box.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f1f5f9')),
-        ('BOX', (0, 0), (-1, -1), 0.75, colors.HexColor('#cbd5e1')),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-        ('TOPPADDING', (0, 0), (-1, -1), 5),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-    ]))
-    elements.append(comment_box)
-    elements.append(Spacer(1, 0.18*inch))
 
     doc.build(elements)
     buffer.seek(0)
