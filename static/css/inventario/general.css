@@ -1,3 +1,68 @@
+#modalImagenProducto .modal-dialog.modal-imagen-producto {
+        max-width: 520px;
+        width: 98vw;
+}
+
+@media (max-width: 600px) {
+    #modalImagenProducto .modal-dialog.modal-imagen-producto {
+        max-width: 100vw !important;
+        width: 100vw !important;
+        margin: 0 !important;
+        height: 100vh !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #modalImagenProducto .modal-content {
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        width: 100vw !important;
+        min-height: 100vh !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 !important;
+    }
+    #modalImagenProducto .modal-body {
+        padding: 0 !important;
+        background: transparent !important;
+        border-radius: 0 !important;
+        min-height: 100vh !important;
+        width: 100vw !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-producto-img {
+        max-width: 100vw !important;
+        max-height: 100vh !important;
+        width: 100vw !important;
+        height: auto !important;
+        object-fit: contain !important;
+        margin: 0 auto !important;
+        background: #000 !important;
+        display: block;
+    }
+    .modal-imagen-cerrar {
+        position: fixed !important;
+        top: 12px !important;
+        right: 16px !important;
+        z-index: 9999 !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 2rem !important;
+        background: rgba(0,0,0,0.55) !important;
+        color: #fff !important;
+        border-radius: 50% !important;
+        opacity: 1 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
 /* Estilos específicos para Inventario General */
 
 /* ===== VISIBILIDAD DE TABLAS ===== */
@@ -194,12 +259,19 @@
     border: 2px solid #e3e6f0;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s ease;
+    cursor: pointer;
 }
 
 .producto-imagen-tabla:hover {
     transform: scale(1.8);
     z-index: 1000;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Ocultar columna Producto en Inventario General */
+#tablaInventarioNormal .col-producto,
+#tablaInventarioAvanzado .col-producto {
+    display: none;
 }
 
 .producto-sin-imagen {
