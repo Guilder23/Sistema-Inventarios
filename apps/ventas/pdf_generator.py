@@ -117,11 +117,49 @@ def generar_pdf_venta_completo(venta):
     """
     buffer = BytesIO()
     # Reducir márgenes para aprovechar mejor el espacio
-    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.3*inch, bottomMargin=0.3*inch)
+    doc = SimpleDocTemplate(
+     buffer,
+    pagesize=letter,
+    topMargin=0.3 * inch,
+    bottomMargin=0.3 * inch,
+    leftMargin=0.35 * inch,
+    rightMargin=0.35 * inch,
+    )
     elements = []
     styles = getSampleStyleSheet()
     
     # ===== ESTILOS PERSONALIZADOS =====
+    # estilos para celdas
+    style_header_cell = ParagraphStyle(
+    'HeaderCell',
+    parent=styles['Normal'],
+    fontName='Helvetica-Bold',
+    fontSize=9,
+    leading=11,
+    alignment=TA_CENTER,
+    textColor=colors.whitesmoke,
+    )
+    style_cell_left = ParagraphStyle(
+    'CellLeft',
+    parent=styles['Normal'],
+    fontSize=8,
+    leading=10,
+    alignment=TA_LEFT,
+    textColor=colors.HexColor('#111827'),
+)
+
+    style_cell_center = ParagraphStyle(
+    'CellCenter',
+    parent=style_cell_left,
+    alignment=TA_CENTER,
+    )
+
+    style_cell_right = ParagraphStyle(
+    'CellRight',
+    parent=style_cell_left,
+    alignment=TA_RIGHT,
+    )
+
     style_titulo = ParagraphStyle(
         'TituloVenta',
         parent=styles['Heading1'],
@@ -256,10 +294,175 @@ def generar_pdf_venta_completo(venta):
     elements.append(Paragraph(info_general, style_encabezado))
     elements.append(Spacer(1, 0.3*inch))
     
-    # ===== SECCIÓN 2: TABLA DE DETALLES =====
-    
+   # ===== SECCIÓN 2: TABLA DE DETALLES =====
+    from xml.sax.saxutils import escape
+
     detalles = venta.detalles.all()
-    datos_tabla = [['Producto', 'Origen', 'Detalle', 'Cantidad', 'P. Unitario', 'Subtotal']]
+
+    # Estilos para las celdas de la tabla
+    style_header_cell = ParagraphStyle(
+        'HeaderCell',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=8.5,
+        leading=10,
+        alignment=TA_CENTER,
+        textColor=colors.whitesmoke,
+    )
+
+    style_cell_left = ParagraphStyle(
+        'CellLeft',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8,
+        leading=9.5,
+        alignment=TA_LEFT,
+        textColor=colors.HexColor('#111827'),
+    )
+
+    style_cell_center = ParagraphStyle(
+        'CellCenter',
+        parent=style_cell_left,
+        alignment=TA_CENTER,
+    )
+
+    style_cell_right = ParagraphStyle(
+        'CellRight',
+        parent=style_cell_left,
+        alignment=TA_RIGHT,
+    )
+
+    ancho_tabla = doc.width
+    col_widths = [
+        ancho_tabla * 0.12,  # Foto
+        ancho_tabla * 0.11,  # Código
+        ancho_tabla * 0.22,  # Detalle Producto
+        ancho_tabla * 0.10,  # Origen
+        ancho_tabla * 0.16,  # Detalle
+        ancho_tabla * 0.08,  # Cantidad
+        ancho_tabla * 0.10,  # P. Unitario
+        ancho_tabla * 0.11,  # Subtotal
+    ]
+
+    datos_tabla = [[
+        Paragraph('Foto', style_header_cell),
+        Paragraph('Codigo', style_header_cell),
+        Paragraph('Detalle Producto', style_header_cell),
+        Paragraph('Origen', style_header_cell),
+        Paragraph('Detalle', style_header_cell),
+        Paragraph('Cantidad', style_header_cell),
+        Paragraph('P. Unitario', style_header_cell),
+        Paragraph('Subtotal', style_header_cell),
+    ]]
+    imagen_cache = {}
+    def resolver_imagen_producto(producto):
+        """
+        Devuelve una imagen de ReportLab o una celda vacía si no hay foto.
+        Optimizado: sin requests y con cache por producto.
+        """
+        producto_id = getattr(producto, 'id', None)
+        if producto_id in imagen_cache:
+            return imagen_cache[producto_id]
+
+        foto = getattr(producto, 'foto', None)
+        if not foto:
+            imagen_cache[producto_id] = ''
+            return ''
+
+        # 1) Leer desde el storage del ImageField
+        try:
+            if hasattr(foto, 'open'):
+                foto.open('rb')
+                contenido = BytesIO(foto.read())
+                contenido.seek(0)
+                try:
+                    foto.close()
+                except Exception:
+                    pass
+
+                img = Image(contenido, width=0.50 * inch, height=0.50 * inch)
+                imagen_cache[producto_id] = img
+                return img
+        except Exception:
+            pass
+
+        # 2) Fallback local
+        posibles_rutas = []
+        try:
+            if hasattr(foto, 'path'):
+                posibles_rutas.append(foto.path)
+        except Exception:
+            pass
+
+        if getattr(foto, 'name', None):
+            posibles_rutas.append(os.path.join(settings.MEDIA_ROOT, foto.name))
+
+        for ruta_foto in posibles_rutas:
+            if ruta_foto and os.path.exists(ruta_foto):
+                try:
+                    img = Image(ruta_foto, width=0.50 * inch, height=0.50 * inch)
+                    imagen_cache[producto_id] = img
+                    return img
+                except Exception:
+                    continue
+
+        imagen_cache[producto_id] = ''
+        return ''
+        
+        """
+        Devuelve una imagen de ReportLab o una celda vacía si no hay foto.
+        Se intenta primero leer desde el storage del ImageField y luego por URL/ruta local.
+        """
+        foto = getattr(producto, 'foto', None)
+        if not foto:
+            return ''
+
+        # 1) Mejor opción: leer desde el storage del propio ImageField.
+        try:
+            if hasattr(foto, 'open'):
+                foto.open('rb')
+                contenido = BytesIO(foto.read())
+                contenido.seek(0)
+                try:
+                    foto.close()
+                except Exception:
+                    pass
+                return Image(contenido, width=0.60 * inch, height=0.60 * inch)
+        except Exception:
+            pass
+
+        # 2) Si el storage expone URL pública, intentar descargarla.
+        try:
+            url = getattr(foto, 'url', None)
+            if url:
+                import requests
+                respuesta = requests.get(url, timeout=8)
+                if respuesta.status_code == 200 and respuesta.content:
+                    contenido = BytesIO(respuesta.content)
+                    contenido.seek(0)
+                    return Image(contenido, width=0.60 * inch, height=0.60 * inch)
+        except Exception:
+            pass
+
+        # 3) Fallback local, útil solo si MEDIA_ROOT tiene el archivo.
+        posibles_rutas = []
+        try:
+            if hasattr(foto, 'path'):
+                posibles_rutas.append(foto.path)
+        except Exception:
+            pass
+
+        if getattr(foto, 'name', None):
+            posibles_rutas.append(os.path.join(settings.MEDIA_ROOT, foto.name))
+
+        for ruta_foto in posibles_rutas:
+            if ruta_foto and os.path.exists(ruta_foto):
+                try:
+                    return Image(ruta_foto, width=0.60 * inch, height=0.60 * inch)
+                except Exception:
+                    continue
+
+        return ''
 
     for detalle in detalles:
         precio = float(convertir_desde_bob_para_pdf(detalle.precio_unitario, venta))
@@ -269,39 +472,74 @@ def generar_pdf_venta_completo(venta):
         tipo_vendedor = obtener_tipo_vendedor_detalle_pdf(detalle)
         modalidad = obtener_modalidad_detalle_pdf(detalle)
         cantidad_cajas = obtener_cantidad_cajas_pdf(detalle)
+
         detalle_linea = obtener_label_modalidad_pdf(modalidad)
         if cantidad_cajas > 0:
             detalle_linea += f' | {cantidad_cajas} caja(s)'
 
+        foto = resolver_imagen_producto(detalle.producto)
+
+        codigo = str(detalle.producto.codigo or 'N/A')[:15]
+        descripcion = str(detalle.producto.descripcion or '-')
+        origen = str(obtener_label_tipo_vendedor_pdf(tipo_vendedor) or '-')
+        detalle_texto = str(detalle_linea or '-')
+
         datos_tabla.append([
-            detalle.producto.nombre[:40],
-            obtener_label_tipo_vendedor_pdf(tipo_vendedor),
-            detalle_linea,
-            str(cantidad),
-            f'{etiqueta_moneda} {precio:,.2f}',
-            f'{etiqueta_moneda} {subtotal_valor:,.2f}'
+            foto,
+            Paragraph(escape(codigo), style_cell_left),
+            Paragraph(escape(descripcion), style_cell_left),
+            Paragraph(escape(origen), style_cell_center),
+            Paragraph(escape(detalle_texto), style_cell_left),
+            Paragraph(str(cantidad), style_cell_center),
+            Paragraph(f'{etiqueta_moneda} {precio:,.2f}', style_cell_right),
+            Paragraph(f'{etiqueta_moneda} {subtotal_valor:,.2f}', style_cell_right),
         ])
-    
-    datos_tabla_final = datos_tabla
-    
-    tabla_detalles = Table(datos_tabla_final, colWidths=[2.1*inch, 0.9*inch, 1.2*inch, 0.8*inch, 1*inch, 1.2*inch])
+
+    tabla_detalles = Table(
+        datos_tabla,
+        colWidths=col_widths,
+        repeatRows=1
+    )
+
     tabla_detalles.setStyle(TableStyle([
+        # Encabezado
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f2937')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('ALIGN', (0, 0), (2, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f3f4f6')])
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+
+        # Alineaciones cuerpo
+        ('ALIGN', (0, 1), (0, -1), 'CENTER'),   # Foto
+        ('ALIGN', (1, 1), (2, -1), 'LEFT'),     # Código, Detalle Producto
+        ('ALIGN', (3, 1), (3, -1), 'CENTER'),   # Origen
+        ('ALIGN', (4, 1), (4, -1), 'LEFT'),     # Detalle
+        ('ALIGN', (5, 1), (5, -1), 'CENTER'),   # Cantidad
+        ('ALIGN', (6, 1), (7, -1), 'RIGHT'),    # Montos
+
+        # Padding encabezado
+        ('TOPPADDING', (0, 0), (-1, 0), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+
+        # Padding cuerpo
+        ('TOPPADDING', (0, 1), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+
+        # Padding horizontal general
+        ('LEFTPADDING', (1, 0), (-1, -1), 5),
+        ('RIGHTPADDING', (1, 0), (-1, -1), 5),
+
+        # Padding reducido para la foto
+        ('LEFTPADDING', (0, 0), (0, -1), 3),
+        ('RIGHTPADDING', (0, 0), (0, -1), 3),
+
+        # Bordes y fondos
+        ('GRID', (0, 0), (-1, -1), 0.6, colors.HexColor('#374151')),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f3f4f6')]),
     ]))
-    
+
     elements.append(tabla_detalles)
-    elements.append(Spacer(1, 0.2*inch))
-    
+    elements.append(Spacer(1, 0.2 * inch))
+
     # ===== SECCIÓN 3: TOTALES =====
     
     # Calcular totales (defensivo)
@@ -492,10 +730,6 @@ def generar_pdf_venta_completo(venta):
     # Datos de empresa
     nombre_empresa = "ALMAZEN"
     subtitulo_empresa = "Importadora por mayor y por menor"
-    leyenda_devolucion = (
-        "*En caso de hacer la devolución de esta compra aproximarse con el código "
-        "de la venta que está impreso en esta factura, caso contrario no podrá hacer la devolución*"
-    )
     
     # Estilos para empresa
     style_empresa = ParagraphStyle(
@@ -533,7 +767,6 @@ def generar_pdf_venta_completo(venta):
     elements.append(Paragraph(nombre_empresa, style_empresa))
     elements.append(Paragraph(subtitulo_empresa, style_subtitulo))
     elements.append(Spacer(1, 0.1*inch))
-    elements.append(Paragraph(leyenda_devolucion, style_leyenda))
     elements.append(Spacer(1, 0.15*inch))
     
     # ===== SECCIÓN 5: PIE DE PÁGINA =====
@@ -543,7 +776,7 @@ def generar_pdf_venta_completo(venta):
     <b>Estado:</b> {estado_str}<br/>
     <b>Generado:</b> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}<br/>
     <br/>
-    <i>Este documento fue generado automáticamente por el sistema de ventas</i>
+    <i>Gracias por su preferencia</i>
     """
     elements.append(Paragraph(pie, style_encabezado))
     

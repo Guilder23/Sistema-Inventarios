@@ -740,12 +740,17 @@ def guardar_venta(request):
                 cantidad_cajas = int(item.get('cantidad_cajas', 0) or 0)
                 modalidad = normalizar_modalidad(item.get('modalidad'), 'unidad')
                 tipo_vendedor = normalizar_tipo_vendedor(item.get('tipo_vendedor'), 'almacen') or 'almacen'
+                unidades_operativas = int(item.get('unidades_operativas', 0) or 0)
+                cantidad_ingresada = int(item.get('cantidad', 0) or 0)
 
                 if cantidad_cajas > 0:
                     cantidad = cantidad_cajas * unidades_por_caja
                     modalidad = 'caja'
+                elif modalidad == 'caja':
+                    cantidad_cajas = cantidad_ingresada
+                    cantidad = cantidad_cajas * unidades_por_caja
                 else:
-                    cantidad = int(item.get('cantidad', 0))
+                    cantidad = cantidad_ingresada
                     if modalidad == 'caja' and unidades_por_caja > 0 and cantidad > 0:
                         cantidad_cajas = max(cantidad // unidades_por_caja, 0)
 
@@ -763,7 +768,7 @@ def guardar_venta(request):
                 # Ahora bloquear el producto para la actualización
                 producto = Producto.objects.select_for_update().get(id=producto_id)
 
-                subtotal_item = precio_unitario * cantidad
+                subtotal_item = precio_unitario * unidades_a_descontar
 
                 DetalleVenta.objects.create(
                     venta=venta,
@@ -1961,7 +1966,7 @@ def guardar_venta_tienda(request):
                 # Ahora bloquear el producto
                 producto = Producto.objects.select_for_update().get(id=producto_id)
 
-                subtotal_item = precio_unitario * cantidad
+                subtotal_item = precio_unitario * unidades_a_descontar
                 cantidad_guardada = unidades_a_descontar
                 precio_guardado = precio_unitario
 

@@ -319,7 +319,7 @@ function validarStockDisponible(producto, cantidad, modalidad, cantidadExistente
 
 function recalcularItemCarrito(item) {
     item.unidades_operativas = calcularUnidadesOperativas(item.producto, item.cantidad, item.modalidad);
-    item.subtotal_bs = item.cantidad * item.precio_unitario_bs;
+    item.subtotal_bs = item.unidades_operativas * item.precio_unitario_bs;
 }
 
 function agregarAlCarrito(producto, cantidad, modalidad, tipoVendedor = tipoVendedorActual) {
@@ -842,7 +842,8 @@ function construirPayloadVenta() {
             cantidad: item.cantidad,
             modalidad: item.modalidad,
             tipo_vendedor: obtenerTipoVendedorItem(item),
-            precio_unitario: convertirBsAMoneda(item.precio_unitario_bs).toFixed(2)
+            precio_unitario: convertirBsAMoneda(item.precio_unitario_bs).toFixed(2),
+            unidades_operativas: item.unidades_operativas
         }))
     };
 }
