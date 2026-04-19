@@ -173,7 +173,36 @@ function obtenerPrecioBasePorModalidad(producto, modalidad) {
 
     return precioUnidad;
 }
+function puedeUsarCaja(producto) {
+    const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
+    return unidadesPorCaja > 1;
+}
 
+function puedeUsarMayor(producto) {
+    const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
+    return unidadesPorCaja >= 4;
+}
+
+function determinarModalidadAutomaticaTienda(producto, cantidad, modalidadActual) {
+    const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
+    const valor = parseInt(cantidad, 10);
+
+    if (!Number.isInteger(valor) || valor < 1) {
+        return modalidadActual || 'unidad';
+    }
+
+    // Caja siempre es manual: si el usuario ya eligió caja, no la tocamos aquí
+    if (modalidadActual === 'caja') {
+        return 'caja';
+    }
+
+    // Mayor solo existe si la caja trae 4 o más unidades
+    if (unidadesPorCaja >= 4 && valor >= 3 && valor < unidadesPorCaja) {
+        return 'mayor';
+    }
+
+    return 'unidad';
+}
 function calcularUnidadesOperativas(producto, cantidad, modalidad) {
     const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
     return modalidad === 'caja' ? (cantidad * unidadesPorCaja) : cantidad;
@@ -273,22 +302,43 @@ function validarCantidadSegunModalidad(cantidad, modalidad, unidadesPorCaja, tip
     }
 
     if (tipoVendedor === 'deposito') {
+        if (modalidad !== 'caja') {
+            return { valido: false, mensaje: 'En Depósito solo se permite vender por caja.' };
+        }
         return { valido: true };
     }
 
-    if (modalidad === 'unidad' && valor > 2) {
-        return { valido: false, mensaje: 'La modalidad Unidad solo permite entre 1 y 2 unidades.' };
+    // CAJA: siempre manual
+    if (modalidad === 'caja') {
+        if (unidadesPorCaja <= 1) {
+            return { valido: false, mensaje: 'Este producto no tiene presentación por caja.' };
+        }
+        return { valido: true };
     }
 
-    if (modalidad === 'mayor' && (valor < 3 || valor >= unidadesPorCaja)) {
-        return {
-            valido: false,
-            mensaje: `La modalidad Mayor requiere entre 3 y ${Math.max(unidadesPorCaja - 1, 3)} unidades.`
-        };
+    // UNIDAD
+    if (modalidad === 'unidad') {
+        // Si existe modalidad mayor, unidad solo permite 1 o 2
+        if (unidadesPorCaja >= 4 && valor > 2) {
+            return { valido: false, mensaje: 'Con esa cantidad corresponde precio Mayor.' };
+        }
+        return { valido: true };
     }
 
-    if (modalidad === 'caja' && valor < 1) {
-        return { valido: false, mensaje: 'La modalidad Caja requiere al menos 1 caja.' };
+    // MAYOR
+    if (modalidad === 'mayor') {
+        if (unidadesPorCaja < 4) {
+            return { valido: false, mensaje: 'Este producto no tiene modalidad Mayor.' };
+        }
+
+        if (valor < 3 || valor >= unidadesPorCaja) {
+            return {
+                valido: false,
+                mensaje: `La modalidad Mayor requiere entre 3 y ${unidadesPorCaja - 1} unidades.`
+            };
+        }
+
+        return { valido: true };
     }
 
     return { valido: true };
@@ -378,51 +428,276 @@ function removerDelCarrito(index) {
     carrito.splice(index, 1);
     renderCarrito();
 }
+function cambiarModalidadCarrito(index, nuevaModalidad) {
+    const item = carrito[index];
+    if (!item) return;
+
+    const producto = item.producto;
+    const tipoVendedor = obtenerTipoVendedorItem(item);
+    const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
+
+    // En depósito solo se permite caja
+    if (tipoVendedor === 'deposito') {
+        nuevaModalidad = 'caja';
+    }
+
+    // Validar si existe presentación por caja
+    if (nuevaModalidad === 'caja' && unidadesPorCaja <= 1) {
+        mostrarAlerta('Este producto no tiene presentación por caja.');
+        renderCarrito();
+        return;
+    }
+
+    // Validar si existe modalidad mayor
+    if (nuevaModalidad === 'mayor' && unidadesPorCaja < 4) {
+        mostrarAlerta('Este producto no tiene modalidad Mayor.');
+        renderCarrito();
+        return;
+    }
+
+    // Validar cantidad según modalidad
+    const validacionCantidad = validarCantidadSegunModalidad(
+        item.cantidad,
+        nuevaModalidad,
+        unidadesPorCaja,
+        tipoVendedor
+    );
+
+    if (!validacionCantidad.valido) {
+        mostrarAlerta(validacionCantidad.mensaje);
+        renderCarrito();
+        return;
+    }
+
+    // Validar stock disponible
+    const validacionStock = validarStockDisponible(
+        producto,
+        item.cantidad,
+        nuevaModalidad,
+        0
+    );
+
+    if (!validacionStock.valido) {
+        mostrarAlerta(validacionStock.mensaje);
+        renderCarrito();
+        return;
+    }
+
+    // Obtener nuevo precio según modalidad
+    const precioBaseBs = obtenerPrecioBasePorModalidad(producto, nuevaModalidad);
+    if (!precioBaseBs || precioBaseBs <= 0) {
+        mostrarAlerta(
+            `El producto "${producto.nombre}" no tiene precio para la modalidad ${obtenerEtiquetaModalidad(nuevaModalidad)}.`
+        );
+        renderCarrito();
+        return;
+    }
+
+    // Aplicar cambio
+    item.modalidad = nuevaModalidad;
+    item.precio_unitario_bs = precioBaseBs;
+
+    recalcularItemCarrito(item);
+    renderCarrito();
+}
+
+function cambiarCantidadCarrito(index, nuevaCantidad) {
+    const item = carrito[index];
+    if (!item) return;
+
+    const cantidad = parseInt(nuevaCantidad, 10);
+    const producto = item.producto;
+    const tipoVendedor = obtenerTipoVendedorItem(item);
+    const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
+
+    if (!Number.isInteger(cantidad) || cantidad < 1) {
+        mostrarAlerta('La cantidad debe ser mayor a 0.');
+        renderCarrito();
+        return;
+    }
+
+    let modalidadFinal = item.modalidad;
+
+    if (tipoVendedor === 'deposito') {
+        modalidadFinal = 'caja';
+    } else {
+        modalidadFinal = determinarModalidadAutomaticaTienda(producto, cantidad, item.modalidad);
+    }
+
+    const validacionCantidad = validarCantidadSegunModalidad(
+        cantidad,
+        modalidadFinal,
+        unidadesPorCaja,
+        tipoVendedor
+    );
+
+    if (!validacionCantidad.valido) {
+        mostrarAlerta(validacionCantidad.mensaje);
+        renderCarrito();
+        return;
+    }
+
+    const validacionStock = validarStockDisponible(producto, cantidad, modalidadFinal, 0);
+    if (!validacionStock.valido) {
+        mostrarAlerta(validacionStock.mensaje);
+        renderCarrito();
+        return;
+    }
+
+    const precioBaseBs = obtenerPrecioBasePorModalidad(producto, modalidadFinal);
+    if (!precioBaseBs || precioBaseBs <= 0) {
+        mostrarAlerta(`El producto "${producto.nombre}" no tiene precio para la modalidad ${obtenerEtiquetaModalidad(modalidadFinal)}.`);
+        renderCarrito();
+        return;
+    }
+
+    item.cantidad = cantidad;
+    item.modalidad = modalidadFinal;
+    item.precio_unitario_bs = precioBaseBs;
+    recalcularItemCarrito(item);
+    renderCarrito();
+}
+
+function aumentarCantidadCarrito(index) {
+    const item = carrito[index];
+    if (!item) return;
+    cambiarCantidadCarrito(index, item.cantidad + 1);
+}
+
+function disminuirCantidadCarrito(index) {
+    const item = carrito[index];
+    if (!item) return;
+    if (item.cantidad <= 1) return;
+    cambiarCantidadCarrito(index, item.cantidad - 1);
+}
 
 function renderCarrito() {
     const tbody = document.getElementById('carritoBody');
     const footer = document.getElementById('carritoFooter');
+    const carritoVacio = document.getElementById('carritoVacio');
 
     if (!tbody) return;
 
     if (carrito.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="fas fa-inbox mr-2"></i>Carrito vacio</td></tr>';
+        tbody.innerHTML = '';
         if (footer) footer.style.display = 'none';
+        if (carritoVacio) carritoVacio.style.display = 'block';
         actualizarTotales();
         return;
     }
 
     if (footer) footer.style.display = 'block';
+    if (carritoVacio) carritoVacio.style.display = 'none';
 
-    tbody.innerHTML = carrito.map((item, index) => `
-        <tr class="carrito-row-nueva">
-            <td class="pl-3">
-                <div class="carrito-producto-nombre">${escapeHtml(item.producto.nombre)}</div>
-                <div class="carrito-producto-codigo">${escapeHtml(item.producto.codigo || '')}</div>
-            </td>
-            <td class="text-center">
-                <span class="${obtenerClaseTipoVendedor(obtenerTipoVendedorItem(item))}">
-                    ${escapeHtml(item.tipo_vendedor_label || obtenerEtiquetaTipoVendedor(obtenerTipoVendedorItem(item)))}
-                </span>
-            </td>
-            <td class="text-center">
-                <div class="font-weight-bold">${escapeHtml(obtenerEtiquetaModalidad(item.modalidad))}</div>
-                <div class="small text-muted mt-1">${escapeHtml(obtenerResumenModalidad(item.producto, item.cantidad, item.modalidad))}</div>
-            </td>
-            <td class="text-center">
-                ${renderMontoDual(item.precio_unitario_bs)}
-            </td>
-            <td class="text-center">${item.cantidad}</td>
-            <td class="text-right font-weight-bold">
-                ${renderMontoDual(item.subtotal_bs)}
-            </td>
-            <td class="text-center pr-3">
-                <button type="button" class="btn btn-sm btn-danger" onclick="removerDelCarrito(${index})">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = carrito.map((item, index) => {
+        const tipoVendedor = obtenerTipoVendedorItem(item);
+        const esDeposito = tipoVendedor === 'deposito';
+
+        const unidadesPorCaja = parseInt(item.producto.unidades_por_caja || 1, 10);
+        const mostrarCaja = unidadesPorCaja > 1;
+        const mostrarMayor = unidadesPorCaja >= 4;
+
+        return `
+            <tr class="carrito-row-nueva">
+                <td class="pl-3">
+                    <div class="carrito-producto-nombre">${escapeHtml(item.producto.nombre)}</div>
+                    <div class="carrito-producto-codigo">${escapeHtml(item.producto.codigo || '')}</div>
+                </td>
+
+                <td class="text-center">
+                    <span class="${obtenerClaseTipoVendedor(tipoVendedor)}">
+                        ${escapeHtml(item.tipo_vendedor_label || obtenerEtiquetaTipoVendedor(tipoVendedor))}
+                    </span>
+                </td>
+
+                <td class="text-center">
+                    ${esDeposito ? `
+                       <span class="carrito-modalidad-fija carrito-modalidad-fija--deposito">Caja</span>
+                    ` : `
+                        <div class="carrito-modalidad-botones">
+                            <button
+                                type="button"
+                                class="btn btn-sm ${item.modalidad === 'unidad' ? 'btn-primary' : 'btn-outline-primary'}"
+                                onclick="cambiarModalidadCarrito(${index}, 'unidad')"
+                            >
+                                Unidad
+                            </button>
+
+                            ${mostrarCaja ? `
+                                <button
+                                    type="button"
+                                    class="btn btn-sm ${item.modalidad === 'caja' ? 'btn-primary' : 'btn-outline-primary'}"
+                                    onclick="cambiarModalidadCarrito(${index}, 'caja')"
+                                >
+                                    Caja
+                                </button>
+                            ` : ''}
+
+                            ${mostrarMayor ? `
+                                <button
+                                    type="button"
+                                    class="btn btn-sm ${item.modalidad === 'mayor' ? 'btn-primary' : 'btn-outline-primary'}"
+                                    onclick="cambiarModalidadCarrito(${index}, 'mayor')"
+                                >
+                                    Mayor
+                                </button>
+                            ` : ''}
+                        </div>
+                    `}
+
+                    <div class="small text-muted mt-2">
+                        ${escapeHtml(obtenerResumenModalidad(item.producto, item.cantidad, item.modalidad))}
+                    </div>
+                </td>
+
+                <td class="text-center">
+                    ${renderMontoDual(item.precio_unitario_bs)}
+                </td>
+
+                <td class="text-center">
+                    <div class="carrito-cantidad-control">
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            onclick="disminuirCantidadCarrito(${index})"
+                        >
+                            -
+                        </button>
+
+                        <input
+                            type="number"
+                            min="1"
+                            class="form-control form-control-sm text-center carrito-cantidad-input"
+                            value="${item.cantidad}"
+                            onchange="cambiarCantidadCarrito(${index}, this.value)"
+                        >
+
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            onclick="aumentarCantidadCarrito(${index})"
+                        >
+                            +
+                        </button>
+                    </div>
+                </td>
+
+                <td class="text-right font-weight-bold">
+                    ${renderMontoDual(item.subtotal_bs)}
+                </td>
+
+                <td class="text-center pr-3">
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-danger"
+                        onclick="removerDelCarrito(${index})"
+                    >
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 
     actualizarTotales();
 }
@@ -437,7 +712,7 @@ function actualizarTotales() {
 
     const resumenCantItems = document.getElementById('resumenCantItems');
     const resumenSubtotal = document.getElementById('resumenSubtotal');
-    const resumenTotal = document.getElementById('resumenTotal');
+    const resumenTotal = document.getElementById('resumenTotalFinal');
     const descuentoResumen = document.getElementById('descuentoResumen');
     const descuentoCalculo = document.getElementById('descuentoCalculo');
 
@@ -457,6 +732,7 @@ function actualizarPreviewProducto(productoId, tipoVendedorContexto = tipoVended
     const modalidad = document.querySelector(`input[name="modalidad_${contextoId}"]:checked`)?.value || 'unidad';
     const cantidadInput = document.getElementById(`cantidad_${contextoId}`);
     const resumen = document.getElementById(`preview_modalidad_${contextoId}`);
+    const precioBase = document.getElementById(`precio_base_${contextoId}`);
     const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
     const precioBs = obtenerPrecioBasePorModalidad(producto, modalidad);
 
@@ -472,6 +748,10 @@ function actualizarPreviewProducto(productoId, tipoVendedorContexto = tipoVended
         }
     }
 
+    if (precioBase) {
+        precioBase.textContent = formatearMonto(precioBs);
+    }
+
     if (resumen) {
         resumen.innerHTML = `
             <strong>Precio aplicado:</strong> ${obtenerEtiquetaModalidad(modalidad)} -
@@ -479,132 +759,296 @@ function actualizarPreviewProducto(productoId, tipoVendedorContexto = tipoVended
         `;
     }
 }
-
 function renderTarjetaProducto(producto) {
+    const contextoId = obtenerIdContextoBusqueda(producto.id, tipoVendedorActual);
     const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
     const stock = parseInt(producto.stock || 0, 10);
     const stockCajas = Math.floor(stock / Math.max(unidadesPorCaja, 1));
     const precioUnidad = obtenerPrecioBasePorModalidad(producto, 'unidad');
-    const precioCaja = obtenerPrecioBasePorModalidad(producto, 'caja');
-    const precioMayor = obtenerPrecioBasePorModalidad(producto, 'mayor');
 
     const bloqueModalidades = tipoVendedorActual === 'tienda'
         ? `
-            <div class="col-md-5">
-                <label class="small font-weight-bold text-muted d-block">Modalidad</label>
-                <div class="d-flex flex-wrap">
-                    <div class="form-check form-check-inline mr-3">
-                        <input class="form-check-input" type="radio" name="modalidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" id="unidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" value="unidad" checked>
-                        <label class="form-check-label" for="unidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}">Unidad</label>
-                    </div>
-                    <div class="form-check form-check-inline mr-3">
-                        <input class="form-check-input" type="radio" name="modalidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" id="caja_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" value="caja">
-                        <label class="form-check-label" for="caja_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}">Caja</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="modalidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" id="mayor_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" value="mayor">
-                        <label class="form-check-label" for="mayor_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}">Mayor</label>
-                    </div>
-                </div>
-                <div class="small text-muted mt-2" id="preview_modalidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}"></div>
-            </div>
-            <div class="col-md-3">
-                <label for="cantidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" class="small font-weight-bold text-muted">Cantidad</label>
-                <input type="number" class="form-control form-control-sm" id="cantidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" min="1" value="1">
-            </div>
-            <div class="col-md-4">
-                <button type="button" class="btn btn-primary btn-sm btn-block" onclick="agregarDesdeResultados(${producto.id}, '${tipoVendedorActual}')">
-                    <i class="fas fa-plus mr-1"></i>Agregar al carrito
-                </button>
-            </div>
-        `
-        : `
-            <div class="col-md-3">
-                <label for="cantidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" class="small font-weight-bold text-muted">Cantidad</label>
-                <input type="number" class="form-control form-control-sm" id="cantidad_${obtenerIdContextoBusqueda(producto.id, tipoVendedorActual)}" min="1" value="1">
-            </div>
-            <div class="col-md-9">
-                <button type="button" class="btn btn-primary btn-sm btn-block" onclick="agregarDesdeResultadosDeposito(${producto.id}, '${tipoVendedorActual}')">
-                    <i class="fas fa-plus mr-1"></i>Agregar al carrito
-                </button>
-            </div>
-        `;
+            <div class="producto-acciones-grid">
+                <div>
+                    <label class="producto-label">Modalidad</label>
+                    <div class="modalidad-botones" data-contexto="${contextoId}">
+                        <input class="modalidad-input" type="radio" name="modalidad_${contextoId}" id="unidad_${contextoId}" value="unidad" checked>
+                        <label class="modalidad-btn" for="unidad_${contextoId}">Unidad</label>
 
-    const bloquePrecios = tipoVendedorActual === 'tienda'
-        ? `
-            <div class="row mb-3">
-                <div class="col-md-4 mb-2">
-                    <div class="border rounded p-2 h-100">
-                        <div class="small text-muted">P. Unitario</div>
-                        ${renderMontoDual(precioUnidad)}
+                        <input class="modalidad-input" type="radio" name="modalidad_${contextoId}" id="caja_${contextoId}" value="caja">
+                        <label class="modalidad-btn" for="caja_${contextoId}">Caja</label>
+
+                        <input class="modalidad-input" type="radio" name="modalidad_${contextoId}" id="mayor_${contextoId}" value="mayor">
+                        <label class="modalidad-btn" for="mayor_${contextoId}">Mayor</label>
+                    </div>
+
+                    <div class="producto-precio-aplicado" id="preview_modalidad_${contextoId}">
+                        <strong>Precio aplicado:</strong> Unidad -
+                        <span class="text-success">${formatearMonto(precioUnidad)}</span>
                     </div>
                 </div>
-                <div class="col-md-4 mb-2">
-                    <div class="border rounded p-2 h-100">
-                        <div class="small text-muted">P. Caja</div>
-                        ${renderMontoDual(precioCaja)}
-                    </div>
+
+                <div>
+                    <label for="cantidad_${contextoId}" class="producto-label">Cantidad</label>
+                    <input
+                        type="number"
+                        class="form-control producto-cantidad-input"
+                        id="cantidad_${contextoId}"
+                        min="1"
+                        value="1"
+                    >
                 </div>
-                <div class="col-md-4 mb-2">
-                    <div class="border rounded p-2 h-100">
-                        <div class="small text-muted">P. Mayor</div>
-                        ${renderMontoDual(precioMayor)}
-                    </div>
+
+                <div class="producto-boton-wrap">
+                    <button
+                        type="button"
+                        class="btn btn-primary producto-btn-agregar"
+                        onclick="agregarDesdeResultados(${producto.id}, '${tipoVendedorActual}')"
+                    >
+                        <i class="fas fa-plus mr-1"></i>Agregar al carrito
+                    </button>
                 </div>
             </div>
         `
         : `
-            <div class="row mb-3">
-                <div class="col-md-12">
-                    <div class="border rounded p-2 h-100">
-                        <div class="small text-muted">P. Unitario</div>
-                        ${renderMontoDual(precioUnidad)}
-                    </div>
+            <div class="producto-acciones-grid producto-acciones-grid--deposito">
+                <div>
+                    <label for="cantidad_${contextoId}" class="producto-label">Cantidad</label>
+                    <input
+                        type="number"
+                        class="form-control producto-cantidad-input"
+                        id="cantidad_${contextoId}"
+                        min="1"
+                        value="1"
+                    >
+                </div>
+
+                <div class="producto-boton-wrap">
+                    <button
+                        type="button"
+                        class="btn btn-primary producto-btn-agregar"
+                        onclick="agregarDesdeResultadosDeposito(${producto.id}, '${tipoVendedorActual}')"
+                    >
+                        <i class="fas fa-plus mr-1"></i>Agregar al carrito
+                    </button>
                 </div>
             </div>
         `;
 
-    const html = `
-        <div class="card mb-3 shadow-sm" style="border-left: 4px solid #4f6ad7;">
-            <div class="card-body py-3">
-                <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
-                    <div class="pr-3">
-                        <div class="font-weight-bold" style="font-size: 1.05rem;">${escapeHtml(producto.nombre)}</div>
-                        <div class="small text-muted">${escapeHtml(producto.codigo || '')}</div>
-                    </div>
-                    <div class="small text-muted text-right">
-                        <div>Origen: <strong>${obtenerEtiquetaTipoVendedor(tipoVendedorActual)}</strong></div>
-                        <div>Stock: <strong>${stock}</strong> unidad(es)</div>
-                        ${tipoVendedorActual === 'tienda'
-                            ? `<div>Caja: <strong>${unidadesPorCaja}</strong> unidad(es)</div><div>Cajas disponibles: <strong>${stockCajas}</strong></div>`
-                            : '<div>Modalidad disponible: <strong>Unidad</strong></div>'}
+    return `
+        <div class="producto-card-minimal mb-3">
+            <div class="producto-card-head">
+                <div>
+                    <div class="producto-codigo-grande">${escapeHtml(producto.codigo || 'SIN-CODIGO')}</div>
+                    <div class="producto-meta-secundaria">
+                        ${escapeHtml(obtenerEtiquetaTipoVendedor(tipoVendedorActual))}
                     </div>
                 </div>
 
-                ${bloquePrecios}
+                <div class="producto-precio-principal">
+                    <span class="producto-precio-label">Precio base</span>
+                    <strong id="precio_base_${contextoId}">${formatearMonto(precioUnidad)}</strong>
+                </div>
+            </div>
 
-                <div class="small text-muted mb-3">
-                    <span class="mr-3"><strong>P. Compra:</strong> ${formatearMonto(parseFloat(producto.precio_compra || 0) || 0)}</span>
-                    <span class="mr-3"><strong>Poliza:</strong> ${formatearMonto(parseFloat(producto.poliza || 0) || 0)}</span>
-                    <span><strong>Gastos:</strong> ${formatearMonto(parseFloat(producto.gastos || 0) || 0)}</span>
+            <div class="producto-stock-grid">
+                <div class="producto-stock-card">
+                    <span class="producto-stock-titulo">Stock actual</span>
+                    <strong class="producto-stock-valor">${stock}</strong>
+                    <small>unidades</small>
                 </div>
 
-                <div class="row align-items-end">
-                    ${bloqueModalidades}
-                </div>
+                ${tipoVendedorActual === 'tienda' ? `
+                    <div class="producto-stock-card">
+                        <span class="producto-stock-titulo">Cajas actuales</span>
+                        <strong class="producto-stock-valor">${stockCajas}</strong>
+                        <small>cajas disponibles</small>
+                    </div>
+
+                    <div class="producto-stock-card producto-stock-card--soft">
+                        <span class="producto-stock-titulo">Unidades por caja</span>
+                        <strong class="producto-stock-valor">${unidadesPorCaja}</strong>
+                        <small>unidades</small>
+                    </div>
+                ` : `
+                    <div class="producto-stock-card producto-stock-card--soft">
+                        <span class="producto-stock-titulo">Modalidad</span>
+                        <strong class="producto-stock-valor">Unidad</strong>
+                        <small>venta depósito</small>
+                    </div>
+                `}
+            </div>
+
+            ${bloqueModalidades}
+        </div>
+    `;
+}
+function renderTarjetaProductoCompacta(producto) {
+    const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
+    const stock = parseInt(producto.stock || 0, 10);
+    const stockCajas = Math.floor(stock / Math.max(unidadesPorCaja, 1));
+
+    const precioUnidadBs = obtenerPrecioBasePorModalidad(producto, 'unidad');
+    const precioCajaBs = obtenerPrecioBasePorModalidad(producto, 'caja');
+    const precioMayorBs = obtenerPrecioBasePorModalidad(producto, 'mayor');
+
+    const precioUnidadUsd = precioUnidadBs / obtenerTipoCambioActual();
+    const precioCajaUsd = precioCajaBs / obtenerTipoCambioActual();
+    const precioMayorUsd = precioMayorBs / obtenerTipoCambioActual();
+
+    const esDeposito = tipoVendedorActual === 'deposito';
+
+    return `
+        <div class="producto-card-sugerido">
+            <div class="producto-card-sugerido-head">
+                <div class="producto-card-sugerido-codigo">${escapeHtml(producto.codigo || 'SIN-CODIGO')}</div>
+            </div>
+
+            <div class="producto-card-sugerido-meta">
+                <span class="chip-meta">Stock ${stock}</span>
+                ${stockCajas > 0 ? `<span class="chip-meta">${stockCajas} cajas</span>` : ''}
+            </div>
+
+            <div class="producto-card-sugerido-precios">
+                ${esDeposito ? `
+                    <div class="precio-mini-linea">
+                        <span class="precio-mini-label">Caja</span>
+                        <span class="precio-mini-bs">Bs. ${Number(precioCajaBs).toFixed(2)}</span>
+                        <span class="precio-mini-usd">$ ${Number(precioCajaUsd).toFixed(2)}</span>
+                    </div>
+                ` : `
+                    <div class="precio-mini-linea">
+                        <span class="precio-mini-label">Unidad</span>
+                        <span class="precio-mini-bs">Bs. ${Number(precioUnidadBs).toFixed(2)}</span>
+                        <span class="precio-mini-usd">$ ${Number(precioUnidadUsd).toFixed(2)}</span>
+                    </div>
+
+                    <div class="precio-mini-linea">
+                        <span class="precio-mini-label">Caja</span>
+                        <span class="precio-mini-bs">Bs. ${Number(precioCajaBs).toFixed(2)}</span>
+                        <span class="precio-mini-usd">$ ${Number(precioCajaUsd).toFixed(2)}</span>
+                    </div>
+
+                    <div class="precio-mini-linea">
+                        <span class="precio-mini-label">Mayor</span>
+                        <span class="precio-mini-bs">Bs. ${Number(precioMayorBs).toFixed(2)}</span>
+                        <span class="precio-mini-usd">$ ${Number(precioMayorUsd).toFixed(2)}</span>
+                    </div>
+                `}
+            </div>
+
+            <div class="producto-card-sugerido-actions">
+                <button
+                    type="button"
+                    class="btn btn-sm btn-primary btn-block"
+                    onclick="agregarProductoSugeridoDirecto(${producto.id}, '${tipoVendedorActual}')"
+                >
+                    <i class="fas fa-plus mr-1"></i>Agregar
+                </button>
             </div>
         </div>
     `;
+}
+function agregarProductoSugeridoDirecto(productoId, tipoVendedorContexto = tipoVendedorActual) {
+    const claveProducto = obtenerClaveProductoBusqueda(productoId, tipoVendedorContexto);
+    const producto = productosActuales[claveProducto];
 
-    return html;
+    if (!producto) {
+        mostrarAlerta('Producto no encontrado.');
+        return;
+    }
+
+    const modalidadInicial = tipoVendedorContexto === 'deposito' ? 'caja' : 'unidad';
+    const cantidadInicial = 1;
+
+    if (agregarAlCarrito(producto, cantidadInicial, modalidadInicial, tipoVendedorContexto || 'tienda')) {
+        mostrarAlerta(`${producto.codigo || producto.nombre} fue agregado al carrito.`, 'success', 'Agregado');
+    }
+}
+function mostrarProductoSugeridoExpandido(productoId) {
+    const claveProducto = obtenerClaveProductoBusqueda(productoId, tipoVendedorActual);
+    const producto = productosActuales[claveProducto];
+    const resultados = document.getElementById('resultadosBusqueda');
+    const sugeridosWrap = document.getElementById('productosSugeridos');
+
+    if (!producto || !resultados) return;
+
+    resultados.innerHTML = renderTarjetaProducto(producto);
+    resultados.style.display = 'block';
+
+    if (sugeridosWrap) {
+        sugeridosWrap.style.display = 'none';
+    }
+
+    if (tipoVendedorActual === 'tienda') {
+        const contextoId = obtenerIdContextoBusqueda(producto.id, tipoVendedorActual);
+        document.querySelectorAll(`input[name="modalidad_${contextoId}"]`).forEach((radio) => {
+            radio.addEventListener('change', () => actualizarPreviewProducto(producto.id, tipoVendedorActual));
+        });
+        actualizarPreviewProducto(producto.id, tipoVendedorActual);
+    }
+}
+
+let productosSugeridos = [];
+
+function cargarProductosSugeridos() {
+    const urls = obtenerURLs();
+    const sugeridosWrap = document.getElementById('productosSugeridos');
+    const sugeridosTrack = document.getElementById('productosSugeridosTrack');
+    const resultados = document.getElementById('resultadosBusqueda');
+
+    if (resultados) {
+        resultados.innerHTML = '';
+        resultados.style.display = 'none';
+    }
+
+    if (!sugeridosWrap || !sugeridosTrack) return;
+
+    fetch(`${urls.buscarProductos}?q=&tipo_venta=${encodeURIComponent(tipoVendedorActual)}&limit=5`)
+        .then((response) => response.json())
+        .then((data) => {
+            productosSugeridos = (data.productos || []).slice(0, 5);
+
+            if (!productosSugeridos.length) {
+                sugeridosWrap.style.display = 'none';
+                sugeridosTrack.innerHTML = '';
+                return;
+            }
+
+            productosSugeridos.forEach((producto) => {
+                const claveProducto = obtenerClaveProductoBusqueda(producto.id, tipoVendedorActual);
+                productosActuales[claveProducto] = {
+                    ...producto,
+                    tipo_vendedor_busqueda: normalizarTipoVendedor(tipoVendedorActual) || 'tienda'
+                };
+            });
+
+            sugeridosTrack.innerHTML = productosSugeridos.map((producto) => `
+                <div class="producto-sugerido-slide">
+                    ${renderTarjetaProductoCompacta(producto)}
+                </div>
+            `).join('');
+
+            sugeridosWrap.style.display = 'block';
+        })
+        .catch((error) => {
+            console.error(error);
+            sugeridosWrap.style.display = 'none';
+            sugeridosTrack.innerHTML = '';
+        });
 }
 
 function renderResultadosBusqueda(productos) {
     const resultados = document.getElementById('resultadosBusqueda');
+    const sugeridosWrap = document.getElementById('productosSugeridos');
     if (!resultados) return;
 
     productosActuales = {};
     resultados.innerHTML = '';
+
+    if (sugeridosWrap) {
+        sugeridosWrap.style.display = 'none';
+    }
 
     if (!productos || productos.length === 0) {
         resultados.innerHTML = '<div class="alert alert-info mb-0">No hay resultados disponibles para ese criterio.</div>';
@@ -620,34 +1064,35 @@ function renderResultadosBusqueda(productos) {
         };
     });
 
-    resultados.innerHTML = productos.map((producto) => renderTarjetaProducto(producto)).join('');
+    resultados.innerHTML = `
+        <div class="productos-sugeridos-track productos-sugeridos-track--resultados">
+            ${productos.map((producto) => `
+                <div class="producto-sugerido-slide">
+                    ${renderTarjetaProductoCompacta(producto)}
+                </div>
+            `).join('')}
+        </div>
+    `;
+
     resultados.style.display = 'block';
-
-    if (tipoVendedorActual === 'tienda') {
-        productos.forEach((producto) => {
-            const contextoId = obtenerIdContextoBusqueda(producto.id, tipoVendedorActual);
-            document.querySelectorAll(`input[name="modalidad_${contextoId}"]`).forEach((radio) => {
-                radio.addEventListener('change', () => actualizarPreviewProducto(producto.id, tipoVendedorActual));
-            });
-            actualizarPreviewProducto(producto.id, tipoVendedorActual);
-        });
-    }
 }
-
 function buscarProductos(query) {
     const urls = obtenerURLs();
     const resultados = document.getElementById('resultadosBusqueda');
+    const sugeridosWrap = document.getElementById('productosSugeridos');
     const tipoVendedorConsulta = tipoVendedorActual;
 
     if (!tipoVendedorConsulta) {
         resultados.innerHTML = '<div class="alert alert-warning mb-0">Selecciona primero el tipo de vendedor.</div>';
         resultados.style.display = 'block';
+        if (sugeridosWrap) sugeridosWrap.style.display = 'none';
         return;
     }
 
     const tokenBusqueda = ++secuenciaBusqueda;
     resultados.innerHTML = '<div class="alert alert-light mb-0"><i class="fas fa-spinner fa-spin mr-2"></i>Actualizando resultados...</div>';
     resultados.style.display = 'block';
+    if (sugeridosWrap) sugeridosWrap.style.display = 'none';
 
     fetch(`${urls.buscarProductos}?q=${encodeURIComponent(query)}&tipo_venta=${encodeURIComponent(tipoVendedorConsulta)}`)
         .then((response) => response.json())
@@ -667,6 +1112,8 @@ function buscarProductos(query) {
 function refrescarBusquedaActual() {
     const inputBuscar = document.getElementById('inputBuscarProducto');
     const resultados = document.getElementById('resultadosBusqueda');
+    const sugeridosWrap = document.getElementById('productosSugeridos');
+
     if (!inputBuscar) return;
 
     const query = inputBuscar.value.trim();
@@ -676,29 +1123,17 @@ function refrescarBusquedaActual() {
     }
 
     productosActuales = {};
+
     if (resultados) {
         resultados.innerHTML = '';
         resultados.style.display = 'none';
     }
-}
 
-function inicializarSelectorTipoPago() {
-    const opciones = document.querySelectorAll('.tipo-pago-option');
-    if (!opciones.length) return;
+    if (sugeridosWrap) {
+        sugeridosWrap.style.display = 'none';
+    }
 
-    opciones.forEach((opcion) => {
-        opcion.addEventListener('click', function () {
-            opciones.forEach((elemento) => elemento.classList.remove('active'));
-            this.classList.add('active');
-
-            const inputTipoPago = document.getElementById('inputTipoPago');
-            if (inputTipoPago) {
-                inputTipoPago.value = this.dataset.tipo || 'contado';
-            }
-
-            actualizarVisibilidadDescuento();
-        });
-    });
+    cargarProductosSugeridos();
 }
 
 function inicializarBusqueda() {
@@ -740,7 +1175,19 @@ function inicializarBusqueda() {
             clearTimeout(debounceBusqueda);
 
             if (query.length < 2) {
-                document.getElementById('resultadosBusqueda').style.display = 'none';
+                const resultados = document.getElementById('resultadosBusqueda');
+                const sugeridosWrap = document.getElementById('productosSugeridos');
+
+                if (resultados) {
+                    resultados.innerHTML = '';
+                    resultados.style.display = 'none';
+                }
+
+                if (sugeridosWrap) {
+                    sugeridosWrap.style.display = 'none';
+                }
+
+                cargarProductosSugeridos();
                 return;
             }
 
@@ -812,7 +1259,7 @@ function agregarDesdeResultadosDeposito(productoId, tipoVendedorContexto = 'depo
         return;
     }
 
-    if (agregarAlCarrito(producto, cantidad, 'unidad', tipoVendedorContexto || 'deposito')) {
+    if (agregarAlCarrito(producto, cantidad, 'caja', tipoVendedorContexto || 'deposito')) {
         document.getElementById(`cantidad_${contextoId}`).value = '1';
         mostrarAlerta(`${producto.nombre} fue agregado al carrito.`, 'success', 'Agregado');
     }
@@ -990,10 +1437,29 @@ function inicializarLimpiarCarrito() {
 window.agregarDesdeResultados = agregarDesdeResultados;
 window.agregarDesdeResultadosDeposito = agregarDesdeResultadosDeposito;
 window.removerDelCarrito = removerDelCarrito;
+window.cambiarModalidadCarrito = cambiarModalidadCarrito;
+window.cambiarCantidadCarrito = cambiarCantidadCarrito;
+window.aumentarCantidadCarrito = aumentarCantidadCarrito;
+window.disminuirCantidadCarrito = disminuirCantidadCarrito;
 
 function init() {
-    inicializarSelectorTipoPago();
+    const opciones = document.querySelectorAll('.tipo-pago-option');
+    opciones.forEach((opcion) => {
+        opcion.addEventListener('click', function () {
+            opciones.forEach((elemento) => elemento.classList.remove('active'));
+            this.classList.add('active');
+
+            const inputTipoPago = document.getElementById('inputTipoPago');
+            if (inputTipoPago) {
+                inputTipoPago.value = this.dataset.tipo || 'contado';
+            }
+
+            actualizarVisibilidadDescuento();
+        });
+    });
+
     inicializarBusqueda();
+    cargarProductosSugeridos();
     inicializarGuardarVenta();
     inicializarLimpiarCarrito();
     actualizarUnidadDescuento();
