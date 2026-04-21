@@ -14,7 +14,13 @@ from apps.inventario.models import Inventario, MovimientoInventario
 from apps.usuarios.models import PerfilUsuario
 from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
 from decimal import Decimal
-from apps.servicios.tipos_cambios import obtener_tipo_cambio_usd, calcular_precios_usd, stock_en_cajas, stock_cajas_contenedor
+from apps.servicios.tipos_cambios import (
+    obtener_tipo_cambio_usd,
+    obtener_tipo_cambio_usd_por_perfil,
+    calcular_precios_usd,
+    stock_en_cajas,
+    stock_cajas_contenedor,
+)
 
 def verificar_permiso_productos(request):
     """Verifica si el usuario tiene permiso para gestionar productos"""
@@ -448,7 +454,7 @@ def listar_productos(request):
     page_obj = paginator.get_page(page_number)
 
     # Aplicamos el cálculo solo a los productos de la página actual
-    valor_dolar = obtener_tipo_cambio_usd()
+    valor_dolar = obtener_tipo_cambio_usd('general')
     for producto in page_obj.object_list:
         calcular_precios_usd(producto, valor_dolar)
         stock_en_cajas(producto)
@@ -568,7 +574,7 @@ def obtener_producto(request, id):
         stock_disponible = _obtener_stock_disponible(producto, perfil_stock) if perfil_stock else producto.stock
 
         #calcular el precio en dolares y stock en cajas
-        valor_dolar = obtener_tipo_cambio_usd()
+        valor_dolar = obtener_tipo_cambio_usd_por_perfil(perfil_stock)
         calcular_precios_usd(producto, valor_dolar)
         stock_en_cajas(producto, cantidad=stock_disponible, target=producto)
         #fin calcular precio en dolares y stock en cajas
@@ -1597,7 +1603,7 @@ def productos_en_contenedor(request, contenedor_id):
     page_obj = paginator.get_page(page_number)
 
     # calcular valor del dolar
-    valor_dolar = obtener_tipo_cambio_usd()
+    valor_dolar = obtener_tipo_cambio_usd('general')
 
     for pc in page_obj.object_list:
         producto = pc.producto

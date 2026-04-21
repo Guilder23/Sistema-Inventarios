@@ -22,17 +22,31 @@
             <!-- Moneda actual: -->
             <div class="navbar-tc">
                 <i class="fas fa-money-bill-wave"></i>
-                {% if navbar_moneda_actual %}
-                    <span class="tc-text">
-                        <span class="tc-label">{{ navbar_moneda_actual.moneda }}</span>
-                        <span class="tc-sep">-</span>
-                        <span class="tc-value">Bs {{ navbar_moneda_actual.valor|stringformat:"0.2f" }}</span>
-                    </span>
-                {% else %}
-                    <span class="tc-text">
-                        <span class="tc-label">Sin tipo de cambio</span>
-                    </span>
-                {% endif %}
+    {% if user.is_authenticated and user.perfil and user.perfil.tienda and user.perfil.tienda.tipo == 'principal' %}
+        {% if navbar_moneda_tienda_principal %}
+            <span class="tc-text">
+                <span class="tc-label">{{ navbar_moneda_tienda_principal.moneda }}</span>
+                <span class="tc-sep">-</span>
+                <span class="tc-value">Bs {{ navbar_moneda_tienda_principal.valor|stringformat:"0.2f" }}</span>
+            </span>
+        {% else %}
+            <span class="tc-text">
+                <span class="tc-label">Sin tipo de cambio</span>
+            </span>
+        {% endif %}
+    {% else %}
+        {% if navbar_moneda_general %}
+            <span class="tc-text">
+                <span class="tc-label">{{ navbar_moneda_general.moneda }}</span>
+                <span class="tc-sep">-</span>
+                <span class="tc-value">Bs {{ navbar_moneda_general.valor|stringformat:"0.2f" }}</span>
+            </span>
+        {% else %}
+            <span class="tc-text">
+                <span class="tc-label">Sin tipo de cambio</span>
+            </span>
+        {% endif %}
+    {% endif %}
             </div>
             <!-- Notificaciones -->
             <div class="navbar-notificaciones">
