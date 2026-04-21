@@ -15,6 +15,7 @@ from decimal import Decimal
 import os
 from django.conf import settings
 from apps.moneda.utils import obtener_etiqueta_moneda
+from PIL import Image as PILImage, ImageOps
 
 
 def convertir_desde_bob_para_pdf(monto, venta):
@@ -109,6 +110,63 @@ def obtener_descuento_info_pdf(venta):
         'resumen': f'{obtener_etiqueta_moneda(venta.moneda)} {monto_descuento:,.2f}',
         'label': 'Descuento',
     }
+
+
+def _crear_thumbnail_pdf(contenido, ancho_max=180, alto_max=180, calidad=82):
+    """
+    Reduce una imagen en memoria antes de pasarsela a ReportLab.
+    Esto evita que el PDF procese fotos originales demasiado pesadas.
+    """
+    try:
+        contenido.seek(0)
+        imagen = PILImage.open(contenido)
+        imagen = ImageOps.exif_transpose(imagen)
+
+        if imagen.mode not in ('RGB', 'L'):
+            imagen = imagen.convert('RGB')
+
+        resample = getattr(PILImage, 'Resampling', PILImage).LANCZOS
+        imagen.thumbnail((ancho_max, alto_max), resample)
+
+        salida = BytesIO()
+        imagen.save(salida, format='JPEG', quality=calidad, optimize=True)
+        salida.seek(0)
+        return salida
+    except Exception:
+        return None
+
+
+def _cargar_imagen_pdf_desde_file(archivo, width, height):
+    if not archivo:
+        return ''
+
+    try:
+        if hasattr(archivo, 'open'):
+            archivo.open('rb')
+        contenido = BytesIO(archivo.read())
+        thumbnail = _crear_thumbnail_pdf(contenido, ancho_max=220, alto_max=220, calidad=82)
+        if thumbnail is not None:
+            return Image(thumbnail, width=width, height=height)
+    except Exception:
+        pass
+
+    return ''
+
+
+def _cargar_imagen_pdf_desde_ruta(ruta, width, height):
+    if not ruta or not os.path.exists(ruta):
+        return ''
+
+    try:
+        with open(ruta, 'rb') as archivo:
+            contenido = BytesIO(archivo.read())
+            thumbnail = _crear_thumbnail_pdf(contenido, ancho_max=220, alto_max=220, calidad=82)
+            if thumbnail is not None:
+                return Image(thumbnail, width=width, height=height)
+    except Exception:
+        pass
+
+    return ''
 
 
 def generar_pdf_venta_completo(venta):
@@ -216,13 +274,12 @@ def generar_pdf_venta_completo(venta):
     # Agregar logo si existe
     if os.path.exists(logo_path):
         try:
-            # Leer logo en BytesIO para evitar problema de absolute paths en Windows
-            with open(logo_path, 'rb') as logo_file:
-                logo_bytes = BytesIO(logo_file.read())
-                logo_bytes.seek(0)  # ⬅️ IMPORTANTE: resetear posición del cursor
-                logo = Image(logo_bytes, width=0.8*inch, height=0.8*inch)
+            logo = _cargar_imagen_pdf_desde_ruta(logo_path, width=0.8*inch, height=0.8*inch)
+            if logo:
                 header_row.append(logo)
-        except Exception as e:
+            else:
+                header_row.append(Paragraph("<b>ALMAZEN</b>", style_empresa_nombre))
+        except Exception:
             header_row.append(Paragraph("<b>ALMAZEN</b>", style_empresa_nombre))
     else:
         header_row.append(Paragraph("<b>ALMAZEN</b>", style_empresa_nombre))
@@ -358,7 +415,7 @@ def generar_pdf_venta_completo(venta):
     def resolver_imagen_producto(producto):
         """
         Devuelve una imagen de ReportLab o una celda vacía si no hay foto.
-        Optimizado: sin requests y con cache por producto.
+        Optimizado: cache por producto y miniatura reducida en memoria.
         """
         producto_id = getattr(producto, 'id', None)
         if producto_id in imagen_cache:
@@ -371,16 +428,8 @@ def generar_pdf_venta_completo(venta):
 
         # 1) Leer desde el storage del ImageField
         try:
-            if hasattr(foto, 'open'):
-                foto.open('rb')
-                contenido = BytesIO(foto.read())
-                contenido.seek(0)
-                try:
-                    foto.close()
-                except Exception:
-                    pass
-
-                img = Image(contenido, width=0.50 * inch, height=0.50 * inch)
+            img = _cargar_imagen_pdf_desde_file(foto, width=0.50 * inch, height=0.50 * inch)
+            if img:
                 imagen_cache[producto_id] = img
                 return img
         except Exception:
@@ -398,70 +447,12 @@ def generar_pdf_venta_completo(venta):
             posibles_rutas.append(os.path.join(settings.MEDIA_ROOT, foto.name))
 
         for ruta_foto in posibles_rutas:
-            if ruta_foto and os.path.exists(ruta_foto):
-                try:
-                    img = Image(ruta_foto, width=0.50 * inch, height=0.50 * inch)
-                    imagen_cache[producto_id] = img
-                    return img
-                except Exception:
-                    continue
+            img = _cargar_imagen_pdf_desde_ruta(ruta_foto, width=0.50 * inch, height=0.50 * inch)
+            if img:
+                imagen_cache[producto_id] = img
+                return img
 
         imagen_cache[producto_id] = ''
-        return ''
-        
-        """
-        Devuelve una imagen de ReportLab o una celda vacía si no hay foto.
-        Se intenta primero leer desde el storage del ImageField y luego por URL/ruta local.
-        """
-        foto = getattr(producto, 'foto', None)
-        if not foto:
-            return ''
-
-        # 1) Mejor opción: leer desde el storage del propio ImageField.
-        try:
-            if hasattr(foto, 'open'):
-                foto.open('rb')
-                contenido = BytesIO(foto.read())
-                contenido.seek(0)
-                try:
-                    foto.close()
-                except Exception:
-                    pass
-                return Image(contenido, width=0.60 * inch, height=0.60 * inch)
-        except Exception:
-            pass
-
-        # 2) Si el storage expone URL pública, intentar descargarla.
-        try:
-            url = getattr(foto, 'url', None)
-            if url:
-                import requests
-                respuesta = requests.get(url, timeout=8)
-                if respuesta.status_code == 200 and respuesta.content:
-                    contenido = BytesIO(respuesta.content)
-                    contenido.seek(0)
-                    return Image(contenido, width=0.60 * inch, height=0.60 * inch)
-        except Exception:
-            pass
-
-        # 3) Fallback local, útil solo si MEDIA_ROOT tiene el archivo.
-        posibles_rutas = []
-        try:
-            if hasattr(foto, 'path'):
-                posibles_rutas.append(foto.path)
-        except Exception:
-            pass
-
-        if getattr(foto, 'name', None):
-            posibles_rutas.append(os.path.join(settings.MEDIA_ROOT, foto.name))
-
-        for ruta_foto in posibles_rutas:
-            if ruta_foto and os.path.exists(ruta_foto):
-                try:
-                    return Image(ruta_foto, width=0.60 * inch, height=0.60 * inch)
-                except Exception:
-                    continue
-
         return ''
 
     for detalle in detalles:
@@ -658,6 +649,7 @@ def generar_pdf_venta_completo(venta):
         amortizaciones_con_comprobante = amortizaciones.exclude(comprobante__exact='')
         
         if amortizaciones_con_comprobante.exists():
+            total_comprobantes = amortizaciones_con_comprobante.count()
             elements.append(PageBreak())
             
             style_titulo_comprobantes = ParagraphStyle(
@@ -700,11 +692,20 @@ def generar_pdf_venta_completo(venta):
                             try:
                                 # Leer contenido del archivo
                                 comprobante_file = amort.comprobante
-                                comprobante_file.seek(0)
+                                if hasattr(comprobante_file, 'open'):
+                                    comprobante_file.open('rb')
                                 contenido_archivo = BytesIO(comprobante_file.read())
+                                thumbnail = _crear_thumbnail_pdf(
+                                    contenido_archivo,
+                                    ancho_max=720,
+                                    alto_max=520,
+                                    calidad=80,
+                                )
+                                if thumbnail is None:
+                                    raise ValueError('No se pudo optimizar la imagen del comprobante')
                                 
                                 # Crear tabla para centrar imagen
-                                img_data = [[Image(contenido_archivo, width=3.5*inch, height=2.5*inch)]]
+                                img_data = [[Image(thumbnail, width=3.5*inch, height=2.5*inch)]]
                                 img_table = Table(img_data)
                                 img_table.setStyle(TableStyle([
                                     ('ALIGN', (0, 0), (0, 0), 'CENTER'),
@@ -722,7 +723,7 @@ def generar_pdf_venta_completo(venta):
                         elements.append(Spacer(1, 0.2*inch))
                     
                     # Salto de página entre comprobantes si hay más
-                    if idx < amortizaciones_con_comprobante.count():
+                    if idx < total_comprobantes:
                         elements.append(PageBreak())
     
     # ===== SECCIÓN 4: INFORMACIÓN EMPRESA Y LEYENDA =====
