@@ -2,18 +2,39 @@ from decimal import Decimal
 from apps.moneda.models import TipoCambio
 
 
-def obtener_tipo_cambio_usd():
+def obtener_tipo_cambio_usd(contexto='general'):
     try:
-        tc = TipoCambio.objects.filter(moneda='USD', activo=True).order_by('-fecha').first()
+        tc = TipoCambio.objects.filter(
+            moneda='USD',
+            contexto=contexto,
+            activo=True,
+        ).order_by('-fecha', '-id').first()
 
         if tc:
             return tc.valor
 
-        tc = TipoCambio.objects.filter(moneda='USD').order_by('-fecha').first()
+        tc = TipoCambio.objects.filter(
+            moneda='USD',
+            contexto=contexto,
+        ).order_by('-fecha', '-id').first()
         return tc.valor if tc else Decimal('6.96')
 
     except Exception:
         return Decimal('6.96')
+
+
+def obtener_contexto_tipo_cambio_perfil(perfil):
+    if (
+        perfil
+        and getattr(perfil, 'rol', '') == 'tienda'
+        and getattr(getattr(perfil, 'tienda', None), 'tipo', '') == 'principal'
+    ):
+        return 'tienda_principal'
+    return 'general'
+
+
+def obtener_tipo_cambio_usd_por_perfil(perfil):
+    return obtener_tipo_cambio_usd(obtener_contexto_tipo_cambio_perfil(perfil))
 
 
 def calcular_precios_usd(producto, valor_dolar):

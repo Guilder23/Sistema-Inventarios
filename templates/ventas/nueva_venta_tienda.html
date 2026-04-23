@@ -17,248 +17,274 @@
     const tipoCambioActual = {{ tipo_cambio_actual|default:'6.93'|stringformat:'f' }};
 </script>
 {% endblock %}
+
 {% block contenido %}
 <div class="container-fluid venta-page py-4">
     <div class="venta-page-shell">
 
-{#Header#}
-    <div class="venta-page-header d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="page-title mb-1">
-                <i class="fas fa-shopping-cart mr-2"></i>Nueva Venta
-            </h2>
-            <p class="text-muted mb-0">
-                Venta de Tienda &mdash; Código: <strong>{{ codigo_sugerido }}</strong>
-                {% if es_tienda_principal %}
-                <span class="badge badge-info ml-2">Tienda Principal</span>
-                {% else %}
-                <span class="badge badge-warning ml-2">Sucursal</span>
-                {% endif %}
-            </p>
-        </div>
-        <a href="{% url 'ventas:listar_ventas_tienda' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left mr-1"></i> Volver al Listado
-        </a>
-    </div>
-
-    <div class="venta-layout venta-layout--stacked">
-        <section class="venta-layout-section venta-layout-section--form">
-            <div class="venta-form-grid venta-form-grid--tienda">
-
-                {# Card Datos de la Venta #}
-                <div class="card card-datos-venta shadow-sm venta-form-card venta-form-card--datos">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0 font-weight-bold">
-                        <i class="fas fa-user mr-2 text-primary"></i>Datos de la Venta
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <input type="hidden" id="inputEsTiendaPrincipal" value="{% if es_tienda_principal %}1{% else %}0{% endif %}">
-                    <div class="form-group">
-                        <label for="inputCliente" class="label-campo">
-                            Nombre del Cliente <span class="text-danger">*</span>
-                        </label>
-                        <input type="text" class="form-control" id="inputCliente"
-                               placeholder="Ej: Juan Pérez" required autocomplete="off">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="inputTelefono" class="label-campo">
-                            Teléfono <small class="text-muted">(opcional)</small>
-                        </label>
-                        <input type="tel" class="form-control" id="inputTelefono"
-                               placeholder="Ej: 70012345" autocomplete="off" inputmode="numeric" pattern="[0-9]*">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="inputRazonSocial" class="label-campo">
-                            Razón Social <small class="text-muted">(opcional)</small>
-                        </label>
-                        <input type="text" class="form-control" id="inputRazonSocial"
-                               placeholder="Ej: Empresa S.A." autocomplete="off">
-                    </div>
-
-                    <div class="form-group mb-0">
-                        <label for="inputDireccion" class="label-campo">
-                            Dirección <small class="text-muted">(opcional)</small>
-                        </label>
-                        <input type="text" class="form-control" id="inputDireccion"
-                               placeholder="Ej: Av. Principal #123" autocomplete="off">
-                    </div>
-
+        <!-- HEADER -->
+        <div class="venta-page-header d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="page-title mb-1">
+                    <i class="fas fa-shopping-cart mr-2"></i>Nueva Venta
+                </h2>
+                <p class="text-muted mb-0">
+                    Venta de Tienda &mdash; Código: <strong>{{ codigo_sugerido }}</strong>
                     {% if es_tienda_principal %}
-                    {# Tipo de Pago para Tienda Principal (Al Contado / A Crédito) #}
-                    <div class="form-group mt-3 mb-0">
-                        <label class="label-campo">Tipo de Pago</label>
-                        <div class="tipo-pago-selector">
-                            <div class="tipo-pago-option active" data-tipo="contado">
-                                <div class="tipo-pago-icon">
-                                    <i class="fas fa-money-bill-wave"></i>
-                                </div>
-                                <div>
-                                    <strong>Al Contado</strong>
-                                    <small class="d-block text-muted">Pago completo ahora</small>
-                                </div>
-                                <i class="fas fa-check-circle check-icon"></i>
-                            </div>
-                            <div class="tipo-pago-option" data-tipo="credito">
-                                <div class="tipo-pago-icon tipo-pago-icon--credito">
-                                    <i class="fas fa-credit-card"></i>
-                                </div>
-                                <div>
-                                    <strong>A Crédito</strong>
-                                    <small class="d-block text-muted">Pago en cuotas</small>
-                                </div>
-                                <i class="fas fa-check-circle check-icon"></i>
-                            </div>
-                        </div>
-                        <input type="hidden" id="inputTipoPago" value="contado">
-                    </div>
-                    <div class="form-group mt-3 mb-0">
-                        <label class="label-campo">Moneda de Venta</label>
-                        <select id="selectMoneda" class="form-control">
-                            <option value="BOB" selected>Bolivianos (Bs.)</option>
-                            <option value="USD">Dolares (USD)</option>
-                        </select>
-                        <input type="hidden" id="inputMoneda" value="BOB">
-                        <input type="hidden" id="tipoCambioActual" value="{{ tipo_cambio_actual|default:'6.93'|stringformat:'f' }}">
-                        <div class="alert alert-info mt-2 mb-0" style="font-size: 0.9rem;">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            <strong>Tipo de Cambio Actual:</strong> 1 USD = Bs. <span id="tipoCambioDisplay">{{ tipo_cambio_actual|floatformat:2 }}</span>
-                        </div>
-                    </div>
+                    <span class="badge badge-info ml-2">Tienda Principal</span>
                     {% else %}
-                    {# Tipo de pago fijo a contado para tiendas sucursales #}
-                    <input type="hidden" id="inputTipoPago" value="contado">
+                    <span class="badge badge-warning ml-2">Sucursal</span>
                     {% endif %}
-
-                </div>
+                </p>
             </div>
 
-                {# Card Tipo de Vendedor #}
-                <div class="card card-tipo-vendedor shadow-sm venta-form-card venta-form-card--tipo-vendedor" id="cardTipoVendedor">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0 font-weight-bold">
-                        <i class="fas fa-store mr-2 text-primary"></i>Tipo de Vendedor
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="form-group mb-0">
-                        <label for="selectTipoVendedor" class="label-campo">
-                            Seleccionar Tipo <span class="text-danger">*</span>
-                        </label>
-                        <select class="form-control form-control-sm" id="selectTipoVendedor" required>
-                            <option value="tienda" selected>Tienda</option>
-                            <option value="deposito">Depósito</option>
-                        </select>
-                        <small class="form-text text-muted mt-1">
-                            <strong>Tienda:</strong> Modalidades de venta (Unidad, Caja, Mayor)
-                            <br>
-                            <strong>Depósito:</strong> Venta simplificada
-                        </small>
-                    </div>
-                </div>
-            </div>
+            <a href="{% url 'ventas:listar_ventas_tienda' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left mr-1"></i> Volver al Listado
+            </a>
+        </div>
 
-                {# Card Buscador de Productos#}
-                <div class="card card-buscador shadow-sm venta-form-card venta-form-card--buscador">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0 font-weight-bold">
-                        <i class="fas fa-search mr-2 text-primary"></i>Buscar Producto
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="form-group mb-2">
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="inputBuscarProducto"
-                                   placeholder="Escriba nombre o código del producto..."
-                                   autocomplete="off">
-                            <div class="input-group-append">
-                                <span class="input-group-text">
-                                    <i class="fas fa-search"></i>
-                                </span>
+        <!-- HIDDEN INPUTS -->
+        <input type="hidden" id="inputEsTiendaPrincipal" value="{% if es_tienda_principal %}1{% else %}0{% endif %}">
+        <input type="hidden" id="inputMoneda" value="BOB">
+        <input type="hidden" id="tipoCambioActual" value="{{ tipo_cambio_actual|default:'6.93'|stringformat:'f' }}">
+        <input type="hidden" id="inputTipoPago" value="contado">
+
+        <!-- GRID PRINCIPAL -->
+        <div class="venta-main-grid">
+
+            <!-- COLUMNA IZQUIERDA -->
+            <div class="venta-main-left">
+
+                <!-- BARRA SUPERIOR COMPACTA -->
+                <div class="card shadow-sm venta-topbar-card mb-4">
+                    <div class="card-body py-3">
+                        <div class="row align-items-end">
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <label for="selectTipoVendedor" class="label-campo mb-2">
+                                    Tipo de Vendedor <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-control" id="selectTipoVendedor" required>
+                                    <option value="tienda" selected>Tienda</option>
+                                    <option value="deposito">Depósito</option>
+                                </select>
+                                <small class="form-text text-muted mt-2">
+                                    <strong>Tienda:</strong> Unidad, Caja, Mayor
+                                    <br>
+                                    <strong>Depósito:</strong> Venta simplificada
+                                </small>
+                            </div>
+
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <label class="label-campo mb-2">Moneda de Venta</label>
+                                <select id="selectMoneda" class="form-control">
+                                    <option value="BOB" selected>Bolivianos (Bs.)</option>
+                                    <option value="USD">Dolares (USD)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="label-campo mb-2">Tipo de Cambio Actual</label>
+                                <div class="alert alert-info mb-0 venta-tipo-cambio-box">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    1 USD = Bs. <span id="tipoCambioDisplay">{{ tipo_cambio_actual|floatformat:2 }}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div id="resultadosBusqueda" style="display: none; max-height: 600px; overflow-y: auto;">
-                        <!-- Los productos se renderizan aquí con opciones inline -->
+                <!-- BUSCADOR -->
+                <div class="card card-buscador shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0 font-weight-bold">
+                            <i class="fas fa-search mr-2 text-primary"></i>Buscar Producto
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group mb-0">
+                            <div class="input-group input-group-lg">
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="inputBuscarProducto"
+                                    placeholder="Escriba nombre o código del producto..."
+                                    autocomplete="off"
+                                >
+                                <div class="input-group-append">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="resultadosBusqueda" class="mt-3" style="display: none; max-height: 600px; overflow-y: auto;">
+                            <!-- Resultados -->
+                        </div>
+                        <div id="productosSugeridos" class="productos-sugeridos-wrap" style="display:none;">
+                            <div class="productos-sugeridos-header">
+                                 <h6 class="mb-0">Productos sugeridos</h6>
+                            </div>
+                            <div id="productosSugeridosTrack" class="productos-sugeridos-track"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARRITO -->
+                <div class="card card-carrito shadow-sm">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0 font-weight-bold">
+                            <i class="fas fa-shopping-bag mr-2 text-primary"></i>Carrito de Compras
+                        </h6>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0" id="tablaCarrito">
+                                <thead>
+                                    <tr>
+                                        <th class="pl-3">Producto</th>
+                                        <th class="text-center" style="width: 120px;">Vendedor</th>
+                                        <th class="text-center" style="width: 80px;">Modalidad</th>
+                                        <th class="text-center" style="width: 110px;">Precio Unit.</th>
+                                        <th class="text-center" style="width: 70px;">Cantidad</th>
+                                        <th class="text-right" style="width: 180px;">Subtotal</th>
+                                        <th class="text-center pr-3" style="width: 50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="carritoBody"></tbody>
+                            </table>
+                        </div>
+
+                        <div id="carritoVacio" class="text-center py-5 text-muted">
+                            <i class="fas fa-shopping-basket fa-2x mb-3"></i>
+                            <p class="mb-0">Carrito vacío</p>
+                        </div>
                     </div>
                 </div>
             </div>
-            </div>
-        </section>
 
-        {# COLUMNA DERECHA: CARRITO #}
-        <section class="venta-layout-section venta-layout-section--cart">
-            <div class="card card-carrito shadow-sm">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0 font-weight-bold">
-                        <i class="fas fa-shopping-bag mr-2 text-primary"></i>Carrito de Compras
-                    </h6>
-                </div>
+            <!-- COLUMNA DERECHA -->
+            <div class="venta-main-right">
 
-                <div class="card-body">
-
-                    <div class="table-responsive">
-                        <table class="table table-sm mb-0" id="tablaCarrito">
-                            <thead>
-                                <tr>
-                                    <th class="pl-3">Producto</th>
-                                    <th class="text-center" style="width: 120px;">Vendedor</th>
-                                    <th class="text-center" style="width: 80px;">Modalidad</th>
-                                    <th class="text-center" style="width: 110px;">Precio Unit.</th>
-                                    <th class="text-center" style="width: 70px;">Cantidad</th>
-                                    <th class="text-right" style="width: 180px;">Subtotal</th>
-                                    <th class="text-center pr-3" style="width: 50px;"></th>
-                                </tr>
-                            </thead>
-                            <tbody id="carritoBody">
-                            </tbody>
-                        </table>
+                <!-- CLIENTE PRIMERO -->
+                <div class="card venta-card-cliente shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0 font-weight-bold">
+                            <i class="fas fa-user mr-2 text-primary"></i>Datos del Cliente
+                        </h6>
                     </div>
 
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="inputCliente" class="label-campo">
+                                Nombre del Cliente <span class="text-danger">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="inputCliente"
+                                placeholder="Ej: Juan Pérez"
+                                required
+                                autocomplete="off"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inputTelefono" class="label-campo">
+                                Teléfono <small class="text-muted">(opcional)</small>
+                            </label>
+                            <input
+                                type="tel"
+                                class="form-control"
+                                id="inputTelefono"
+                                placeholder="Ej: 70012345"
+                                autocomplete="off"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inputRazonSocial" class="label-campo">
+                                Razón Social <small class="text-muted">(opcional)</small>
+                            </label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="inputRazonSocial"
+                                placeholder="Ej: Empresa S.A."
+                                autocomplete="off"
+                            >
+                        </div>
+
+                        <div class="form-group mb-0">
+                            <label for="inputDireccion" class="label-campo">
+                                Dirección <small class="text-muted">(opcional)</small>
+                            </label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="inputDireccion"
+                                placeholder="Ej: Av. Principal #123"
+                                autocomplete="off"
+                            >
+                        </div>
+                    </div>
                 </div>
 
-{# Resumen y botón de guardar #}
-                <div class="card-footer bg-white" id="carritoFooter" style="display:none;">
-                    <div class="resumen-carrito">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted">Subtotal (<span id="resumenCantItems">0</span> items):</span>
-                            <span class="font-weight-bold" id="resumenSubtotal">Bs. 0.00</span>
+                <!-- RESUMEN DESPUES -->
+                <div class="card venta-card-resumen shadow-sm">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0 font-weight-bold">Resumen de Venta</h6>
+                    </div>
+
+                    <div class="card-body" id="carritoFooter" style="display:none;">
+                        <div class="resumen-linea">
+                            <span>Subtotal (<span id="resumenCantItems">0</span> items)</span>
+                            <strong id="resumenSubtotal">Bs. 0.00</strong>
                         </div>
 
                         <div class="form-group my-3 pb-3 border-bottom" id="descuentoSection">
                             <label class="label-campo">
                                 <i class="fas fa-percentage text-success mr-1"></i>Descuento (opcional)
                             </label>
-                            
-                            {# Toggle para tipo de descuento #}
+
                             <div class="mb-3 descuento-toolbar">
-                                <label class="descuento-toolbar-label mb-0">Tipo de Descuento:</label>
-                                <div class="btn-group btn-group-sm descuento-toggle-group" role="group">
+                                <label class="descuento-toolbar-label mb-2">Tipo de Descuento:</label>
+                                <div class="btn-group btn-group-sm descuento-toggle-group d-flex" role="group">
                                     <input type="radio" class="btn-check" name="tipoDescuento" id="descuentoFijo" value="fijo" checked>
-                                    <label class="btn btn-outline-success" for="descuentoFijo">
+                                    <label class="btn btn-outline-success flex-fill" for="descuentoFijo">
                                         <i class="fas fa-coins mr-1"></i>Monto fijo
                                     </label>
-                                    
+
                                     <input type="radio" class="btn-check" name="tipoDescuento" id="descuentoPorcentaje" value="porcentaje">
-                                    <label class="btn btn-outline-success" for="descuentoPorcentaje">
+                                    <label class="btn btn-outline-success flex-fill" for="descuentoPorcentaje">
                                         <i class="fas fa-percent mr-1"></i>Porcentaje (%)
                                     </label>
                                 </div>
                             </div>
-                            
-                            {# Campo de descuento #}
-                            <div class="input-group input-group-sm">
-                                <input type="number" class="form-control" id="inputDescuento"
-                                       placeholder="0.00" step="0.01" min="0" value="0" max="100" style="border-color: #28a745;">
 
+                            <div class="input-group input-group-sm">
+                                <input
+                                    type="number"
+                                    class="form-control"
+                                    id="inputDescuento"
+                                    placeholder="0.00"
+                                    step="0.01"
+                                    min="0"
+                                    value="0"
+                                    max="100"
+                                >
                                 <div class="input-group-append">
-                                    <span class="input-group-text bg-success text-white" id="tipoDescuentoUnidad" style="font-weight: 600;">Bs.</span>
+                                    <span class="input-group-text bg-success text-white" id="tipoDescuentoUnidad">Bs.</span>
                                 </div>
                             </div>
-                            <small class="form-text text-muted d-block mt-2">💡 Máximo: subtotal (en monto) o 100% (en porcentaje)</small>
+
+                            <small class="form-text text-muted d-block mt-2">
+                                Máximo: subtotal (en monto) o 100% (en porcentaje)
+                            </small>
+
                             <div class="descuento-feedback mt-3">
                                 <div class="d-flex justify-content-between align-items-center small">
                                     <span class="text-muted">Descuento aplicado:</span>
@@ -270,31 +296,64 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="alert alert-light border descuento-bloqueado mb-3" id="descuentoBloqueado" style="display:none;">
-                        <i class="fas fa-lock mr-2 text-muted"></i>
-                        El descuento solo está disponible para ventas al contado.
-                    </div>
+                        <div class="alert alert-light border descuento-bloqueado mb-3" id="descuentoBloqueado" style="display:none;">
+                            <i class="fas fa-lock mr-2 text-muted"></i>
+                            El descuento solo está disponible para ventas al contado.
+                        </div>
 
-                    <button class="btn btn-success btn-block btn-lg mt-3" id="btnGuardarVenta">
-                        <i class="fas fa-check-circle mr-2"></i>
-                        Registrar Venta
-                    </button>
-                    <button type="button" class="btn btn-outline-danger btn-block btn-sm mt-2" id="btnLimpiarCarrito">
-                        <i class="fas fa-trash mr-1"></i>
-                        Limpiar Carrito
-                    </button>
+                        {% if es_tienda_principal %}
+                        <div class="form-group mb-4">
+                            <label class="label-campo d-block mb-2">Tipo de Pago</label>
+                            <div class="tipo-pago-selector tipo-pago-selector--resumen">
+                                <div class="tipo-pago-option active" data-tipo="contado">
+                                    <div class="tipo-pago-icon">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Al Contado</strong>
+                                        <small class="d-block text-muted">Pago completo ahora</small>
+                                    </div>
+                                    <i class="fas fa-check-circle check-icon"></i>
+                                </div>
+
+                                <div class="tipo-pago-option" data-tipo="credito">
+                                    <div class="tipo-pago-icon tipo-pago-icon--credito">
+                                        <i class="fas fa-credit-card"></i>
+                                    </div>
+                                    <div>
+                                        <strong>A Crédito</strong>
+                                        <small class="d-block text-muted">Pago en cuotas</small>
+                                    </div>
+                                    <i class="fas fa-check-circle check-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="resumen-total">
+                            <span class="resumen-total-label">Total</span>
+                            <strong class="resumen-total-valor" id="resumenTotalFinal">Bs. 0.00</strong>
+                        </div>
+
+                        <button class="btn btn-danger btn-block btn-lg mt-3" id="btnGuardarVenta">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            Guardar Venta
+                        </button>
+
+                        <button type="button" class="btn btn-outline-danger btn-block btn-sm mt-2" id="btnLimpiarCarrito">
+                            <i class="fas fa-trash mr-1"></i>
+                            Limpiar Carrito
+                        </button>
+                    </div>
                 </div>
 
-            </div>{# /card-carrito #}
-        </section>
-    </div>{# /venta-layout #}
-
+            </div>
+        </div>
     </div>
-</div>{# /container-fluid #}
+</div>
 {% endblock %}
 
 {% block scripts_extra %}
-<script src="{% static 'js/ventas/tienda_nuevo.js' %}"></script>
+<script src="{% static 'js/ventas/tienda_nuevo.js' %}?v=100"></script>
 {% endblock %}

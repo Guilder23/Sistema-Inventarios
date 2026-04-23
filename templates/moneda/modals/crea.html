@@ -5,9 +5,19 @@
                 <h5 class="modal-title"><i class="fas fa-plus"></i> Actualizar Cambio</h5>
                 <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
             </div>
+
             <form action="{% url 'crear_moneda' %}" method="post">
                 {% csrf_token %}
                 <div class="modal-body">
+
+                    <div class="form-group">
+                        <label>Aplicar a <span class="text-danger">*</span></label>
+                        <select name="contexto" class="form-control" required>
+                            <option value="general">Sistema General</option>
+                            <option value="tienda_principal">Tienda Principal</option>
+                        </select>
+                    </div>
+
                     <div class="form-group">
                         <label>Seleccionar Moneda <span class="text-danger">*</span></label>
                         <select name="moneda" class="form-control" required>
@@ -15,11 +25,14 @@
                             <option value="BOB">Boliviano (BOB)</option>
                         </select>
                     </div>
+
                     <div class="form-group">
                         <label>Tipo de Cambio <span class="text-danger">*</span></label>
-                        <input type="number" step="0.01" min="0" name="valor" class="form-control" required>
+                        <input type="number" step="0.0001" min="0" name="valor" class="form-control" required>
                     </div>
+
                 </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Actualizar</button>

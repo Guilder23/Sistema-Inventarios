@@ -640,7 +640,7 @@ def crear_venta(request):
     # TIPO DE CAMBIO: DINÁMICO - Obtenido de la BD
     # El admin/almacén puede cambiar este valor a su discreción
     # ═══════════════════════════════════════════════════════════
-    tipo_cambio_actual = float(obtener_tipo_cambio_usd() or 1)
+    tipo_cambio_actual = float(obtener_tipo_cambio_usd('general') or 1)
     
     context = {
         'codigo_sugerido': codigo_sugerido,
@@ -675,7 +675,7 @@ def guardar_venta(request):
     direccion = data.get('direccion', '').strip()
     tipo_pago = data.get('tipo_pago', 'contado')
     moneda = data.get('moneda', 'BOB').upper()
-    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd() or 1)))
+    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd('general') or 1)))
     vendedor_id = data.get('vendedor_id', None)  # Para vendedores de almacén
     items = data.get('items', [])
 
@@ -1774,7 +1774,7 @@ def crear_venta_tienda(request):
     # TIPO DE CAMBIO: DINÁMICO - Obtenido de la BD
     # El admin/almacén puede cambiar este valor a su discreción
     # ═══════════════════════════════════════════════════════════
-    tipo_cambio_actual = float(obtener_tipo_cambio_usd() or 1)
+    tipo_cambio_actual = float(obtener_tipo_cambio_usd('tienda_principal') or 1)
     context = {
         'codigo_sugerido': codigo_sugerido,
         'perfil': perfil,
@@ -1830,7 +1830,7 @@ def guardar_venta_tienda(request):
     tipo_pago = data.get('tipo_pago', 'contado')
     tipo_venta = data.get('tipo_venta', '').strip().lower()  # compatibilidad con payload antiguo
     moneda = data.get('moneda', 'BOB').upper()
-    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd() or 1)))
+    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd('tienda_principal') or 1)))
     descuento_tipo = (data.get('descuento_tipo') or '').strip().lower()
     descuento_valor = Decimal(str(data.get('descuento_valor', data.get('descuento', '0')) or '0'))
     items = data.get('items', [])
