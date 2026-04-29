@@ -9,7 +9,11 @@ from .models import Inventario, MovimientoInventario
 from apps.usuarios.models import PerfilUsuario
 from apps.depositos.models import Deposito
 from apps.productos.models import Producto, ProductoContenedor
-from apps.servicios.tipos_cambios import obtener_tipo_cambio_usd, calcular_precios_usd, stock_en_cajas
+from apps.servicios.tipos_cambios import (
+    obtener_tipo_cambio_usd_por_perfil,
+    calcular_precios_usd,
+    stock_en_cajas,
+)
 
 @login_required
 def ver_inventario(request):
@@ -87,7 +91,7 @@ def ver_inventario(request):
     page_obj = paginator.get_page(page_number)
 
     # Aplicamos el cálculo solo a los productos de la página actual
-    valor_dolar = obtener_tipo_cambio_usd()
+    valor_dolar = obtener_tipo_cambio_usd_por_perfil(perfil)
     for item in page_obj.object_list:
         producto = item.producto
         calcular_precios_usd(producto, valor_dolar)
@@ -164,7 +168,7 @@ def ver_inventario_deposito(request):
     page_obj = paginator.get_page(page_number)
 
     # Aplicar cálculo de precios y stock en cajas por ubicación (depósito) solo para la página actual
-    valor_dolar = obtener_tipo_cambio_usd()
+    valor_dolar = obtener_tipo_cambio_usd_por_perfil(perfil)
     for item in page_obj.object_list:
         producto = item.producto
         calcular_precios_usd(producto, valor_dolar)

@@ -15,6 +15,7 @@ from decimal import Decimal
 import os
 from django.conf import settings
 from apps.moneda.utils import obtener_etiqueta_moneda
+from PIL import Image as PILImage, ImageOps
 
 
 def convertir_desde_bob_para_pdf(monto, venta):
@@ -111,17 +112,112 @@ def obtener_descuento_info_pdf(venta):
     }
 
 
+def _crear_thumbnail_pdf(contenido, ancho_max=180, alto_max=180, calidad=82):
+    """
+    Reduce una imagen en memoria antes de pasarsela a ReportLab.
+    Esto evita que el PDF procese fotos originales demasiado pesadas.
+    """
+    try:
+        contenido.seek(0)
+        imagen = PILImage.open(contenido)
+        imagen = ImageOps.exif_transpose(imagen)
+
+        if imagen.mode not in ('RGB', 'L'):
+            imagen = imagen.convert('RGB')
+
+        resample = getattr(PILImage, 'Resampling', PILImage).LANCZOS
+        imagen.thumbnail((ancho_max, alto_max), resample)
+
+        salida = BytesIO()
+        imagen.save(salida, format='JPEG', quality=calidad, optimize=True)
+        salida.seek(0)
+        return salida
+    except Exception:
+        return None
+
+
+def _cargar_imagen_pdf_desde_file(archivo, width, height):
+    if not archivo:
+        return ''
+
+    try:
+        if hasattr(archivo, 'open'):
+            archivo.open('rb')
+        contenido = BytesIO(archivo.read())
+        thumbnail = _crear_thumbnail_pdf(contenido, ancho_max=220, alto_max=220, calidad=82)
+        if thumbnail is not None:
+            return Image(thumbnail, width=width, height=height)
+    except Exception:
+        pass
+
+    return ''
+
+
+def _cargar_imagen_pdf_desde_ruta(ruta, width, height):
+    if not ruta or not os.path.exists(ruta):
+        return ''
+
+    try:
+        with open(ruta, 'rb') as archivo:
+            contenido = BytesIO(archivo.read())
+            thumbnail = _crear_thumbnail_pdf(contenido, ancho_max=220, alto_max=220, calidad=82)
+            if thumbnail is not None:
+                return Image(thumbnail, width=width, height=height)
+    except Exception:
+        pass
+
+    return ''
+
+
 def generar_pdf_venta_completo(venta):
     """
     Genera PDF completo de una venta (por ahora para tienda Almacén o Tienda).
     """
     buffer = BytesIO()
     # Reducir márgenes para aprovechar mejor el espacio
-    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.3*inch, bottomMargin=0.3*inch)
+    doc = SimpleDocTemplate(
+     buffer,
+    pagesize=letter,
+    topMargin=0.3 * inch,
+    bottomMargin=0.3 * inch,
+    leftMargin=0.35 * inch,
+    rightMargin=0.35 * inch,
+    )
     elements = []
     styles = getSampleStyleSheet()
     
     # ===== ESTILOS PERSONALIZADOS =====
+    # estilos para celdas
+    style_header_cell = ParagraphStyle(
+    'HeaderCell',
+    parent=styles['Normal'],
+    fontName='Helvetica-Bold',
+    fontSize=9,
+    leading=11,
+    alignment=TA_CENTER,
+    textColor=colors.whitesmoke,
+    )
+    style_cell_left = ParagraphStyle(
+    'CellLeft',
+    parent=styles['Normal'],
+    fontSize=8,
+    leading=10,
+    alignment=TA_LEFT,
+    textColor=colors.HexColor('#111827'),
+)
+
+    style_cell_center = ParagraphStyle(
+    'CellCenter',
+    parent=style_cell_left,
+    alignment=TA_CENTER,
+    )
+
+    style_cell_right = ParagraphStyle(
+    'CellRight',
+    parent=style_cell_left,
+    alignment=TA_RIGHT,
+    )
+
     style_titulo = ParagraphStyle(
         'TituloVenta',
         parent=styles['Heading1'],
@@ -178,13 +274,12 @@ def generar_pdf_venta_completo(venta):
     # Agregar logo si existe
     if os.path.exists(logo_path):
         try:
-            # Leer logo en BytesIO para evitar problema de absolute paths en Windows
-            with open(logo_path, 'rb') as logo_file:
-                logo_bytes = BytesIO(logo_file.read())
-                logo_bytes.seek(0)  # ⬅️ IMPORTANTE: resetear posición del cursor
-                logo = Image(logo_bytes, width=0.8*inch, height=0.8*inch)
+            logo = _cargar_imagen_pdf_desde_ruta(logo_path, width=0.8*inch, height=0.8*inch)
+            if logo:
                 header_row.append(logo)
-        except Exception as e:
+            else:
+                header_row.append(Paragraph("<b>ALMAZEN</b>", style_empresa_nombre))
+        except Exception:
             header_row.append(Paragraph("<b>ALMAZEN</b>", style_empresa_nombre))
     else:
         header_row.append(Paragraph("<b>ALMAZEN</b>", style_empresa_nombre))
@@ -256,10 +351,109 @@ def generar_pdf_venta_completo(venta):
     elements.append(Paragraph(info_general, style_encabezado))
     elements.append(Spacer(1, 0.3*inch))
     
-    # ===== SECCIÓN 2: TABLA DE DETALLES =====
-    
+   # ===== SECCIÓN 2: TABLA DE DETALLES =====
+    from xml.sax.saxutils import escape
+
     detalles = venta.detalles.all()
-    datos_tabla = [['Producto', 'Origen', 'Detalle', 'Cantidad', 'P. Unitario', 'Subtotal']]
+
+    # Estilos para las celdas de la tabla
+    style_header_cell = ParagraphStyle(
+        'HeaderCell',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=8.5,
+        leading=10,
+        alignment=TA_CENTER,
+        textColor=colors.whitesmoke,
+    )
+
+    style_cell_left = ParagraphStyle(
+        'CellLeft',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8,
+        leading=9.5,
+        alignment=TA_LEFT,
+        textColor=colors.HexColor('#111827'),
+    )
+
+    style_cell_center = ParagraphStyle(
+        'CellCenter',
+        parent=style_cell_left,
+        alignment=TA_CENTER,
+    )
+
+    style_cell_right = ParagraphStyle(
+        'CellRight',
+        parent=style_cell_left,
+        alignment=TA_RIGHT,
+    )
+
+    ancho_tabla = doc.width
+    col_widths = [
+        ancho_tabla * 0.12,  # Foto
+        ancho_tabla * 0.11,  # Código
+        ancho_tabla * 0.22,  # Detalle Producto
+        ancho_tabla * 0.10,  # Origen
+        ancho_tabla * 0.16,  # Detalle
+        ancho_tabla * 0.08,  # Cantidad
+        ancho_tabla * 0.10,  # P. Unitario
+        ancho_tabla * 0.11,  # Subtotal
+    ]
+
+    datos_tabla = [[
+        Paragraph('Foto', style_header_cell),
+        Paragraph('Codigo', style_header_cell),
+        Paragraph('Detalle Producto', style_header_cell),
+        Paragraph('Origen', style_header_cell),
+        Paragraph('Detalle', style_header_cell),
+        Paragraph('Cantidad', style_header_cell),
+        Paragraph('P. Unitario', style_header_cell),
+        Paragraph('Subtotal', style_header_cell),
+    ]]
+    imagen_cache = {}
+    def resolver_imagen_producto(producto):
+        """
+        Devuelve una imagen de ReportLab o una celda vacía si no hay foto.
+        Optimizado: cache por producto y miniatura reducida en memoria.
+        """
+        producto_id = getattr(producto, 'id', None)
+        if producto_id in imagen_cache:
+            return imagen_cache[producto_id]
+
+        foto = getattr(producto, 'foto', None)
+        if not foto:
+            imagen_cache[producto_id] = ''
+            return ''
+
+        # 1) Leer desde el storage del ImageField
+        try:
+            img = _cargar_imagen_pdf_desde_file(foto, width=0.50 * inch, height=0.50 * inch)
+            if img:
+                imagen_cache[producto_id] = img
+                return img
+        except Exception:
+            pass
+
+        # 2) Fallback local
+        posibles_rutas = []
+        try:
+            if hasattr(foto, 'path'):
+                posibles_rutas.append(foto.path)
+        except Exception:
+            pass
+
+        if getattr(foto, 'name', None):
+            posibles_rutas.append(os.path.join(settings.MEDIA_ROOT, foto.name))
+
+        for ruta_foto in posibles_rutas:
+            img = _cargar_imagen_pdf_desde_ruta(ruta_foto, width=0.50 * inch, height=0.50 * inch)
+            if img:
+                imagen_cache[producto_id] = img
+                return img
+
+        imagen_cache[producto_id] = ''
+        return ''
 
     for detalle in detalles:
         precio = float(convertir_desde_bob_para_pdf(detalle.precio_unitario, venta))
@@ -269,39 +463,74 @@ def generar_pdf_venta_completo(venta):
         tipo_vendedor = obtener_tipo_vendedor_detalle_pdf(detalle)
         modalidad = obtener_modalidad_detalle_pdf(detalle)
         cantidad_cajas = obtener_cantidad_cajas_pdf(detalle)
+
         detalle_linea = obtener_label_modalidad_pdf(modalidad)
         if cantidad_cajas > 0:
             detalle_linea += f' | {cantidad_cajas} caja(s)'
 
+        foto = resolver_imagen_producto(detalle.producto)
+
+        codigo = str(detalle.producto.codigo or 'N/A')[:15]
+        descripcion = str(detalle.producto.descripcion or '-')
+        origen = str(obtener_label_tipo_vendedor_pdf(tipo_vendedor) or '-')
+        detalle_texto = str(detalle_linea or '-')
+
         datos_tabla.append([
-            detalle.producto.nombre[:40],
-            obtener_label_tipo_vendedor_pdf(tipo_vendedor),
-            detalle_linea,
-            str(cantidad),
-            f'{etiqueta_moneda} {precio:,.2f}',
-            f'{etiqueta_moneda} {subtotal_valor:,.2f}'
+            foto,
+            Paragraph(escape(codigo), style_cell_left),
+            Paragraph(escape(descripcion), style_cell_left),
+            Paragraph(escape(origen), style_cell_center),
+            Paragraph(escape(detalle_texto), style_cell_left),
+            Paragraph(str(cantidad), style_cell_center),
+            Paragraph(f'{etiqueta_moneda} {precio:,.2f}', style_cell_right),
+            Paragraph(f'{etiqueta_moneda} {subtotal_valor:,.2f}', style_cell_right),
         ])
-    
-    datos_tabla_final = datos_tabla
-    
-    tabla_detalles = Table(datos_tabla_final, colWidths=[2.1*inch, 0.9*inch, 1.2*inch, 0.8*inch, 1*inch, 1.2*inch])
+
+    tabla_detalles = Table(
+        datos_tabla,
+        colWidths=col_widths,
+        repeatRows=1
+    )
+
     tabla_detalles.setStyle(TableStyle([
+        # Encabezado
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f2937')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('ALIGN', (0, 0), (2, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f3f4f6')])
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+
+        # Alineaciones cuerpo
+        ('ALIGN', (0, 1), (0, -1), 'CENTER'),   # Foto
+        ('ALIGN', (1, 1), (2, -1), 'LEFT'),     # Código, Detalle Producto
+        ('ALIGN', (3, 1), (3, -1), 'CENTER'),   # Origen
+        ('ALIGN', (4, 1), (4, -1), 'LEFT'),     # Detalle
+        ('ALIGN', (5, 1), (5, -1), 'CENTER'),   # Cantidad
+        ('ALIGN', (6, 1), (7, -1), 'RIGHT'),    # Montos
+
+        # Padding encabezado
+        ('TOPPADDING', (0, 0), (-1, 0), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+
+        # Padding cuerpo
+        ('TOPPADDING', (0, 1), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+
+        # Padding horizontal general
+        ('LEFTPADDING', (1, 0), (-1, -1), 5),
+        ('RIGHTPADDING', (1, 0), (-1, -1), 5),
+
+        # Padding reducido para la foto
+        ('LEFTPADDING', (0, 0), (0, -1), 3),
+        ('RIGHTPADDING', (0, 0), (0, -1), 3),
+
+        # Bordes y fondos
+        ('GRID', (0, 0), (-1, -1), 0.6, colors.HexColor('#374151')),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f3f4f6')]),
     ]))
-    
+
     elements.append(tabla_detalles)
-    elements.append(Spacer(1, 0.2*inch))
-    
+    elements.append(Spacer(1, 0.2 * inch))
+
     # ===== SECCIÓN 3: TOTALES =====
     
     # Calcular totales (defensivo)
@@ -420,6 +649,7 @@ def generar_pdf_venta_completo(venta):
         amortizaciones_con_comprobante = amortizaciones.exclude(comprobante__exact='')
         
         if amortizaciones_con_comprobante.exists():
+            total_comprobantes = amortizaciones_con_comprobante.count()
             elements.append(PageBreak())
             
             style_titulo_comprobantes = ParagraphStyle(
@@ -462,11 +692,20 @@ def generar_pdf_venta_completo(venta):
                             try:
                                 # Leer contenido del archivo
                                 comprobante_file = amort.comprobante
-                                comprobante_file.seek(0)
+                                if hasattr(comprobante_file, 'open'):
+                                    comprobante_file.open('rb')
                                 contenido_archivo = BytesIO(comprobante_file.read())
+                                thumbnail = _crear_thumbnail_pdf(
+                                    contenido_archivo,
+                                    ancho_max=720,
+                                    alto_max=520,
+                                    calidad=80,
+                                )
+                                if thumbnail is None:
+                                    raise ValueError('No se pudo optimizar la imagen del comprobante')
                                 
                                 # Crear tabla para centrar imagen
-                                img_data = [[Image(contenido_archivo, width=3.5*inch, height=2.5*inch)]]
+                                img_data = [[Image(thumbnail, width=3.5*inch, height=2.5*inch)]]
                                 img_table = Table(img_data)
                                 img_table.setStyle(TableStyle([
                                     ('ALIGN', (0, 0), (0, 0), 'CENTER'),
@@ -484,7 +723,7 @@ def generar_pdf_venta_completo(venta):
                         elements.append(Spacer(1, 0.2*inch))
                     
                     # Salto de página entre comprobantes si hay más
-                    if idx < amortizaciones_con_comprobante.count():
+                    if idx < total_comprobantes:
                         elements.append(PageBreak())
     
     # ===== SECCIÓN 4: INFORMACIÓN EMPRESA Y LEYENDA =====
@@ -492,10 +731,6 @@ def generar_pdf_venta_completo(venta):
     # Datos de empresa
     nombre_empresa = "ALMAZEN"
     subtitulo_empresa = "Importadora por mayor y por menor"
-    leyenda_devolucion = (
-        "*En caso de hacer la devolución de esta compra aproximarse con el código "
-        "de la venta que está impreso en esta factura, caso contrario no podrá hacer la devolución*"
-    )
     
     # Estilos para empresa
     style_empresa = ParagraphStyle(
@@ -533,7 +768,6 @@ def generar_pdf_venta_completo(venta):
     elements.append(Paragraph(nombre_empresa, style_empresa))
     elements.append(Paragraph(subtitulo_empresa, style_subtitulo))
     elements.append(Spacer(1, 0.1*inch))
-    elements.append(Paragraph(leyenda_devolucion, style_leyenda))
     elements.append(Spacer(1, 0.15*inch))
     
     # ===== SECCIÓN 5: PIE DE PÁGINA =====
@@ -543,7 +777,7 @@ def generar_pdf_venta_completo(venta):
     <b>Estado:</b> {estado_str}<br/>
     <b>Generado:</b> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}<br/>
     <br/>
-    <i>Este documento fue generado automáticamente por el sistema de ventas</i>
+    <i>Gracias por su preferencia</i>
     """
     elements.append(Paragraph(pie, style_encabezado))
     

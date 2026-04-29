@@ -640,7 +640,7 @@ def crear_venta(request):
     # TIPO DE CAMBIO: DINÁMICO - Obtenido de la BD
     # El admin/almacén puede cambiar este valor a su discreción
     # ═══════════════════════════════════════════════════════════
-    tipo_cambio_actual = float(obtener_tipo_cambio_usd() or 1)
+    tipo_cambio_actual = float(obtener_tipo_cambio_usd('general') or 1)
     
     context = {
         'codigo_sugerido': codigo_sugerido,
@@ -675,7 +675,7 @@ def guardar_venta(request):
     direccion = data.get('direccion', '').strip()
     tipo_pago = data.get('tipo_pago', 'contado')
     moneda = data.get('moneda', 'BOB').upper()
-    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd() or 1)))
+    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd('general') or 1)))
     vendedor_id = data.get('vendedor_id', None)  # Para vendedores de almacén
     items = data.get('items', [])
 
@@ -740,12 +740,17 @@ def guardar_venta(request):
                 cantidad_cajas = int(item.get('cantidad_cajas', 0) or 0)
                 modalidad = normalizar_modalidad(item.get('modalidad'), 'unidad')
                 tipo_vendedor = normalizar_tipo_vendedor(item.get('tipo_vendedor'), 'almacen') or 'almacen'
+                unidades_operativas = int(item.get('unidades_operativas', 0) or 0)
+                cantidad_ingresada = int(item.get('cantidad', 0) or 0)
 
                 if cantidad_cajas > 0:
                     cantidad = cantidad_cajas * unidades_por_caja
                     modalidad = 'caja'
+                elif modalidad == 'caja':
+                    cantidad_cajas = cantidad_ingresada
+                    cantidad = cantidad_cajas * unidades_por_caja
                 else:
-                    cantidad = int(item.get('cantidad', 0))
+                    cantidad = cantidad_ingresada
                     if modalidad == 'caja' and unidades_por_caja > 0 and cantidad > 0:
                         cantidad_cajas = max(cantidad // unidades_por_caja, 0)
 
@@ -763,7 +768,7 @@ def guardar_venta(request):
                 # Ahora bloquear el producto para la actualización
                 producto = Producto.objects.select_for_update().get(id=producto_id)
 
-                subtotal_item = precio_unitario * cantidad
+                subtotal_item = precio_unitario * unidades_a_descontar
 
                 DetalleVenta.objects.create(
                     venta=venta,
@@ -1769,7 +1774,7 @@ def crear_venta_tienda(request):
     # TIPO DE CAMBIO: DINÁMICO - Obtenido de la BD
     # El admin/almacén puede cambiar este valor a su discreción
     # ═══════════════════════════════════════════════════════════
-    tipo_cambio_actual = float(obtener_tipo_cambio_usd() or 1)
+    tipo_cambio_actual = float(obtener_tipo_cambio_usd('tienda_principal') or 1)
     context = {
         'codigo_sugerido': codigo_sugerido,
         'perfil': perfil,
@@ -1825,7 +1830,7 @@ def guardar_venta_tienda(request):
     tipo_pago = data.get('tipo_pago', 'contado')
     tipo_venta = data.get('tipo_venta', '').strip().lower()  # compatibilidad con payload antiguo
     moneda = data.get('moneda', 'BOB').upper()
-    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd() or 1)))
+    tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd('tienda_principal') or 1)))
     descuento_tipo = (data.get('descuento_tipo') or '').strip().lower()
     descuento_valor = Decimal(str(data.get('descuento_valor', data.get('descuento', '0')) or '0'))
     items = data.get('items', [])
@@ -1961,7 +1966,7 @@ def guardar_venta_tienda(request):
                 # Ahora bloquear el producto
                 producto = Producto.objects.select_for_update().get(id=producto_id)
 
-                subtotal_item = precio_unitario * cantidad
+                subtotal_item = precio_unitario * unidades_a_descontar
                 cantidad_guardada = unidades_a_descontar
                 precio_guardado = precio_unitario
 

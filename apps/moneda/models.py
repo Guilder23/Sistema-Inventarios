@@ -7,9 +7,20 @@ class TipoCambio(models.Model):
         ('BOB', 'Boliviano'),
     )
 
+    CONTEXTOS = (
+        ('general', 'Sistema General'),
+        ('tienda_principal', 'Tienda Principal'),
+    )
+
     moneda = models.CharField(
         max_length=10,
         choices=MONEDAS
+    )
+
+    contexto = models.CharField(
+        max_length=30,
+        choices=CONTEXTOS,
+        default='general'
     )
 
     valor = models.DecimalField(
@@ -27,4 +38,4 @@ class TipoCambio(models.Model):
         ordering = ['-fecha']
 
     def __str__(self):
-        return f"{self.moneda} - {self.valor}"
+        return f"{self.get_contexto_display()} - {self.moneda} - {self.valor}"
