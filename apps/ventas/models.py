@@ -31,6 +31,7 @@ class Venta(models.Model):
     telefono = models.CharField(max_length=20, blank=True, null=True)
     razon_social = models.CharField(max_length=200, blank=True, null=True)
     direccion = models.TextField(blank=True, null=True)
+    comentario = models.TextField(blank=True, null=True)
     
     tipo_pago = models.CharField(max_length=20, choices=TIPOS_PAGO, default='contado')
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')

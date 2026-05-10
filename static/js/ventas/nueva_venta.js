@@ -638,6 +638,7 @@ function guardarVenta() {
     const telefono = $('#inputTelefono').val().trim();
     const razonSocial = $('#inputRazonSocial').val().trim();
     const direccion = $('#inputDireccion').val().trim();
+    const comentario = $('#inputComentario').val().trim();
     const tipoPago = $('#inputTipoPago').val();
 
     // Validaciones frontend
@@ -681,6 +682,7 @@ function guardarVenta() {
             <div style="text-align:left;">
                 <p><strong>Cliente:</strong> ${cliente}</p>
                 ${telefono ? `<p><strong>Teléfono:</strong> ${telefono}</p>` : ''}
+                ${comentario ? `<p><strong>Comentario:</strong> ${comentario}</p>` : ''}
                 <p><strong>Tipo de pago:</strong> ${tipoPagoTexto}</p>
                 <p><strong>Moneda:</strong> ${moneda}</p>
                 <p><strong>Productos:</strong> ${carrito.length} item(s)</p>
@@ -696,12 +698,12 @@ function guardarVenta() {
         cancelButtonText: 'Revisar',
     }).then((result) => {
         if (result.isConfirmed) {
-            enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago);
+            enviarVenta(cliente, telefono, razonSocial, direccion, comentario, tipoPago);
         }
     });
 }
 
-function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
+function enviarVenta(cliente, telefono, razonSocial, direccion, comentario, tipoPago) {
     const $btn = $('#btnGuardarVenta');
     $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...');
 
@@ -727,6 +729,7 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, tipoPago) {
         telefono: telefono,
         razon_social: razonSocial,
         direccion: direccion,
+        comentario: comentario,
         tipo_pago: tipoPago,
         moneda: moneda,
         tipo_cambio: tipoCambio,

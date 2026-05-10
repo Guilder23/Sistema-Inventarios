@@ -1452,6 +1452,7 @@ function construirPayloadVenta() {
         telefono: document.getElementById('inputTelefono')?.value.trim() || '',
         razon_social: document.getElementById('inputRazonSocial')?.value.trim() || '',
         direccion: document.getElementById('inputDireccion')?.value.trim() || '',
+        comentario: document.getElementById('inputComentario')?.value.trim() || '',
         tipo_pago: document.getElementById('inputTipoPago')?.value || 'contado',
         tipo_venta: tipoVendedorActual || 'tienda',
         moneda: obtenerMonedaActual(),
@@ -1549,6 +1550,7 @@ function inicializarGuardarVenta() {
                 html: `
                     <div class="text-left">
                         <p><strong>Cliente:</strong> ${escapeHtml(payload.cliente)}</p>
+                        ${payload.comentario ? `<p><strong>Comentario:</strong> ${escapeHtml(payload.comentario)}</p>` : ''}
                         <p><strong>Origenes en carrito:</strong> ${escapeHtml(tiposVendedor || 'Tienda')}</p>
                         <p><strong>Moneda:</strong> ${escapeHtml(payload.moneda)}</p>
                         <p><strong>Items:</strong> ${carrito.length}</p>

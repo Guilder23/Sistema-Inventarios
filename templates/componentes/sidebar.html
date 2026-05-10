@@ -347,15 +347,15 @@
                 <i class="fas fa-user"></i>
             </div>
             <div class="sidebar-user-info">
-                <strong>{{ user.username|title }}</strong>
-                <small>
-                    {% if user.is_superuser %}
-                        Administrador
-                    {% elif user.is_staff %}
-                        Staff
+                <strong>
+                    {% if user.perfil and user.perfil.nombre_ubicacion %}
+                        {{ user.perfil.nombre_ubicacion|title }}
                     {% else %}
-                        Usuario
+                        {{ user.username|title }}
                     {% endif %}
+                </strong>
+                <small>
+                    {{ user.username|title }}
                 </small>
             </div>
         </div>

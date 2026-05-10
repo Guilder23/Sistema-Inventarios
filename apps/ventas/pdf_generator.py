@@ -13,6 +13,7 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 from datetime import datetime
 from decimal import Decimal
 import os
+from xml.sax.saxutils import escape
 from django.conf import settings
 from apps.moneda.utils import obtener_etiqueta_moneda
 from PIL import Image as PILImage, ImageOps
@@ -349,11 +350,10 @@ def generar_pdf_venta_completo(venta):
     <b>Moneda de liquidación:</b> {moneda_liquidacion}
     """
     elements.append(Paragraph(info_general, style_encabezado))
+
     elements.append(Spacer(1, 0.3*inch))
     
    # ===== SECCIÓN 2: TABLA DE DETALLES =====
-    from xml.sax.saxutils import escape
-
     detalles = venta.detalles.all()
 
     # Estilos para las celdas de la tabla
@@ -571,6 +571,44 @@ def generar_pdf_venta_completo(venta):
     ]))
     
     elements.append(tabla_totales)
+
+    comentario_venta = (getattr(venta, 'comentario', '') or '').strip()
+    if comentario_venta:
+        comentario_pdf = escape(comentario_venta).replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>')
+        style_comentario_titulo = ParagraphStyle(
+            'ComentarioTitulo',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=10,
+            leading=12,
+            textColor=colors.HexColor('#1f2937'),
+            spaceAfter=6,
+        )
+        style_comentario_texto = ParagraphStyle(
+            'ComentarioTexto',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=9,
+            leading=12,
+            textColor=colors.HexColor('#111827'),
+        )
+        tabla_comentario = Table(
+            [[Paragraph(comentario_pdf, style_comentario_texto)]],
+            colWidths=[doc.width]
+        )
+        tabla_comentario.setStyle(TableStyle([
+            ('BOX', (0, 0), (-1, -1), 0.8, colors.HexColor('#9ca3af')),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f9fafb')),
+            ('LEFTPADDING', (0, 0), (-1, -1), 8),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+
+        elements.append(Spacer(1, 0.18*inch))
+        elements.append(Paragraph('Comentario', style_comentario_titulo))
+        elements.append(tabla_comentario)
+
     elements.append(Spacer(1, 0.3*inch))
     
     # ===== SECCIÓN 3.5: RESUMEN DE AMORTIZACIONES (si aplica) =====
