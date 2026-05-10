@@ -841,6 +841,11 @@ function renderDetalleVentaTienda(data) {
                 <div class="value">${data.descuento_info?.resumen || 'Sin descuento'}</div>
             </div>
         </div>
+        ${data.comentario ? `
+            <div class="alert alert-light border mt-3 mb-0">
+                <strong>Comentario:</strong> ${data.comentario}
+            </div>
+        ` : ''}
         <h6 class="font-weight-bold mt-3 mb-2">
             <i class="fas fa-list mr-1"></i> Productos vendidos
         </h6>

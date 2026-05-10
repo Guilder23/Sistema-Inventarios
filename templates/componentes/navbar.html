@@ -77,25 +77,15 @@
                         <i class="fas fa-user"></i>
                     </div>
                     <div class="user-info">
-                        <span class="user-name">{{ user.username|title }}</span>
-                        <span class="user-role">
-                            {% if user.perfil %}
-                                {% if user.perfil.rol == 'administrador' %}
-                                    Administrador
-                                {% elif user.perfil.rol == 'almacen' %}
-                                    Almacén
-                                {% elif user.perfil.rol == 'tienda' %}
-                                    Tienda
-                                {% elif user.perfil.rol == 'tienda_online' %}
-                                    Tienda Virtual
-                                {% else %}
-                                    {{ user.perfil.rol }}
-                                {% endif %}
-                            {% elif user.is_superuser %}
-                                Administrador
+                        <span class="user-name">
+                            {% if user.perfil and user.perfil.nombre_ubicacion %}
+                                {{ user.perfil.nombre_ubicacion|title }}
                             {% else %}
-                                Usuario
+                                {{ user.username|title }}
                             {% endif %}
+                        </span>
+                        <span class="user-role">
+                            {{ user.username|title }}
                         </span>
                     </div>
                     <i class="fas fa-chevron-down"></i>
@@ -106,26 +96,16 @@
                             <i class="fas fa-user"></i>
                         </div>
                         <div class="user-header-text">
-                            <strong class="user-header-name">{{ user.username|title }}</strong>
+                            <strong class="user-header-name">
+                                {% if user.perfil and user.perfil.nombre_ubicacion %}
+                                    {{ user.perfil.nombre_ubicacion|title }}
+                                {% else %}
+                                    {{ user.username|title }}
+                                {% endif %}
+                            </strong>
                             <p class="user-header-email">{{ user.email }}</p>
                         <span class="user-header-role">
-                            {% if user.perfil %}
-                                {% if user.perfil.rol == 'administrador' %}
-                                    <i class="fas fa-shield-alt"></i> Administrador
-                                {% elif user.perfil.rol == 'almacen' %}
-                                    <i class="fas fa-warehouse"></i> Almacén
-                                {% elif user.perfil.rol == 'tienda' %}
-                                    <i class="fas fa-store"></i> Tienda
-                                {% elif user.perfil.rol == 'tienda_online' %}
-                                    <i class="fas fa-shopping-cart"></i> Tienda Virtual
-                                {% else %}
-                                    {{ user.perfil.rol }}
-                                {% endif %}
-                            {% elif user.is_superuser %}
-                                <i class="fas fa-shield-alt"></i> Administrador
-                            {% else %}
-                                <i class="fas fa-user"></i> Usuario
-                            {% endif %}
+                            <i class="fas fa-user"></i> {{ user.username|title }}
                         </span>
                         </div>
                     </div>

@@ -673,6 +673,7 @@ def guardar_venta(request):
     telefono = data.get('telefono', '').strip()
     razon_social = data.get('razon_social', '').strip()
     direccion = data.get('direccion', '').strip()
+    comentario = data.get('comentario', '').strip()
     tipo_pago = data.get('tipo_pago', 'contado')
     moneda = data.get('moneda', 'BOB').upper()
     tipo_cambio = Decimal(str(data.get('tipo_cambio', obtener_tipo_cambio_usd('general') or 1)))
@@ -717,6 +718,7 @@ def guardar_venta(request):
                 telefono=telefono if telefono else None,
                 razon_social=razon_social if razon_social else None,
                 direccion=direccion if direccion else None,
+                comentario=comentario if comentario else None,
                 tipo_pago=tipo_pago,
                 moneda=moneda,
                 tipo_cambio=tipo_cambio,
@@ -757,12 +759,14 @@ def guardar_venta(request):
                 if cantidad <= 0:
                     raise ValueError(f'Cantidad inválida para el producto ID {producto_id}.')
                 
+                unidades_a_descontar = unidades_operativas if unidades_operativas > 0 else cantidad
+
                 # Validar stock usando ProductoContenedor
                 stock_disponible = producto.stock
-                if stock_disponible < cantidad:
+                if stock_disponible < unidades_a_descontar:
                     raise ValueError(
                         f'Stock insuficiente para "{producto.nombre}". '
-                        f'Disponible: {stock_disponible}, Solicitado: {cantidad}.'
+                        f'Disponible: {stock_disponible}, Solicitado: {unidades_a_descontar}.'
                     )
                 
                 # Ahora bloquear el producto para la actualización
@@ -985,6 +989,7 @@ def obtener_detalle_venta(request, id):
             'venta_id': venta.id,
             'venta_codigo': venta.codigo,
             'cliente': venta.cliente,
+            'comentario': venta.comentario or '',
             'tipo_pago': venta.tipo_pago,
             'estado': venta.estado,
             'moneda': venta.moneda,
@@ -1054,6 +1059,7 @@ def ver_venta(request, id):
             'tipo_cambio': str(venta.tipo_cambio),
             'total': str(convertir_monto_para_mostrar(venta, venta.total)),
             'tipo_pago': venta.tipo_pago,
+            'comentario': venta.comentario or '',
             'mostrar_amortizaciones': mostrar_amortizaciones,
             'total_amortizado': str(convertir_monto_para_mostrar(venta, total_amortizado)),
             'saldo_pendiente': str(convertir_monto_para_mostrar(venta, saldo_pendiente)),
@@ -1827,6 +1833,7 @@ def guardar_venta_tienda(request):
     telefono = data.get('telefono', '').strip()
     razon_social = data.get('razon_social', '').strip()
     direccion = data.get('direccion', '').strip()
+    comentario = data.get('comentario', '').strip()
     tipo_pago = data.get('tipo_pago', 'contado')
     tipo_venta = data.get('tipo_venta', '').strip().lower()  # compatibilidad con payload antiguo
     moneda = data.get('moneda', 'BOB').upper()
@@ -1880,6 +1887,7 @@ def guardar_venta_tienda(request):
                 telefono=telefono if telefono else None,
                 razon_social=razon_social if razon_social else None,
                 direccion=direccion if direccion else None,
+                comentario=comentario if comentario else None,
                 tipo_pago=tipo_pago,
                 moneda=moneda,
                 tipo_cambio=tipo_cambio,
