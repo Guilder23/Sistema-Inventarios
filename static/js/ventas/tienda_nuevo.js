@@ -372,6 +372,128 @@ function recalcularItemCarrito(item) {
     item.subtotal_bs = item.unidades_operativas * item.precio_unitario_bs;
 }
 
+function obtenerModalidadesUsadasEnCarrito(productoId, tipoVendedor, indexIgnorado = null) {
+    return carrito
+        .filter((item, index) =>
+            index !== indexIgnorado
+            && item.producto.id === productoId
+            && obtenerTipoVendedorItem(item) === tipoVendedor
+        )
+        .map((item) => item.modalidad);
+}
+
+function obtenerUnidadesOperativasEnCarrito(productoId, tipoVendedor, indexIgnorado = null) {
+    return carrito.reduce((total, item, index) => {
+        if (
+            index === indexIgnorado
+            || item.producto.id !== productoId
+            || obtenerTipoVendedorItem(item) !== tipoVendedor
+        ) {
+            return total;
+        }
+
+        return total + calcularUnidadesOperativas(item.producto, item.cantidad, item.modalidad);
+    }, 0);
+}
+
+function validarModalidadUnicaEnCarrito(producto, modalidad, tipoVendedor, indexIgnorado = null) {
+    const modalidadesUsadas = obtenerModalidadesUsadasEnCarrito(producto.id, tipoVendedor, indexIgnorado);
+
+    if (modalidadesUsadas.includes(modalidad)) {
+        return {
+            valido: false,
+            mensaje: `Este producto ya fue agregado como ${obtenerEtiquetaModalidad(modalidad)}.`
+        };
+    }
+
+    if (modalidadesUsadas.length >= 3) {
+        return {
+            valido: false,
+            mensaje: 'Este producto ya fue agregado en las 3 modalidades permitidas.'
+        };
+    }
+
+    return { valido: true };
+}
+
+function obtenerModalidadesPermitidasProducto(producto, tipoVendedor) {
+    if (normalizarTipoVendedor(tipoVendedor) === 'deposito') {
+        return ['caja'];
+    }
+
+    const modalidades = ['unidad'];
+
+    if (puedeUsarCaja(producto)) {
+        modalidades.push('caja');
+    }
+
+    if (puedeUsarMayor(producto)) {
+        modalidades.push('mayor');
+    }
+
+    return modalidades;
+}
+
+function ajustarCantidadParaModalidad(producto, cantidad, modalidad) {
+    const cantidadBase = parseInt(cantidad, 10) || 1;
+    const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
+
+    if (modalidad === 'mayor') {
+        return Math.max(3, Math.min(cantidadBase, unidadesPorCaja - 1));
+    }
+
+    return cantidadBase;
+}
+
+function resolverModalidadDisponible(producto, tipoVendedor, modalidadPreferida, cantidad) {
+    const tipoVendedorFinal = normalizarTipoVendedor(tipoVendedor) || 'tienda';
+    const modalidadesPermitidas = obtenerModalidadesPermitidasProducto(producto, tipoVendedorFinal);
+    const modalidadesUsadas = obtenerModalidadesUsadasEnCarrito(producto.id, tipoVendedorFinal);
+    const ordenModalidades = [
+        modalidadPreferida,
+        ...modalidadesPermitidas
+    ].filter((modalidad, index, modalidades) =>
+        modalidad
+        && modalidadesPermitidas.includes(modalidad)
+        && modalidades.indexOf(modalidad) === index
+        && !modalidadesUsadas.includes(modalidad)
+    );
+
+    const modalidad = ordenModalidades[0];
+    if (!modalidad) return null;
+
+    return {
+        modalidad,
+        cantidad: ajustarCantidadParaModalidad(producto, cantidad, modalidad)
+    };
+}
+
+function validarStockTotalProducto(producto, cantidad, modalidad, tipoVendedor, indexIgnorado = null) {
+    const stockDisponible = parseInt(producto.stock || 0, 10);
+    const unidadesEnCarrito = obtenerUnidadesOperativasEnCarrito(producto.id, tipoVendedor, indexIgnorado);
+    const unidadesSolicitadas = unidadesEnCarrito + calcularUnidadesOperativas(producto, cantidad, modalidad);
+
+    if (unidadesSolicitadas > stockDisponible) {
+        const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
+        const unidadesRestantes = Math.max(stockDisponible - unidadesEnCarrito, 0);
+
+        if (modalidad === 'caja') {
+            const maximoCajas = Math.floor(unidadesRestantes / unidadesPorCaja);
+            return {
+                valido: false,
+                mensaje: `Stock insuficiente. Solo puedes agregar ${maximoCajas} caja(s) mas para "${producto.nombre}".`
+            };
+        }
+
+        return {
+            valido: false,
+            mensaje: `Stock insuficiente. Disponible restante: ${unidadesRestantes} unidad(es) para "${producto.nombre}".`
+        };
+    }
+
+    return { valido: true };
+}
+
 function agregarAlCarrito(producto, cantidad, modalidad, tipoVendedor = tipoVendedorActual) {
     const tipoVendedorFinal = normalizarTipoVendedor(
         tipoVendedor || producto?.tipo_vendedor_busqueda || tipoVendedorActual
@@ -389,36 +511,30 @@ function agregarAlCarrito(producto, cantidad, modalidad, tipoVendedor = tipoVend
         return false;
     }
 
-    const existenteIndex = carrito.findIndex((item) =>
-        item.producto.id === producto.id && item.modalidad === modalidad && obtenerTipoVendedorItem(item) === tipoVendedorFinal
-    );
-    const cantidadExistente = existenteIndex >= 0 ? carrito[existenteIndex].cantidad : 0;
-    const validacionStock = validarStockDisponible(producto, cantidad, modalidad, cantidadExistente);
+    const validacionModalidadUnica = validarModalidadUnicaEnCarrito(producto, modalidad, tipoVendedorFinal);
+    if (!validacionModalidadUnica.valido) {
+        mostrarAlerta(validacionModalidadUnica.mensaje);
+        return false;
+    }
+
+    const validacionStock = validarStockTotalProducto(producto, cantidad, modalidad, tipoVendedorFinal);
     if (!validacionStock.valido) {
         mostrarAlerta(validacionStock.mensaje);
         return false;
     }
 
-    if (existenteIndex >= 0) {
-        carrito[existenteIndex].cantidad += cantidad;
-        carrito[existenteIndex].tipo_vendedor = tipoVendedorFinal;
-        carrito[existenteIndex].tipo_vendedor_label = obtenerEtiquetaTipoVendedor(tipoVendedorFinal);
-        carrito[existenteIndex].precio_unitario_bs = precioBaseBs;
-        recalcularItemCarrito(carrito[existenteIndex]);
-    } else {
-        const item = {
-            producto,
-            cantidad,
-            modalidad,
-            tipo_vendedor: tipoVendedorFinal,
-            tipo_vendedor_label: obtenerEtiquetaTipoVendedor(tipoVendedorFinal),
-            precio_unitario_bs: precioBaseBs,
-            unidades_operativas: 0,
-            subtotal_bs: 0
-        };
-        recalcularItemCarrito(item);
-        carrito.push(item);
-    }
+    const item = {
+        producto,
+        cantidad,
+        modalidad,
+        tipo_vendedor: tipoVendedorFinal,
+        tipo_vendedor_label: obtenerEtiquetaTipoVendedor(tipoVendedorFinal),
+        precio_unitario_bs: precioBaseBs,
+        unidades_operativas: 0,
+        subtotal_bs: 0
+    };
+    recalcularItemCarrito(item);
+    carrito.push(item);
 
     renderCarrito();
     return true;
@@ -456,6 +572,13 @@ function cambiarModalidadCarrito(index, nuevaModalidad) {
     }
 
     // Validar cantidad según modalidad
+    const validacionModalidadUnica = validarModalidadUnicaEnCarrito(producto, nuevaModalidad, tipoVendedor, index);
+    if (!validacionModalidadUnica.valido) {
+        mostrarAlerta(validacionModalidadUnica.mensaje);
+        renderCarrito();
+        return;
+    }
+
     const validacionCantidad = validarCantidadSegunModalidad(
         item.cantidad,
         nuevaModalidad,
@@ -470,11 +593,12 @@ function cambiarModalidadCarrito(index, nuevaModalidad) {
     }
 
     // Validar stock disponible
-    const validacionStock = validarStockDisponible(
+    const validacionStock = validarStockTotalProducto(
         producto,
         item.cantidad,
         nuevaModalidad,
-        0
+        tipoVendedor,
+        index
     );
 
     if (!validacionStock.valido) {
@@ -524,6 +648,13 @@ function cambiarCantidadCarrito(index, nuevaCantidad) {
         modalidadFinal = determinarModalidadAutomaticaTienda(producto, cantidad, item.modalidad);
     }
 
+    const validacionModalidadUnica = validarModalidadUnicaEnCarrito(producto, modalidadFinal, tipoVendedor, index);
+    if (!validacionModalidadUnica.valido) {
+        mostrarAlerta(validacionModalidadUnica.mensaje);
+        renderCarrito();
+        return;
+    }
+
     const validacionCantidad = validarCantidadSegunModalidad(
         cantidad,
         modalidadFinal,
@@ -537,7 +668,7 @@ function cambiarCantidadCarrito(index, nuevaCantidad) {
         return;
     }
 
-    const validacionStock = validarStockDisponible(producto, cantidad, modalidadFinal, 0);
+    const validacionStock = validarStockTotalProducto(producto, cantidad, modalidadFinal, tipoVendedor, index);
     if (!validacionStock.valido) {
         mostrarAlerta(validacionStock.mensaje);
         renderCarrito();
@@ -596,6 +727,10 @@ function renderCarrito() {
         const unidadesPorCaja = parseInt(item.producto.unidades_por_caja || 1, 10);
         const mostrarCaja = unidadesPorCaja > 1;
         const mostrarMayor = unidadesPorCaja >= 4;
+        const modalidadesUsadas = obtenerModalidadesUsadasEnCarrito(item.producto.id, tipoVendedor, index);
+        const unidadUsada = modalidadesUsadas.includes('unidad');
+        const cajaUsada = modalidadesUsadas.includes('caja');
+        const mayorUsada = modalidadesUsadas.includes('mayor');
 
         return `
             <tr class="carrito-row-nueva">
@@ -617,8 +752,9 @@ function renderCarrito() {
                         <div class="carrito-modalidad-botones">
                             <button
                                 type="button"
-                                class="btn btn-sm ${item.modalidad === 'unidad' ? 'btn-primary' : 'btn-outline-primary'}"
+                                class="btn btn-sm ${unidadUsada ? 'btn-secondary' : (item.modalidad === 'unidad' ? 'btn-primary' : 'btn-outline-primary')}"
                                 onclick="cambiarModalidadCarrito(${index}, 'unidad')"
+                                ${unidadUsada ? 'disabled title="Unidad ya usada para este producto"' : ''}
                             >
                                 Unidad
                             </button>
@@ -626,8 +762,9 @@ function renderCarrito() {
                             ${mostrarCaja ? `
                                 <button
                                     type="button"
-                                    class="btn btn-sm ${item.modalidad === 'caja' ? 'btn-primary' : 'btn-outline-primary'}"
+                                    class="btn btn-sm ${cajaUsada ? 'btn-secondary' : (item.modalidad === 'caja' ? 'btn-primary' : 'btn-outline-primary')}"
                                     onclick="cambiarModalidadCarrito(${index}, 'caja')"
+                                    ${cajaUsada ? 'disabled title="Caja ya usada para este producto"' : ''}
                                 >
                                     Caja
                                 </button>
@@ -636,8 +773,9 @@ function renderCarrito() {
                             ${mostrarMayor ? `
                                 <button
                                     type="button"
-                                    class="btn btn-sm ${item.modalidad === 'mayor' ? 'btn-primary' : 'btn-outline-primary'}"
+                                    class="btn btn-sm ${mayorUsada ? 'btn-secondary' : (item.modalidad === 'mayor' ? 'btn-primary' : 'btn-outline-primary')}"
                                     onclick="cambiarModalidadCarrito(${index}, 'mayor')"
+                                    ${mayorUsada ? 'disabled title="Mayor ya usada para este producto"' : ''}
                                 >
                                     Mayor
                                 </button>
@@ -958,10 +1096,21 @@ function agregarProductoSugeridoDirecto(productoId, tipoVendedorContexto = tipoV
         return;
     }
 
-    const modalidadInicial = tipoVendedorContexto === 'deposito' ? 'caja' : 'unidad';
     const cantidadInicial = 1;
+    const modalidadInicial = tipoVendedorContexto === 'deposito' ? 'caja' : 'unidad';
+    const modalidadDisponible = resolverModalidadDisponible(
+        producto,
+        tipoVendedorContexto || 'tienda',
+        modalidadInicial,
+        cantidadInicial
+    );
 
-    if (agregarAlCarrito(producto, cantidadInicial, modalidadInicial, tipoVendedorContexto || 'tienda')) {
+    if (!modalidadDisponible) {
+        mostrarAlerta('Este producto ya fue agregado en todas sus modalidades disponibles.');
+        return;
+    }
+
+    if (agregarAlCarrito(producto, modalidadDisponible.cantidad, modalidadDisponible.modalidad, tipoVendedorContexto || 'tienda')) {
         mostrarAlerta(`${producto.codigo || producto.nombre} fue agregado al carrito.`, 'success', 'Agregado');
     }
 }
@@ -1237,8 +1386,21 @@ function agregarDesdeResultados(productoId, tipoVendedorContexto = tipoVendedorA
         return;
     }
 
-    if (agregarAlCarrito(producto, cantidad, modalidad, tipoVendedorContexto || 'tienda')) {
-        document.getElementById(`cantidad_${contextoId}`).value = '1';
+    const modalidadDisponible = resolverModalidadDisponible(
+        producto,
+        tipoVendedorContexto || 'tienda',
+        modalidad,
+        cantidad
+    );
+
+    if (!modalidadDisponible) {
+        mostrarAlerta('Este producto ya fue agregado en todas sus modalidades disponibles.');
+        return;
+    }
+
+    if (agregarAlCarrito(producto, modalidadDisponible.cantidad, modalidadDisponible.modalidad, tipoVendedorContexto || 'tienda')) {
+        const inputCantidad = document.getElementById(`cantidad_${contextoId}`);
+        if (inputCantidad) inputCantidad.value = '1';
         mostrarAlerta(`${producto.nombre} fue agregado al carrito.`, 'success', 'Agregado');
     }
 }
@@ -1259,8 +1421,21 @@ function agregarDesdeResultadosDeposito(productoId, tipoVendedorContexto = 'depo
         return;
     }
 
-    if (agregarAlCarrito(producto, cantidad, 'caja', tipoVendedorContexto || 'deposito')) {
-        document.getElementById(`cantidad_${contextoId}`).value = '1';
+    const modalidadDisponible = resolverModalidadDisponible(
+        producto,
+        tipoVendedorContexto || 'deposito',
+        'caja',
+        cantidad
+    );
+
+    if (!modalidadDisponible) {
+        mostrarAlerta('Este producto ya fue agregado en todas sus modalidades disponibles.');
+        return;
+    }
+
+    if (agregarAlCarrito(producto, modalidadDisponible.cantidad, modalidadDisponible.modalidad, tipoVendedorContexto || 'deposito')) {
+        const inputCantidad = document.getElementById(`cantidad_${contextoId}`);
+        if (inputCantidad) inputCantidad.value = '1';
         mostrarAlerta(`${producto.nombre} fue agregado al carrito.`, 'success', 'Agregado');
     }
 }
@@ -1277,6 +1452,7 @@ function construirPayloadVenta() {
         telefono: document.getElementById('inputTelefono')?.value.trim() || '',
         razon_social: document.getElementById('inputRazonSocial')?.value.trim() || '',
         direccion: document.getElementById('inputDireccion')?.value.trim() || '',
+        comentario: document.getElementById('inputComentario')?.value.trim() || '',
         tipo_pago: document.getElementById('inputTipoPago')?.value || 'contado',
         tipo_venta: tipoVendedorActual || 'tienda',
         moneda: obtenerMonedaActual(),
@@ -1374,6 +1550,7 @@ function inicializarGuardarVenta() {
                 html: `
                     <div class="text-left">
                         <p><strong>Cliente:</strong> ${escapeHtml(payload.cliente)}</p>
+                        ${payload.comentario ? `<p><strong>Comentario:</strong> ${escapeHtml(payload.comentario)}</p>` : ''}
                         <p><strong>Origenes en carrito:</strong> ${escapeHtml(tiposVendedor || 'Tienda')}</p>
                         <p><strong>Moneda:</strong> ${escapeHtml(payload.moneda)}</p>
                         <p><strong>Items:</strong> ${carrito.length}</p>

@@ -107,6 +107,11 @@
                         <p><strong>Dirección:</strong> {{ venta.direccion|default:"-" }}</p>
                     </div>
                 </div>
+                {% if venta.comentario %}
+                <div class="mt-2">
+                    <p class="mb-0"><strong>Comentario:</strong> {{ venta.comentario }}</p>
+                </div>
+                {% endif %}
             </div>
         </div>
 

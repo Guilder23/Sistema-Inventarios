@@ -187,6 +187,14 @@ function renderDetalleVenta(data) {
         </div>
     `;
 
+    if (data.comentario) {
+        html += `
+            <div class="alert alert-light border mt-3 mb-0">
+                <strong>Comentario:</strong> ${data.comentario}
+            </div>
+        `;
+    }
+
     // Tabla de items
     html += `
         <h6 class="font-weight-bold mt-3 mb-2">
