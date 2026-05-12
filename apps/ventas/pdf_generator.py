@@ -818,51 +818,8 @@ def generar_pdf_venta_completo(venta):
                     if idx < total_comprobantes:
                         elements.append(PageBreak())
     
-    # ===== SECCIÓN 4: INFORMACIÓN EMPRESA Y LEYENDA =====
     
-    # Datos de empresa
-    nombre_empresa = "ALMAZEN"
-    subtitulo_empresa = "Importadora por mayor y por menor"
-    
-    # Estilos para empresa
-    style_empresa = ParagraphStyle(
-        'NombreEmpresa',
-        parent=styles['Normal'],
-        fontSize=16,
-        textColor=colors.HexColor('#000000'),
-        spaceAfter=0,
-        alignment=TA_CENTER,
-        fontName='Helvetica-Bold'
-    )
-    
-    style_subtitulo = ParagraphStyle(
-        'Subtitulo',
-        parent=styles['Normal'],
-        fontSize=10,
-        textColor=colors.HexColor('#555555'),
-        spaceAfter=12,
-        alignment=TA_CENTER,
-        fontName='Helvetica-Oblique'
-    )
-    
-    style_leyenda = ParagraphStyle(
-        'Leyenda',
-        parent=styles['Normal'],
-        fontSize=8,
-        textColor=colors.HexColor('#d32f2f'),
-        spaceAfter=12,
-        alignment=TA_CENTER,
-        fontName='Helvetica-Oblique'
-    )
-    
-    # Agregar información empresa
-    elements.append(Spacer(1, 0.2*inch))
-    elements.append(Paragraph(nombre_empresa, style_empresa))
-    elements.append(Paragraph(subtitulo_empresa, style_subtitulo))
-    elements.append(Spacer(1, 0.1*inch))
-    elements.append(Spacer(1, 0.15*inch))
-    
-    # ===== SECCIÓN 5: PIE DE PÁGINA =====
+    # ===== SECCIÓN 4: PIE DE PÁGINA =====
     
     estado_str = venta.get_estado_display() if hasattr(venta, 'get_estado_display') else venta.estado
     pie = f"""
