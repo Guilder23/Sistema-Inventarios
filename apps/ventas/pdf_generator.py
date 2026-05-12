@@ -264,82 +264,62 @@ def generar_pdf_venta_completo(venta):
         fontName='Helvetica'
     )
     
-    # ===== SECCIÓN 0: HEADER CON LOGO =====
-    
-    # Crear tabla con logo + empresa info
+# ===== SECCIÓN 0: HEADER CON LOGO =====
+
+# Crear logo
     logo_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'logoAlmacen.png')
-    
-    header_data = []
-    header_row = []
-    
-    # Agregar logo si existe
+
     if os.path.exists(logo_path):
         try:
-            logo = _cargar_imagen_pdf_desde_ruta(logo_path, width=0.8*inch, height=0.8*inch)
-            if logo:
-                header_row.append(logo)
-            else:
-                header_row.append(Paragraph("<b>ALMAZEN</b>", style_empresa_nombre))
+            logo = _cargar_imagen_pdf_desde_ruta(
+                logo_path,
+                width=1.1 * inch,
+                height=1.1 * inch
+            )
+
+            if not logo:
+                logo = Paragraph("<b>ALMAZEN</b>", style_empresa_nombre)
+
         except Exception:
-            header_row.append(Paragraph("<b>ALMAZEN</b>", style_empresa_nombre))
+            logo = Paragraph("<b>ALMAZEN</b>", style_empresa_nombre)
+
     else:
-        header_row.append(Paragraph("<b>ALMAZEN</b>", style_empresa_nombre))
-    
-    # Información empresa (sin estilos inline, usar ParagraphStyle)
-    empresa_info_cell = []
-    empresa_info_cell.append(Paragraph("<b>ALMAZEN</b>", style_empresa_nombre))
-    empresa_info_cell.append(Paragraph("<i>Importadora por mayor y menor</i>", style_empresa_subtitulo))
-    empresa_info_cell.append(Paragraph("Venta de productos al por mayor y menor", style_empresa_descripcion))
-    
-    # Crear una tabla interna para organizar el texto
-    empresa_table = Table([
-        [elem] for elem in empresa_info_cell
-    ])
-    empresa_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('TOPPADDING', (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-        ('LINEBELOW', (0, 0), (-1, -1), 0, colors.white),
-    ]))
-    
-    header_row.append(empresa_table)
-    
-    header_data.append(header_row)
-    header_table = Table(header_data, colWidths=[1.2*inch, 5*inch])
-    header_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, 0), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('LEFTPADDING', (1, 0), (1, 0), 0.2*inch),
-    ]))
-    
-    elements.append(header_table)
-    elements.append(Spacer(1, 0.2*inch))
-    
-    # Obtener etiqueta de moneda
+        logo = Paragraph("<b>ALMAZEN</b>", style_empresa_nombre)
+
+# ===== DATOS GENERALES =====
+
+    titulo = "COMPROBANTE DE VENTA"
+
     etiqueta_moneda = obtener_etiqueta_moneda(venta.moneda)
     moneda_liquidacion = f"{venta.moneda} ({etiqueta_moneda})"
-    
-    # ===== SECCIÓN 1: CABECERA =====
-    
-    # Título (inferir de rol del vendedor)
-    titulo = "COMPROBANTE DE VENTA"
-    
-    elements.append(Paragraph(titulo, style_titulo))
-    elements.append(Spacer(1, 0.1*inch))
-    
-    # Datos generales
-    fecha_str = venta.fecha_elaboracion.strftime('%d/%m/%Y %H:%M') if hasattr(venta, 'fecha_elaboracion') else datetime.now().strftime('%d/%m/%Y %H:%M')
+
+    fecha_str = (
+        venta.fecha_elaboracion.strftime('%d/%m/%Y %H:%M')
+        if hasattr(venta, 'fecha_elaboracion')
+        else datetime.now().strftime('%d/%m/%Y %H:%M')
+    )
+
     codigo_venta_str = getattr(venta, 'codigo', f'VENTA-{venta.id}')
-    vendedor_nombre = venta.vendedor.get_full_name() or venta.vendedor.username
-    
-    # MEJORADO: Obtener ubicación del vendedor (almacén o tienda)
-    lugar_venta = venta.ubicacion.nombre_ubicacion if hasattr(venta.ubicacion, 'nombre_ubicacion') else 'Sin ubicación'
+
+    vendedor_nombre = (
+        venta.vendedor.get_full_name()
+        or venta.vendedor.username
+    )
+
+    lugar_venta = (
+        venta.ubicacion.nombre_ubicacion
+        if hasattr(venta.ubicacion, 'nombre_ubicacion')
+        else 'Sin ubicación'
+    )
+
     vendedor_con_lugar = f"{vendedor_nombre} - {lugar_venta}"
-    
-    tipo_pago = venta.get_tipo_pago_display() if hasattr(venta, 'get_tipo_pago_display') else venta.tipo_pago
-    
+
+    tipo_pago = (
+        venta.get_tipo_pago_display()
+        if hasattr(venta, 'get_tipo_pago_display')
+        else venta.tipo_pago
+    )
+
     info_general = f"""
     <b>Código:</b> {codigo_venta_str}<br/>
     <b>Fecha:</b> {fecha_str}<br/>
@@ -349,9 +329,83 @@ def generar_pdf_venta_completo(venta):
     <b>Origen:</b> {obtener_resumen_origen_venta_pdf(venta)}<br/>
     <b>Moneda de liquidación:</b> {moneda_liquidacion}
     """
-    elements.append(Paragraph(info_general, style_encabezado))
+# ===== ESTILO TÍTULO =====
 
-    elements.append(Spacer(1, 0.3*inch))
+    style_titulo_small = ParagraphStyle(
+        'TituloVentaSmall',
+        parent=styles['Heading2'],
+        fontSize=18,
+        leading=22,
+        textColor=colors.HexColor('#1f2937'),
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold',
+        spaceAfter=0,
+    )
+
+# ===== CELDAS =====
+    logo_cell = logo
+    title_cell = Paragraph(titulo, style_titulo_small)
+    info_cell = Paragraph(info_general, style_encabezado)
+
+# =========================================================
+# TABLA SUPERIOR → LOGO + TÍTULO CENTRADO REAL
+# =========================================================
+
+    logo_col_width = 1.4 * inch
+
+    header_top = Table(
+        [[
+            logo_cell,
+            title_cell,
+            ''
+        ]],
+        colWidths=[
+            logo_col_width,
+            doc.width - (logo_col_width * 2),
+            logo_col_width
+        ]
+    )
+
+    header_top.setStyle(TableStyle([
+
+        # ===== LOGO =====
+        ('VALIGN', (0, 0), (0, 0), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (0, 0), 0),
+        ('RIGHTPADDING', (0, 0), (0, 0), 10),
+        ('TOPPADDING', (0, 0), (0, 0), 0),
+        ('BOTTOMPADDING', (0, 0), (0, 0), 0),
+
+        # ===== TÍTULO =====
+        ('VALIGN', (1, 0), (1, 0), 'MIDDLE'),
+        ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+
+        # ===== GENERAL =====
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+
+    ]))
+
+# =========================================================
+# TABLA INFERIOR → INFORMACIÓN
+# =========================================================
+
+    info_table = Table(
+        [[info_cell]],
+        colWidths=[doc.width]
+    )
+
+    info_table.setStyle(TableStyle([
+
+        ('LEFTPADDING', (0, 0), (0, 0), 0),
+        ('TOPPADDING', (0, 0), (0, 0), 10),
+
+    ]))
+
+# ===== AGREGAR AL PDF =====
+
+    elements.append(header_top)
+    elements.append(info_table)
+    elements.append(Spacer(1, 0.2 * inch))
     
    # ===== SECCIÓN 2: TABLA DE DETALLES =====
     detalles = venta.detalles.all()
