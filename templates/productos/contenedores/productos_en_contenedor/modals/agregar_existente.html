@@ -22,9 +22,10 @@
                         <label for="producto_id_modal" class="form-label">
                             <i class="fas fa-box"></i> Producto
                         </label>
-                        <select class="form-control" id="producto_id_modal" name="producto_id" required>
-                            <option value="">-- Seleccione un producto --</option>
-                        </select>
+                        <!-- Campo único: búsqueda visible + input oculto para id -->
+                        <input type="text" class="form-control" id="producto_buscar_modal" placeholder="Buscar producto por código o nombre..." autocomplete="off" required>
+                        <input type="hidden" id="producto_id_modal" name="producto_id">
+                        <div class="dropdown-list mt-1" id="producto_lista_modal" style="position:relative;"></div>
                         <small class="form-text text-muted">
                             <i class="fas fa-info-circle"></i> Productos ya agregados quedan excluidos
                         </small>

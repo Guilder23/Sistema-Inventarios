@@ -6,6 +6,7 @@
     'use strict';
     
     let contenedorActualId = null;
+    let productosDisponiblesCache = [];
     
     // Función para obtener token CSRF de forma segura
     function obtenerCSRFToken() {
@@ -59,20 +60,125 @@
         .then(data => {
             console.log('Productos disponibles:', data);
             if (data.productos) {
-                const selectExistente = document.getElementById('producto_id_modal');
-                selectExistente.innerHTML = '<option value="">-- Seleccione un producto --</option>';
-                data.productos.forEach(prod => {
-                    const option = document.createElement('option');
-                    option.value = prod.id;
-                    option.textContent = `${prod.codigo} - ${prod.nombre}`;
-                    option.dataset.unidadesPorCaja = prod.unidades_por_caja || 1;
-                    selectExistente.appendChild(option);
-                });
+                // Guardar copia en caché para filtrado dinámico
+                productosDisponiblesCache = data.productos.slice();
+                const buscarInput = document.getElementById('producto_buscar_modal');
+                const hiddenInput = document.getElementById('producto_id_modal');
+                const listaContenedor = document.getElementById('producto_lista_modal');
+
+                    // Evento de filtrado en tiempo real (mostrar coincidencias sólo con texto)
+                    if (buscarInput) {
+                        buscarInput.addEventListener('input', function() {
+                            // limpiar id seleccionado cuando el texto cambia
+                            if (hiddenInput) hiddenInput.value = '';
+                            filtrarProductos(this.value);
+                        });
+
+                        // Enter selecciona la primera coincidencia válida
+                        buscarInput.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const primeras = listaContenedor.querySelectorAll('button.producto-item');
+                                if (primeras && primeras.length > 0) {
+                                    primeras[0].click();
+                                }
+                            }
+                        });
+
+                        // Ocultar la lista al perder foco, con pequeño retraso para permitir clicks
+                        buscarInput.addEventListener('blur', function() {
+                            setTimeout(() => { listaContenedor.innerHTML = ''; }, 150);
+                        });
+                    }
             }
         })
         .catch(error => {
             console.error('Error cargando productos:', error);
         });
+    }
+
+    // Filtra la lista de productos en memoria y reconstruye la lista desplegable
+    function filtrarProductos(termino) {
+        termino = (termino || '').toString().trim().toLowerCase();
+        const listaContenedor = document.getElementById('producto_lista_modal');
+        const buscarInput = document.getElementById('producto_buscar_modal');
+        const hiddenInput = document.getElementById('producto_id_modal');
+        if (!listaContenedor || !buscarInput) return;
+
+        // Limpiar contenedor
+        listaContenedor.innerHTML = '';
+
+        // Si no hay término de búsqueda, no mostrar nada
+        if (!termino) {
+            listaContenedor.innerHTML = '';
+            return;
+        }
+
+        // Filtrar
+        const filtrados = productosDisponiblesCache.filter(prod => {
+            const texto = `${prod.codigo} ${prod.nombre}`.toLowerCase();
+            return texto.indexOf(termino) !== -1;
+        });
+
+        if (filtrados.length === 0) {
+            const noFound = document.createElement('div');
+            noFound.className = 'p-2 text-muted';
+            noFound.textContent = 'No se encontraron productos';
+            // mostrar como overlay
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'absolute';
+            wrapper.style.top = '100%';
+            wrapper.style.left = '0';
+            wrapper.style.right = '0';
+            wrapper.style.zIndex = '2000';
+            wrapper.style.maxHeight = '240px';
+            wrapper.style.overflow = 'auto';
+            wrapper.appendChild(noFound);
+            listaContenedor.innerHTML = '';
+            listaContenedor.appendChild(wrapper);
+            return;
+        }
+
+        const list = document.createElement('div');
+        list.className = 'list-group';
+        // contenedor overlay
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'absolute';
+        wrapper.style.top = '100%';
+        wrapper.style.left = '0';
+        wrapper.style.right = '0';
+        wrapper.style.zIndex = '2000';
+        wrapper.style.maxHeight = '240px';
+        wrapper.style.overflow = 'auto';
+
+        filtrados.forEach(prod => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'list-group-item list-group-item-action producto-item';
+            btn.textContent = `${prod.codigo} - ${prod.nombre}`;
+            btn.dataset.prodId = prod.id;
+            btn.dataset.unidadesPorCaja = prod.unidades_por_caja || 1;
+
+            btn.addEventListener('click', function() {
+                // establecer valor visible y oculto
+                buscarInput.value = this.textContent;
+                if (hiddenInput) hiddenInput.value = this.dataset.prodId || '';
+                // cargar unidades por caja y calcular totales
+                const unidades = parseInt(this.dataset.unidadesPorCaja || '1');
+                document.getElementById('unidades_por_caja_existente_modal').value = unidades > 0 ? unidades : 1;
+                calcularUnidadesTotalExistente();
+                // asegurar que se carguen datos adicionales si es necesario
+                if (hiddenInput && hiddenInput.value) cargarDatosProductoSeleccionado(hiddenInput.value);
+                // limpiar lista
+                listaContenedor.innerHTML = '';
+            });
+
+            list.appendChild(btn);
+        });
+
+        wrapper.appendChild(list);
+        listaContenedor.innerHTML = '';
+        listaContenedor.appendChild(wrapper);
     }
     
         // Función para calcular unidades totales en base a cajas
@@ -92,17 +198,16 @@
                 calcularUnidadesTotalExistente();
                 return;
             }
-
-            const select = document.getElementById('producto_id_modal');
-            const selectedOption = select ? select.options[select.selectedIndex] : null;
-            const unidadesDesdeLista = selectedOption ? parseInt(selectedOption.dataset.unidadesPorCaja || '0') : 0;
-
-            if (unidadesDesdeLista > 0) {
-                document.getElementById('unidades_por_caja_existente_modal').value = unidadesDesdeLista;
+            // Intentar obtener el producto desde la caché
+            const prod = productosDisponiblesCache.find(p => String(p.id) === String(productoId));
+            if (prod) {
+                const unidades = parseInt(prod.unidades_por_caja || 1);
+                document.getElementById('unidades_por_caja_existente_modal').value = unidades > 0 ? unidades : 1;
                 calcularUnidadesTotalExistente();
                 return;
             }
 
+            // Si no está en caché, solicitar al servidor
             fetch(`/productos/${productoId}/datos-basicos/`, {
                 headers: {'X-Requested-With': 'XMLHttpRequest'}
             })
