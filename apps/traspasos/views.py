@@ -478,6 +478,20 @@ def crear_traspaso(request):
             
             # Crear traspaso y detalles
             with transaction.atomic():
+                # Primero validar disponibilidad de stock
+                detalles_info = []
+                for p_id, p_cant in zip(productos_ids, productos_cantidades):
+                    producto = get_object_or_404(Producto, id=p_id)
+                    stock_disponible = _stock_disponible_en_ubicacion(producto, origen)
+                    cantidad_int = int(p_cant)
+                    if stock_disponible < cantidad_int:
+                        return JsonResponse({
+                            'status': 'error',
+                            'message': f'Stock insuficiente para {producto.nombre}. Disponible: {stock_disponible}, solicitado: {cantidad_int}'
+                        }, status=400)
+                    detalles_info.append((producto, cantidad_int))
+                
+                # Crear traspaso
                 codigo = Traspaso.generar_codigo()
                 traspaso = Traspaso.objects.create(
                     codigo=codigo,
@@ -489,12 +503,21 @@ def crear_traspaso(request):
                     creado_por=request.user,
                 )
                 
-                for p_id, p_cant in zip(productos_ids, productos_cantidades):
-                    producto = get_object_or_404(Producto, id=p_id)
+                # Crear detalles y reservar stock del origen
+                for producto, cantidad_int in detalles_info:
                     DetalleTraspaso.objects.create(
                         traspaso=traspaso,
                         producto=producto,
-                        cantidad=int(p_cant)
+                        cantidad=cantidad_int
+                    )
+                    # Reservar stock (restar del origen al crear)
+                    _ajustar_stock_ubicacion(
+                        producto=producto,
+                        ubicacion=origen,
+                        delta=-cantidad_int,
+                        tipo_movimiento='traspaso_creado',
+                        referencia=codigo,
+                        comentario=f'Stock reservado para traspaso hacia {destino.nombre_ubicacion or destino.usuario.username}'
                     )
             
             return JsonResponse({'status': 'success', 'message': 'Traspaso creado correctamente', 'id': traspaso.id})
@@ -546,24 +569,8 @@ def cambiar_estado_traspaso(request, id):
             if traspaso.estado != 'pendiente':
                 return JsonResponse({'error': 'Solo se pueden enviar traspasos pendientes'}, status=400)
             
-            with transaction.atomic():
-                for detalle in traspaso.detalles.all():
-                    stock_disponible = _stock_disponible_en_ubicacion(detalle.producto, traspaso.origen)
-                    if stock_disponible < detalle.cantidad:
-                        return JsonResponse({
-                            'error': f'Stock insuficiente para {detalle.producto.nombre}. Disponible en origen: {stock_disponible}'
-                        }, status=400)
-
-                for detalle in traspaso.detalles.all():
-                    _ajustar_stock_ubicacion(
-                        producto=detalle.producto,
-                        ubicacion=traspaso.origen,
-                        delta=-detalle.cantidad,
-                        tipo_movimiento='traspaso_enviado',
-                        referencia=traspaso.codigo,
-                        comentario=f'Traspaso enviado hacia {traspaso.destino.nombre_ubicacion or traspaso.destino.usuario.username}'
-                    )
-            
+            # Stock ya fue reservado al crear el traspaso
+            # Solo confirmar el tránsito
             traspaso.estado = 'transito'
             traspaso.fecha_envio = timezone.now()
         
@@ -618,6 +625,18 @@ def cambiar_estado_traspaso(request, id):
             
             if traspaso.estado != 'pendiente':
                 return JsonResponse({'error': 'Solo se pueden cancelar traspasos pendientes'}, status=400)
+            
+            # Devolver stock reservado al origen
+            with transaction.atomic():
+                for detalle in traspaso.detalles.all():
+                    _ajustar_stock_ubicacion(
+                        producto=detalle.producto,
+                        ubicacion=traspaso.origen,
+                        delta=detalle.cantidad,
+                        tipo_movimiento='traspaso_cancelado',
+                        referencia=traspaso.codigo,
+                        comentario='Stock devuelto por cancelación de traspaso'
+                    )
             
             traspaso.estado = 'cancelado'
         
