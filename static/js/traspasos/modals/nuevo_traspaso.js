@@ -308,8 +308,8 @@ function actualizarListaSeleccionados() {
     container.innerHTML = traspasoConfig.productosSeleccionados.map((p, index) => `
         <div class="seleccionado-item bg-white border rounded p-2 mb-2 d-flex justify-content-between align-items-center">
             <div>
-                <span class="font-weight-bold">${p.nombre}</span><br>
-                <small class="text-muted d-block">${p.codigo || 'N/A'}</small>
+                <strong>${p.codigo || 'N/A'}</strong><br>
+                <small class="text-muted d-block">${p.nombre}</small>
                 <small>Cantidad: ${p.cantidad}</small>
             </div>
             <div class="d-flex align-items-center" style="gap: 6px;">
