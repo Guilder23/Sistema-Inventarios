@@ -263,7 +263,7 @@
                         <td><span class="codigo-badge">{{ item.producto.codigo }}</span></td>
                         <td class="col-producto"><strong>{{ item.producto.nombre }}</strong></td>
                         <td>
-                            <div class="text-truncate" style="max-width: 220px;" title="{{ item.producto.descripcion|default:'Sin descripción' }}">
+                            <div class="descripcion-wrap" style="max-width: 220px; white-space: normal; word-break: break-word;" title="{{ item.producto.descripcion|default:'Sin descripción' }}">
                                 {{ item.producto.descripcion|default:'Sin descripción' }}
                             </div>
                         </td>
