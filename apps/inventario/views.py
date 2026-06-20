@@ -14,6 +14,7 @@ from apps.servicios.tipos_cambios import (
     calcular_precios_usd,
     stock_en_cajas,
 )
+from decimal import Decimal
 
 @login_required
 def ver_inventario(request):
@@ -303,9 +304,14 @@ def ver_inventario_general(request):
         # Almacenes - obtener el nombre del almacén y agregar al detalle
         perfiles_almacen = PerfilUsuario.objects.filter(rol='almacen', activo=True).select_related('almacen')
         almacenes_info = []
+        seen = set()
         for perfil_alm in perfiles_almacen:
+            # Evitar duplicados normalizando (ignorar mayúsculas y espacios)
             nombre_almacen = perfil_alm.almacen.nombre if perfil_alm.almacen else perfil_alm.nombre_ubicacion or 'Almacén'
-            almacenes_info.append(nombre_almacen)
+            key = (nombre_almacen or '').strip().lower()
+            if key and key not in seen:
+                seen.add(key)
+                almacenes_info.append(nombre_almacen.strip())
         nombre_almacenes = ', '.join(almacenes_info) if almacenes_info else 'Almacén'
         
         # Agregar el stock del almacén al detalle
@@ -509,11 +515,38 @@ def ver_inventario_general(request):
                 else:
                     estado_item = 'normal'
 
+                # Calcular cajas y precios a partir del producto (precios en BD)
+                unidades_por_caja = producto.unidades_por_caja or 1
+                try:
+                    unidades_int = int(unidades_por_caja) if unidades_por_caja else 1
+                except Exception:
+                    unidades_int = 1
+
+                cantidad = ubicacion['cantidad'] or 0
+                # Cajas enteras completas
+                cajas = int(cantidad // unidades_int) if unidades_int else 0
+
+                # Precio por caja: usar precio_caja si está definido, si no calcular desde precio_unidad
+                precio_caja = None
+                if getattr(producto, 'precio_caja', None) and producto.precio_caja and producto.precio_caja > 0:
+                    precio_caja = producto.precio_caja
+                else:
+                    precio_caja = (producto.precio_unidad or Decimal('0.00')) * Decimal(unidades_int)
+
+                # Precio por mayor: usar precio_mayor si existe, si no fallback a precio_caja
+                if getattr(producto, 'precio_mayor', None) and producto.precio_mayor and producto.precio_mayor > 0:
+                    precio_mayor = producto.precio_mayor
+                else:
+                    precio_mayor = precio_caja
+
                 inventario_expandido.append({
                     'producto': producto,
                     'tipo_rol': tipo_rol,
                     'nombre_ubicacion': nombre_ubicacion,
                     'stock': ubicacion['cantidad'],
+                    'cajas': cajas,
+                    'precio_caja': precio_caja,
+                    'precio_mayor': precio_mayor,
                     'estado': estado_item,
                     'fecha_actualizacion': item['fecha_actualizacion'],
                 })
