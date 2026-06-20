@@ -231,10 +231,11 @@
                         <th style="width: 9%;">CÓDIGO</th>
                         <th style="width: 18%;" class="col-producto">PRODUCTO</th>
                         <th style="width: 15%;">DESCRIPCIÓN</th>
-                        <th style="width: 9%;">ROL</th>
                         <th style="width: 13%;">NOMBRE DEL ROL</th>
                         <th style="width: 10%;" class="text-center">STOCK</th>
-                        <th style="width: 13%;" class="text-center">ACTUALIZADO</th>
+                        <th style="width: 10%;" class="text-center">CAJAS</th>
+                        <th style="width: 10%;" class="text-center">PRECIO CAJA</th>
+                        <th style="width: 13%;" class="text-center">PRECIO MAYOR</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -267,7 +268,6 @@
                                 {{ item.producto.descripcion|default:'Sin descripción' }}
                             </div>
                         </td>
-                        <td>{{ item.tipo_rol }}</td>
                         <td>{{ item.nombre_ubicacion }}</td>
                         <td class="text-center">
                             {% if item.estado == 'normal' %}
@@ -278,13 +278,23 @@
                                 <span class="badge-stock badge-stock-critico">{{ item.stock }} unidades</span>
                             {% endif %}
                         </td>
+                        <td class="text-center">
+                            {% if item.cajas is not None %}
+                                {{ item.cajas }} cajas
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
                         <td class="text-center text-muted">
-                            <small>{{ item.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
+                            <small>Bs. {{ item.precio_caja|default:"0.00"|floatformat:2 }}</small>
+                        </td>
+                        <td class="text-center text-muted">
+                            <small>Bs. {{ item.precio_mayor|default:"0.00"|floatformat:2 }}</small>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center py-4">
+                        <td colspan="9" class="text-center py-4">
                             <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
                             <p class="text-muted mb-0">No hay productos con stock en las ubicaciones</p>
                         </td>
