@@ -369,6 +369,15 @@
     padding: 0.6rem 0.5rem;
 }
 
+/* Permitir que la columna Descripción en la tabla normal se ajuste en alto y haga wrap */
+#tablaInventarioNormal .descripcion-wrap {
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+    display: block;
+    max-width: 220px;
+}
+
 .inventario-general-table tbody tr.fila-estado-normal td {
     background-color: #bbf7d0;
 }
