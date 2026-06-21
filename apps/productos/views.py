@@ -1486,7 +1486,9 @@ def eliminar_producto_contenedor(request, producto_contenedor_id):
 @login_required
 def json_contenedores_producto(request, producto_id):
     """API JSON para obtener contenedores de un producto"""
-    if not es_almacen(request):
+    # Permitir a usuarios autenticados acceder via AJAX (la información de contenedores
+    # es útil desde la vista de producto). Antes sólo estaba permitido a almacén.
+    if not request.user.is_authenticated:
         return JsonResponse({'error': 'No autorizado'}, status=403)
     
     producto = get_object_or_404(Producto, id=producto_id)
