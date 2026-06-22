@@ -371,4 +371,37 @@
         width: 30px;
         height: 30px;
     }
+
+    /* Paginación responsiva: permitir wrap y reducir padding */
+    .pagination {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.25rem;
+        padding-left: 0;
+        margin: 0.75rem 0 1rem 0;
+    }
+
+    .pagination .page-item {
+        margin: 0;
+    }
+
+    .pagination .page-link {
+        padding: 0.28rem 0.45rem;
+        font-size: 0.72rem;
+        min-width: 34px;
+        text-align: center;
+    }
+
+    /* Permitir scroll horizontal sólo en la tarjeta que contiene la tabla */
+    .card-tabla {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Asegurar que la tabla no fuerce el ancho del viewport innecesariamente */
+    .tabla-productos {
+        width: 100%;
+        min-width: 0;
+    }
 }
