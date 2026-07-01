@@ -251,12 +251,16 @@ function renderListaProductos(productos) {
         return;
     }
 
-    listContainer.innerHTML = productos.map(p => `
+    listContainer.innerHTML = productos.map(p => {
+        const unidadesPorCaja = Number(p.unidades_por_caja || 1);
+        const cantidadPorCaja = `${unidadesPorCaja} x caja`;
+        
+        return `
         <div class="producto-item d-flex justify-content-between align-items-center border-bottom p-2">
             <div>
                 <div class="text-muted" style="font-size: 0.85rem;">${p.codigo || ''}</div>
                 <strong>${p.nombre}</strong><br>
-                <small class="text-muted">Stock: ${p.stock}</small>
+                <small class="text-muted">Stock: <strong>${p.stock} unidades</strong> | <strong>${cantidadPorCaja}</strong></small>
             </div>
             <div class="d-flex align-items-center">
                 <input type="number" class="form-control form-control-sm mr-2" style="width: 70px;" value="1" min="1" max="${p.stock}" id="cant-${p.id}">
@@ -265,7 +269,8 @@ function renderListaProductos(productos) {
                 </button>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function agregarProducto(id) {
@@ -422,12 +427,13 @@ function prepararResumen() {
             <table class="table table-sm mb-0">
                 <thead>
                     <tr>
-                        <th style="width: 120px;">Código</th>
+                        <th style="width: 100px;">Código</th>
                         <th>Producto</th>
-                        <th class="text-right" style="width: 90px;">Stock</th>
-                        <th class="text-right" style="width: 90px;">Cant.</th>
-                        <th class="text-right" style="width: 110px;">P/U</th>
-                        <th class="text-right" style="width: 110px;">Subtotal</th>
+                        <th class="text-right" style="width: 80px;">Unidades</th>
+                        <th class="text-right" style="width: 80px;">x caja</th>
+                        <th class="text-right" style="width: 80px;">Cant.</th>
+                        <th class="text-right" style="width: 100px;">P/U</th>
+                        <th class="text-right" style="width: 100px;">Subtotal</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -435,11 +441,14 @@ function prepararResumen() {
                         const pu = Number(p.precio_unidad ?? 0) || 0;
                         const cant = Number(p.cantidad ?? 0) || 0;
                         const sub = pu * cant;
+                        const unidadesPorCaja = Number(p.unidades_por_caja || 1);
+                        const stock = Number(p.stock ?? 0) || 0;
                         return `
                             <tr>
                                 <td>${p.codigo || ''}</td>
                                 <td>${p.nombre}</td>
-                                <td class="text-right">${p.stock ?? ''}</td>
+                                <td class="text-right">${stock}</td>
+                                <td class="text-right">${unidadesPorCaja} x caja</td>
                                 <td class="text-right">${p.cantidad}</td>
                                 <td class="text-right">${fmt(pu)}</td>
                                 <td class="text-right">${fmt(sub)}</td>
@@ -449,7 +458,7 @@ function prepararResumen() {
                 </tbody>
                 <tfoot>
                     <tr>
-                        <th colspan="5" class="text-right">Total</th>
+                        <th colspan="6" class="text-right">Total</th>
                         <th class="text-right">${fmt(total)}</th>
                     </tr>
                 </tfoot>
