@@ -897,6 +897,7 @@ def obtener_productos_traspaso(request):
                         'nombre': producto_obj.nombre,
                         'stock': producto_obj.stock,
                         'precio_unidad': float(producto_obj.precio_unidad or 0),
+                        'unidades_por_caja': producto_obj.unidades_por_caja or 1,
                     })
             return JsonResponse(resultado, safe=False)
 
@@ -920,6 +921,7 @@ def obtener_productos_traspaso(request):
                 'nombre': inv.producto.nombre,
                 'stock': inv.cantidad,
                 'precio_unidad': precio,
+                'unidades_por_caja': inv.producto.unidades_por_caja or 1,
             })
         return JsonResponse(productos, safe=False)
     except Exception as e:
