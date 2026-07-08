@@ -35,7 +35,7 @@
         <div class="card-body py-3">
             <form method="GET" id="formFiltrosProductos">
                 <div class="row align-items-center">
-                    <div class="col-md-8">
+                    <div class="col-md-6">
                         <div class="input-group input-group-sm">
                             <div class="input-group-prepend">
                                 <span class="input-group-text bg-white border-right-0">
@@ -53,11 +53,22 @@
                         </div>
                     </div>
 
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <select class="form-control form-control-sm" id="estado" name="estado">
                             <option value="">Todos los estados</option>
                             <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
                             <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <select class="form-control form-control-sm" id="contenedor_id" name="contenedor_id">
+                            <option value="">Todos los contenedores</option>
+                            {% for contenedor in contenedores %}
+                                <option value="{{ contenedor.id }}" {% if contenedor_id|stringformat:"s" == contenedor.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ contenedor.nombre }}
+                                </option>
+                            {% endfor %}
                         </select>
                     </div>
                 </div>
@@ -231,10 +242,10 @@
         <ul class="pagination justify-content-center">
             {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page=1&buscar={{ buscar|urlencode }}&estado={{ estado|urlencode }}">Primera</a>
+                    <a class="page-link" href="?page=1&{{ query_params }}">Primera</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&buscar={{ buscar|urlencode }}&estado={{ estado|urlencode }}">Anterior</a>
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ query_params }}">Anterior</a>
                 </li>
             {% endif %}
 
@@ -245,17 +256,17 @@
                     </li>
                 {% else %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}&buscar={{ buscar|urlencode }}&estado={{ estado|urlencode }}">{{ num }}</a>
+                        <a class="page-link" href="?page={{ num }}&{{ query_params }}">{{ num }}</a>
                     </li>
                 {% endif %}
             {% endfor %}
 
             {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&buscar={{ buscar|urlencode }}&estado={{ estado|urlencode }}">Siguiente</a>
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ query_params }}">Siguiente</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&buscar={{ buscar|urlencode }}&estado={{ estado|urlencode }}">Última</a>
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&{{ query_params }}">Última</a>
                 </li>
             {% endif %}
         </ul>

@@ -531,13 +531,12 @@ def ver_inventario_general(request):
                 if getattr(producto, 'precio_caja', None) and producto.precio_caja and producto.precio_caja > 0:
                     precio_caja = producto.precio_caja
                 else:
-                    precio_caja = (producto.precio_unidad or Decimal('0.00')) * Decimal(unidades_int)
-
+                    precio_caja = 0
                 # Precio por mayor: usar precio_mayor si existe, si no fallback a precio_caja
                 if getattr(producto, 'precio_mayor', None) and producto.precio_mayor and producto.precio_mayor > 0:
                     precio_mayor = producto.precio_mayor
                 else:
-                    precio_mayor = precio_caja
+                    precio_mayor = 0 
 
                 inventario_expandido.append({
                     'producto': producto,
