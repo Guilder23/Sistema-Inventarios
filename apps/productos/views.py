@@ -430,6 +430,7 @@ def listar_productos(request):
     # Obtener parámetros de búsqueda
     buscar = request.GET.get('buscar', '')
     estado = request.GET.get('estado', '')
+    contenedor_id = request.GET.get('contenedor_id', '')
     
     # Query base
     productos_qs = Producto.objects.select_related('categoria').all().order_by('-fecha_creacion')
@@ -447,6 +448,13 @@ def listar_productos(request):
         productos_qs = productos_qs.filter(activo=True)
     elif estado == 'inactivo':
         productos_qs = productos_qs.filter(activo=False)
+    
+    # Filtrar por contenedor (nuevo filtro)
+    if contenedor_id:
+        try:
+            productos_qs = productos_qs.filter(productos_contenedores__contenedor_id=int(contenedor_id)).distinct()
+        except (ValueError, TypeError):
+            pass
     
     # Paginación
     paginator = Paginator(productos_qs, 10)  # Mostrar 10 productos por página
@@ -468,6 +476,8 @@ def listar_productos(request):
         'contenedores': Contenedor.objects.filter(activo=True).order_by('nombre'),
         'buscar': buscar,
         'estado': estado,
+        'contenedor_id': contenedor_id,
+        'query_params': f'buscar={buscar}&estado={estado}&contenedor_id={contenedor_id}',
         'es_administrador': es_administrador(request),
         'es_almacen': es_almacen(request),
     }

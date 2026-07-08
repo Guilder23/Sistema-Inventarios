@@ -91,14 +91,22 @@ function inicializarBusquedaFrontend() {
 }
 
 /**
- * Filtros (server-side): recarga al cambiar estado
+ * Filtros (server-side): recarga al cambiar estado o contenedor
  */
 function inicializarFiltrosFrontend() {
     const filtroEstado = document.getElementById('estado');
+    const filtroContenedor = document.getElementById('contenedor_id');
     const formFiltros = document.getElementById('formFiltrosProductos');
     
     if (filtroEstado && formFiltros) {
         filtroEstado.addEventListener('change', () => {
+            marcarAutofocusBuscador();
+            formFiltros.submit();
+        });
+    }
+    
+    if (filtroContenedor && formFiltros) {
+        filtroContenedor.addEventListener('change', () => {
             marcarAutofocusBuscador();
             formFiltros.submit();
         });
