@@ -48,7 +48,7 @@ env/
 ENV/
 env.bak/
 venv.bak/
-
+.venv/
 # Migraciones (opcional, descomentar si no quieres versionar migraciones)
 # */migrations/*.py
 # !*/migrations/__init__.py
