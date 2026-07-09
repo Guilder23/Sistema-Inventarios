@@ -59,7 +59,7 @@ function sincronizarCantidadDesdeCajas(item) {
 }
 
 // ESTADO GLOBAL: CARRITO
-let carrito = [];  // Array de { productoId, codigo, nombre, precioUnitario, cajas, cantidad, stock, unidadesPorCaja }
+let carrito = [];  // Array de { productoId, codigo, nombre, precioCaja, cajas, cantidad, stock, unidadesPorCaja }
 let debounceTimer = null;
 let ultimosProductosBusqueda = [];  // Guardar últimos resultados para re-renderizar al cambiar moneda
 
@@ -309,18 +309,18 @@ function renderResultadosBusqueda(productos) {
         const btnClass = (enCarrito || sinCajasDisponibles) ? 'btn-secondary' : 'btn-success';
         
         // Calcular precios (siempre calcular ambos para poder mostrar referencia)
-        const precioUnitario = parseFloat(p.precio_unidad);
-        const precioDolares = (precioUnitario / tipoCambio).toFixed(2);
+        const precioCaja = parseFloat(p.precio_caja);
+        const precioDolares = (precioCaja / tipoCambio).toFixed(2);
         
         // Mostrar precio según moneda seleccionada
         const precioDisplay = moneda === 'BOB' 
-            ? `<div style="font-weight: bold; color: #28a745; font-size: 1rem;">Bs. ${precioUnitario.toFixed(2)}</div>`
+            ? `<div style="font-weight: bold; color: #28a745; font-size: 1rem;">Bs. ${precioCaja.toFixed(2)}</div>`
             : `<div style="font-weight: bold; color: #28a745; font-size: 1rem;">$ ${precioDolares}</div>`;
         
         // Mostrar segunda moneda en gris como referencia
         const segundaMonedaDisplay = moneda === 'BOB'
             ? `<div style="font-size: 0.85rem; color: #666;">$ ${precioDolares}</div>`
-            : `<div style="font-size: 0.85rem; color: #666;">Bs. ${precioUnitario.toFixed(2)}</div>`;
+            : `<div style="font-size: 0.85rem; color: #666;">Bs. ${precioCaja.toFixed(2)}</div>`;
 
         const item = $(`
             <div class="resultado-item">
@@ -392,7 +392,7 @@ function agregarAlCarrito(producto) {
         productoId: producto.id,
         codigo: producto.codigo,
         nombre: producto.nombre,
-        precioUnitario: parseFloat(producto.precio_unidad),
+        precioCaja: parseFloat(producto.precio_caja),
         cajas: 1,
         cantidad: unidadesPorCaja,
         stock: producto.stock,
@@ -433,8 +433,8 @@ function renderCarrito() {
         const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
         const tipoCambio = tipoCambioElement ? parseFloat(tipoCambioElement.value) || 1 : 1;
         
-        const subtotal = (item.precioUnitario * item.cantidad).toFixed(2);
-        const precioEnDolares = (item.precioUnitario / tipoCambio).toFixed(2);
+        const subtotal = (item.precioCaja * item.cantidad).toFixed(2);
+        const precioEnDolares = (item.precioCaja / tipoCambio).toFixed(2);
         const subtotalEnDolares = (parseFloat(subtotal) / tipoCambio).toFixed(2);
         const maximoCajas = Math.max(item.maximoCajas || 1, 1);
 
@@ -460,8 +460,8 @@ function renderCarrito() {
                 </td>
                 <td class="text-center">
                     <div class="precio-dual">
-                        ${moneda === 'BOB' ? `<div>Bs. ${item.precioUnitario.toFixed(2)}</div>` : `<div>$ ${precioEnDolares}</div>`}
-                        ${moneda === 'USD' ? `<div style="font-size: 0.85rem; color: #666;">Bs. ${item.precioUnitario.toFixed(2)}</div>` : `<div style="font-size: 0.85rem; color: #666;">$ ${precioEnDolares}</div>`}
+                        ${moneda === 'BOB' ? `<div>Bs. ${item.precioCaja.toFixed(2)}</div>` : `<div>$ ${precioEnDolares}</div>`}
+                        ${moneda === 'USD' ? `<div style="font-size: 0.85rem; color: #666;">Bs. ${item.precioCaja.toFixed(2)}</div>` : `<div style="font-size: 0.85rem; color: #666;">$ ${precioEnDolares}</div>`}
                     </div>
                 </td>
                 <td class="text-center">
@@ -581,7 +581,7 @@ function actualizarResumen() {
 
     carrito.forEach(item => {
         totalItems += item.cantidad;
-        totalPrecio += item.precioUnitario * item.cantidad;
+        totalPrecio += item.precioCaja * item.cantidad;
     });
 
     const monedaElement = document.getElementById('inputMoneda');
@@ -664,7 +664,7 @@ function guardarVenta() {
     // Confirmar
     let totalFinal = 0;
     carrito.forEach(item => {
-        totalFinal += item.precioUnitario * item.cantidad;
+        totalFinal += item.precioCaja * item.cantidad;
     });
     
     const monedaElement = document.getElementById('inputMoneda');
@@ -713,7 +713,7 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, comentario, tipo
         cantidad_cajas: item.cajas,
         modalidad: 'caja',
         tipo_vendedor: 'almacen',
-        precio_unitario: convertirBsAMoneda(item.precioUnitario).toFixed(2),
+        precio_unitario: convertirBsAMoneda(item.precioCaja).toFixed(2),
     }));
     
     const monedaElement = document.getElementById('inputMoneda');
