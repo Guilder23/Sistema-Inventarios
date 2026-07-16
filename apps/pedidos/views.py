@@ -52,17 +52,37 @@ def _stock_disponible_almacen(producto, perfil_almacen):
     if not perfil_almacen:
         return 0
 
+    if perfil_almacen.rol == 'almacen':
+        return producto.stock
+
     inventario = Inventario.objects.filter(producto=producto, ubicacion=perfil_almacen).first()
-    if inventario:
-        return inventario.cantidad
-    return producto.stock
+    return inventario.cantidad if inventario else 0
 
 
 def _ajustar_stock(*, producto, ubicacion, delta, tipo_movimiento, referencia, comentario=''):
+    if ubicacion.rol == 'almacen':
+        if delta < 0:
+            cantidad = abs(delta)
+            if not producto.reducir_stock(cantidad):
+                raise ValueError(f'Stock insuficiente para {producto.nombre}. Disponible: {producto.stock}')
+        elif delta > 0:
+            if not producto.aumentar_stock(delta):
+                raise ValueError(f'No se pudo aumentar stock para {producto.nombre}.')
+
+        MovimientoInventario.objects.create(
+            producto=producto,
+            ubicacion=ubicacion,
+            tipo=tipo_movimiento,
+            cantidad=abs(delta),
+            referencia=referencia,
+            comentario=comentario or referencia,
+        )
+        return
+
     inventario, _ = Inventario.objects.get_or_create(
         producto=producto,
         ubicacion=ubicacion,
-        defaults={'cantidad': producto.stock if ubicacion.rol == 'almacen' else 0}
+        defaults={'cantidad': 0}
     )
 
     nueva_cantidad = inventario.cantidad + delta
@@ -80,10 +100,6 @@ def _ajustar_stock(*, producto, ubicacion, delta, tipo_movimiento, referencia, c
         referencia=referencia,
         comentario=comentario or referencia,
     )
-
-    if ubicacion.rol == 'almacen':
-        producto.stock = nueva_cantidad
-        producto.save(update_fields=['stock', 'fecha_actualizacion'])
 
 
 def _obtener_productos_disponibles_para_pedido(proveedor):

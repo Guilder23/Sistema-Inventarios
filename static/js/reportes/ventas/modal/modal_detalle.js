@@ -31,6 +31,7 @@ function verDetalleVenta(ventaId) {
     const subtotal = boton.dataset.subtotal;
     const descuento = boton.dataset.descuento;
     const total = boton.dataset.total;
+    const comentario = boton.dataset.comentario || '-';
     
     // Rellenar campos básicos
     document.getElementById('detalleCodigoVenta').textContent = codigo;
@@ -41,6 +42,7 @@ function verDetalleVenta(ventaId) {
     document.getElementById('detalleVendedor').textContent = vendedor;
     document.getElementById('detalleFecha').textContent = fecha;
     document.getElementById('detalleTipoPago').textContent = tipoPago;
+    document.getElementById('detalleComentario').textContent = comentario;
     document.getElementById('detalleMoneda').textContent = moneda;
     document.getElementById('detalleTipoCambio').textContent = parseFloat(tipoCambio).toFixed(4);
     
@@ -208,6 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('detalleRazonSocial').textContent = '-';
         document.getElementById('detalleDireccion').textContent = '-';
         document.getElementById('detalleVendedor').textContent = '-';
+        document.getElementById('detalleComentario').textContent = '-';
         document.getElementById('detalleUbicacion').textContent = '-';
         document.getElementById('detalleFecha').textContent = '-';
         document.getElementById('detalleTipoPago').textContent = '-';
