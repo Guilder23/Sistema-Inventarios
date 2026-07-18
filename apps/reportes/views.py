@@ -44,7 +44,8 @@ def reporte_ventas(request):
             Q(codigo__icontains=buscar) |
             Q(cliente__icontains=buscar) |
             Q(razon_social__icontains=buscar) |
-            Q(telefono__icontains=buscar)
+            Q(telefono__icontains=buscar) |
+            Q(comentario__icontains=buscar)
         )
     
     if fecha_desde:

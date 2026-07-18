@@ -47,30 +47,41 @@
                             </h6>
 
                             <div class="form-group">
-                                <label for="pedidoProductoSelect" class="form-label">Producto</label>
-                                <select class="form-control" id="pedidoProductoSelect">
-                                    <option value="">Seleccione un producto</option>
-                                    {% for item in productos_disponibles %}
-                                        <option
-                                            value="{{ item.producto.id }}"
-                                            data-codigo="{{ item.producto.codigo }}"
-                                            data-nombre="{{ item.producto.nombre }}"
-                                            data-stock="{{ item.stock }}"
-                                        >
-                                            {{ item.producto.codigo }} - {{ item.producto.nombre }} (Stock: {{ item.stock }})
-                                        </option>
-                                    {% endfor %}
-                                </select>
+                                <label for="buscarProductoPedido" class="form-label">Buscar producto</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-white border-right-0"><i class="fas fa-search"></i></span>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        class="form-control border-left-0"
+                                        id="buscarProductoPedido"
+                                        placeholder="Buscar por código o nombre..."
+                                        autocomplete="off"
+                                    >
+                                </div>
                             </div>
 
                             <div class="form-group">
-                                <label for="pedidoCantidadInput" class="form-label">Cantidad</label>
-                                <input type="number" class="form-control" id="pedidoCantidadInput" min="1" value="1">
+                                <label class="form-label">Productos disponibles</label>
+                                <div id="listaProductosPedido" class="border rounded p-2" style="max-height: 320px; overflow-y: auto; background: #fff;">
+                                    <div class="text-center p-4 text-muted">
+                                        <i class="fas fa-box-open fa-2x mb-2"></i>
+                                        <p>Escriba código o nombre para buscar productos</p>
+                                    </div>
+                                </div>
+                                <select id="pedidoProductoSelect" hidden>
+                                    {% for item in productos_disponibles %}
+                                    <option
+                                        value="{{ item.producto.id }}"
+                                        data-codigo="{{ item.producto.codigo }}"
+                                        data-nombre="{{ item.producto.nombre }}"
+                                        data-stock="{{ item.stock }}"
+                                        data-unidades="{{ item.producto.unidades_por_caja }}"
+                                    ></option>
+                                    {% endfor %}
+                                </select>
                             </div>
-
-                            <button type="button" class="btn btn-primary btn-block mb-2" id="btnAgregarItemPedido">
-                                <i class="fas fa-plus"></i> Agregar al pedido
-                            </button>
                         </div>
                     </div>
 

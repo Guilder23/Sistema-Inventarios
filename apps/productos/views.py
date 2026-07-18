@@ -655,6 +655,28 @@ def editar_producto(request, id):
                 producto.stock_bajo = int(request.POST.get('stock_bajo', producto.stock_bajo))
                 producto.activo = request.POST.get('activo') == 'on'
 
+                # Ajustar stock si se ha especificado un cambio
+                nuevo_stock_str = request.POST.get('stock')
+                if nuevo_stock_str is not None:
+                    try:
+                        nuevo_stock = int(nuevo_stock_str)
+                        stock_actual = producto.stock
+                        if nuevo_stock != stock_actual:
+                            diferencia = nuevo_stock - stock_actual
+                            if diferencia < 0:
+                                # Reducir stock (descontar productos del almacén)
+                                if not producto.reducir_stock(abs(diferencia), request.user):
+                                    raise ValueError(f"No se pudo reducir el stock. Stock disponible actual: {stock_actual}")
+                            else:
+                                # Aumentar stock
+                                if not producto.aumentar_stock(diferencia, request.user):
+                                    raise ValueError("No se pudo aumentar el stock.")
+                    except ValueError as ve:
+                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                            return JsonResponse({'error': str(ve)}, status=400)
+                        messages.error(request, str(ve))
+                        return redirect('listar_productos')
+
                 if not categoria_id:
                     messages.error(request, 'Debe seleccionar una categoría')
                     return redirect('listar_productos')
@@ -717,6 +739,8 @@ def editar_producto(request, id):
             return redirect('listar_productos')
             
         except Exception as e:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'error': f'Error al actualizar producto: {str(e)}'}, status=400)
             messages.error(request, f'Error al actualizar producto: {str(e)}')
             return redirect('listar_productos')
     

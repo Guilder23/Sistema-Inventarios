@@ -260,6 +260,7 @@
                         <th style="width: 7%;">CÓDIGO</th>
                         <th style="width: 13%;">CLIENTE</th>
                         <th style="width: 9%;">RAZÓN SOCIAL</th>
+                        <th style="width: 13%;">COMENTARIO</th>
                         <th style="width: 8%;">VENDEDOR</th>
                         <th style="width: 9%;" class="text-center">UBICACIÓN</th>
                         <th style="width: 8%;" class="text-center">FECHA</th>
@@ -285,6 +286,11 @@
                         </td>
                         <td>
                             <small>{{ venta.razon_social|default:'-' }}</small>
+                        </td>
+                        <td>
+                            <span class="text-truncate d-inline-block" style="max-width: 220px;" title="{{ venta.comentario|default:'-' }}">
+                                {{ venta.comentario|default:'-'|truncatechars:60 }}
+                            </span>
                         </td>
                         <td>
                             <div class="vendedor-info">
@@ -389,6 +395,7 @@
                                 data-subtotal="{{ venta.subtotal }}"
                                 data-descuento="{{ venta.descuento }}"
                                 data-total="{{ venta.total }}"
+                                data-comentario="{{ venta.comentario|default:'-'|escape }}"
                             >
                                 <i class="fas fa-eye"></i>
                             </button>
