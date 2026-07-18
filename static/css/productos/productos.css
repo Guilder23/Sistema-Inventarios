@@ -314,11 +314,19 @@
 /* PAGINACIÓN */
 .pagination {
     margin-top: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;           /* <-- ESTO EVITA QUE SE VAYA AL INFINITO EN PC */
+    justify-content: center;
+    gap: 2px;                  /* Un pequeño espacio limpio entre botones */
+    max-width: 100%;           /* No permite que la botonera mida más que la tabla */
+    padding-left: 0;
 }
 
 .page-link {
     color: #1e3a8a;
     border-color: #e5e7eb;
+    padding: 0.375rem 0.65rem; /* Botones ligeramente más compactos */
+    font-size: 0.8rem;
 }
 
 .page-link:hover {
