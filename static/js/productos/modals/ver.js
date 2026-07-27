@@ -74,13 +74,13 @@
         $('#verPrecioCompra').text('Bs. ' + parseFloat(data.precio_compra || 0).toFixed(2));
         $('#verPrecioCaja').text('Bs. ' + parseFloat(data.precio_caja || 0).toFixed(2));
         $('#verPrecioMayor').text('Bs. ' + parseFloat(data.precio_mayor || 0).toFixed(2));
-        $('#verPoliza').text('Bs. ' + parseFloat(data.poliza || 0).toFixed(2));
+        $('#verPoliza').text('Bs. ' + parseFloat(data.poliza || 0).toFixed(2)); 
         $('#verGastos').text('Bs. ' + parseFloat(data.gastos || 0).toFixed(2));
 
-    // Función para formatear precios en dólares
+    // Función para formatear precios en bolvianos
     function formatearPrecio(valor) {
         let numero = parseFloat(valor);
-        return isNaN(numero) ? "$us. 0.00" : "$us. " + numero.toFixed(2);
+        return isNaN(numero) ? "Bs. 0.00" : "Bs. " + numero.toFixed(2);
     }
 
     // Precios en dólares

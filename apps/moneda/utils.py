@@ -66,9 +66,9 @@ def convertir_moneda(monto, moneda_origen, moneda_destino):
     # Convertir USD -> BOB: multiplicar por tasa
     # Convertir BOB -> USD: dividir por tasa
     if moneda_origen == 'USD' and moneda_destino == 'BOB':
-        return (monto * tasa).quantize(Decimal('0.01'))
-    elif moneda_origen == 'BOB' and moneda_destino == 'USD':
         return (monto / tasa).quantize(Decimal('0.01'))
+    elif moneda_origen == 'BOB' and moneda_destino == 'USD':
+        return (monto * tasa).quantize(Decimal('0.01'))
     
     return monto
 

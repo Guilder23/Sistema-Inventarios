@@ -40,17 +40,17 @@ def obtener_tipo_cambio_usd_por_perfil(perfil):
 def calcular_precios_usd(producto, valor_dolar):
 
     producto.precio_caja_usd = (
-        producto.precio_caja / valor_dolar
+        producto.precio_caja * valor_dolar
         if producto.precio_caja else Decimal('0')
     )
 
     producto.precio_unidad_usd = (
-        producto.precio_unidad / valor_dolar
+        producto.precio_unidad * valor_dolar
         if producto.precio_unidad else Decimal('0')
     )
 
     producto.precio_mayor_usd = (
-        producto.precio_mayor / valor_dolar
+        producto.precio_mayor * valor_dolar
         if producto.precio_mayor else Decimal('0')
     )
 
