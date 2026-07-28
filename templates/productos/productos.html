@@ -83,14 +83,14 @@
                 <thead>
                     <tr>
                         <th style="width: 6%;">Foto</th>
-                        <th style="width: 9%;">Código</th>
+                        <th style="width: 6%;">Código</th>
                         <!--<th style="width: 14%;">Nombre</th> -->
-                        <th style="width: 12%;">Detalle</th>
-                        <th style="width: 12%;">Categoría</th>
+                        <th style="width: 25%;">Detalle</th>
+                        <th style="width: 8%;">Categoría</th>
                         <th style="width: 10%;">Stock Unidad</th>
                         <th style="width: 9%;">Unid/Caja</th>
                         <th style="width: 10%;">Stock por Caja</th>
-                        <th style="width: 12%;">Precio USD</th>
+                        <th style="width: 12%;">Precio Bs</th>
                         <!--<th style="width: 12%;">Contenedores</th>
                         <th style="width: 10%;">Stock</th>-->
                         <th style="width: 10%;">Precio por Caja</th>
@@ -121,7 +121,7 @@
                             </div>
                         </td>-->
                         <td>
-                            <div class="text-truncate" style="max-width: 200px;" title="{{ producto.detalle|default:'Sin detalle' }}">
+                            <div class="descripcion-wrap" style="max-width: 220px; white-space: normal; word-break: break-word;" title="{{ producto.detalle|default:'Sin detalle' }}">
                                 {{ producto.descripcion|default:'Sin detalle' }}
                             </div>
                         </td>
@@ -153,7 +153,7 @@
                         </td>
                         <td>
                              <div class="text-truncate" style="max-width: 200px;" title="{{ producto.nombre }}">
-                                USD {{ producto.precio_caja_usd|floatformat:2 }}                     
+                                Bs {{ producto.precio_caja|floatformat:2 }}                     
                             </div>
                         </td>
                        <!-- <td>

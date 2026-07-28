@@ -32,8 +32,9 @@
 }
 
 .tabla-inventario tbody td {
-    vertical-align: middle;
-    font-size: 0.78rem;
+    vertical-align: top !important;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
 }
 
 .tabla-inventario .col-precio-usd,
@@ -70,4 +71,14 @@ table.tabla-inventario.almacen-view .col-stock-almacen {
 /* Para tabla con columna de contenedor (tienda/depósito) */
 table.tabla-inventario.tienda-view .col-stock-almacen {
     width: 12% !important;
+}
+/* Ajuste dinámico de la descripción sin restricciones rígidas */
+.tabla-inventario .descripcion-wrap {
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    display: block;
+    width: 100%;
+    min-width: 180px;
+    line-height: 1.4;
 }
