@@ -11,7 +11,7 @@ from apps.depositos.models import Deposito
 from apps.productos.models import Producto, ProductoContenedor
 from apps.servicios.tipos_cambios import (
     obtener_tipo_cambio_usd_por_perfil,
-    calcular_precios_usd,
+    calcular_precios_bs,
     stock_en_cajas,
 )
 from decimal import Decimal
@@ -95,7 +95,7 @@ def ver_inventario(request):
     valor_dolar = obtener_tipo_cambio_usd_por_perfil(perfil)
     for item in page_obj.object_list:
         producto = item.producto
-        calcular_precios_usd(producto, valor_dolar)
+        calcular_precios_bs(producto, valor_dolar)
         stock_en_cajas(producto, cantidad=getattr(item, 'cantidad', None), target=item)
 
     context = {
@@ -172,7 +172,7 @@ def ver_inventario_deposito(request):
     valor_dolar = obtener_tipo_cambio_usd_por_perfil(perfil)
     for item in page_obj.object_list:
         producto = item.producto
-        calcular_precios_usd(producto, valor_dolar)
+        calcular_precios_bs(producto, valor_dolar)
         stock_en_cajas(producto, cantidad=getattr(item, 'cantidad', None), target=item)
 
     nombre_deposito = ', '.join(nombres_depositos) if nombres_depositos else 'Depósito no configurado'

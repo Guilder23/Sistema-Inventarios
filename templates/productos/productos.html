@@ -90,10 +90,10 @@
                         <th style="width: 10%;">Stock Unidad</th>
                         <th style="width: 9%;">Unid/Caja</th>
                         <th style="width: 10%;">Stock por Caja</th>
-                        <th style="width: 12%;">Precio Bs</th>
+                        <th style="width: 12%;">Precio por Caja</th>
                         <!--<th style="width: 12%;">Contenedores</th>
                         <th style="width: 10%;">Stock</th>-->
-                        <th style="width: 10%;">Precio por Caja</th>
+                        <th style="width: 10%;">Precio $us</th>
                         <th style="width: 8%;">Estado</th>
                         <th class="text-center" style="width: 10%;">Acciones</th>
                     </tr>
@@ -153,7 +153,7 @@
                         </td>
                         <td>
                              <div class="text-truncate" style="max-width: 200px;" title="{{ producto.nombre }}">
-                                Bs {{ producto.precio_caja|floatformat:2 }}                     
+                                Bs {{ producto.precio_caja_bs|floatformat:2 }}                     
                             </div>
                         </td>
                        <!-- <td>
@@ -163,7 +163,7 @@
                         </td>-->
 
                         <td class="text-center">
-                            <span class="precio-badge">Bs. {{ producto.precio_caja|floatformat:2 }}</span>
+                            <span class="precio-badge">$us. {{ producto.precio_caja|floatformat:2 }}</span>
                         </td>
                         <td class="text-center">
                             {% if producto.activo %}

@@ -37,9 +37,9 @@ def obtener_tipo_cambio_usd_por_perfil(perfil):
     return obtener_tipo_cambio_usd(obtener_contexto_tipo_cambio_perfil(perfil))
 
 
-def calcular_precios_usd(producto, valor_dolar):
+def calcular_precios_bs(producto, valor_dolar):
 
-    producto.precio_caja_usd = (
+    producto.precio_caja_bs = (
         producto.precio_caja * valor_dolar
         if producto.precio_caja else Decimal('0')
     )

@@ -17,7 +17,7 @@ from decimal import Decimal
 from apps.servicios.tipos_cambios import (
     obtener_tipo_cambio_usd,
     obtener_tipo_cambio_usd_por_perfil,
-    calcular_precios_usd,
+    calcular_precios_bs,
     stock_en_cajas,
     stock_cajas_contenedor,
 )
@@ -464,7 +464,7 @@ def listar_productos(request):
     # Aplicamos el cálculo solo a los productos de la página actual
     valor_dolar = obtener_tipo_cambio_usd('general')
     for producto in page_obj.object_list:
-        calcular_precios_usd(producto, valor_dolar)
+        calcular_precios_bs(producto, valor_dolar)
         stock_en_cajas(producto)
 
     context = {
@@ -585,7 +585,7 @@ def obtener_producto(request, id):
 
         #calcular el precio en dolares y stock en cajas
         valor_dolar = obtener_tipo_cambio_usd_por_perfil(perfil_stock)
-        calcular_precios_usd(producto, valor_dolar)
+        calcular_precios_bs(producto, valor_dolar)
         stock_en_cajas(producto, cantidad=stock_disponible, target=producto)
         #fin calcular precio en dolares y stock en cajas
         
@@ -609,9 +609,9 @@ def obtener_producto(request, id):
             'precio_caja': float(producto.precio_caja),
             'precio_mayor': float(producto.precio_mayor),
             # Precios en dólares
-            'precio_unidad_dolar': float(producto.precio_unidad_usd),
-            'precio_mayor_dolar': float(producto.precio_mayor_usd),
-            'precio_caja_dolar': float(producto.precio_caja_usd),
+            'precio_unidad_bs': float(producto.precio_unidad_bs),
+            'precio_mayor_bs': float(producto.precio_mayor_bs),
+            'precio_caja_bs': float(producto.precio_caja_bs),
             # Stock en cajas
             'stock_cajas': float(producto.stock_cajas),
             # Otros campos
@@ -1645,7 +1645,7 @@ def productos_en_contenedor(request, contenedor_id):
         producto = pc.producto
 
         # precios USD
-        calcular_precios_usd(producto, valor_dolar)
+        calcular_precios_bs(producto, valor_dolar)
 
         # stock total del producto en cajas
         stock_en_cajas(producto)

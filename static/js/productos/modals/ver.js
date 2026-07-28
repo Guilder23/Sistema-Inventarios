@@ -69,25 +69,30 @@
         $('#verStockCritico').text(data.stock_critico != null ? data.stock_critico : '-');
         $('#verStockBajo').text(data.stock_bajo != null ? data.stock_bajo : '-');
 
-        // Precios Bs
-        $('#verPrecioUnidad').text('Bs. ' + parseFloat(data.precio_unidad || 0).toFixed(2));
-        $('#verPrecioCompra').text('Bs. ' + parseFloat(data.precio_compra || 0).toFixed(2));
-        $('#verPrecioCaja').text('Bs. ' + parseFloat(data.precio_caja || 0).toFixed(2));
-        $('#verPrecioMayor').text('Bs. ' + parseFloat(data.precio_mayor || 0).toFixed(2));
-        $('#verPoliza').text('Bs. ' + parseFloat(data.poliza || 0).toFixed(2)); 
-        $('#verGastos').text('Bs. ' + parseFloat(data.gastos || 0).toFixed(2));
+// ==========================================
+        // 1. Precios en Dólares ($us.) - Sección Superior
+        // ==========================================
+        $('#verPrecioUnidad').text('$us. ' + parseFloat(data.precio_unidad || 0).toFixed(2));
+        $('#verPrecioCompra').text('$us. ' + parseFloat(data.precio_compra || 0).toFixed(2));
+        $('#verPrecioCaja').text('$us. ' + parseFloat(data.precio_caja || 0).toFixed(2));
+        $('#verPrecioMayor').text('$us. ' + parseFloat(data.precio_mayor || 0).toFixed(2));
+        $('#verPoliza').text('$us. ' + parseFloat(data.poliza || 0).toFixed(2)); 
+        $('#verGastos').text('$us. ' + parseFloat(data.gastos || 0).toFixed(2));
 
-    // Función para formatear precios en bolvianos
-    function formatearPrecio(valor) {
-        let numero = parseFloat(valor);
-        return isNaN(numero) ? "Bs. 0.00" : "Bs. " + numero.toFixed(2);
-    }
+        // Función para formatear precios en Bolivianos
+        function formatearPrecioBs(valor) {
+            let numero = parseFloat(valor);
+            return isNaN(numero) ? "Bs. 0.00" : "Bs. " + numero.toFixed(2);
+        }
 
-    // Precios en dólares
-    $('#verPrecioUnidadDolar').text(formatearPrecio(data.precio_unidad_dolar));
-    $('#verPrecioCompraDolar').text(formatearPrecio(data.precio_compra_dolar));
-    $('#verPrecioMayorDolar').text(formatearPrecio(data.precio_mayor_dolar));
-    $('#verPrecioCajaDolar').text(formatearPrecio(data.precio_caja_dolar));
+        // ==========================================
+        // 2. Precios en Bolivianos (Bs.) - Sección Inferior
+        // ==========================================
+        $('#verPrecioUnidadDolar').text(formatearPrecioBs(data.precio_unidad_dolar));
+        $('#verPrecioCompraDolar').text(formatearPrecioBs(data.precio_compra_dolar));
+        $('#verPrecioMayorDolar').text(formatearPrecioBs(data.precio_mayor_dolar));
+        $('#verPrecioCajaDolar').text(formatearPrecioBs(data.precio_caja_dolar));
+
         
         // Auditoría
         $('#verCreadoPor').text(data.creado_por || 'No disponible');
