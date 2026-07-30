@@ -10,16 +10,23 @@
         $(document).on('click', '.btn-ver-producto', function() {
             const productoId = $(this).data('producto-id');
             const ubicacionId = $(this).data('ubicacion-id');
-            cargarProducto(productoId, ubicacionId);
+            const productoUrl = $(this).data('producto-url');
+            cargarProducto(productoId, ubicacionId, productoUrl);
         });
         
         console.log('✓ Modal Ver Producto inicializado');
     };
     
-    function cargarProducto(productoId, ubicacionId) {
-        const url = ubicacionId
-            ? `/productos/${productoId}/obtener/?ubicacion_id=${encodeURIComponent(ubicacionId)}`
-            : `/productos/${productoId}/obtener/`;
+    function cargarProducto(productoId, ubicacionId, productoUrl) {
+        if (!productoId) {
+            alert('No se pudo identificar el producto seleccionado');
+            return;
+        }
+
+        let url = productoUrl || `/productos/${productoId}/obtener/`;
+        if (ubicacionId) {
+            url += `${url.includes('?') ? '&' : '?'}ubicacion_id=${encodeURIComponent(ubicacionId)}`;
+        }
         
         $.ajax({
             url: url,
@@ -32,7 +39,10 @@
                 mostrarProducto(data);
             },
             error: function(xhr) {
-                alert('Error al cargar los datos del producto');
+                const mensaje = xhr.responseJSON && xhr.responseJSON.error
+                    ? xhr.responseJSON.error
+                    : 'Error al cargar los datos del producto';
+                alert(mensaje);
                 console.error(xhr);
             }
         });
@@ -88,10 +98,10 @@
         // ==========================================
         // 2. Precios en Bolivianos (Bs.) - Sección Inferior
         // ==========================================
-        $('#verPrecioUnidadDolar').text(formatearPrecioBs(data.precio_unidad_dolar));
-        $('#verPrecioCompraDolar').text(formatearPrecioBs(data.precio_compra_dolar));
-        $('#verPrecioMayorDolar').text(formatearPrecioBs(data.precio_mayor_dolar));
-        $('#verPrecioCajaDolar').text(formatearPrecioBs(data.precio_caja_dolar));
+        $('#verPrecioUnidadDolar').text(formatearPrecioBs(data.precio_unidad_bs));
+        $('#verPrecioCompraDolar').text(formatearPrecioBs(data.precio_compra_bs));
+        $('#verPrecioMayorDolar').text(formatearPrecioBs(data.precio_mayor_bs));
+        $('#verPrecioCajaDolar').text(formatearPrecioBs(data.precio_caja_bs));
 
         
         // Auditoría

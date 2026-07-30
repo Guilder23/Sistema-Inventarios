@@ -44,15 +44,23 @@ def calcular_precios_bs(producto, valor_dolar):
         if producto.precio_caja else Decimal('0')
     )
 
-    producto.precio_unidad_usd = (
+    producto.precio_unidad_bs = (
         producto.precio_unidad * valor_dolar
         if producto.precio_unidad else Decimal('0')
     )
 
-    producto.precio_mayor_usd = (
+    producto.precio_compra_bs = (
+        producto.precio_compra * valor_dolar
+        if producto.precio_compra else Decimal('0')
+    )
+
+    producto.precio_mayor_bs = (
         producto.precio_mayor * valor_dolar
         if producto.precio_mayor else Decimal('0')
     )
+
+    producto.precio_unidad_usd = producto.precio_unidad_bs
+    producto.precio_mayor_usd = producto.precio_mayor_bs
 
     return producto
 

@@ -89,8 +89,8 @@
                             <th class="col-stock-almacen">{{ label_stock|default:'Stock unidades' }}</th>
                             <th style="width: 8%;">Unid/Caja</th>
                             <th class="col-stock-almacen">Stock caja</th>
-                            <th class="col-precio-usd">Precio por caja<br>USD</th>
-                            <th class="col-precio-bs">Precio por caja<br>Bs</th>
+                            <th class="col-precio-usd">Precio por caja<br>Bs</th>
+                            <th class="col-precio-bs">Precio por caja<br>USD</th>
                             <th style="width: 10%;">Estado</th>
                             <th style="width: 14%;">Actualizado</th>
                             <th class="text-center" style="width: 6%;">Ver</th>
@@ -103,7 +103,7 @@
                         <th style="width: 10%;">Stock Unidad</th>
                         <th style="width: 8%;">Unid/Caja</th>
                         <th style="width: 10%;">Stock por Caja</th>
-                        <th style="width: 9%;">Precio USD</th>
+                        <th style="width: 9%;">Precio Bs</th>
                         <th style="width: 9%;">Precio por Caja</th>
                         <th style="width: 7%;">Estado</th>
                         <th class="text-center" style="width: 6%;">Acciones</th>
@@ -154,10 +154,10 @@
                                 {% endif %}
                             </td>
                             <td class="col-precio-usd">
-                                <span>{{ item.producto.precio_caja_usd|floatformat:2 }} Usd</span>
+                                <span>{{ item.producto.precio_caja_bs|floatformat:2 }} Bs</span>
                             </td>
                             <td class="col-precio-bs">
-                                <span>{{ item.producto.precio_caja|floatformat:2 }} Bs</span>
+                                <span>{{ item.producto.precio_caja|floatformat:2 }} $us</span>
                             </td>
                             <td>
                                 {% if item.estado_stock == 'normal' %}

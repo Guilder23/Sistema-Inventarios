@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db.models import Q, F, Sum, IntegerField, ExpressionWrapper
 from django.db import transaction
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 import json
@@ -612,6 +612,7 @@ def obtener_producto(request, id):
             'precio_unidad_bs': float(producto.precio_unidad_bs),
             'precio_mayor_bs': float(producto.precio_mayor_bs),
             'precio_caja_bs': float(producto.precio_caja_bs),
+            'precio_compra_bs': float(producto.precio_compra_bs),
             # Stock en cajas
             'stock_cajas': float(producto.stock_cajas),
             # Otros campos
@@ -626,9 +627,10 @@ def obtener_producto(request, id):
             'activo': producto.activo,
         }
         return JsonResponse(data)
-        
+    except Http404:
+        return JsonResponse({'error': f'Producto con ID {id} no encontrado'}, status=404)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=404)
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
 @require_http_methods(["GET", "POST"])
