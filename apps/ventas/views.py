@@ -45,7 +45,7 @@ def convertir_bs_a_moneda_venta(monto_bs, moneda, tipo_cambio):
     tc = Decimal(str(tipo_cambio or '1'))
 
     if moneda == 'USD' and tc > 0:
-        return (valor / tc).quantize(Decimal('0.01'))
+        return (valor * tc).quantize(Decimal('0.01'))
 
     return valor.quantize(Decimal('0.01'))
 

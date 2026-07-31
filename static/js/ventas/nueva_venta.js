@@ -27,21 +27,21 @@ function getCookie(name) {
 
 // UTILIDADES: CONVERSIÓN DE MONEDA
 function obtenerMonedaActual() {
-    return document.getElementById('inputMoneda')?.value || 'BOB';
+    return document.getElementById('inputMoneda')?.value || 'USD';
 }
 
 function obtenerTipoCambioActual() {
     return parseFloat(document.getElementById('tipoCambioActual')?.value || 1) || 1;
 }
 
-function convertirBsAMoneda(montoBs) {
-    const monto = parseFloat(montoBs || 0);
-    return obtenerMonedaActual() === 'USD' ? (monto / obtenerTipoCambioActual()) : monto;
+function convertirUsdAMoneda(montoUsd) {
+    const monto = parseFloat(montoUsd || 0);
+    return obtenerMonedaActual() === 'BOB' ? (monto * obtenerTipoCambioActual()) : monto;
 }
 
-function convertirMonedaABs(monto) {
+function convertirMonedaAUsd(monto) {
     const valor = parseFloat(monto || 0);
-    return obtenerMonedaActual() === 'USD' ? (valor * obtenerTipoCambioActual()) : valor;
+    return obtenerMonedaActual() === 'BOB' ? (valor / obtenerTipoCambioActual()) : valor;
 }
 
 function obtenerUnidadesPorCajaProducto(producto) {
@@ -293,7 +293,7 @@ function renderResultadosBusqueda(productos) {
     // Obtener moneda y tipo de cambio
     const monedaElement = document.getElementById('inputMoneda');
     const tipoCambioElement = document.getElementById('tipoCambioActual');
-    const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
+    const moneda = monedaElement ? (monedaElement.value || 'USD') : 'USD';
     const tipoCambio = tipoCambioElement ? parseFloat(tipoCambioElement.value) || 1 : 1;
 
     productos.forEach(p => {
@@ -309,18 +309,18 @@ function renderResultadosBusqueda(productos) {
         const btnClass = (enCarrito || sinCajasDisponibles) ? 'btn-secondary' : 'btn-success';
         
         // Calcular precios (siempre calcular ambos para poder mostrar referencia)
-        const precioCaja = parseFloat(p.precio_caja);
-        const precioDolares = (precioCaja / tipoCambio).toFixed(2);
+        const precioCajaUsd = parseFloat(p.precio_caja);
+        const precioCajaBs = (precioCajaUsd * tipoCambio).toFixed(2);
         
         // Mostrar precio según moneda seleccionada
         const precioDisplay = moneda === 'BOB' 
-            ? `<div style="font-weight: bold; color: #28a745; font-size: 1rem;">Bs. ${precioCaja.toFixed(2)}</div>`
-            : `<div style="font-weight: bold; color: #28a745; font-size: 1rem;">$ ${precioDolares}</div>`;
+            ? `<div style="font-weight: bold; color: #28a745; font-size: 1rem;">Bs. ${precioCajaBs}</div>`
+            : `<div style="font-weight: bold; color: #28a745; font-size: 1rem;">$ ${precioCajaUsd.toFixed(2)}</div>`;
         
         // Mostrar segunda moneda en gris como referencia
         const segundaMonedaDisplay = moneda === 'BOB'
-            ? `<div style="font-size: 0.85rem; color: #666;">$ ${precioDolares}</div>`
-            : `<div style="font-size: 0.85rem; color: #666;">Bs. ${precioCaja.toFixed(2)}</div>`;
+            ? `<div style="font-size: 0.85rem; color: #666;">$ ${precioCajaUsd.toFixed(2)}</div>`
+            : `<div style="font-size: 0.85rem; color: #666;">Bs. ${precioCajaBs}</div>`;
 
         const item = $(`
             <div class="resultado-item">
@@ -430,12 +430,12 @@ function renderCarrito() {
     carrito.forEach((item, index) => {
         const monedaElement = document.getElementById('inputMoneda');
         const tipoCambioElement = document.getElementById('tipoCambioActual');
-        const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
+        const moneda = monedaElement ? (monedaElement.value || 'USD') : 'USD';
         const tipoCambio = tipoCambioElement ? parseFloat(tipoCambioElement.value) || 1 : 1;
         
-        const subtotal = (item.precioCaja * item.cantidad).toFixed(2);
-        const precioEnDolares = (item.precioCaja / tipoCambio).toFixed(2);
-        const subtotalEnDolares = (parseFloat(subtotal) / tipoCambio).toFixed(2);
+        const subtotalUsd = (item.precioCaja * item.cantidad).toFixed(2);
+        const precioEnBolivianos = (item.precioCaja * tipoCambio).toFixed(2);
+        const subtotalEnBolivianos = (parseFloat(subtotalUsd) * tipoCambio).toFixed(2);
         const maximoCajas = Math.max(item.maximoCajas || 1, 1);
 
         const $row = $(`
@@ -460,8 +460,8 @@ function renderCarrito() {
                 </td>
                 <td class="text-center">
                     <div class="precio-dual">
-                        ${moneda === 'BOB' ? `<div>Bs. ${item.precioCaja.toFixed(2)}</div>` : `<div>$ ${precioEnDolares}</div>`}
-                        ${moneda === 'USD' ? `<div style="font-size: 0.85rem; color: #666;">Bs. ${item.precioCaja.toFixed(2)}</div>` : `<div style="font-size: 0.85rem; color: #666;">$ ${precioEnDolares}</div>`}
+                        ${moneda === 'BOB' ? `<div>Bs. ${precioEnBolivianos}</div>` : `<div>$ ${item.precioCaja.toFixed(2)}</div>`}
+                        ${moneda === 'USD' ? `<div style="font-size: 0.85rem; color: #666;">Bs. ${precioEnBolivianos}</div>` : `<div style="font-size: 0.85rem; color: #666;">$ ${item.precioCaja.toFixed(2)}</div>`}
                     </div>
                 </td>
                 <td class="text-center">
@@ -470,8 +470,8 @@ function renderCarrito() {
                 </td>
                 <td class="text-right carrito-subtotal">
                     <div class="subtotal-dual">
-                        ${moneda === 'BOB' ? `<div>Bs. ${subtotal}</div>` : `<div>$ ${subtotalEnDolares}</div>`}
-                        ${moneda === 'USD' ? `<div style="font-size: 0.85rem; color: #666;">Bs. ${subtotal}</div>` : `<div style="font-size: 0.85rem; color: #666;">$ ${subtotalEnDolares}</div>`}
+                        ${moneda === 'BOB' ? `<div>Bs. ${subtotalEnBolivianos}</div>` : `<div>$ ${subtotalUsd}</div>`}
+                        ${moneda === 'USD' ? `<div style="font-size: 0.85rem; color: #666;">Bs. ${subtotalEnBolivianos}</div>` : `<div style="font-size: 0.85rem; color: #666;">$ ${subtotalUsd}</div>`}
                     </div>
                 </td>
                 <td class="text-center pr-3">
@@ -564,7 +564,7 @@ function actualizarEtiquetasMoneda() {
     if (!tipoCambioElement || !monedaElement) return;
     
     const tipoCambio = parseFloat(tipoCambioElement.value) || 1;
-    const moneda = monedaElement.value || 'BOB';
+    const moneda = monedaElement.value || 'USD';
     
     // Actualizar todos los labels de moneda
     document.querySelectorAll('.moneda-label').forEach(el => {
@@ -586,11 +586,11 @@ function actualizarResumen() {
 
     const monedaElement = document.getElementById('inputMoneda');
     const tipoCambioElement = document.getElementById('tipoCambioActual');
-    const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
+    const moneda = monedaElement ? (monedaElement.value || 'USD') : 'USD';
     const tipoCambio = tipoCambioElement ? (parseFloat(tipoCambioElement.value) || 1) : 1;
     
     const etiqueta = moneda === 'USD' ? '$' : 'Bs.';
-    const totalDisplay = moneda === 'USD' ? (totalPrecio / tipoCambio).toFixed(2) : totalPrecio.toFixed(2);
+    const totalDisplay = moneda === 'BOB' ? (totalPrecio * tipoCambio).toFixed(2) : totalPrecio.toFixed(2);
 
     $('#resumenCantItems').text(totalItems);
     $('#resumenSubtotal').text(etiqueta + ' ' + totalDisplay);
@@ -669,10 +669,10 @@ function guardarVenta() {
     
     const monedaElement = document.getElementById('inputMoneda');
     const tipoCambioElement = document.getElementById('tipoCambioActual');
-    const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
+    const moneda = monedaElement ? (monedaElement.value || 'USD') : 'USD';
     const tipoCambio = tipoCambioElement ? (parseFloat(tipoCambioElement.value) || 1) : 1;
     const etiqueta = moneda === 'USD' ? '$' : 'Bs.';
-    const totalDisplay = moneda === 'USD' ? (totalFinal / tipoCambio).toFixed(2) : totalFinal.toFixed(2);
+    const totalDisplay = moneda === 'BOB' ? (totalFinal * tipoCambio).toFixed(2) : totalFinal.toFixed(2);
 
     const tipoPagoTexto = tipoPago === 'contado' ? 'Al Contado' : 'A Crédito';
 
@@ -713,13 +713,13 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, comentario, tipo
         cantidad_cajas: item.cajas,
         modalidad: 'caja',
         tipo_vendedor: 'almacen',
-        precio_unitario: convertirBsAMoneda(item.precioCaja).toFixed(2),
+        precio_unitario: convertirUsdAMoneda(item.precioCaja).toFixed(2),
     }));
     
     const monedaElement = document.getElementById('inputMoneda');
     const tipoCambioElement = document.getElementById('tipoCambioActual');
     const vendedorIdElement = document.getElementById('inputVendedorId');
-    const moneda = monedaElement ? (monedaElement.value || 'BOB') : 'BOB';
+    const moneda = monedaElement ? (monedaElement.value || 'USD') : 'USD';
     const tipoCambio = tipoCambioElement ? parseFloat(tipoCambioElement.value) : 1;
     const vendedorId = vendedorIdElement ? (vendedorIdElement.value || null) : null;
 
