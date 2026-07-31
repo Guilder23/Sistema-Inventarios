@@ -11,7 +11,7 @@ from apps.depositos.models import Deposito
 from apps.productos.models import Producto, ProductoContenedor
 from apps.servicios.tipos_cambios import (
     obtener_tipo_cambio_usd_por_perfil,
-    calcular_precios_usd,
+    calcular_precios_bs,
     stock_en_cajas,
 )
 from decimal import Decimal
@@ -95,7 +95,7 @@ def ver_inventario(request):
     valor_dolar = obtener_tipo_cambio_usd_por_perfil(perfil)
     for item in page_obj.object_list:
         producto = item.producto
-        calcular_precios_usd(producto, valor_dolar)
+        calcular_precios_bs(producto, valor_dolar)
         stock_en_cajas(producto, cantidad=getattr(item, 'cantidad', None), target=item)
 
     context = {
@@ -172,7 +172,7 @@ def ver_inventario_deposito(request):
     valor_dolar = obtener_tipo_cambio_usd_por_perfil(perfil)
     for item in page_obj.object_list:
         producto = item.producto
-        calcular_precios_usd(producto, valor_dolar)
+        calcular_precios_bs(producto, valor_dolar)
         stock_en_cajas(producto, cantidad=getattr(item, 'cantidad', None), target=item)
 
     nombre_deposito = ', '.join(nombres_depositos) if nombres_depositos else 'Depósito no configurado'
@@ -271,6 +271,7 @@ def ver_inventario_general(request):
     
     # Detectar tipo de vista (normal o avanzada)
     vista_tipo = request.GET.get('vista_tipo', 'normal').strip()
+    valor_dolar = obtener_tipo_cambio_usd_por_perfil(perfil)
     
     # Obtener todos los productos activos
     productos = Producto.objects.filter(activo=True).prefetch_related(
@@ -487,6 +488,7 @@ def ver_inventario_general(request):
 
     for item in inventario_consolidado:
         producto = item['producto']
+        calcular_precios_bs(producto, valor_dolar)
 
         # Expandir por cada ubicación que tenga stock
         for ubicacion in item['ubicaciones_detalle']:
@@ -528,13 +530,13 @@ def ver_inventario_general(request):
 
                 # Precio por caja: usar precio_caja si está definido, si no calcular desde precio_unidad
                 precio_caja = None
-                if getattr(producto, 'precio_caja', None) and producto.precio_caja and producto.precio_caja > 0:
-                    precio_caja = producto.precio_caja
+                if getattr(producto, 'precio_caja_bs', None) and producto.precio_caja_bs and producto.precio_caja_bs > 0:
+                    precio_caja = producto.precio_caja_bs
                 else:
                     precio_caja = 0
                 # Precio por mayor: usar precio_mayor si existe, si no fallback a precio_caja
-                if getattr(producto, 'precio_mayor', None) and producto.precio_mayor and producto.precio_mayor > 0:
-                    precio_mayor = producto.precio_mayor
+                if getattr(producto, 'precio_mayor_bs', None) and producto.precio_mayor_bs and producto.precio_mayor_bs > 0:
+                    precio_mayor = producto.precio_mayor_bs
                 else:
                     precio_mayor = 0 
 
@@ -654,6 +656,7 @@ def ver_inventario_general(request):
         'vista_simplificada': vista_simplificada,
         'nombre_ubicacion_filtrada': nombre_ubicacion_filtrada,
         'tipo_rol_filtrado': tipo_rol_filtrado,
+        'valor_dolar': valor_dolar,
 
         'page_obj_normal': page_obj_normal,
         'is_paginated_normal': page_obj_normal.has_other_pages(),

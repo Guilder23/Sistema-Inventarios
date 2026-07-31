@@ -42,46 +42,46 @@ function escapeHtml(value) {
 }
 
 function obtenerMonedaActual() {
-    return document.getElementById('inputMoneda')?.value || 'BOB';
+    return document.getElementById('inputMoneda')?.value || 'USD';
 }
 
 function obtenerTipoCambioActual() {
     return parseFloat(document.getElementById('tipoCambioActual')?.value || 1) || 1;
 }
 
-function formatearMontoSegunMoneda(montoBs, monedaDestino) {
-    const monto = parseFloat(montoBs || 0);
+function formatearMontoSegunMoneda(montoUsd, monedaDestino) {
+    const monto = parseFloat(montoUsd || 0);
     const tipoCambio = obtenerTipoCambioActual();
 
-    if (monedaDestino === 'USD') {
-        return `$ ${(monto / tipoCambio).toFixed(2)}`;
+    if (monedaDestino === 'BOB') {
+        return `Bs. ${(monto * tipoCambio).toFixed(2)}`;
     }
 
-    return `Bs. ${monto.toFixed(2)}`;
+    return `$ ${monto.toFixed(2)}`;
 }
 
-function formatearMonto(montoBs) {
-    return formatearMontoSegunMoneda(montoBs, obtenerMonedaActual());
+function formatearMonto(montoUsd) {
+    return formatearMontoSegunMoneda(montoUsd, obtenerMonedaActual());
 }
 
-function renderMontoDual(montoBs) {
+function renderMontoDual(montoUsd) {
     const monedaActual = obtenerMonedaActual();
     const monedaSecundaria = monedaActual === 'USD' ? 'BOB' : 'USD';
 
     return `
-        <div class="font-weight-bold text-success">${formatearMontoSegunMoneda(montoBs, monedaActual)}</div>
-        <div class="small text-muted">${formatearMontoSegunMoneda(montoBs, monedaSecundaria)}</div>
+        <div class="font-weight-bold text-success">${formatearMontoSegunMoneda(montoUsd, monedaActual)}</div>
+        <div class="small text-muted">${formatearMontoSegunMoneda(montoUsd, monedaSecundaria)}</div>
     `;
 }
 
-function convertirBsAMoneda(montoBs) {
-    const monto = parseFloat(montoBs || 0);
-    return obtenerMonedaActual() === 'USD' ? (monto / obtenerTipoCambioActual()) : monto;
+function convertirUsdAMoneda(montoUsd) {
+    const monto = parseFloat(montoUsd || 0);
+    return obtenerMonedaActual() === 'BOB' ? (monto * obtenerTipoCambioActual()) : monto;
 }
 
-function convertirMonedaABs(monto) {
+function convertirMonedaAUsd(monto) {
     const montoConvertido = parseFloat(monto || 0);
-    return obtenerMonedaActual() === 'USD' ? (montoConvertido * obtenerTipoCambioActual()) : montoConvertido;
+    return obtenerMonedaActual() === 'BOB' ? (montoConvertido / obtenerTipoCambioActual()) : montoConvertido;
 }
 
 function obtenerEtiquetaModalidad(modalidad) {
@@ -229,7 +229,7 @@ function obtenerDetalleDescuentoActual(subtotalBs) {
             descuentoBs = (subtotalBs * porcentaje) / 100;
             resumen = `${porcentaje.toFixed(2).replace(/\.00$/, '')}% (${formatearMonto(descuentoBs)})`;
         } else {
-            descuentoBs = Math.min(convertirMonedaABs(descuentoInput), subtotalBs);
+            descuentoBs = Math.min(convertirMonedaAUsd(descuentoInput), subtotalBs);
             resumen = formatearMonto(descuentoBs);
         }
     }
@@ -1030,9 +1030,9 @@ function renderTarjetaProductoCompacta(producto) {
     const precioCajaBs = obtenerPrecioBasePorModalidad(producto, 'caja');
     const precioMayorBs = obtenerPrecioBasePorModalidad(producto, 'mayor');
 
-    const precioUnidadUsd = precioUnidadBs / obtenerTipoCambioActual();
-    const precioCajaUsd = precioCajaBs / obtenerTipoCambioActual();
-    const precioMayorUsd = precioMayorBs / obtenerTipoCambioActual();
+    const precioUnidadBob = precioUnidadBs * obtenerTipoCambioActual();
+    const precioCajaBob = precioCajaBs * obtenerTipoCambioActual();
+    const precioMayorBob = precioMayorBs * obtenerTipoCambioActual();
 
     const esDeposito = tipoVendedorActual === 'deposito';
 
@@ -1051,26 +1051,26 @@ function renderTarjetaProductoCompacta(producto) {
                 ${esDeposito ? `
                     <div class="precio-mini-linea">
                         <span class="precio-mini-label">Caja</span>
-                        <span class="precio-mini-bs">Bs. ${Number(precioCajaBs).toFixed(2)}</span>
-                        <span class="precio-mini-usd">$ ${Number(precioCajaUsd).toFixed(2)}</span>
+                        <span class="precio-mini-bs">Bs. ${Number(precioCajaBob).toFixed(2)}</span>
+                        <span class="precio-mini-usd">$ ${Number(precioCajaBs).toFixed(2)}</span>
                     </div>
                 ` : `
                     <div class="precio-mini-linea">
                         <span class="precio-mini-label">Unidad</span>
-                        <span class="precio-mini-bs">Bs. ${Number(precioUnidadBs).toFixed(2)}</span>
-                        <span class="precio-mini-usd">$ ${Number(precioUnidadUsd).toFixed(2)}</span>
+                        <span class="precio-mini-bs">Bs. ${Number(precioUnidadBob).toFixed(2)}</span>
+                        <span class="precio-mini-usd">$ ${Number(precioUnidadBs).toFixed(2)}</span>
                     </div>
 
                     <div class="precio-mini-linea">
                         <span class="precio-mini-label">Caja</span>
-                        <span class="precio-mini-bs">Bs. ${Number(precioCajaBs).toFixed(2)}</span>
-                        <span class="precio-mini-usd">$ ${Number(precioCajaUsd).toFixed(2)}</span>
+                        <span class="precio-mini-bs">Bs. ${Number(precioCajaBob).toFixed(2)}</span>
+                        <span class="precio-mini-usd">$ ${Number(precioCajaBs).toFixed(2)}</span>
                     </div>
 
                     <div class="precio-mini-linea">
                         <span class="precio-mini-label">Mayor</span>
-                        <span class="precio-mini-bs">Bs. ${Number(precioMayorBs).toFixed(2)}</span>
-                        <span class="precio-mini-usd">$ ${Number(precioMayorUsd).toFixed(2)}</span>
+                        <span class="precio-mini-bs">Bs. ${Number(precioMayorBob).toFixed(2)}</span>
+                        <span class="precio-mini-usd">$ ${Number(precioMayorBs).toFixed(2)}</span>
                     </div>
                 `}
             </div>
@@ -1457,7 +1457,7 @@ function construirPayloadVenta() {
         tipo_venta: tipoVendedorActual || 'tienda',
         moneda: obtenerMonedaActual(),
         tipo_cambio: obtenerTipoCambioActual(),
-        descuento: convertirBsAMoneda(detalleDescuento.descuentoBs).toFixed(2),
+        descuento: convertirUsdAMoneda(detalleDescuento.descuentoBs).toFixed(2),
         descuento_tipo: descuentoTipo,
         descuento_valor: detalleDescuento.habilitado ? detalleDescuento.valorIngresado : 0,
         items: carrito.map((item) => ({
@@ -1465,7 +1465,7 @@ function construirPayloadVenta() {
             cantidad: item.cantidad,
             modalidad: item.modalidad,
             tipo_vendedor: obtenerTipoVendedorItem(item),
-            precio_unitario: convertirBsAMoneda(item.precio_unitario_bs).toFixed(2),
+            precio_unitario: convertirUsdAMoneda(item.precio_unitario_bs).toFixed(2),
             unidades_operativas: item.unidades_operativas
         }))
     };

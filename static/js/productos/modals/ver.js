@@ -10,16 +10,23 @@
         $(document).on('click', '.btn-ver-producto', function() {
             const productoId = $(this).data('producto-id');
             const ubicacionId = $(this).data('ubicacion-id');
-            cargarProducto(productoId, ubicacionId);
+            const productoUrl = $(this).data('producto-url');
+            cargarProducto(productoId, ubicacionId, productoUrl);
         });
         
         console.log('✓ Modal Ver Producto inicializado');
     };
     
-    function cargarProducto(productoId, ubicacionId) {
-        const url = ubicacionId
-            ? `/productos/${productoId}/obtener/?ubicacion_id=${encodeURIComponent(ubicacionId)}`
-            : `/productos/${productoId}/obtener/`;
+    function cargarProducto(productoId, ubicacionId, productoUrl) {
+        if (!productoId) {
+            alert('No se pudo identificar el producto seleccionado');
+            return;
+        }
+
+        let url = productoUrl || `/productos/${productoId}/obtener/`;
+        if (ubicacionId) {
+            url += `${url.includes('?') ? '&' : '?'}ubicacion_id=${encodeURIComponent(ubicacionId)}`;
+        }
         
         $.ajax({
             url: url,
@@ -32,7 +39,10 @@
                 mostrarProducto(data);
             },
             error: function(xhr) {
-                alert('Error al cargar los datos del producto');
+                const mensaje = xhr.responseJSON && xhr.responseJSON.error
+                    ? xhr.responseJSON.error
+                    : 'Error al cargar los datos del producto';
+                alert(mensaje);
                 console.error(xhr);
             }
         });
@@ -69,25 +79,30 @@
         $('#verStockCritico').text(data.stock_critico != null ? data.stock_critico : '-');
         $('#verStockBajo').text(data.stock_bajo != null ? data.stock_bajo : '-');
 
-        // Precios Bs
-        $('#verPrecioUnidad').text('Bs. ' + parseFloat(data.precio_unidad || 0).toFixed(2));
-        $('#verPrecioCompra').text('Bs. ' + parseFloat(data.precio_compra || 0).toFixed(2));
-        $('#verPrecioCaja').text('Bs. ' + parseFloat(data.precio_caja || 0).toFixed(2));
-        $('#verPrecioMayor').text('Bs. ' + parseFloat(data.precio_mayor || 0).toFixed(2));
-        $('#verPoliza').text('Bs. ' + parseFloat(data.poliza || 0).toFixed(2));
-        $('#verGastos').text('Bs. ' + parseFloat(data.gastos || 0).toFixed(2));
+// ==========================================
+        // 1. Precios en Dólares ($us.) - Sección Superior
+        // ==========================================
+        $('#verPrecioUnidad').text('$us. ' + parseFloat(data.precio_unidad || 0).toFixed(2));
+        $('#verPrecioCompra').text('$us. ' + parseFloat(data.precio_compra || 0).toFixed(2));
+        $('#verPrecioCaja').text('$us. ' + parseFloat(data.precio_caja || 0).toFixed(2));
+        $('#verPrecioMayor').text('$us. ' + parseFloat(data.precio_mayor || 0).toFixed(2));
+        $('#verPoliza').text('$us. ' + parseFloat(data.poliza || 0).toFixed(2)); 
+        $('#verGastos').text('$us. ' + parseFloat(data.gastos || 0).toFixed(2));
 
-    // Función para formatear precios en dólares
-    function formatearPrecio(valor) {
-        let numero = parseFloat(valor);
-        return isNaN(numero) ? "$us. 0.00" : "$us. " + numero.toFixed(2);
-    }
+        // Función para formatear precios en Bolivianos
+        function formatearPrecioBs(valor) {
+            let numero = parseFloat(valor);
+            return isNaN(numero) ? "Bs. 0.00" : "Bs. " + numero.toFixed(2);
+        }
 
-    // Precios en dólares
-    $('#verPrecioUnidadDolar').text(formatearPrecio(data.precio_unidad_dolar));
-    $('#verPrecioCompraDolar').text(formatearPrecio(data.precio_compra_dolar));
-    $('#verPrecioMayorDolar').text(formatearPrecio(data.precio_mayor_dolar));
-    $('#verPrecioCajaDolar').text(formatearPrecio(data.precio_caja_dolar));
+        // ==========================================
+        // 2. Precios en Bolivianos (Bs.) - Sección Inferior
+        // ==========================================
+        $('#verPrecioUnidadDolar').text(formatearPrecioBs(data.precio_unidad_bs));
+        $('#verPrecioCompraDolar').text(formatearPrecioBs(data.precio_compra_bs));
+        $('#verPrecioMayorDolar').text(formatearPrecioBs(data.precio_mayor_bs));
+        $('#verPrecioCajaDolar').text(formatearPrecioBs(data.precio_caja_bs));
+
         
         // Auditoría
         $('#verCreadoPor').text(data.creado_por || 'No disponible');

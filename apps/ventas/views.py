@@ -40,12 +40,12 @@ def obtener_descripcion_moneda(moneda):
     return 'USD ($)' if moneda == 'USD' else 'BOB (Bs.)'
 
 
-def convertir_bs_a_moneda_venta(monto_bs, moneda, tipo_cambio):
-    valor = Decimal(str(monto_bs or '0'))
+def convertir_bs_a_moneda_venta(monto_usd, moneda, tipo_cambio):
+    valor = Decimal(str(monto_usd or '0'))
     tc = Decimal(str(tipo_cambio or '1'))
 
-    if moneda == 'USD' and tc > 0:
-        return (valor / tc).quantize(Decimal('0.01'))
+    if moneda == 'BOB' and tc > 0:
+        return (valor * tc).quantize(Decimal('0.01'))
 
     return valor.quantize(Decimal('0.01'))
 

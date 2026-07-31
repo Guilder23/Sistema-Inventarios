@@ -86,8 +86,7 @@
 }
 
 .tabla-productos tbody tr {
-    border-bottom: 1px solid #e5e7eb;
-    transition: background-color 0.2s;
+    height: auto !important;
 }
 
 .tabla-productos tbody tr:hover {
