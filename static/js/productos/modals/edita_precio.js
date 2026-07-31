@@ -18,6 +18,10 @@
             const productoId = $(this).data('producto-id');
             guardarPrecio(productoId);
         });
+
+        $(document).on('click', '#btnAutollenarPrecios', function() {
+            autollenarPreciosDesdeCaja();
+        });
         
         // Limpiar cuando se cierra el modal
         $('#modalEditarPrecio').on('hidden.bs.modal', function() {
@@ -27,6 +31,23 @@
         console.log('✓ Modal Editar Precio inicializado');
     };
     
+    function autollenarPreciosDesdeCaja() {
+        const precioCaja = parseFloat($('#precio_caja').val());
+        const aumentoMayor = parseFloat($('#btnAutollenarPrecios').data('aumento-mayor')) || 0;
+        const aumentoUnidad = parseFloat($('#btnAutollenarPrecios').data('aumento-unidad')) || 0;
+
+        if (Number.isNaN(precioCaja) || precioCaja < 0) {
+            mostrarNotificacion('Ingrese un P. Caja válido para rellenar los precios', 'warning');
+            $('#precio_caja').focus();
+            return;
+        }
+
+        $('#precio_mayor').val((precioCaja + aumentoMayor).toFixed(2));
+        $('#precio_unitario').val((precioCaja + aumentoUnidad).toFixed(2));
+
+        mostrarNotificacion('P. Mayor y Precio Unitario rellenados correctamente', 'success');
+    }
+
     function cargarProductoParaEditarPrecio(productoId) {
         const url = `/productos/${productoId}/obtener/`;
         

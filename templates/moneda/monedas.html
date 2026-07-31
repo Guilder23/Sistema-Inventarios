@@ -126,6 +126,141 @@
         </div>
     </div>
 
+    <!-- CONFIGURACION DE PRECIOS -->
+    <div class="moneda-card moneda-section-card mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="moneda-card-header mb-0">
+                <i class="fas fa-tags"></i>
+                <span>Configuración de Precios</span>
+            </div>
+            {% if configuracion_precios %}
+                <button
+                    type="button"
+                    class="btn btn-warning btn-editar-configuracion-precios"
+                    data-url="{% url 'obtener_configuracion_precios' configuracion_precios.id %}"
+                    data-action="{% url 'editar_configuracion_precios' configuracion_precios.id %}">
+                    <i class="fas fa-edit"></i> Editar Configuración
+                </button>
+            {% else %}
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCrearConfiguracionPrecios">
+                    <i class="fas fa-plus"></i> Crear Configuración
+                </button>
+            {% endif %}
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="moneda-card moneda-actual">
+                    <div class="moneda-card-header">
+                        <i class="fas fa-boxes"></i>
+                        <span>Aumento al por mayor</span>
+                    </div>
+                    <div class="moneda-actual-body">
+                        {% if configuracion_precios %}
+                            <div class="moneda-actual-rate">{{ configuracion_precios.aumento_mayor }}</div>
+                        {% else %}
+                            <div class="moneda-actual-empty">Sin configuración registrada</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="moneda-card moneda-actual">
+                    <div class="moneda-card-header">
+                        <i class="fas fa-box"></i>
+                        <span>Aumento por unidad</span>
+                    </div>
+                    <div class="moneda-actual-body">
+                        {% if configuracion_precios %}
+                            <div class="moneda-actual-rate">{{ configuracion_precios.aumento_unidad }}</div>
+                        {% else %}
+                            <div class="moneda-actual-empty">Sin configuración registrada</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {% include 'moneda/modals/crea.html' %}
 </div>
+
+<div class="modal fade" id="modalCrearConfiguracionPrecios" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <form method="post" action="{% url 'crear_configuracion_precios' %}" class="modal-content">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'listar_monedas' %}">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> Nueva Configuración de Precios</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="{{ configuracion_precios_form.aumento_mayor.id_for_label }}">
+                        {{ configuracion_precios_form.aumento_mayor.label }}
+                    </label>
+                    {{ configuracion_precios_form.aumento_mayor }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ configuracion_precios_form.aumento_unidad.id_for_label }}">
+                        {{ configuracion_precios_form.aumento_unidad.label }}
+                    </label>
+                    {{ configuracion_precios_form.aumento_unidad }}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEditarConfiguracionPrecios" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <form method="post" id="formEditarConfiguracionPrecios" class="modal-content">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'listar_monedas' %}">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Configuración de Precios</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editar_configuracion_aumento_mayor">Aumento al por mayor</label>
+                    <input type="number" step="0.01" min="0" name="aumento_mayor" id="editar_configuracion_aumento_mayor" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="editar_configuracion_aumento_unidad">Aumento por unidad</label>
+                    <input type="number" step="0.01" min="0" name="aumento_unidad" id="editar_configuracion_aumento_unidad" class="form-control" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Actualizar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+    $('.btn-editar-configuracion-precios').on('click', function () {
+        const url = $(this).data('url');
+        const action = $(this).data('action');
+
+        $.get(url, function (data) {
+            $('#formEditarConfiguracionPrecios').attr('action', action);
+            $('#editar_configuracion_aumento_mayor').val(data.aumento_mayor);
+            $('#editar_configuracion_aumento_unidad').val(data.aumento_unidad);
+            $('#modalEditarConfiguracionPrecios').modal('show');
+        });
+    });
+</script>
 {% endblock %}

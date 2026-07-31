@@ -8,10 +8,15 @@ from .forms import ConfiguracionPreciosForm
 from .models import ConfiguracionPrecios
 
 
+def _redirect_after_save(request):
+    return redirect(request.POST.get('next') or 'listar_configuraciones_precios')
+
+
 @login_required
 def listar_configuraciones_precios(request):
-    configuraciones = ConfiguracionPrecios.objects.all().order_by('-id')
-    form = ConfiguracionPreciosForm()
+    configuracion = ConfiguracionPrecios.objects.order_by('id').first()
+    configuraciones = ConfiguracionPrecios.objects.filter(pk=configuracion.pk) if configuracion else ConfiguracionPrecios.objects.none()
+    form = ConfiguracionPreciosForm(instance=configuracion)
 
     return render(request, 'configuracion_precios/configuraciones.html', {
         'configuraciones': configuraciones,
@@ -22,15 +27,16 @@ def listar_configuraciones_precios(request):
 @login_required
 @require_POST
 def crear_configuracion_precios(request):
-    form = ConfiguracionPreciosForm(request.POST)
+    configuracion = ConfiguracionPrecios.objects.order_by('id').first()
+    form = ConfiguracionPreciosForm(request.POST, instance=configuracion)
 
     if form.is_valid():
         form.save()
-        messages.success(request, 'Configuración de precios creada correctamente.')
+        messages.success(request, 'Configuración de precios guardada correctamente.')
     else:
         messages.error(request, 'Revise los datos ingresados.')
 
-    return redirect('listar_configuraciones_precios')
+    return _redirect_after_save(request)
 
 
 @login_required
@@ -56,7 +62,7 @@ def editar_configuracion_precios(request, pk):
     else:
         messages.error(request, 'Revise los datos ingresados.')
 
-    return redirect('listar_configuraciones_precios')
+    return _redirect_after_save(request)
 
 
 @login_required
@@ -66,4 +72,4 @@ def eliminar_configuracion_precios(request, pk):
     configuracion.delete()
     messages.success(request, 'Configuración de precios eliminada correctamente.')
 
-    return redirect('listar_configuraciones_precios')
+    return _redirect_after_save(request)

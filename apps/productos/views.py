@@ -13,6 +13,7 @@ from apps.moneda.models import TipoCambio
 from apps.inventario.models import Inventario, MovimientoInventario
 from apps.usuarios.models import PerfilUsuario
 from apps.notificaciones.utils import notificar_administrador_producto, notificar_almacen_precio
+from apps.configuracion_precios.models import ConfiguracionPrecios
 from decimal import Decimal
 from apps.servicios.tipos_cambios import (
     obtener_tipo_cambio_usd,
@@ -480,6 +481,7 @@ def listar_productos(request):
         'query_params': f'buscar={buscar}&estado={estado}&contenedor_id={contenedor_id}',
         'es_administrador': es_administrador(request),
         'es_almacen': es_almacen(request),
+        'configuracion_precios': ConfiguracionPrecios.objects.order_by('id').first(),
     }
     
     return render(request, 'productos/productos.html', context)
