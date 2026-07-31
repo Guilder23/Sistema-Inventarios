@@ -2,12 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import TipoCambio
 from django.http import JsonResponse
 from django.contrib import messages
+from apps.configuracion_precios.forms import ConfiguracionPreciosForm
+from apps.configuracion_precios.models import ConfiguracionPrecios
 
 
 def listar_monedas(request):
     estado = request.GET.get('estado')
 
     monedas = TipoCambio.objects.all().order_by('-fecha', '-id')
+    configuracion_precios = ConfiguracionPrecios.objects.order_by('id').first()
+    configuracion_precios_form = ConfiguracionPreciosForm(instance=configuracion_precios)
 
     if estado == 'activo':
         monedas = monedas.filter(activo=True)
@@ -59,6 +63,8 @@ def listar_monedas(request):
         'moneda_anterior_general': moneda_anterior_general,
         'moneda_actual_tienda': moneda_actual_tienda,
         'moneda_anterior_tienda': moneda_anterior_tienda,
+        'configuracion_precios': configuracion_precios,
+        'configuracion_precios_form': configuracion_precios_form,
     })
 
 

@@ -16,6 +16,19 @@
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i> Como administrador, puedes editar todos los precios del producto.
                     </div>
+                                        <div class="edita-precio-autofill">
+                        <button
+                            type="button"
+                            class="btn btn-outline-primary"
+                            id="btnAutollenarPrecios"
+                            data-aumento-mayor="{{ configuracion_precios.aumento_mayor|default:'0' }}"
+                            data-aumento-unidad="{{ configuracion_precios.aumento_unidad|default:'0' }}">
+                            <i class="fas fa-magic"></i> Rellenar P. Mayor y Unitario desde P. Caja
+                        </button>
+                        <small class="text-muted">
+                            Usa P. Caja + aumento configurado.
+                        </small>
+                    </div>
 
                     <div class="form-group">
                         <label for="precio_producto" class="form-label">Producto</label>
@@ -87,7 +100,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">

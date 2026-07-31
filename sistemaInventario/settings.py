@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'apps.vendedores',
     'apps.devoluciones',
     'apps.moneda',
+    'apps.configuracion_precios',
 
     'storages',
 ]
