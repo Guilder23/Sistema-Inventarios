@@ -21,8 +21,8 @@
                             type="button"
                             class="btn btn-outline-primary"
                             id="btnAutollenarPrecios"
-                            data-aumento-mayor="{{ configuracion_precios.aumento_mayor|default:'0' }}"
-                            data-aumento-unidad="{{ configuracion_precios.aumento_unidad|default:'0' }}">
+                            data-aumento-mayor="{{ configuracion_precios.aumento_mayor|stringformat:'.2f'|default:'0' }}"
+                            data-aumento-unidad="{{ configuracion_precios.aumento_unidad|stringformat:'.2f'|default:'0' }}">
                             <i class="fas fa-magic"></i> Rellenar P. Mayor y Unitario desde P. Caja
                         </button>
                         <small class="text-muted">
