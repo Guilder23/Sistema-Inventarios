@@ -75,7 +75,7 @@ function inicializarBusquedaFrontend() {
             timeoutId = setTimeout(() => {
                 marcarAutofocusBuscador();
                 formFiltros.submit();
-            }, 500);
+            }, 900);
         });
 
         // Enter: submit inmediato
