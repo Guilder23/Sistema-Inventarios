@@ -1347,6 +1347,13 @@
     border-radius: 8px;
 }
 
+.carrito-precio-input {
+    width: 92px;
+    min-width: 92px;
+    margin: 0 auto;
+    border-radius: 8px;
+}
+
 @media (max-width: 992px) {
     .carrito-modalidad-botones {
         flex-direction: row;
