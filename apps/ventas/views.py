@@ -1926,7 +1926,11 @@ def guardar_venta_tienda(request):
                         f'El producto "{producto.nombre}" no tiene un precio configurado para la modalidad "{modalidad}".'
                     )
 
-                precio_unitario = convertir_bs_a_moneda_venta(precio_base_bs, moneda, tipo_cambio)
+                precio_unitario_payload = Decimal(str(item.get('precio_unitario', '0') or '0'))
+                if precio_unitario_payload <= 0:
+                    raise ValueError(f'Precio invÃ¡lido para el producto "{producto.nombre}".')
+
+                precio_unitario = precio_unitario_payload.quantize(Decimal('0.01'))
 
                 # VALIDAR MODALIDAD MATEMÁTICAMENTE (solo para tienda)
                 # Para depósito, permitir cualquier cantidad entre 1 y stock disponible

@@ -372,6 +372,23 @@ function recalcularItemCarrito(item) {
     item.subtotal_bs = item.unidades_operativas * item.precio_unitario_bs;
 }
 
+function cambiarPrecioCarrito(index, nuevoPrecio) {
+    const item = carrito[index];
+    if (!item) return;
+
+    const precioEnMonedaActual = parseFloat(nuevoPrecio);
+    if (!Number.isFinite(precioEnMonedaActual) || precioEnMonedaActual <= 0) {
+        mostrarAlerta('El precio debe ser mayor a 0.');
+        renderCarrito();
+        return;
+    }
+
+    item.precio_unitario_bs = convertirMonedaAUsd(precioEnMonedaActual);
+    item.precio_personalizado = true;
+    recalcularItemCarrito(item);
+    renderCarrito();
+}
+
 function obtenerModalidadesUsadasEnCarrito(productoId, tipoVendedor, indexIgnorado = null) {
     return carrito
         .filter((item, index) =>
@@ -620,6 +637,7 @@ function cambiarModalidadCarrito(index, nuevaModalidad) {
     // Aplicar cambio
     item.modalidad = nuevaModalidad;
     item.precio_unitario_bs = precioBaseBs;
+    item.precio_personalizado = false;
 
     recalcularItemCarrito(item);
     renderCarrito();
@@ -675,16 +693,20 @@ function cambiarCantidadCarrito(index, nuevaCantidad) {
         return;
     }
 
-    const precioBaseBs = obtenerPrecioBasePorModalidad(producto, modalidadFinal);
-    if (!precioBaseBs || precioBaseBs <= 0) {
-        mostrarAlerta(`El producto "${producto.nombre}" no tiene precio para la modalidad ${obtenerEtiquetaModalidad(modalidadFinal)}.`);
-        renderCarrito();
-        return;
+    if (modalidadFinal !== item.modalidad || !item.precio_personalizado) {
+        const precioBaseBs = obtenerPrecioBasePorModalidad(producto, modalidadFinal);
+        if (!precioBaseBs || precioBaseBs <= 0) {
+            mostrarAlerta(`El producto "${producto.nombre}" no tiene precio para la modalidad ${obtenerEtiquetaModalidad(modalidadFinal)}.`);
+            renderCarrito();
+            return;
+        }
+
+        item.precio_unitario_bs = precioBaseBs;
+        item.precio_personalizado = false;
     }
 
     item.cantidad = cantidad;
     item.modalidad = modalidadFinal;
-    item.precio_unitario_bs = precioBaseBs;
     recalcularItemCarrito(item);
     renderCarrito();
 }
@@ -789,7 +811,17 @@ function renderCarrito() {
                 </td>
 
                 <td class="text-center">
-                    ${renderMontoDual(item.precio_unitario_bs)}
+                    <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        class="form-control form-control-sm text-center carrito-precio-input"
+                        value="${convertirUsdAMoneda(item.precio_unitario_bs).toFixed(2)}"
+                        onchange="cambiarPrecioCarrito(${index}, this.value)"
+                    >
+                    <div class="small text-muted mt-1">
+                        ${obtenerMonedaActual()}
+                    </div>
                 </td>
 
                 <td class="text-center">
@@ -1616,6 +1648,7 @@ window.agregarDesdeResultadosDeposito = agregarDesdeResultadosDeposito;
 window.removerDelCarrito = removerDelCarrito;
 window.cambiarModalidadCarrito = cambiarModalidadCarrito;
 window.cambiarCantidadCarrito = cambiarCantidadCarrito;
+window.cambiarPrecioCarrito = cambiarPrecioCarrito;
 window.aumentarCantidadCarrito = aumentarCantidadCarrito;
 window.disminuirCantidadCarrito = disminuirCantidadCarrito;
 
