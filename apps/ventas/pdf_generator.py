@@ -113,6 +113,13 @@ def obtener_descuento_info_pdf(venta):
     }
 
 
+def es_venta_tienda_principal_pdf(venta):
+    """Indica si la venta fue registrada desde una tienda principal."""
+    ubicacion = getattr(venta, 'ubicacion', None)
+    tienda = getattr(ubicacion, 'tienda', None)
+    return getattr(ubicacion, 'rol', '') == 'tienda' and getattr(tienda, 'tipo', '') == 'principal'
+
+
 def _crear_thumbnail_pdf(contenido, ancho_max=180, alto_max=180, calidad=82):
     """
     Reduce una imagen en memoria antes de pasarsela a ReportLab.
@@ -444,6 +451,7 @@ def generar_pdf_venta_completo(venta):
     )
 
     ancho_tabla = doc.width
+    es_tienda_principal = es_venta_tienda_principal_pdf(venta)
     col_widths = [
         ancho_tabla * 0.12,  # Foto
         ancho_tabla * 0.11,  # Código
@@ -455,6 +463,9 @@ def generar_pdf_venta_completo(venta):
         ancho_tabla * 0.11,  # Subtotal
     ]
 
+    if es_tienda_principal:
+        col_widths = [ancho_tabla * porcentaje for porcentaje in (.10, .10, .19, .09, .14, .07, .10, .11, .10)]
+
     datos_tabla = [[
         Paragraph('Foto', style_header_cell),
         Paragraph('Codigo', style_header_cell),
@@ -465,6 +476,9 @@ def generar_pdf_venta_completo(venta):
         Paragraph('P. Unitario', style_header_cell),
         Paragraph('Subtotal', style_header_cell),
     ]]
+    if es_tienda_principal:
+        datos_tabla[0].append(Paragraph('Comision', style_header_cell))
+
     imagen_cache = {}
     def resolver_imagen_producto(producto):
         """
@@ -514,6 +528,7 @@ def generar_pdf_venta_completo(venta):
         cantidad = int(detalle.cantidad)
         subtotal_base = detalle.subtotal if hasattr(detalle, 'subtotal') else (detalle.precio_unitario * cantidad)
         subtotal_valor = float(convertir_desde_bob_para_pdf(subtotal_base, venta))
+        comision_valor = float(convertir_desde_bob_para_pdf(getattr(detalle, 'comision_transporte', 0), venta))
         tipo_vendedor = obtener_tipo_vendedor_detalle_pdf(detalle)
         modalidad = obtener_modalidad_detalle_pdf(detalle)
         cantidad_cajas = obtener_cantidad_cajas_pdf(detalle)
@@ -529,7 +544,7 @@ def generar_pdf_venta_completo(venta):
         origen = str(obtener_label_tipo_vendedor_pdf(tipo_vendedor) or '-')
         detalle_texto = str(detalle_linea or '-')
 
-        datos_tabla.append([
+        fila_detalle = [
             foto,
             Paragraph(escape(codigo), style_cell_left),
             Paragraph(escape(descripcion), style_cell_left),
@@ -538,7 +553,10 @@ def generar_pdf_venta_completo(venta):
             Paragraph(str(cantidad), style_cell_center),
             Paragraph(f'{etiqueta_moneda} {precio:,.2f}', style_cell_right),
             Paragraph(f'{etiqueta_moneda} {subtotal_valor:,.2f}', style_cell_right),
-        ])
+        ]
+        if es_tienda_principal:
+            fila_detalle.append(Paragraph(f'{etiqueta_moneda} {comision_valor:,.2f}', style_cell_right))
+        datos_tabla.append(fila_detalle)
 
     tabla_detalles = Table(
         datos_tabla,
@@ -559,7 +577,7 @@ def generar_pdf_venta_completo(venta):
         ('ALIGN', (3, 1), (3, -1), 'CENTER'),   # Origen
         ('ALIGN', (4, 1), (4, -1), 'LEFT'),     # Detalle
         ('ALIGN', (5, 1), (5, -1), 'CENTER'),   # Cantidad
-        ('ALIGN', (6, 1), (7, -1), 'RIGHT'),    # Montos
+        ('ALIGN', (6, 1), (-1, -1), 'RIGHT'),   # Montos
 
         # Padding encabezado
         ('TOPPADDING', (0, 0), (-1, 0), 8),
@@ -601,8 +619,11 @@ def generar_pdf_venta_completo(venta):
     
     descuento_info = obtener_descuento_info_pdf(venta)
     monto_descuento = float(convertir_desde_bob_para_pdf(venta.descuento, venta)) if hasattr(venta, 'descuento') and venta.descuento else 0
+    total_comision = float(convertir_desde_bob_para_pdf(
+        getattr(venta, 'total_comision_transporte', 0), venta
+    )) if es_tienda_principal else 0
     
-    total = subtotal - monto_descuento
+    total = subtotal - monto_descuento + total_comision
     
     datos_totales = [
         ['', '', 'Subtotal:', f'{etiqueta_moneda} {subtotal:,.2f}'],
@@ -610,6 +631,9 @@ def generar_pdf_venta_completo(venta):
     
     if descuento_info['aplica']:
         datos_totales.append(['', '', f"{descuento_info['label']}:", f'-{etiqueta_moneda} {monto_descuento:,.2f}'])
+
+    if es_tienda_principal and total_comision > 0:
+        datos_totales.append(['', '', 'Total comision transporte:', f'+{etiqueta_moneda} {total_comision:,.2f}'])
     
     datos_totales.append(['', '', 'TOTAL:', f'{etiqueta_moneda} {total:,.2f}'])
     

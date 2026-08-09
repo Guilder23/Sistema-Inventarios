@@ -203,6 +203,7 @@ def serializar_detalle_venta(venta, detalle):
         'cantidad_cajas': cantidad_cajas,
         'precio_unitario': str(convertir_monto_para_mostrar(venta, detalle.precio_unitario)),
         'subtotal': str(convertir_monto_para_mostrar(venta, detalle.subtotal)),
+        'comision_transporte': str(convertir_monto_para_mostrar(venta, detalle.comision_transporte)),
         'tipo_vendedor': tipo_vendedor,
         'tipo_vendedor_label': obtener_label_tipo_vendedor(tipo_vendedor),
         'modalidad': modalidad,
@@ -997,6 +998,9 @@ def obtener_detalle_venta(request, id):
             'moneda_descripcion': obtener_descripcion_moneda(venta.moneda),
             'subtotal': str(convertir_monto_para_mostrar(venta, venta.subtotal)),
             'descuento': str(convertir_monto_para_mostrar(venta, venta.descuento if hasattr(venta, 'descuento') else Decimal('0.00'))),
+            'total_comision_transporte': str(convertir_monto_para_mostrar(
+                venta, venta.total_comision_transporte if hasattr(venta, 'total_comision_transporte') else Decimal('0.00')
+            )),
             'descuento_info': {
                 'aplica': descuento_info['aplica'],
                 'tipo': descuento_info['tipo'],
@@ -1898,6 +1902,8 @@ def guardar_venta_tienda(request):
             )
 
             total_venta = Decimal('0.00')
+            total_comision_transporte = Decimal('0.00')
+            es_tienda_principal = es_tienda_principal_usuario(request.user)
 
             for item in items:
                 producto_id = item.get('producto_id')
@@ -1931,6 +1937,14 @@ def guardar_venta_tienda(request):
                     raise ValueError(f'Precio invÃ¡lido para el producto "{producto.nombre}".')
 
                 precio_unitario = precio_unitario_payload.quantize(Decimal('0.01'))
+                comision_payload = Decimal(str(item.get('comision_transporte', '0') or '0'))
+                if comision_payload < 0:
+                    raise ValueError(f'La comision de transporte no puede ser negativa para el producto "{producto.nombre}".')
+
+                if not es_tienda_principal:
+                    comision_payload = Decimal('0.00')
+
+                comision_unitaria = comision_payload.quantize(Decimal('0.01'))
 
                 # VALIDAR MODALIDAD MATEMÁTICAMENTE (solo para tienda)
                 # Para depósito, permitir cualquier cantidad entre 1 y stock disponible
@@ -1979,6 +1993,7 @@ def guardar_venta_tienda(request):
                 producto = Producto.objects.select_for_update().get(id=producto_id)
 
                 subtotal_item = precio_unitario * unidades_a_descontar
+                comision_total_item = comision_unitaria * unidades_a_descontar
                 cantidad_guardada = unidades_a_descontar
                 precio_guardado = precio_unitario
 
@@ -1995,6 +2010,7 @@ def guardar_venta_tienda(request):
                     modalidad=modalidad,
                     precio_unitario=precio_guardado,
                     subtotal=subtotal_item,
+                    comision_transporte=comision_total_item,
                 )
 
                 # Si es venta tienda o deposito, descontar del Inventario según tipo_venta
@@ -2009,6 +2025,7 @@ def guardar_venta_tienda(request):
                # descontar_stock_desde_contenedores(producto, unidades_a_descontar)
 
                 total_venta += subtotal_item
+                total_comision_transporte += comision_total_item
 
             # Aplicar descuento
             actual_descuento = Decimal('0.00')
@@ -2026,12 +2043,13 @@ def guardar_venta_tienda(request):
                     descuento_valor_guardado = actual_descuento
                 actual_descuento = min(actual_descuento, total_venta)
             
-            total_final = total_venta - actual_descuento
+            total_final = (total_venta - actual_descuento) + total_comision_transporte
 
             venta.subtotal = total_venta
             venta.descuento = actual_descuento
             venta.descuento_tipo = descuento_tipo_guardado if actual_descuento > 0 else 'ninguno'
             venta.descuento_valor = descuento_valor_guardado if actual_descuento > 0 else Decimal('0.00')
+            venta.total_comision_transporte = total_comision_transporte
             venta.total = total_final
             venta.save()
 

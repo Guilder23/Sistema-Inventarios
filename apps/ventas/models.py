@@ -49,7 +49,8 @@ class Venta(models.Model):
     descuento_tipo = models.CharField(max_length=20, choices=TIPOS_DESCUENTO, default='ninguno')
     descuento_valor = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Valor original del descuento ingresado por el usuario')
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    
+    #total comision de transporte
+    total_comision_transporte = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Total de comisión de transporte (si aplica)')
     class Meta:
         verbose_name = 'Venta'
         verbose_name_plural = 'Ventas'
@@ -82,6 +83,7 @@ class DetalleVenta(models.Model):
     modalidad = models.CharField(max_length=20, choices=MODALIDADES, default='unidad', blank=True)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    comision_transporte = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Comisión de transporte (si aplica)')
     
     class Meta:
         verbose_name = 'Detalle de Venta'

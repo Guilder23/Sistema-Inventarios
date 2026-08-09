@@ -370,6 +370,7 @@ function validarStockDisponible(producto, cantidad, modalidad, cantidadExistente
 function recalcularItemCarrito(item) {
     item.unidades_operativas = calcularUnidadesOperativas(item.producto, item.cantidad, item.modalidad);
     item.subtotal_bs = item.unidades_operativas * item.precio_unitario_bs;
+    item.comision_total_bs = item.unidades_operativas * (parseFloat(item.comision_transporte_bs || 0) || 0);
 }
 
 function cambiarPrecioCarrito(index, nuevoPrecio) {
@@ -385,6 +386,29 @@ function cambiarPrecioCarrito(index, nuevoPrecio) {
 
     item.precio_unitario_bs = convertirMonedaAUsd(precioEnMonedaActual);
     item.precio_personalizado = true;
+    recalcularItemCarrito(item);
+    renderCarrito();
+}
+
+function cambiarComisionCarrito(index, nuevaComision) {
+    const item = carrito[index];
+    if (!item) return;
+
+    if (!esTiendaPrincipalActual()) {
+        item.comision_transporte_bs = 0;
+        item.comision_total_bs = 0;
+        renderCarrito();
+        return;
+    }
+
+    const comisionEnMonedaActual = parseFloat(nuevaComision);
+    if (!Number.isFinite(comisionEnMonedaActual) || comisionEnMonedaActual < 0) {
+        mostrarAlerta('La comision debe ser mayor o igual a 0.');
+        renderCarrito();
+        return;
+    }
+
+    item.comision_transporte_bs = convertirMonedaAUsd(comisionEnMonedaActual);
     recalcularItemCarrito(item);
     renderCarrito();
 }
@@ -547,8 +571,10 @@ function agregarAlCarrito(producto, cantidad, modalidad, tipoVendedor = tipoVend
         tipo_vendedor: tipoVendedorFinal,
         tipo_vendedor_label: obtenerEtiquetaTipoVendedor(tipoVendedorFinal),
         precio_unitario_bs: precioBaseBs,
+        comision_transporte_bs: 0,
         unidades_operativas: 0,
-        subtotal_bs: 0
+        subtotal_bs: 0,
+        comision_total_bs: 0
     };
     recalcularItemCarrito(item);
     carrito.push(item);
@@ -742,6 +768,8 @@ function renderCarrito() {
     if (footer) footer.style.display = 'block';
     if (carritoVacio) carritoVacio.style.display = 'none';
 
+    const mostrarColumnaComision = esTiendaPrincipalActual();
+
     tbody.innerHTML = carrito.map((item, index) => {
         const tipoVendedor = obtenerTipoVendedorItem(item);
         const esDeposito = tipoVendedor === 'deposito';
@@ -824,6 +852,22 @@ function renderCarrito() {
                     </div>
                 </td>
 
+                ${mostrarColumnaComision ? `
+                    <td class="text-center">
+                        <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            class="form-control form-control-sm text-center carrito-precio-input"
+                            value="${convertirUsdAMoneda(item.comision_transporte_bs || 0).toFixed(2)}"
+                            onchange="cambiarComisionCarrito(${index}, this.value)"
+                        >
+                        <div class="small text-muted mt-1">
+                            x ${item.unidades_operativas} = ${formatearMonto(item.comision_total_bs || 0)}
+                        </div>
+                    </td>
+                ` : ''}
+
                 <td class="text-center">
                     <div class="carrito-cantidad-control">
                         <button
@@ -874,23 +918,26 @@ function renderCarrito() {
 
 function actualizarTotales() {
     const subtotalBs = carrito.reduce((sum, item) => sum + item.subtotal_bs, 0);
+    const totalComisionBs = carrito.reduce((sum, item) => sum + (item.comision_total_bs || 0), 0);
     const cantidadItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
     const detalleDescuento = obtenerDetalleDescuentoActual(subtotalBs);
     const descuentoBs = detalleDescuento.descuentoBs;
 
-    const totalBs = subtotalBs - descuentoBs;
+    const totalBs = subtotalBs - descuentoBs + totalComisionBs;
 
     const resumenCantItems = document.getElementById('resumenCantItems');
     const resumenSubtotal = document.getElementById('resumenSubtotal');
     const resumenTotal = document.getElementById('resumenTotalFinal');
     const descuentoResumen = document.getElementById('descuentoResumen');
     const descuentoCalculo = document.getElementById('descuentoCalculo');
+    const resumenComision = document.getElementById('resumenComisionTransporte');
 
     if (resumenCantItems) resumenCantItems.textContent = cantidadItems;
     if (resumenSubtotal) resumenSubtotal.textContent = formatearMonto(subtotalBs);
     if (resumenTotal) resumenTotal.innerHTML = `<strong style="font-size: 1.3rem; display: block;">${formatearMonto(totalBs)}</strong>`;
     if (descuentoResumen) descuentoResumen.textContent = detalleDescuento.resumen;
-    if (descuentoCalculo) descuentoCalculo.textContent = `${formatearMonto(subtotalBs)} - ${formatearMonto(descuentoBs)} = ${formatearMonto(totalBs)}`;
+    if (descuentoCalculo) descuentoCalculo.textContent = `${formatearMonto(subtotalBs)} - ${formatearMonto(descuentoBs)} + ${formatearMonto(totalComisionBs)} = ${formatearMonto(totalBs)}`;
+    if (resumenComision) resumenComision.textContent = formatearMonto(totalComisionBs);
 }
 
 function actualizarPreviewProducto(productoId, tipoVendedorContexto = tipoVendedorActual) {
@@ -1498,6 +1545,7 @@ function construirPayloadVenta() {
             modalidad: item.modalidad,
             tipo_vendedor: obtenerTipoVendedorItem(item),
             precio_unitario: convertirUsdAMoneda(item.precio_unitario_bs).toFixed(2),
+            comision_transporte: convertirUsdAMoneda(item.comision_transporte_bs || 0).toFixed(2),
             unidades_operativas: item.unidades_operativas
         }))
     };
@@ -1522,16 +1570,17 @@ function inicializarGuardarVenta() {
         }
 
         const subtotalBs = carrito.reduce((sum, item) => sum + item.subtotal_bs, 0);
+        const totalComisionBs = carrito.reduce((sum, item) => sum + (item.comision_total_bs || 0), 0);
         const detalleDescuento = obtenerDetalleDescuentoActual(subtotalBs);
         const descuentoBs = detalleDescuento.descuentoBs;
-        const totalBs = subtotalBs - descuentoBs;
+        const totalBs = subtotalBs - descuentoBs + totalComisionBs;
         const tiposVendedor = [...new Set(carrito.map((item) => obtenerEtiquetaTipoVendedor(obtenerTipoVendedorItem(item))))].join(', ');
         const descuentoHtml = descuentoBs > 0
             ? `
                 <p class="mb-1"><strong>Descuento:</strong> ${detalleDescuento.resumen}</p>
-                <p class="mb-0"><strong>Calculo:</strong> ${formatearMonto(subtotalBs)} - ${formatearMonto(descuentoBs)} = ${formatearMonto(totalBs)}</p>
+                <p class="mb-0"><strong>Calculo:</strong> ${formatearMonto(subtotalBs)} - ${formatearMonto(descuentoBs)} + ${formatearMonto(totalComisionBs)} = ${formatearMonto(totalBs)}</p>
             `
-            : '<p class="mb-0"><strong>Descuento:</strong> Sin descuento</p>';
+            : `<p class="mb-0"><strong>Descuento:</strong> Sin descuento</p>`;
 
         const confirmarVenta = () => {
             const urls = obtenerURLs();
@@ -1588,6 +1637,7 @@ function inicializarGuardarVenta() {
                         <p><strong>Items:</strong> ${carrito.length}</p>
                         <hr>
                         <p class="mb-1"><strong>Subtotal:</strong> ${formatearMonto(subtotalBs)}</p>
+                        <p class="mb-1"><strong>Comision transporte:</strong> ${formatearMonto(totalComisionBs)}</p>
                         ${descuentoHtml}
                         <p class="mb-0"><strong>Total:</strong> ${formatearMonto(totalBs)}</p>
                     </div>
@@ -1649,6 +1699,7 @@ window.removerDelCarrito = removerDelCarrito;
 window.cambiarModalidadCarrito = cambiarModalidadCarrito;
 window.cambiarCantidadCarrito = cambiarCantidadCarrito;
 window.cambiarPrecioCarrito = cambiarPrecioCarrito;
+window.cambiarComisionCarrito = cambiarComisionCarrito;
 window.aumentarCantidadCarrito = aumentarCantidadCarrito;
 window.disminuirCantidadCarrito = disminuirCantidadCarrito;
 

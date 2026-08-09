@@ -147,6 +147,9 @@
                                         <th class="text-center" style="width: 120px;">Vendedor</th>
                                         <th class="text-center" style="width: 80px;">Modalidad</th>
                                         <th class="text-center" style="width: 110px;">Precio Unit.</th>
+                                        {% if es_tienda_principal %}
+                                        <th class="text-center" style="width: 130px;">Comisión Transporte</th>
+                                        {% endif %}
                                         <th class="text-center" style="width: 70px;">Cantidad</th>
                                         <th class="text-right" style="width: 180px;">Subtotal</th>
                                         <th class="text-center pr-3" style="width: 50px;"></th>
@@ -257,6 +260,13 @@
                             <span>Subtotal (<span id="resumenCantItems">0</span> items)</span>
                             <strong id="resumenSubtotal">Bs. 0.00</strong>
                         </div>
+
+                        {% if es_tienda_principal %}
+                        <div class="resumen-linea">
+                            <span>Comisión de transporte</span>
+                            <strong id="resumenComisionTransporte">Bs. 0.00</strong>
+                        </div>
+                        {% endif %}
 
                         <div class="form-group my-3 pb-3 border-bottom" id="descuentoSection">
                             <label class="label-campo">
