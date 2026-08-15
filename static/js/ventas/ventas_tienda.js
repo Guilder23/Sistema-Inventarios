@@ -417,6 +417,14 @@ document.addEventListener('DOMContentLoaded', function() {
         limpiarPreviewAmortizacion();
     });
 
+    // Bootstrap aplica aria-hidden al modal durante el cierre. Retirar el foco
+    // antes evita que un botón interno quede oculto para lectores de pantalla.
+    $('#modalDetalleVenta, #modalAmortizacion').on('hide.bs.modal', function() {
+        if (this.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
+    });
+
     // Guardar Amortización
     const btnGuardarAmortizacion = document.getElementById('btnGuardarAmortizacion');
     if (btnGuardarAmortizacion) {

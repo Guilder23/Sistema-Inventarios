@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import Venta, DetalleVenta, AmortizacionCredito, SolicitudAnulacionVenta
+from .models import (
+    Venta,
+    DetalleVenta,
+    AmortizacionCredito,
+    SolicitudAnulacionVenta,
+    SesionCaja,
+    MovimientoCaja,
+)
 
 class DetalleVentaInline(admin.TabularInline):
     model = DetalleVenta
@@ -34,6 +41,28 @@ class AmortizacionCreditoAdmin(admin.ModelAdmin):
     list_filter = ['fecha']
     search_fields = ['venta__codigo', 'observaciones']
     list_per_page = 20
+
+
+class MovimientoCajaInline(admin.TabularInline):
+    model = MovimientoCaja
+    extra = 0
+    readonly_fields = ['fecha', 'registrado_por']
+
+
+@admin.register(SesionCaja)
+class SesionCajaAdmin(admin.ModelAdmin):
+    list_display = ['id', 'cajero', 'ubicacion', 'estado', 'fecha_apertura', 'fecha_cierre', 'monto_inicial', 'monto_real_efectivo', 'diferencia_efectivo', 'total_general_recaudado']
+    list_filter = ['estado', 'fecha_apertura', 'fecha_cierre']
+    search_fields = ['cajero__username', 'ubicacion__nombre_ubicacion']
+    inlines = [MovimientoCajaInline]
+
+
+@admin.register(MovimientoCaja)
+class MovimientoCajaAdmin(admin.ModelAdmin):
+    list_display = ['sesion_caja', 'tipo', 'monto', 'concepto', 'fecha', 'registrado_por']
+    list_filter = ['tipo', 'fecha']
+    search_fields = ['concepto', 'sesion_caja__cajero__username']
+    list_per_page = 30
 
 @admin.register(SolicitudAnulacionVenta)
 class SolicitudAnulacionVentaAdmin(admin.ModelAdmin):

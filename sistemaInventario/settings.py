@@ -75,6 +75,7 @@ TEMPLATES = [
                 'django.template.context_processors.media',
                 'django.template.context_processors.static',
                 'apps.moneda.context_processors.moneda_actual',
+                'apps.ventas.context_processors.caja_status',
             ],
         },
     },
