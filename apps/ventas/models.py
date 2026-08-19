@@ -48,39 +48,53 @@ class SesionCaja(models.Model):
 
     def _ventas_efectivo_qs(self, moneda='BOB'):
         return self.ventas.filter(
-            tipo_pago__in=['contado', 'EFECTIVO'],
-            estado__in=['pendiente', 'completada'], moneda=moneda
+            Q(monto_efectivo__gt=0) | Q(tipo_pago='contado'),
+            estado__in=['pendiente', 'completada'], moneda=moneda,
         )
 
     def _cobros_efectivo_qs(self, moneda='BOB'):
         return self.amortizaciones.filter(tipo_pago__in=['contado', 'EFECTIVO'], moneda=moneda)
 
-    def _ventas_transferencia_qs(self):
-        return self.ventas.none()
+    def _ventas_transferencia_qs(self, moneda='BOB'):
+        return self.ventas.filter(monto_qr__gt=0, estado__in=['pendiente', 'completada'], moneda=moneda)
 
     def _cobros_transferencia_qs(self):
         return self.amortizaciones.none()
 
     def calcular_resumen(self):
-        ventas_efectivo = self._ventas_efectivo_qs('BOB').aggregate(total=models.Sum('total'))['total'] or Decimal('0.00')
+        ventas_efectivo = self._ventas_efectivo_qs('BOB').aggregate(
+            total=models.Sum(models.Case(
+                models.When(monto_efectivo__gt=0, then='monto_efectivo'),
+                models.When(tipo_pago='contado', then='total'),
+                default=Decimal('0.00'),
+                output_field=models.DecimalField(max_digits=12, decimal_places=2),
+            ))
+        )['total'] or Decimal('0.00')
         cobros_efectivo = self._cobros_efectivo_qs('BOB').aggregate(total=models.Sum('monto'))['total'] or Decimal('0.00')
         ingresos_manuales = self.movimientos.filter(tipo='INGRESO', moneda='BOB').aggregate(total=models.Sum('monto'))['total'] or Decimal('0.00')
         egresos_manuales = self.movimientos.filter(tipo='EGRESO', moneda='BOB').aggregate(total=models.Sum('monto'))['total'] or Decimal('0.00')
-        ventas_efectivo_usd = self._ventas_efectivo_qs('USD').aggregate(total=models.Sum('total'))['total'] or Decimal('0.00')
+        ventas_efectivo_usd = self._ventas_efectivo_qs('USD').aggregate(
+            total=models.Sum(models.Case(
+                models.When(monto_efectivo__gt=0, then='monto_efectivo'),
+                models.When(tipo_pago='contado', then='total'),
+                default=Decimal('0.00'),
+                output_field=models.DecimalField(max_digits=12, decimal_places=2),
+            ))
+        )['total'] or Decimal('0.00')
         cobros_efectivo_usd = self._cobros_efectivo_qs('USD').aggregate(total=models.Sum('monto'))['total'] or Decimal('0.00')
         ingresos_manuales_usd = self.movimientos.filter(tipo='INGRESO', moneda='USD').aggregate(total=models.Sum('monto'))['total'] or Decimal('0.00')
         egresos_manuales_usd = self.movimientos.filter(tipo='EGRESO', moneda='USD').aggregate(total=models.Sum('monto'))['total'] or Decimal('0.00')
-        ventas_transferencia = self._ventas_transferencia_qs().aggregate(total=models.Sum('total'))['total'] or Decimal('0.00')
+        ventas_transferencia = self._ventas_transferencia_qs('BOB').aggregate(total=models.Sum('monto_qr'))['total'] or Decimal('0.00')
         cobros_transferencia = self._cobros_transferencia_qs().aggregate(total=models.Sum('monto'))['total'] or Decimal('0.00')
 
         monto_esperado = (
-            self.monto_inicial
+            Decimal(str(self.monto_inicial))
             + ventas_efectivo
             + cobros_efectivo
             + ingresos_manuales
             - egresos_manuales
         )
-        monto_esperado_usd = self.monto_inicial_usd + ventas_efectivo_usd + cobros_efectivo_usd + ingresos_manuales_usd - egresos_manuales_usd
+        monto_esperado_usd = Decimal(str(self.monto_inicial_usd)) + ventas_efectivo_usd + cobros_efectivo_usd + ingresos_manuales_usd - egresos_manuales_usd
 
         total_transferencia = ventas_transferencia + cobros_transferencia
 
@@ -91,6 +105,7 @@ class SesionCaja(models.Model):
             'egresos_manuales': Decimal(str(egresos_manuales)).quantize(Decimal('0.01')),
             'monto_esperado_efectivo': Decimal(str(monto_esperado)).quantize(Decimal('0.01')),
             'total_transferencia': Decimal(str(total_transferencia)).quantize(Decimal('0.01')),
+            'total_qr': Decimal(str(total_transferencia)).quantize(Decimal('0.01')),
             'ventas_efectivo_usd': Decimal(str(ventas_efectivo_usd)).quantize(Decimal('0.01')),
             'cobros_efectivo_usd': Decimal(str(cobros_efectivo_usd)).quantize(Decimal('0.01')),
             'ingresos_manuales_usd': Decimal(str(ingresos_manuales_usd)).quantize(Decimal('0.01')),
@@ -166,6 +181,8 @@ class Venta(models.Model):
     TIPOS_PAGO = (
         ('contado', 'Contado'),
         ('credito', 'Crédito'),
+        ('Qr', 'Pago QR'),
+        ('Mixto', 'Mixto'),
     )
 
     TIPOS_DESCUENTO = (
@@ -199,6 +216,8 @@ class Venta(models.Model):
     descuento_tipo = models.CharField(max_length=20, choices=TIPOS_DESCUENTO, default='ninguno')
     descuento_valor = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Valor original del descuento ingresado por el usuario')
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    monto_efectivo = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    monto_qr = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     #total comision de transporte
     total_comision_transporte = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Total de comisión de transporte (si aplica)')
     class Meta:

@@ -121,6 +121,7 @@ def resumen_caja_actual(request):
         'ingresos_manuales_usd': str(resumen['ingresos_manuales_usd']),
         'egresos_manuales_usd': str(resumen['egresos_manuales_usd']),
         'monto_esperado_efectivo_usd': str(sesion.monto_esperado_efectivo_usd),
+        'total_qr': str(resumen['total_qr']),
     }
     return JsonResponse({'success': True, 'data': payload})
 
@@ -197,7 +198,7 @@ def generar_pdf_arqueo(request, sesion_id):
         ['Monto esperado en efectivo', str(sesion.monto_esperado_efectivo)],
         ['Monto real en efectivo', str(sesion.monto_real_efectivo)],
         ['Diferencia de efectivo', str(sesion.diferencia_efectivo)],
-        ['Total transferencia', str(sesion.total_transferencia)],
+        ['Total QR', str(sesion.total_transferencia)],
         ['Total general recaudado', str(sesion.total_general_recaudado)],
         ['--- ARQUEO EN DÓLARES ---', ''],
         ['Monto inicial USD', f'$ {sesion.monto_inicial_usd}'],
@@ -794,14 +795,14 @@ def listar_ventas(request):
         ventas = ventas.filter(cliente__icontains=cliente_filtro)
 
     # Por tipo de pago
-    ventas_contado_qs = ventas.filter(tipo_pago='contado')
+    ventas_contado_qs = ventas.filter(tipo_pago__in=['contado', 'Qr', 'Mixto'])
     ventas_credito_qs = ventas.filter(tipo_pago='credito')
 
     # Verificar si se solicita PDF
     pdf = request.GET.get('pdf')
     if pdf:
         tipo_pago = request.GET.get('tipo_pago', 'contado')
-        if tipo_pago == 'contado':
+        if tipo_pago in ['contado', 'Qr', 'Mixto']:
             ventas_filtradas = ventas_contado_qs
         else:
             ventas_filtradas = ventas_credito_qs
@@ -916,7 +917,7 @@ def guardar_venta(request):
 #Validaciones
     if not cliente:
         return JsonResponse({'success': False, 'error': 'El nombre del cliente es obligatorio.'})
-    if tipo_pago not in ['contado', 'credito']:
+    if tipo_pago not in ['contado', 'Qr', 'Mixto', 'credito']:
         return JsonResponse({'success': False, 'error': 'Tipo de pago inválido.'})
     if moneda not in ['BOB', 'USD']:
         return JsonResponse({'success': False, 'error': 'Moneda inválida.'})
@@ -924,6 +925,9 @@ def guardar_venta(request):
         return JsonResponse({'success': False, 'error': 'Tipo de cambio inválido.'})
     if not items:
         return JsonResponse({'success': False, 'error': 'Debe agregar al menos un producto.'})
+
+    monto_efectivo = _normalizar_decimal(data.get('monto_efectivo', 0))
+    monto_qr = _normalizar_decimal(data.get('monto_qr', 0))
 
     try:
         perfil = request.user.perfil
@@ -955,7 +959,7 @@ def guardar_venta(request):
                 tipo_pago=tipo_pago,
                 moneda=moneda,
                 tipo_cambio=tipo_cambio,
-                estado='completada' if tipo_pago == 'contado' else 'pendiente',
+                estado='completada' if tipo_pago != 'credito' else 'pendiente',
                 vendedor=vendedor_user,
                 subtotal=Decimal('0.00'),
                 total=Decimal('0.00'),
@@ -1036,6 +1040,14 @@ def guardar_venta(request):
 # Actualizar totales de la venta
             venta.subtotal = total_venta
             venta.total = total_venta
+            if tipo_pago == 'contado':
+                venta.monto_efectivo, venta.monto_qr = total_venta, Decimal('0.00')
+            elif tipo_pago == 'Qr':
+                venta.monto_efectivo, venta.monto_qr = Decimal('0.00'), total_venta
+            elif tipo_pago == 'Mixto':
+                if monto_efectivo < 0 or monto_qr < 0 or monto_efectivo + monto_qr != total_venta:
+                    raise ValueError('En un pago mixto, efectivo + QR debe coincidir con el total de la venta.')
+                venta.monto_efectivo, venta.monto_qr = monto_efectivo, monto_qr
             venta.save()
 
         return JsonResponse({
@@ -1397,7 +1409,7 @@ def generar_pdf_lista(ventas, tipo_pago='contado'):
     )
     
     # Título principal
-    tipo_display = "AL CONTADO" if tipo_pago == 'contado' else "A CRÉDITO"
+    tipo_display = "AL CONTADO" if tipo_pago in ['contado', 'Qr', 'Mixto'] else "A CRÉDITO"
     title = Paragraph(f"<b>LISTADO DE VENTAS - {tipo_display}</b>", styles['Title'])
     elements.append(title)
     elements.append(Spacer(1, 0.2*inch))
@@ -1931,7 +1943,7 @@ def listar_ventas_tienda(request):
         ventas = ventas.filter(cliente__icontains=cliente_filtro)
 
     # Por tipo de pago
-    ventas_contado_qs = ventas.filter(tipo_pago='contado')
+    ventas_contado_qs = ventas.filter(tipo_pago__in=['contado', 'Qr', 'Mixto'])
     ventas_credito_qs = ventas.filter(tipo_pago='credito')
 
     ventas_contado = list(ventas_contado_qs)
@@ -2092,7 +2104,7 @@ def guardar_venta_tienda(request):
     # Validaciones
     if not cliente:
         return JsonResponse({'success': False, 'error': 'El nombre del cliente es obligatorio.'})
-    if tipo_pago not in ['contado', 'credito']:
+    if tipo_pago not in ['contado', 'Qr', 'Mixto', 'credito']:
         return JsonResponse({'success': False, 'error': 'Tipo de pago inválido.'})
     if moneda not in ['BOB', 'USD']:
         return JsonResponse({'success': False, 'error': 'Moneda inválida.'})
@@ -2114,7 +2126,7 @@ def guardar_venta_tienda(request):
             'error': f'Sucursales y puntos de venta solo pueden hacer ventas al contado. Tipo de tienda: {perfil.tienda.get_tipo_display()}'
         })
 
-    if tipo_pago != 'contado':
+    if tipo_pago == 'credito':
         descuento_tipo = 'ninguno'
         descuento_valor = Decimal('0.00')
     elif not descuento_tipo:
@@ -2122,6 +2134,9 @@ def guardar_venta_tienda(request):
     
     if not items:
         return JsonResponse({'success': False, 'error': 'Debe agregar al menos un producto.'})
+
+    monto_efectivo = _normalizar_decimal(data.get('monto_efectivo', 0))
+    monto_qr = _normalizar_decimal(data.get('monto_qr', 0))
 
     perfil = request.user.perfil
 
@@ -2138,7 +2153,7 @@ def guardar_venta_tienda(request):
                 tipo_pago=tipo_pago,
                 moneda=moneda,
                 tipo_cambio=tipo_cambio,
-                estado='completada' if tipo_pago == 'contado' else 'pendiente',
+                estado='completada' if tipo_pago != 'credito' else 'pendiente',
                 vendedor=request.user,
                 subtotal=Decimal('0.00'),
                 total=Decimal('0.00'),
@@ -2275,7 +2290,7 @@ def guardar_venta_tienda(request):
             actual_descuento = Decimal('0.00')
             descuento_tipo_guardado = 'ninguno'
             descuento_valor_guardado = Decimal('0.00')
-            if tipo_pago == 'contado' and descuento_tipo in ['fijo', 'porcentaje'] and descuento_valor > 0:
+            if tipo_pago != 'credito' and descuento_tipo in ['fijo', 'porcentaje'] and descuento_valor > 0:
                 descuento_valor_guardado = descuento_valor.quantize(Decimal('0.01'))
                 descuento_tipo_guardado = descuento_tipo
                 if descuento_tipo == 'porcentaje':
@@ -2295,6 +2310,14 @@ def guardar_venta_tienda(request):
             venta.descuento_valor = descuento_valor_guardado if actual_descuento > 0 else Decimal('0.00')
             venta.total_comision_transporte = total_comision_transporte
             venta.total = total_final
+            if tipo_pago == 'contado':
+                venta.monto_efectivo, venta.monto_qr = total_final, Decimal('0.00')
+            elif tipo_pago == 'Qr':
+                venta.monto_efectivo, venta.monto_qr = Decimal('0.00'), total_final
+            elif tipo_pago == 'Mixto':
+                if monto_efectivo < 0 or monto_qr < 0 or monto_efectivo + monto_qr != total_final:
+                    raise ValueError('En un pago mixto, efectivo + QR debe coincidir con el total de la venta.')
+                venta.monto_efectivo, venta.monto_qr = monto_efectivo, monto_qr
             venta.save()
 
             return JsonResponse({

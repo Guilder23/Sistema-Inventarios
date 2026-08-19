@@ -84,7 +84,15 @@ function initSelectorTipoPago() {
         // Diferenciar entre tipo de pago y moneda
         if ($(this).data('tipo')) {
             $('#inputTipoPago').val($(this).data('tipo'));
-        }
+                $('#pagoMixtoFields').toggle($(this).data('tipo') === 'Mixto');
+            if ($(this).data('tipo') === 'Mixto') {
+                $('#montoEfectivo').val(obtenerTotalVentaActual().toFixed(2)).trigger('input');
+            }
+            }
+    });
+
+    $('#montoEfectivo, #montoQr').on('input', function () {
+        sincronizarPagoMixto(this);
     });
 }
 
@@ -597,6 +605,35 @@ function actualizarResumen() {
     $('#resumenTotal').text(etiqueta + ' ' + totalDisplay);
 }
 
+function obtenerTotalVentaActual() {
+    let totalPrecio = 0;
+    carrito.forEach(item => {
+        totalPrecio += item.precioCaja * item.cantidad;
+    });
+
+    const moneda = $('#inputMoneda').val() || 'USD';
+    const tipoCambio = parseFloat($('#tipoCambioActual').val()) || 1;
+    return moneda === 'BOB' ? totalPrecio * tipoCambio : totalPrecio;
+}
+
+function sincronizarPagoMixto(campoEditado) {
+    if ($('#inputTipoPago').val() !== 'Mixto') return;
+
+    const total = obtenerTotalVentaActual();
+    const efectivoInput = document.getElementById('montoEfectivo');
+    const qrInput = document.getElementById('montoQr');
+    if (!efectivoInput || !qrInput) return;
+
+    const valor = Math.max(parseFloat(campoEditado.value) || 0, 0);
+    if (campoEditado === efectivoInput) {
+        efectivoInput.value = Math.min(valor, total).toFixed(2);
+        qrInput.value = Math.max(total - parseFloat(efectivoInput.value), 0).toFixed(2);
+    } else {
+        qrInput.value = Math.min(valor, total).toFixed(2);
+        efectivoInput.value = Math.max(total - parseFloat(qrInput.value), 0).toFixed(2);
+    }
+}
+
 // CARRITO: LIMPIAR TODO
 function initBtnLimpiarCarrito() {
     $('#btnLimpiarCarrito').on('click', function () {
@@ -674,7 +711,7 @@ function guardarVenta() {
     const etiqueta = moneda === 'USD' ? '$' : 'Bs.';
     const totalDisplay = moneda === 'BOB' ? (totalFinal * tipoCambio).toFixed(2) : totalFinal.toFixed(2);
 
-    const tipoPagoTexto = tipoPago === 'contado' ? 'Al Contado' : 'A Crédito';
+    const tipoPagoTexto = { contado: 'Al Contado', credito: 'A Crédito', Qr: 'Pago QR', Mixto: 'Mixto (Efectivo + QR)' }[tipoPago] || tipoPago;
 
     Swal.fire({
         title: 'Confirmar Venta',
@@ -731,6 +768,8 @@ function enviarVenta(cliente, telefono, razonSocial, direccion, comentario, tipo
         direccion: direccion,
         comentario: comentario,
         tipo_pago: tipoPago,
+            monto_efectivo: parseFloat($('#montoEfectivo').val() || 0),
+            monto_qr: parseFloat($('#montoQr').val() || 0),
         moneda: moneda,
         tipo_cambio: tipoCambio,
         vendedor_id: vendedorId,

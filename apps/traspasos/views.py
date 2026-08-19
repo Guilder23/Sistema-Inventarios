@@ -655,10 +655,6 @@ def generar_pdf_traspaso(request, id):
 
     traspaso = get_object_or_404(Traspaso, id=id)
 
-    ubicacion_actual = request.user.perfil if hasattr(request.user, 'perfil') else None
-    if traspaso.origen != ubicacion_actual and traspaso.destino != ubicacion_actual:
-        messages.error(request, 'No tiene permisos')
-        return redirect('listar_traspasos')
 
     try:
         buffer = generar_pdf_traspaso_completo(traspaso)

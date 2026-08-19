@@ -176,6 +176,7 @@ class SesionCajaSerializer:
             'monto_real_efectivo': str(sesion.monto_real_efectivo),
             'diferencia_efectivo': str(sesion.diferencia_efectivo),
             'total_transferencia': str(sesion.total_transferencia),
+            'total_qr': str(sesion.total_transferencia),
             'total_general_recaudado': str(sesion.total_general_recaudado),
             'total_efectivo_sistema_usd': str(sesion.total_efectivo_sistema_usd),
             'monto_esperado_efectivo_usd': str(sesion.monto_esperado_efectivo_usd),

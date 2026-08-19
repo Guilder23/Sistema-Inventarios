@@ -139,7 +139,7 @@ function esTiendaPrincipalActual() {
 
 function puedeAplicarDescuento() {
     const tipoPago = document.getElementById('inputTipoPago')?.value || 'contado';
-    return tipoPago === 'contado';
+        return tipoPago !== 'credito';
 }
 
 function obtenerResumenModalidad(producto, cantidad, modalidad) {
@@ -952,7 +952,8 @@ function actualizarPreviewProducto(productoId, tipoVendedorContexto = tipoVended
     const precioBase = document.getElementById(`precio_base_${contextoId}`);
     const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
     const precioBs = obtenerPrecioBasePorModalidad(producto, modalidad);
-
+    if (resumenComision) resumenComision.textContent = formatearMonto(totalComisionBs);
+    if (resumenComision) resumenComision.textContent = formatearMonto(totalComisionBs);
     if (cantidadInput) {
         cantidadInput.min = '1';
 
@@ -976,6 +977,39 @@ function actualizarPreviewProducto(productoId, tipoVendedorContexto = tipoVended
         `;
     }
 }
+
+function obtenerTotalVentaActual() {
+    const subtotalBs = carrito.reduce((sum, item) => sum + item.subtotal_bs, 0);
+    const totalComisionBs = carrito.reduce((sum, item) => sum + (item.comision_total_bs || 0), 0);
+    const detalleDescuento = obtenerDetalleDescuentoActual(subtotalBs);
+    return subtotalBs - detalleDescuento.descuentoBs + totalComisionBs;
+}
+
+function sincronizarPagoMixto(campoEditado, normalizarCampo = false) {
+    if (document.getElementById('inputTipoPago')?.value !== 'Mixto') return;
+
+    // Los campos de pago se muestran y se envian en la moneda elegida (BOB/USD),
+    // mientras que el carrito conserva sus calculos internos en USD.
+    const total = convertirUsdAMoneda(obtenerTotalVentaActual());
+    const efectivoInput = document.getElementById('montoEfectivo');
+    const qrInput = document.getElementById('montoQr');
+    if (!efectivoInput || !qrInput) return;
+
+    const valor = Math.max(parseFloat(campoEditado.value) || 0, 0);
+    const valorLimitado = Math.min(valor, total);
+
+    // No formateamos el campo que se esta escribiendo: hacerlo en cada pulsacion
+    // mueve el cursor (por ejemplo, de "1" a "1.00") e impide escribir "100".
+    // El ajuste final se aplica cuando el usuario termina de editar.
+    if (campoEditado === efectivoInput) {
+        if (normalizarCampo) efectivoInput.value = valorLimitado.toFixed(2);
+        qrInput.value = Math.max(total - valorLimitado, 0).toFixed(2);
+    } else {
+        if (normalizarCampo) qrInput.value = valorLimitado.toFixed(2);
+        efectivoInput.value = Math.max(total - valorLimitado, 0).toFixed(2);
+    }
+}
+
 function renderTarjetaProducto(producto) {
     const contextoId = obtenerIdContextoBusqueda(producto.id, tipoVendedorActual);
     const unidadesPorCaja = parseInt(producto.unidades_por_caja || 1, 10);
@@ -1533,6 +1567,8 @@ function construirPayloadVenta() {
         direccion: document.getElementById('inputDireccion')?.value.trim() || '',
         comentario: document.getElementById('inputComentario')?.value.trim() || '',
         tipo_pago: document.getElementById('inputTipoPago')?.value || 'contado',
+        monto_efectivo: parseFloat(document.getElementById('montoEfectivo')?.value || 0),
+        monto_qr: parseFloat(document.getElementById('montoQr')?.value || 0),
         tipo_venta: tipoVendedorActual || 'tienda',
         moneda: obtenerMonedaActual(),
         tipo_cambio: obtenerTipoCambioActual(),
@@ -1714,9 +1750,32 @@ function init() {
             if (inputTipoPago) {
                 inputTipoPago.value = this.dataset.tipo || 'contado';
             }
-
+            const pagoMixtoFields = document.getElementById('pagoMixtoFields');
+            if (pagoMixtoFields) {
+                pagoMixtoFields.style.display = this.dataset.tipo === 'Mixto' ? '' : 'none';
+            }
+            if (this.dataset.tipo === 'Mixto') {
+                const efectivoInput = document.getElementById('montoEfectivo');
+                if (efectivoInput) {
+                    efectivoInput.value = convertirUsdAMoneda(obtenerTotalVentaActual()).toFixed(2);
+                    sincronizarPagoMixto(efectivoInput);
+                }
+            }
             actualizarVisibilidadDescuento();
         });
+    });
+
+    document.getElementById('montoEfectivo')?.addEventListener('input', function () {
+        sincronizarPagoMixto(this);
+    });
+    document.getElementById('montoQr')?.addEventListener('input', function () {
+        sincronizarPagoMixto(this);
+    });
+    document.getElementById('montoEfectivo')?.addEventListener('change', function () {
+        sincronizarPagoMixto(this, true);
+    });
+    document.getElementById('montoQr')?.addEventListener('change', function () {
+        sincronizarPagoMixto(this, true);
     });
 
     inicializarBusqueda();

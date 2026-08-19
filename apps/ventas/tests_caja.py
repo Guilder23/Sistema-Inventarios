@@ -91,3 +91,28 @@ class ArqueoCajaTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/pdf')
         self.assertTrue(len(response.content) > 100)
+
+    def test_resumen_separa_qr_y_pago_mixto(self):
+        sesion = SesionCaja.objects.create(
+            cajero=self.user,
+            ubicacion=self.perfil,
+            monto_inicial=Decimal('100.00'),
+        )
+
+        Venta.objects.create(
+            codigo='V-QR-001', ubicacion=self.perfil, cliente='Cliente QR',
+            tipo_pago='Qr', estado='completada', total=Decimal('40.00'),
+            sesion_caja=sesion, vendedor=self.user,
+            monto_qr=Decimal('40.00'),
+        )
+        Venta.objects.create(
+            codigo='V-MIX-001', ubicacion=self.perfil, cliente='Cliente Mixto',
+            tipo_pago='Mixto', estado='completada', total=Decimal('50.00'),
+            sesion_caja=sesion, vendedor=self.user,
+            monto_efectivo=Decimal('20.00'), monto_qr=Decimal('30.00'),
+        )
+
+        resumen = sesion.calcular_resumen()
+
+        self.assertEqual(resumen['ventas_efectivo'], Decimal('20.00'))
+        self.assertEqual(resumen['total_qr'], Decimal('70.00'))
