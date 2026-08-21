@@ -34,6 +34,23 @@
                             </div>
                         </div>
 
+                        <div class="row" id="seccionContenedorTraspaso" style="display:none;">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="contenedorTraspaso"><i class="fas fa-dolly"></i> Enviar contenedor completo</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-search"></i></span></div>
+                                        <input type="text" class="form-control" id="buscarContenedorTraspaso" placeholder="Buscar contenedor por nombre..." autocomplete="off">
+                                    </div>
+                                    <div id="resultadosContenedorTraspaso" class="list-group position-absolute w-100 shadow" style="z-index:1060; display:none; max-height:180px; overflow-y:auto;"></div>
+                                    <input type="hidden" id="contenedorTraspaso" value="">
+                                    <div id="contenedorSeleccionadoTraspaso" class="small text-muted mt-2">Ningún contenedor seleccionado.</div>
+                                    <button type="button" class="btn btn-outline-success btn-sm mt-2" id="btnAgregarContenedorTraspaso" disabled><i class="fas fa-plus"></i> Agregar contenedor</button>
+                                    <small class="form-text text-muted">Al seleccionarlo se agregarán todos los productos disponibles del contenedor.</small>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-7">
                                 <div class="form-group">

@@ -33,6 +33,12 @@ function cambiarEstadoTraspaso(e) {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
         if (result.isConfirmed) {
+            boton.disabled = true;
+            Swal.fire({
+                title: nuevoEstado === 'transito' ? 'Enviando traspaso...' : 'Procesando traspaso...',
+                text: 'Actualizando inventario. Por favor espere.',
+                allowOutsideClick: false, allowEscapeKey: false, didOpen: () => Swal.showLoading()
+            });
             const formData = new FormData();
             formData.append('estado', nuevoEstado);
             formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
@@ -63,7 +69,8 @@ function cambiarEstadoTraspaso(e) {
             .catch(error => {
                 console.error('Error:', error);
                 Swal.fire('Error', error.message, 'error');
-            });
+            })
+            .finally(() => { boton.disabled = false; });
         }
     });
 }

@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.db import transaction
 from django.db.models import Q, Case, When, IntegerField
 from .models import Traspaso, DetalleTraspaso
-from apps.productos.models import Producto, ProductoContenedor
+from apps.productos.models import Producto, ProductoContenedor, Contenedor
 from apps.usuarios.models import PerfilUsuario
 from apps.inventario.models import Inventario, MovimientoInventario
 from apps.depositos.models import Deposito
@@ -791,6 +791,47 @@ def obtener_productos_traspaso(request):
         return JsonResponse(productos, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def obtener_contenedores_traspaso(request):
+    """Contenedores con stock que se pueden enviar desde un origen de almacén."""
+    ubicacion_actual = getattr(request.user, 'perfil', None)
+    origen_id = request.GET.get('origen_id')
+    origen = _origenes_validos_para_usuario(ubicacion_actual).filter(id=origen_id).first()
+    if not origen or origen.rol != 'almacen':
+        return JsonResponse([], safe=False)
+
+    contenedores = Contenedor.objects.filter(
+        activo=True, productos_contenedores__cantidad__gt=0, productos_contenedores__producto__activo=True
+    ).distinct().order_by('nombre')
+    return JsonResponse([{'id': contenedor.id, 'nombre': contenedor.nombre, 'proveedor': contenedor.proveedor,
+                          'stock_total': contenedor.stock_total} for contenedor in contenedores], safe=False)
+
+
+@login_required
+def obtener_productos_contenedor_traspaso(request, id):
+    """Productos y cantidades disponibles de un contenedor para un traspaso desde almacén."""
+    ubicacion_actual = getattr(request.user, 'perfil', None)
+    origen = _origenes_validos_para_usuario(ubicacion_actual).filter(id=request.GET.get('origen_id')).first()
+    if not origen or origen.rol != 'almacen':
+        return JsonResponse({'error': 'El contenedor solo puede enviarse desde un almacén'}, status=403)
+
+    productos = ProductoContenedor.objects.filter(contenedor_id=id, cantidad__gt=0, producto__activo=True).select_related('producto')
+    resultado = []
+    for item in productos:
+        # El contenedor puede tener datos históricos inconsistentes con el stock
+        # total. Nunca se ofrece una cantidad mayor a la que se puede reservar.
+        disponible_real = _stock_disponible_en_ubicacion(item.producto, origen)
+        cantidad_enviar = min(item.cantidad, disponible_real)
+        if cantidad_enviar > 0:
+            resultado.append({
+                'id': item.producto_id, 'codigo': item.producto.codigo, 'nombre': item.producto.nombre,
+                'stock': disponible_real, 'cantidad': cantidad_enviar,
+                'precio_unidad': float(item.producto.precio_unidad or 0),
+                'unidades_por_caja': item.producto.unidades_por_caja or 1,
+            })
+    return JsonResponse(resultado, safe=False)
 
 
 @login_required
