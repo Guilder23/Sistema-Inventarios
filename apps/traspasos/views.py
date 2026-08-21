@@ -823,13 +823,18 @@ def obtener_productos_contenedor_traspaso(request, id):
         # El contenedor puede tener datos históricos inconsistentes con el stock
         # total. Nunca se ofrece una cantidad mayor a la que se puede reservar.
         disponible_real = _stock_disponible_en_ubicacion(item.producto, origen)
-        cantidad_enviar = min(item.cantidad, disponible_real)
+        # Los traspasos por contenedor solo incluyen cajas completas.  Se toma
+        # el menor saldo entre el contenedor y el inventario real, y se deja
+        # el remanente que no completa una caja en el almacén.
+        unidades_por_caja = max(item.producto.unidades_por_caja or 1, 1)
+        cantidad_disponible = min(item.cantidad, disponible_real)
+        cantidad_enviar = (cantidad_disponible // unidades_por_caja) * unidades_por_caja
         if cantidad_enviar > 0:
             resultado.append({
                 'id': item.producto_id, 'codigo': item.producto.codigo, 'nombre': item.producto.nombre,
                 'stock': disponible_real, 'cantidad': cantidad_enviar,
                 'precio_unidad': float(item.producto.precio_unidad or 0),
-                'unidades_por_caja': item.producto.unidades_por_caja or 1,
+                'unidades_por_caja': unidades_por_caja,
             })
     return JsonResponse(resultado, safe=False)
 
