@@ -6,6 +6,7 @@ urlpatterns = [
     path('', views.listar_traspasos, name='listar_traspasos'),
     path('crear/', views.crear_traspaso, name='crear_traspaso'),
     path('<int:id>/ver/', views.ver_traspaso, name='ver_traspaso'),
+    path('<int:id>/editar-productos/', views.editar_productos_traspaso, name='editar_productos_traspaso'),
     path('<int:id>/cambiar-estado/', views.cambiar_estado_traspaso, name='cambiar_estado_traspaso'),
     path('<int:id>/pdf/', views.generar_pdf_traspaso, name='generar_pdf_traspaso'),
     

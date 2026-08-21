@@ -554,6 +554,66 @@ def ver_traspaso(request, id):
 
 
 @login_required
+@require_http_methods(['POST'])
+def editar_productos_traspaso(request, id):
+    """Actualiza los productos reservados de un traspaso pendiente."""
+    try:
+        productos_data = json.loads(request.body).get('productos', [])
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'success': False, 'error': 'Datos de productos inválidos'}, status=400)
+    if not isinstance(productos_data, list) or not productos_data:
+        return JsonResponse({'success': False, 'error': 'Debe conservar al menos un producto'}, status=400)
+
+    traspaso = get_object_or_404(Traspaso.objects.select_related('origen'), id=id)
+    if not _puede_actuar_como_origen(getattr(request.user, 'perfil', None), traspaso.origen):
+        return JsonResponse({'success': False, 'error': 'No tiene permisos para editar este traspaso'}, status=403)
+    if traspaso.estado != 'pendiente':
+        return JsonResponse({'success': False, 'error': 'Solo se pueden editar traspasos pendientes'}, status=400)
+    try:
+        cantidades = {}
+        for item in productos_data:
+            producto_id, cantidad = int(item['id']), int(item['cantidad'])
+            if cantidad < 1 or producto_id in cantidades:
+                raise ValueError
+            cantidades[producto_id] = cantidad
+    except (KeyError, TypeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'Los productos o cantidades no son válidos'}, status=400)
+
+    try:
+        with transaction.atomic():
+            actuales = {d.producto_id: d for d in DetalleTraspaso.objects.select_for_update().select_related('producto').filter(traspaso=traspaso)}
+            productos = Producto.objects.in_bulk(cantidades)
+            if len(productos) != len(cantidades):
+                return JsonResponse({'success': False, 'error': 'Uno de los productos no existe'}, status=400)
+            for producto_id, nueva in cantidades.items():
+                anterior = actuales[producto_id].cantidad if producto_id in actuales else 0
+                adicional = nueva - anterior
+                if adicional > 0 and _stock_disponible_en_ubicacion(productos[producto_id], traspaso.origen) < adicional:
+                    return JsonResponse({'success': False, 'error': f'Stock insuficiente para {productos[producto_id].nombre}'}, status=400)
+            for producto_id, detalle in actuales.items():
+                nueva, diferencia = cantidades.get(producto_id, 0), cantidades.get(producto_id, 0) - detalle.cantidad
+                if diferencia:
+                    _ajustar_stock_ubicacion(producto=detalle.producto, ubicacion=traspaso.origen, delta=-diferencia,
+                        tipo_movimiento='salida' if diferencia > 0 else 'entrada', referencia=traspaso.codigo,
+                        comentario='Ajuste por edición de traspaso pendiente')
+                if nueva:
+                    detalle.cantidad = nueva
+                    detalle.save(update_fields=['cantidad'])
+                else:
+                    detalle.delete()
+            for producto_id, cantidad in cantidades.items():
+                if producto_id not in actuales:
+                    producto = productos[producto_id]
+                    DetalleTraspaso.objects.create(traspaso=traspaso, producto=producto, cantidad=cantidad)
+                    _ajustar_stock_ubicacion(producto=producto, ubicacion=traspaso.origen, delta=-cantidad,
+                        tipo_movimiento='salida', referencia=traspaso.codigo,
+                        comentario='Producto agregado al traspaso pendiente')
+        return JsonResponse({'success': True, 'message': 'Productos del traspaso actualizados'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
 @require_http_methods(["POST"])
 def cambiar_estado_traspaso(request, id):
     """Cambiar estado del traspaso"""

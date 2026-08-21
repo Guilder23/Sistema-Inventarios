@@ -116,6 +116,13 @@
             </h5>
         </div>
         <div class="card-body">
+            {% if es_origen and traspaso.estado == 'pendiente' %}
+            <div class="mb-3 text-right">
+                <button type="button" class="btn btn-outline-primary" id="btnEditarProductos">
+                    <i class="fas fa-edit"></i> Editar productos
+                </button>
+            </div>
+            {% endif %}
             <div class="table-responsive">
                 <table class="table table-bordered table-hover">
                     <thead class="thead-light">
@@ -192,4 +199,13 @@
 
 {% block scripts_extra %}
 <script src="{% static 'js/traspasos/traspasos.js' %}"></script>
+{% if es_origen and traspaso.estado == 'pendiente' %}
+<script>
+window.traspasoEditable = {
+    id: {{ traspaso.id }}, origenId: {{ traspaso.origen_id }},
+    productos: [{% for detalle in detalles %}{id: {{ detalle.producto_id }}, codigo: '{{ detalle.producto.codigo|escapejs }}', nombre: '{{ detalle.producto.nombre|escapejs }}', cantidad: {{ detalle.cantidad }}, unidades_por_caja: {{ detalle.producto.unidades_por_caja|default:1 }}}{% if not forloop.last %},{% endif %}{% endfor %}]
+};
+</script>
+<script src="{% static 'js/traspasos/editar_traspaso.js' %}"></script>
+{% endif %}
 {% endblock %}
