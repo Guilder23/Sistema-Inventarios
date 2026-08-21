@@ -25,6 +25,7 @@
             document.getElementById('totalQr').textContent = money(d.total_qr);
             document.getElementById('montoEsperado').textContent = money(d.monto_esperado_efectivo);
             document.getElementById('cierreEsperado').textContent = money(d.monto_esperado_efectivo);
+            document.getElementById('cierreEsperadoQr').textContent = money(d.total_qr);
             document.getElementById('ventasEfectivoUsd').textContent = dollars(d.ventas_efectivo_usd);
             document.getElementById('cobrosEfectivoUsd').textContent = dollars(d.cobros_efectivo_usd);
             document.getElementById('egresosManualesUsd').textContent = dollars(d.egresos_manuales_usd);

@@ -29,6 +29,8 @@ class SesionCaja(models.Model):
     monto_real_efectivo = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     diferencia_efectivo = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_transferencia = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    monto_real_qr = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    diferencia_qr = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_general_recaudado = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_efectivo_sistema_usd = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     monto_esperado_efectivo_usd = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
@@ -113,14 +115,16 @@ class SesionCaja(models.Model):
             'monto_esperado_efectivo_usd': Decimal(str(monto_esperado_usd)).quantize(Decimal('0.01')),
         }
 
-    def cerrar(self, monto_real_efectivo, monto_real_efectivo_usd=Decimal('0.00'), observaciones=None):
+    def cerrar(self, monto_real_efectivo, monto_real_efectivo_usd=Decimal('0.00'), observaciones=None, monto_real_qr=Decimal('0.00')):
         resumen = self.calcular_resumen()
         self.total_efectivo_sistema = resumen['ventas_efectivo'] + resumen['cobros_efectivo']
         self.monto_esperado_efectivo = resumen['monto_esperado_efectivo']
         self.monto_real_efectivo = Decimal(str(monto_real_efectivo)).quantize(Decimal('0.01'))
         self.diferencia_efectivo = self.monto_real_efectivo - self.monto_esperado_efectivo
         self.total_transferencia = resumen['total_transferencia']
-        self.total_general_recaudado = self.monto_real_efectivo + self.total_transferencia
+        self.monto_real_qr = Decimal(str(monto_real_qr)).quantize(Decimal('0.01'))
+        self.diferencia_qr = self.monto_real_qr - self.total_transferencia
+        self.total_general_recaudado = self.monto_real_efectivo + self.monto_real_qr
         self.total_efectivo_sistema_usd = resumen['ventas_efectivo_usd'] + resumen['cobros_efectivo_usd']
         self.monto_esperado_efectivo_usd = resumen['monto_esperado_efectivo_usd']
         self.monto_real_efectivo_usd = Decimal(str(monto_real_efectivo_usd)).quantize(Decimal('0.01'))
@@ -134,6 +138,8 @@ class SesionCaja(models.Model):
             'monto_real_efectivo',
             'diferencia_efectivo',
             'total_transferencia',
+            'monto_real_qr',
+            'diferencia_qr',
             'total_general_recaudado',
             'total_efectivo_sistema_usd', 'monto_esperado_efectivo_usd',
             'monto_real_efectivo_usd', 'diferencia_efectivo_usd',

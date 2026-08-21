@@ -24,6 +24,45 @@ def convertir_desde_bob_para_pdf(monto, venta):
     valor = Decimal(str(monto or 0))
     return valor
 
+def obtener_label_tipo_pago_pdf(venta):
+    """
+    Obtiene y formatea el tipo o método de pago para el PDF[cite: 3].
+    Soporta: Efectivo, QR / Transferencia, Crédito, Mixto (con desglose si aplica).
+    """
+    tipo = getattr(venta, 'tipo_pago', '') or ''
+    tipo_clean = str(tipo).strip().lower()
+
+    etiquetas = {
+        'efectivo': 'Efectivo',
+        'qr': 'QR / Transferencia',
+        'transferencia': 'QR / Transferencia',
+        'credito': 'Crédito',
+        'mixto': 'Mixto',
+        'tarjeta': 'Tarjeta',
+    }
+
+    if hasattr(venta, 'get_tipo_pago_display') and callable(getattr(venta, 'get_tipo_pago_display')):
+        label_base = venta.get_tipo_pago_display()
+    else:
+        label_base = etiquetas.get(tipo_clean, tipo.capitalize() if tipo else 'Sin especificar')
+
+    # En caso de pago Mixto, agregar desglose si existen los montos
+    if tipo_clean == 'mixto':
+        desglose = []
+        etiqueta_moneda = obtener_etiqueta_moneda(venta.moneda)
+
+        pago_efectivo = float(convertir_desde_bob_para_pdf(getattr(venta, 'monto_efectivo', 0), venta) or 0)
+        pago_qr = float(convertir_desde_bob_para_pdf(getattr(venta, 'monto_qr', 0), venta) or 0)
+
+        if pago_efectivo > 0:
+            desglose.append(f"Efectivo: {etiqueta_moneda} {pago_efectivo:,.2f}")
+        if pago_qr > 0:
+            desglose.append(f"QR: {etiqueta_moneda} {pago_qr:,.2f}")
+
+        if desglose:
+            return f"{label_base} ({', '.join(desglose)})"
+
+    return label_base
 
 def obtener_label_tipo_vendedor_pdf(tipo):
     etiquetas = {
@@ -321,11 +360,7 @@ def generar_pdf_venta_completo(venta):
 
     vendedor_con_lugar = f"{vendedor_nombre} - {lugar_venta}"
 
-    tipo_pago = (
-        venta.get_tipo_pago_display()
-        if hasattr(venta, 'get_tipo_pago_display')
-        else venta.tipo_pago
-    )
+    tipo_pago = obtener_label_tipo_pago_pdf(venta)
 
     info_general = f"""
     <b>Código:</b> {codigo_venta_str}<br/>

@@ -116,3 +116,24 @@ class ArqueoCajaTests(TestCase):
 
         self.assertEqual(resumen['ventas_efectivo'], Decimal('20.00'))
         self.assertEqual(resumen['total_qr'], Decimal('70.00'))
+
+    def test_cierre_cuadra_qr_por_separado(self):
+        sesion = SesionCaja.objects.create(
+            cajero=self.user,
+            ubicacion=self.perfil,
+            monto_inicial=Decimal('100.00'),
+        )
+        Venta.objects.create(
+            codigo='V-QR-CIERRE', ubicacion=self.perfil, cliente='Cliente QR cierre',
+            tipo_pago='Qr', estado='completada', total=Decimal('40.00'),
+            sesion_caja=sesion, vendedor=self.user,
+            monto_qr=Decimal('40.00'),
+        )
+
+        sesion.cerrar(Decimal('100.00'), monto_real_qr=Decimal('40.00'))
+
+        self.assertEqual(sesion.total_transferencia, Decimal('40.00'))
+        self.assertEqual(sesion.monto_real_qr, Decimal('40.00'))
+        self.assertEqual(sesion.diferencia_qr, Decimal('0.00'))
+        self.assertEqual(sesion.monto_esperado_efectivo, Decimal('100.00'))
+        self.assertEqual(sesion.total_general_recaudado, Decimal('140.00'))

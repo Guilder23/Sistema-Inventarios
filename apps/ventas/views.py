@@ -192,13 +192,15 @@ def generar_pdf_arqueo(request, sesion_id):
     data = [
         ['Concepto', 'Monto'],
         ['Monto inicial', str(sesion.monto_inicial)],
-        ['Ventas en efectivo', str(sesion.total_efectivo_sistema)],
+        ['Ventas + amortizaciones en efectivo', str(sesion.total_efectivo_sistema)],
         ['Ingresos manuales', str(sesion.movimientos.filter(tipo='INGRESO').aggregate(total=Sum('monto'))['total'] or '0.00')],
         ['Egresos manuales', str(sesion.movimientos.filter(tipo='EGRESO').aggregate(total=Sum('monto'))['total'] or '0.00')],
         ['Monto esperado en efectivo', str(sesion.monto_esperado_efectivo)],
         ['Monto real en efectivo', str(sesion.monto_real_efectivo)],
         ['Diferencia de efectivo', str(sesion.diferencia_efectivo)],
-        ['Total QR', str(sesion.total_transferencia)],
+        ['Total QR esperado', str(sesion.total_transferencia)],
+        ['Monto real QR', str(sesion.monto_real_qr)],
+        ['Diferencia QR', str(sesion.diferencia_qr)],
         ['Total general recaudado', str(sesion.total_general_recaudado)],
         ['--- ARQUEO EN DÓLARES ---', ''],
         ['Monto inicial USD', f'$ {sesion.monto_inicial_usd}'],
@@ -216,6 +218,68 @@ def generar_pdf_arqueo(request, sesion_id):
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
     ]))
     story.append(table)
+
+    ventas_bob = sesion.ventas.filter(moneda='BOB')
+    ventas_usd = sesion.ventas.filter(moneda='USD')
+    amortizaciones_bob = sesion.amortizaciones.filter(moneda='BOB')
+    amortizaciones_usd = sesion.amortizaciones.filter(moneda='USD')
+
+    def total_queryset(queryset, **filters):
+        return queryset.filter(**filters).aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+
+    def total_monto_queryset(queryset, **filters):
+        return queryset.filter(**filters).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+
+    def total_ventas_monto(queryset, campo, **filters):
+        return queryset.filter(**filters).aggregate(total=Sum(campo))['total'] or Decimal('0.00')
+
+    def monto_pdf(valor, simbolo):
+        return f'{simbolo} {valor:,.2f}'
+
+    desglose_pagos = [
+        ['Tipo de pago', 'BOB (Bs.)', 'USD ($)'],
+        [
+            'Contado',
+            monto_pdf(total_queryset(ventas_bob, tipo_pago='contado'), 'Bs.'),
+            monto_pdf(total_queryset(ventas_usd, tipo_pago='contado'), '$'),
+        ],
+        [
+            'QR',
+            monto_pdf(total_ventas_monto(ventas_bob, 'monto_qr', tipo_pago='Qr'), 'Bs.'),
+            monto_pdf(total_ventas_monto(ventas_usd, 'monto_qr', tipo_pago='Qr'), '$'),
+        ],
+        [
+            'Mixto - efectivo',
+            monto_pdf(total_ventas_monto(ventas_bob, 'monto_efectivo', tipo_pago='Mixto'), 'Bs.'),
+            monto_pdf(total_ventas_monto(ventas_usd, 'monto_efectivo', tipo_pago='Mixto'), '$'),
+        ],
+        [
+            'Mixto - QR',
+            monto_pdf(total_ventas_monto(ventas_bob, 'monto_qr', tipo_pago='Mixto'), 'Bs.'),
+            monto_pdf(total_ventas_monto(ventas_usd, 'monto_qr', tipo_pago='Mixto'), '$'),
+        ],
+        [
+            'Crédito (no recaudado)',
+            monto_pdf(total_queryset(ventas_bob, tipo_pago='credito'), 'Bs.'),
+            monto_pdf(total_queryset(ventas_usd, tipo_pago='credito'), '$'),
+        ],
+        [
+            'Amortizaciones cobradas',
+            monto_pdf(total_monto_queryset(amortizaciones_bob), 'Bs.'),
+            monto_pdf(total_monto_queryset(amortizaciones_usd), '$'),
+        ],
+    ]
+    story.append(Spacer(1, 18))
+    story.append(Paragraph('DESGLOSE POR TIPO DE PAGO', styles['Heading2']))
+    pagos_table = Table(desglose_pagos, colWidths=[220, 100, 100])
+    pagos_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#374151')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#9ca3af')),
+        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+    ]))
+    story.append(pagos_table)
 
     gastos = sesion.movimientos.filter(tipo='EGRESO').order_by('fecha')
     if gastos.exists():
@@ -1237,6 +1301,7 @@ def obtener_detalle_venta(request, id):
             'cliente': venta.cliente,
             'comentario': venta.comentario or '',
             'tipo_pago': venta.tipo_pago,
+            'metodo_pago': venta.tipo_pago.lower(),
             'estado': venta.estado,
             'moneda': venta.moneda,
             'moneda_simbolo': obtener_simbolo_moneda(venta.moneda),

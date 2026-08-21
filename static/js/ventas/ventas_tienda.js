@@ -45,7 +45,16 @@ function renderDetalleVentaTienda(data) {
             </div>
             <div class="detalle-info-item">
                 <div class="label">Tipo de Pago</div>
-                <div class="value">${data.tipo_pago === 'credito' ? 'Crédito' : 'Contado'}</div>
+<div class="value">
+    ${data.tipo_pago === 'credito' 
+        ? 'Crédito' 
+        : `${
+            data.tipo_pago?.toLowerCase() === 'contado' ? 'Efectivo' :
+            data.tipo_pago?.toLowerCase() === 'qr' ? 'QR' :
+            data.tipo_pago?.toLowerCase() === 'mixto' ? 'Mixto' : 'Efectivo'
+          }`
+    }
+</div>
             </div>
             <div class="detalle-info-item">
                 <div class="label">Total</div>

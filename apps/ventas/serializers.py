@@ -131,14 +131,16 @@ class CierreCajaSerializer(BaseCajaSerializer):
 
         monto_real = self.data.get('monto_real_efectivo', '0.00')
         monto_real_usd = self.data.get('monto_real_efectivo_usd', '0.00')
+        monto_real_qr = self.data.get('monto_real_qr', '0.00')
         try:
             monto_real = Decimal(str(monto_real))
             monto_real_usd = Decimal(str(monto_real_usd))
+            monto_real_qr = Decimal(str(monto_real_qr))
         except Exception:
-            self.errors['monto_real_efectivo'] = ['El monto real no es válido.']
+            self.errors['monto_real_efectivo'] = ['Los montos reales no son válidos.']
             return False
 
-        if monto_real < Decimal('0.00') or monto_real_usd < Decimal('0.00'):
+        if monto_real < Decimal('0.00') or monto_real_usd < Decimal('0.00') or monto_real_qr < Decimal('0.00'):
             self.errors['monto_real_efectivo'] = ['Los montos reales no pueden ser negativos.']
             return False
 
@@ -146,6 +148,7 @@ class CierreCajaSerializer(BaseCajaSerializer):
             'sesion_caja': sesion,
             'monto_real_efectivo': monto_real,
             'monto_real_efectivo_usd': monto_real_usd,
+            'monto_real_qr': monto_real_qr,
             'observaciones': self.data.get('observaciones'),
         }
         return True
@@ -155,6 +158,7 @@ class CierreCajaSerializer(BaseCajaSerializer):
             self.validated_data['monto_real_efectivo'],
             monto_real_efectivo_usd=self.validated_data['monto_real_efectivo_usd'],
             observaciones=self.validated_data.get('observaciones'),
+            monto_real_qr=self.validated_data['monto_real_qr'],
         )
 
 
@@ -177,6 +181,8 @@ class SesionCajaSerializer:
             'diferencia_efectivo': str(sesion.diferencia_efectivo),
             'total_transferencia': str(sesion.total_transferencia),
             'total_qr': str(sesion.total_transferencia),
+            'monto_real_qr': str(sesion.monto_real_qr),
+            'diferencia_qr': str(sesion.diferencia_qr),
             'total_general_recaudado': str(sesion.total_general_recaudado),
             'total_efectivo_sistema_usd': str(sesion.total_efectivo_sistema_usd),
             'monto_esperado_efectivo_usd': str(sesion.monto_esperado_efectivo_usd),
