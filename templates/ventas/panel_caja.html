@@ -1,0 +1,112 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% block titulo %}Arqueo de Caja{% endblock %}
+{% block estilos_extra %}<link rel="stylesheet" href="{% static 'css/ventas/panel_caja.css' %}">{% endblock %}
+{% block contenido %}
+<div class="container-fluid caja-page py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4"><div>
+    <h3 class="mb-1"><i class="fas fa-cash-register text-primary mr-2">
+      </i>Arqueo de caja
+    </h3>
+    <p class="text-muted mb-0">Control de caja para tienda y almacén.</p>
+  </div>
+  {% if sesion and sesion.estado == 'ABIERTA' %}
+  <span class="badge badge-success badge-pill px-3 py-2">CAJA ABIERTA</span>
+  {% else %}
+  <span class="badge badge-secondary badge-pill px-3 py-2">SIN CAJA ABIERTA</span>
+  {% endif %}
+</div>
+  {% if sesion and sesion.estado == 'ABIERTA' %}
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-start">
+        <div>
+          <h5 class="mb-2">Caja actual #{{ sesion.id }}</h5>
+          <div class="text-muted small">Apertura: {{ sesion.fecha_apertura|date:"d/m/Y H:i" }}</div>
+          <div class="text-muted small">Ubicación: {{ sesion.ubicacion.nombre_ubicacion|default:"Sin ubicación" }}</div>
+        </div>
+        <div class="mt-3 mt-md-0"><button class="btn btn-outline-danger mr-2" type="button" data-toggle="modal" data-target="#gastoCajaModal">
+          <i class="fas fa-receipt mr-1"></i> Registrar gasto
+        </button>
+        <button class="btn btn-danger" type="button" data-toggle="modal" data-target="#cerrarCajaModal">
+          <i class="fas fa-lock mr-1">
+          </i> Cerrar caja
+        </button>
+      </div>
+    </div>
+    <div class="row mt-4" id="resumenCaja" data-resumen-url="{% url 'ventas_api:resumen_caja_actual' %}">
+      <div class="col-6 col-md-3 mb-3">
+        <div class="caja-metrica">
+          <small>Fondo inicial</small>
+          <strong id="montoInicial">Bs {{ sesion.monto_inicial|floatformat:2 }}</strong>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-3">
+        <div class="caja-metrica">
+          <small>Ventas efectivo</small>
+          <strong id="ventasEfectivo">Bs 0.00</strong>
+        </div>
+      </div>
+            <div class="col-6 col-md-3 mb-3">
+        <div class="caja-metrica">
+          <small>Amortizaciones Bs</small>
+          <strong class="text-success" id="cobrosEfectivo">Bs 0.00</strong>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-3">
+        <div class="caja-metrica">
+          <small>Gastos de caja</small>
+          <strong class="text-danger" id="egresosManuales">Bs 0.00</strong>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-3">
+        <div class="caja-metrica">
+          <small>QR esperado</small>
+          <strong class="text-info" id="totalQr">Bs 0.00</strong>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-3">
+        <div class="caja-metrica caja-metrica-primary">
+          <small>Efectivo esperado</small>
+          <strong id="montoEsperado">Bs 0.00</strong>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-3">
+        <div class="caja-metrica">
+          <small>Ventas en dólares</small>
+          <strong id="ventasEfectivoUsd">$ 0.00</strong>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-3">
+        <div class="caja-metrica">
+          <small>Gastos en dólares</small>
+          <strong class="text-danger" id="egresosManualesUsd">$ 0.00</strong>
+        </div>
+      </div>
+            <div class="col-6 col-md-3 mb-3">
+        <div class="caja-metrica">
+          <small>Amortizaciones $us</small>
+          <strong class="text-success" id="cobrosEfectivoUsd">$ 0.00</strong>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-3">
+        <div class="caja-metrica caja-metrica-primary">
+          <small>Efectivo esperado USD</small>
+          <strong id="montoEsperadoUsd">$ 0.00</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  {% else %}
+  <div class="card shadow-sm border-0 mb-4"><div class="card-body d-flex flex-wrap justify-content-between align-items-center"><div><h5 class="mb-1">Abra una caja para comenzar</h5><p class="mb-0 text-muted">Las ventas y gastos se registrarán en esta sesión.</p></div><button class="btn btn-primary mt-3 mt-md-0" type="button" data-toggle="modal" data-target="#abrirCajaModal"><i class="fas fa-lock-open mr-1"></i> Abrir caja</button></div></div>
+  {% endif %}
+  <div class="card shadow-sm border-0"><div class="card-header bg-white border-0 pt-4"><h5 class="mb-0">Historial de arqueos</h5></div><div class="card-body pt-2 table-responsive"><table class="table table-hover mb-0"><thead><tr><th>#</th><th>Ubicación</th><th>Apertura</th><th>Cierre</th><th class="text-right">Esperado</th><th class="text-right">Diferencia</th><th>Estado</th><th class="text-right">Acciones</th></tr></thead><tbody>{% for item in sesiones %}<tr><td>#{{ item.id }}</td><td>{{ item.ubicacion.nombre_ubicacion|default:"-" }}</td><td>{{ item.fecha_apertura|date:"d/m/Y H:i" }}</td><td>{{ item.fecha_cierre|date:"d/m/Y H:i"|default:"-" }}</td><td class="text-right">Bs {{ item.monto_esperado_efectivo|floatformat:2 }}</td><td class="text-right {% if item.diferencia_efectivo < 0 %}text-danger{% elif item.diferencia_efectivo > 0 %}text-success{% endif %}">Bs {{ item.diferencia_efectivo|floatformat:2 }}</td><td><span class="badge badge-{% if item.estado == 'ABIERTA' %}success{% else %}secondary{% endif %}">{{ item.get_estado_display|upper }}</span></td><td class="text-right">{% if item.estado == 'CERRADA' %}<a class="btn btn-sm btn-outline-primary" href="{% url 'ventas_api:generar_pdf_arqueo' item.id %}"><i class="fas fa-file-pdf mr-1"></i> PDF</a>{% else %}<span class="text-muted small">En curso</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="8" class="text-center text-muted py-4">Aún no hay arqueos registrados.</td></tr>{% endfor %}</tbody></table></div></div>
+</div>
+<div class="modal fade" id="abrirCajaModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content caja-form" data-url="{% url 'ventas_api:abrir_caja' %}" data-action="abrir"><div class="modal-header"><h5 class="modal-title">Abrir caja</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><div class="form-group"><label for="montoInicialInput">Monto inicial (Bs)</label><input id="montoInicialInput" class="form-control" type="number" name="monto_inicial" min="0" step="0.01" value="0.00" required></div><div class="form-group mb-0"><label>Monto inicial (USD)</label><input class="form-control" type="number" name="monto_inicial_usd" min="0" step="0.01" value="0.00" required></div></div><div class="modal-footer"><button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button><button class="btn btn-primary" type="submit">Abrir caja</button></div></form></div></div>
+<div class="modal fade" id="gastoCajaModal" tabindex="-1"><div class="modal-dialog"><form class="modal-content caja-form" data-url="{% url 'ventas_api:registrar_movimiento_caja' %}" data-action="gasto"><div class="modal-header"><h5 class="modal-title">Registrar gasto de caja</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><input type="hidden" name="tipo" value="EGRESO"><div class="form-group"><label>Concepto</label><input class="form-control" name="concepto" maxlength="255" placeholder="Ej.: compra de insumos" required></div><div class="form-group"><label>Moneda</label><select class="form-control" name="moneda"><option value="BOB">Bolivianos (Bs)</option><option value="USD">Dólares (USD)</option></select></div><div class="form-group mb-0"><label>Monto</label><input class="form-control" type="number" name="monto" min="0.01" step="0.01" required></div></div><div class="modal-footer"><button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button><button class="btn btn-danger" type="submit">Registrar gasto</button></div></form></div></div>
+<div class="modal fade" id="cerrarCajaModal" tabindex="-1"><div class="modal-dialog"><form class="modal-content caja-form" data-url="{% url 'ventas_api:cerrar_caja' %}" data-action="cerrar"><div class="modal-header"><h5 class="modal-title">Cerrar caja</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><div class="alert alert-light border">Efectivo esperado: <strong id="cierreEsperado">Bs 0.00</strong><br>Efectivo esperado USD: <strong id="cierreEsperadoUsd">$ 0.00</strong><br>QR esperado: <strong id="cierreEsperadoQr">Bs 0.00</strong></div><div class="form-group"><label>Efectivo real contado (Bs)</label><input class="form-control" type="number" name="monto_real_efectivo" min="0" step="0.01" required></div><div class="form-group"><label>Efectivo real contado (USD)</label><input class="form-control" type="number" name="monto_real_efectivo_usd" min="0" step="0.01" value="0.00" required></div><div class="form-group"><label>QR real recibido (Bs)</label><input class="form-control" type="number" name="monto_real_qr" min="0" step="0.01" value="0.00" required></div><div class="form-group mb-0"><label>Observaciones <span class="text-muted">(opcional)</span></label><textarea class="form-control" name="observaciones" rows="3"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button><button class="btn btn-danger" type="submit">Confirmar cierre</button></div></form></div></div>
+{% endblock %}
+{% block scripts_extra %}<script src="{% static 'js/ventas/panel_caja.js' %}"></script>{% endblock %}

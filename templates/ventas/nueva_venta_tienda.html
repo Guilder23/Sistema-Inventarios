@@ -147,6 +147,9 @@
                                         <th class="text-center" style="width: 120px;">Vendedor</th>
                                         <th class="text-center" style="width: 80px;">Modalidad</th>
                                         <th class="text-center" style="width: 110px;">Precio Unit.</th>
+                                        {% if es_tienda_principal %}
+                                        <th class="text-center" style="width: 130px;">Comisión Transporte</th>
+                                        {% endif %}
                                         <th class="text-center" style="width: 70px;">Cantidad</th>
                                         <th class="text-right" style="width: 180px;">Subtotal</th>
                                         <th class="text-center pr-3" style="width: 50px;"></th>
@@ -258,6 +261,13 @@
                             <strong id="resumenSubtotal">Bs. 0.00</strong>
                         </div>
 
+                        {% if es_tienda_principal %}
+                        <div class="resumen-linea">
+                            <span>Comisión de transporte</span>
+                            <strong id="resumenComisionTransporte">Bs. 0.00</strong>
+                        </div>
+                        {% endif %}
+
                         <div class="form-group my-3 pb-3 border-bottom" id="descuentoSection">
                             <label class="label-campo">
                                 <i class="fas fa-percentage text-success mr-1"></i>Descuento (opcional)
@@ -315,7 +325,6 @@
                             El descuento solo está disponible para ventas al contado.
                         </div>
 
-                        {% if es_tienda_principal %}
                         <div class="form-group mb-4">
                             <label class="label-campo d-block mb-2">Tipo de Pago</label>
                             <div class="tipo-pago-selector tipo-pago-selector--resumen">
@@ -330,6 +339,7 @@
                                     <i class="fas fa-check-circle check-icon"></i>
                                 </div>
 
+                                {% if es_tienda_principal %}
                                 <div class="tipo-pago-option" data-tipo="credito">
                                     <div class="tipo-pago-icon tipo-pago-icon--credito">
                                         <i class="fas fa-credit-card"></i>
@@ -340,9 +350,23 @@
                                     </div>
                                     <i class="fas fa-check-circle check-icon"></i>
                                 </div>
+                                {% endif %}
+                                <div class="tipo-pago-option" data-tipo="Qr">
+                                    <div class="tipo-pago-icon"><i class="fas fa-qrcode"></i></div>
+                                    <div><strong>Pago QR</strong><small class="d-block text-muted">Pago completo por QR</small></div>
+                                    <i class="fas fa-check-circle check-icon"></i>
+                                </div>
+                                <div class="tipo-pago-option" data-tipo="Mixto">
+                                    <div class="tipo-pago-icon"><i class="fas fa-random"></i></div>
+                                    <div><strong>Mixto</strong><small class="d-block text-muted">Efectivo + QR</small></div>
+                                    <i class="fas fa-check-circle check-icon"></i>
+                                </div>
+                            </div>
+                            <div id="pagoMixtoFields" class="row mt-3" style="display:none;">
+                                <div class="col-md-6"><label for="montoEfectivo">Efectivo</label><input id="montoEfectivo" class="form-control" type="number" min="0" step="0.01" value="0"></div>
+                                <div class="col-md-6"><label for="montoQr">QR</label><input id="montoQr" class="form-control" type="number" min="0" step="0.01" value="0"></div>
                             </div>
                         </div>
-                        {% endif %}
 
                         <div class="resumen-total">
                             <span class="resumen-total-label">Total</span>

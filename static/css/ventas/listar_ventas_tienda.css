@@ -1,0 +1,187 @@
+/* Correcciones generales de layout y desbordamiento */
+html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+* {
+    box-sizing: border-box !important;
+}
+
+.main-container, .content, .container-fluid {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+[class*="col-"] {
+    max-width: 100% !important;
+}
+
+.col-lg-3, .col-lg-9, .col-md-6, .col-md-2 {
+    max-width: 100%;
+}
+
+.table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.table {
+    width: 100% !important;
+    margin-bottom: 0 !important;
+}
+
+footer {
+    width: auto !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* Modales y Backdrops */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    opacity: 1 !important;
+}
+
+.modal-backdrop.fade {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.modal-backdrop.show {
+    opacity: 1;
+}
+
+body.modal-open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+    z-index: 1040;
+}
+
+.modal {
+    z-index: 1050 !important;
+}
+
+.modal.fade.show {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Modal Detalle Venta */
+#modalDetalleVenta .modal-content.modal-detalle-venta {
+    max-height: calc(100vh - 2rem);
+    display: flex;
+    flex-direction: column;
+}
+
+#modalDetalleVenta .modal-body {
+    overflow-y: auto;
+    max-height: calc(100vh - 11rem);
+}
+
+/* Modal Anular Venta Header */
+.modal-header-anular {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.modal-header-anular .modal-title {
+    color: white;
+    font-weight: 600;
+}
+
+.modal-header-anular .close-white {
+    color: white;
+    opacity: 0.8;
+}
+
+/* Informaciones de Amortización */
+.info-venta-amort {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 6px;
+}
+
+.preview-image {
+    max-width: 100%;
+    max-height: 260px;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+.modal-comprobante-img {
+    max-height: 75vh;
+    object-fit: contain;
+}
+
+.comprobante-thumb {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+/* Saldo Chips */
+.saldo-cell {
+    vertical-align: middle !important;
+    text-align: center !important;
+}
+
+.saldo-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 110px;
+    padding: 0.42rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.saldo-chip--pendiente {
+    background: #fff7ed;
+    color: #9a3412;
+    border-color: #fed7aa;
+    box-shadow: 0 1px 2px rgba(154, 52, 18, 0.08);
+}
+
+.saldo-chip--pagado {
+    background: #ecfdf5;
+    color: #166534;
+    border-color: #bbf7d0;
+    box-shadow: 0 1px 2px rgba(22, 101, 52, 0.08);
+}

@@ -1,0 +1,6 @@
+.caja-page { max-width: 1400px; }
+.caja-metrica { height: 100%; padding: 1rem; border-radius: .5rem; background: #f8fafc; border: 1px solid #e9ecef; }
+.caja-metrica small { display: block; color: #6c757d; margin-bottom: .35rem; }
+.caja-metrica strong { font-size: 1.15rem; color: #212529; }
+.caja-metrica-primary { background: #eef6ff; border-color: #b8daff; }
+.table td, .table th { vertical-align: middle; white-space: nowrap; }

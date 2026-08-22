@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.db import transaction
 from django.db.models import Q, Case, When, IntegerField
 from .models import Traspaso, DetalleTraspaso
-from apps.productos.models import Producto, ProductoContenedor
+from apps.productos.models import Producto, ProductoContenedor, Contenedor
 from apps.usuarios.models import PerfilUsuario
 from apps.inventario.models import Inventario, MovimientoInventario
 from apps.depositos.models import Deposito
@@ -554,6 +554,66 @@ def ver_traspaso(request, id):
 
 
 @login_required
+@require_http_methods(['POST'])
+def editar_productos_traspaso(request, id):
+    """Actualiza los productos reservados de un traspaso pendiente."""
+    try:
+        productos_data = json.loads(request.body).get('productos', [])
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'success': False, 'error': 'Datos de productos inválidos'}, status=400)
+    if not isinstance(productos_data, list) or not productos_data:
+        return JsonResponse({'success': False, 'error': 'Debe conservar al menos un producto'}, status=400)
+
+    traspaso = get_object_or_404(Traspaso.objects.select_related('origen'), id=id)
+    if not _puede_actuar_como_origen(getattr(request.user, 'perfil', None), traspaso.origen):
+        return JsonResponse({'success': False, 'error': 'No tiene permisos para editar este traspaso'}, status=403)
+    if traspaso.estado != 'pendiente':
+        return JsonResponse({'success': False, 'error': 'Solo se pueden editar traspasos pendientes'}, status=400)
+    try:
+        cantidades = {}
+        for item in productos_data:
+            producto_id, cantidad = int(item['id']), int(item['cantidad'])
+            if cantidad < 1 or producto_id in cantidades:
+                raise ValueError
+            cantidades[producto_id] = cantidad
+    except (KeyError, TypeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'Los productos o cantidades no son válidos'}, status=400)
+
+    try:
+        with transaction.atomic():
+            actuales = {d.producto_id: d for d in DetalleTraspaso.objects.select_for_update().select_related('producto').filter(traspaso=traspaso)}
+            productos = Producto.objects.in_bulk(cantidades)
+            if len(productos) != len(cantidades):
+                return JsonResponse({'success': False, 'error': 'Uno de los productos no existe'}, status=400)
+            for producto_id, nueva in cantidades.items():
+                anterior = actuales[producto_id].cantidad if producto_id in actuales else 0
+                adicional = nueva - anterior
+                if adicional > 0 and _stock_disponible_en_ubicacion(productos[producto_id], traspaso.origen) < adicional:
+                    return JsonResponse({'success': False, 'error': f'Stock insuficiente para {productos[producto_id].nombre}'}, status=400)
+            for producto_id, detalle in actuales.items():
+                nueva, diferencia = cantidades.get(producto_id, 0), cantidades.get(producto_id, 0) - detalle.cantidad
+                if diferencia:
+                    _ajustar_stock_ubicacion(producto=detalle.producto, ubicacion=traspaso.origen, delta=-diferencia,
+                        tipo_movimiento='salida' if diferencia > 0 else 'entrada', referencia=traspaso.codigo,
+                        comentario='Ajuste por edición de traspaso pendiente')
+                if nueva:
+                    detalle.cantidad = nueva
+                    detalle.save(update_fields=['cantidad'])
+                else:
+                    detalle.delete()
+            for producto_id, cantidad in cantidades.items():
+                if producto_id not in actuales:
+                    producto = productos[producto_id]
+                    DetalleTraspaso.objects.create(traspaso=traspaso, producto=producto, cantidad=cantidad)
+                    _ajustar_stock_ubicacion(producto=producto, ubicacion=traspaso.origen, delta=-cantidad,
+                        tipo_movimiento='salida', referencia=traspaso.codigo,
+                        comentario='Producto agregado al traspaso pendiente')
+        return JsonResponse({'success': True, 'message': 'Productos del traspaso actualizados'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
 @require_http_methods(["POST"])
 def cambiar_estado_traspaso(request, id):
     """Cambiar estado del traspaso"""
@@ -655,10 +715,6 @@ def generar_pdf_traspaso(request, id):
 
     traspaso = get_object_or_404(Traspaso, id=id)
 
-    ubicacion_actual = request.user.perfil if hasattr(request.user, 'perfil') else None
-    if traspaso.origen != ubicacion_actual and traspaso.destino != ubicacion_actual:
-        messages.error(request, 'No tiene permisos')
-        return redirect('listar_traspasos')
 
     try:
         buffer = generar_pdf_traspaso_completo(traspaso)
@@ -735,6 +791,52 @@ def obtener_productos_traspaso(request):
         return JsonResponse(productos, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def obtener_contenedores_traspaso(request):
+    """Contenedores con stock que se pueden enviar desde un origen de almacén."""
+    ubicacion_actual = getattr(request.user, 'perfil', None)
+    origen_id = request.GET.get('origen_id')
+    origen = _origenes_validos_para_usuario(ubicacion_actual).filter(id=origen_id).first()
+    if not origen or origen.rol != 'almacen':
+        return JsonResponse([], safe=False)
+
+    contenedores = Contenedor.objects.filter(
+        activo=True, productos_contenedores__cantidad__gt=0, productos_contenedores__producto__activo=True
+    ).distinct().order_by('nombre')
+    return JsonResponse([{'id': contenedor.id, 'nombre': contenedor.nombre, 'proveedor': contenedor.proveedor,
+                          'stock_total': contenedor.stock_total} for contenedor in contenedores], safe=False)
+
+
+@login_required
+def obtener_productos_contenedor_traspaso(request, id):
+    """Productos y cantidades disponibles de un contenedor para un traspaso desde almacén."""
+    ubicacion_actual = getattr(request.user, 'perfil', None)
+    origen = _origenes_validos_para_usuario(ubicacion_actual).filter(id=request.GET.get('origen_id')).first()
+    if not origen or origen.rol != 'almacen':
+        return JsonResponse({'error': 'El contenedor solo puede enviarse desde un almacén'}, status=403)
+
+    productos = ProductoContenedor.objects.filter(contenedor_id=id, cantidad__gt=0, producto__activo=True).select_related('producto')
+    resultado = []
+    for item in productos:
+        # El contenedor puede tener datos históricos inconsistentes con el stock
+        # total. Nunca se ofrece una cantidad mayor a la que se puede reservar.
+        disponible_real = _stock_disponible_en_ubicacion(item.producto, origen)
+        # Los traspasos por contenedor solo incluyen cajas completas.  Se toma
+        # el menor saldo entre el contenedor y el inventario real, y se deja
+        # el remanente que no completa una caja en el almacén.
+        unidades_por_caja = max(item.producto.unidades_por_caja or 1, 1)
+        cantidad_disponible = min(item.cantidad, disponible_real)
+        cantidad_enviar = (cantidad_disponible // unidades_por_caja) * unidades_por_caja
+        if cantidad_enviar > 0:
+            resultado.append({
+                'id': item.producto_id, 'codigo': item.producto.codigo, 'nombre': item.producto.nombre,
+                'stock': disponible_real, 'cantidad': cantidad_enviar,
+                'precio_unidad': float(item.producto.precio_unidad or 0),
+                'unidades_por_caja': unidades_por_caja,
+            })
+    return JsonResponse(resultado, safe=False)
 
 
 @login_required

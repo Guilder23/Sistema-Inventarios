@@ -39,6 +39,17 @@
 </li>
 {% endif %}
 
+{% if user.is_authenticated %}
+<li class="sidebar-item">
+    <a href="{% url 'ventas:panel_caja' %}" 
+       class="sidebar-link {% if request.resolver_match.url_name == 'panel_caja' %}active{% endif %}" 
+       title="Arqueo de Caja">
+        <i class="fas fa-cash-register"></i>
+        <span>Arqueo de Caja</span>
+    </a>
+</li>
+{% endif %}
+
             <!-- Productos - Almacén y Administradores -->
             {% if user.is_superuser or user.is_staff or user.perfil.rol == 'almacen' %}
             {% with url_actual=request.resolver_match.url_name %}

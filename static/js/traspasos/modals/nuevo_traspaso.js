@@ -9,6 +9,7 @@ let traspasoConfig = {
 };
 
 let productosDisponiblesCache = [];
+let contenedoresDisponiblesCache = [];
 
 function setInlineAlert(id, message) {
     const el = document.getElementById(id);
@@ -30,6 +31,12 @@ function clearAlerts() {
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('modalNuevoTraspaso');
     if (!modal) return;
+
+    // Bootstrap aplica aria-hidden al contenido de fondo; el modal debe quedar
+    // fuera de ese contenedor para no ocultar el elemento que tiene el foco.
+    if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
 
     $(modal).on('shown.bs.modal', function() {
         if (!traspasoConfig.inicializada) {
@@ -76,6 +83,9 @@ function inicializarEventosModal() {
     const buscarProducto = document.getElementById('buscarProducto');
     const selectOrigen = document.getElementById('origenTraspaso');
     const selectTipoDestino = document.getElementById('tipoDestino');
+    const selectContenedor = document.getElementById('contenedorTraspaso');
+    const buscarContenedor = document.getElementById('buscarContenedorTraspaso');
+    const btnAgregarContenedor = document.getElementById('btnAgregarContenedorTraspaso');
 
     if (buscarProducto) {
         buscarProducto.onkeyup = function() {
@@ -93,6 +103,26 @@ function inicializarEventosModal() {
             actualizarInfoOrigen();
             cargarDestinosPorOrigen(selectOrigen.value);
             cargarProductos();
+            cargarContenedores(selectOrigen.value);
+        };
+    }
+
+    if (selectContenedor) {
+        selectContenedor.onchange = function() {
+            actualizarSeleccionContenedor(this.value);
+        };
+    }
+
+    if (btnAgregarContenedor) {
+        btnAgregarContenedor.onclick = function() {
+            const contenedorId = document.getElementById('contenedorTraspaso').value;
+            if (contenedorId) cargarProductosDeContenedor(contenedorId);
+        };
+    }
+
+    if (buscarContenedor) {
+        buscarContenedor.oninput = function() {
+            renderContenedores(this.value);
         };
     }
 
@@ -143,6 +173,19 @@ function resetearModal() {
     const destino = document.getElementById('destino');
     if (tipoDestino) tipoDestino.innerHTML = '<option value="">Seleccionar tipo...</option>';
     if (destino) destino.innerHTML = '<option value="">Seleccionar destino...</option>';
+    const seccionContenedor = document.getElementById('seccionContenedorTraspaso');
+    const contenedor = document.getElementById('contenedorTraspaso');
+    const buscarContenedor = document.getElementById('buscarContenedorTraspaso');
+    if (seccionContenedor) seccionContenedor.style.display = 'none';
+    if (contenedor) contenedor.value = '';
+    if (buscarContenedor) buscarContenedor.value = '';
+    const resultadosContenedor = document.getElementById('resultadosContenedorTraspaso');
+    const contenedorSeleccionado = document.getElementById('contenedorSeleccionadoTraspaso');
+    const btnAgregarContenedor = document.getElementById('btnAgregarContenedorTraspaso');
+    if (resultadosContenedor) resultadosContenedor.style.display = 'none';
+    if (contenedorSeleccionado) contenedorSeleccionado.textContent = 'Ningún contenedor seleccionado.';
+    if (btnAgregarContenedor) btnAgregarContenedor.disabled = true;
+    contenedoresDisponiblesCache = [];
 
     generarCodigoYFecha();
     actualizarInfoOrigen();
@@ -209,6 +252,95 @@ function cargarProductos() {
                 listContainer.innerHTML = '<div class="text-center p-3 text-muted">No se pudieron cargar productos.</div>';
             }
         });
+}
+
+function cargarContenedores(origenId) {
+    const seccion = document.getElementById('seccionContenedorTraspaso');
+    const select = document.getElementById('contenedorTraspaso');
+    const origen = obtenerOrigenSeleccionado();
+    if (!seccion || !select) return;
+
+    select.value = '';
+    const buscar = document.getElementById('buscarContenedorTraspaso');
+    const seleccionado = document.getElementById('contenedorSeleccionadoTraspaso');
+    const boton = document.getElementById('btnAgregarContenedorTraspaso');
+    if (buscar) buscar.value = '';
+    if (seleccionado) seleccionado.textContent = 'Ningún contenedor seleccionado.';
+    if (boton) boton.disabled = true;
+    if (!origen || origen.rol !== 'almacen') {
+        seccion.style.display = 'none';
+        return;
+    }
+
+    seccion.style.display = '';
+    fetch(`/traspasos/api/contenedores/?origen_id=${origenId}`)
+        .then(res => res.json())
+        .then(data => {
+            contenedoresDisponiblesCache = Array.isArray(data) ? data : [];
+            const resultados = document.getElementById('resultadosContenedorTraspaso');
+            if (resultados) {
+                resultados.innerHTML = '';
+                resultados.style.display = 'none';
+            }
+        })
+        .catch(() => { seccion.style.display = 'none'; });
+}
+
+function renderContenedores(busqueda) {
+    const resultados = document.getElementById('resultadosContenedorTraspaso');
+    if (!resultados) return;
+    const termino = (busqueda || '').trim().toLowerCase();
+    if (!termino) {
+        resultados.innerHTML = '';
+        resultados.style.display = 'none';
+        return;
+    }
+    const contenedores = contenedoresDisponiblesCache.filter(contenedor =>
+        (contenedor.nombre || '').toLowerCase().includes(termino)
+    );
+    if (!contenedores.length) {
+        resultados.innerHTML = termino ? '<div class="list-group-item text-muted">No se encontraron contenedores</div>' : '';
+        resultados.style.display = termino ? '' : 'none';
+        return;
+    }
+    resultados.innerHTML = contenedores.map(contenedor => `<button type="button" class="list-group-item list-group-item-action seleccionar-contenedor-traspaso" data-id="${contenedor.id}">${contenedor.nombre} <small class="text-muted">(${contenedor.proveedor}) — ${contenedor.stock_total} unidades</small></button>`).join('');
+    resultados.style.display = '';
+    resultados.querySelectorAll('.seleccionar-contenedor-traspaso').forEach(opcion => {
+        opcion.onclick = function() { actualizarSeleccionContenedor(this.dataset.id); };
+    });
+}
+
+function actualizarSeleccionContenedor(contenedorId) {
+    const contenedor = contenedoresDisponiblesCache.find(item => String(item.id) === String(contenedorId));
+    const input = document.getElementById('buscarContenedorTraspaso');
+    const hidden = document.getElementById('contenedorTraspaso');
+    const resultados = document.getElementById('resultadosContenedorTraspaso');
+    const seleccionado = document.getElementById('contenedorSeleccionadoTraspaso');
+    const boton = document.getElementById('btnAgregarContenedorTraspaso');
+    if (!contenedor) return;
+    hidden.value = contenedor.id;
+    input.value = contenedor.nombre;
+    resultados.style.display = 'none';
+    seleccionado.textContent = `Seleccionado: ${contenedor.nombre} (${contenedor.proveedor})`;
+    boton.disabled = false;
+}
+
+function cargarProductosDeContenedor(contenedorId) {
+    const origenId = document.getElementById('origenTraspaso').value;
+    if (!origenId) return;
+
+    fetch(`/traspasos/api/contenedores/${contenedorId}/productos/?origen_id=${origenId}`)
+        .then(res => res.json().then(data => ({ ok: res.ok, data })))
+        .then(({ ok, data }) => {
+            if (!ok || !Array.isArray(data) || !data.length) {
+                setInlineAlert('nuevoTraspasoAlert', data.error || 'El contenedor no tiene productos disponibles.');
+                return;
+            }
+            traspasoConfig.productosSeleccionados = data.map(producto => ({ ...producto, cantidad: producto.cantidad }));
+            actualizarListaSeleccionados();
+            setInlineAlert('nuevoTraspasoAlert', `Se agregaron los ${data.length} productos disponibles del contenedor.`);
+        })
+        .catch(() => setInlineAlert('nuevoTraspasoAlert', 'No se pudieron cargar los productos del contenedor.'));
 }
 
 function cargarDestinosPorOrigen(origenId) {
@@ -490,6 +622,13 @@ function finalizarTraspaso() {
         csrfmiddlewaretoken: document.querySelector('[name=csrfmiddlewaretoken]').value
     };
 
+    const btnGuardar = document.getElementById('btnGuardarTraspaso');
+    if (btnGuardar) btnGuardar.disabled = true;
+    if (document.activeElement) document.activeElement.blur();
+    Swal.fire({
+        title: 'Creando traspaso...', text: 'Se está reservando el stock. Por favor espere.',
+        allowOutsideClick: false, allowEscapeKey: false, didOpen: () => Swal.showLoading()
+    });
     fetch('/traspasos/crear/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': payload.csrfmiddlewaretoken },
@@ -497,13 +636,20 @@ function finalizarTraspaso() {
     })
     .then(res => res.json())
     .then(data => {
+        Swal.close();
         if (data.status === 'success') {
             location.reload();
         } else {
+            console.error('El servidor rechazó el traspaso:', data);
             setInlineAlert('nuevoTraspasoAlert', data.message || 'Ocurrió un error al crear el traspaso.');
+            Swal.fire('No se pudo crear el traspaso', data.message || 'Revise los datos ingresados.', 'error');
         }
     })
-    .catch(() => setInlineAlert('nuevoTraspasoAlert', 'Error al procesar el traspaso.'));
+    .catch(() => {
+        Swal.close();
+        setInlineAlert('nuevoTraspasoAlert', 'Error al procesar el traspaso.');
+    })
+    .finally(() => { if (btnGuardar) btnGuardar.disabled = false; });
 }
 
 function filtrarProductos(query) {

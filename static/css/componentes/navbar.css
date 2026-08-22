@@ -87,40 +87,76 @@
 .navbar-tc {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: var(--radio-md);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    gap: 0.55rem;
+    padding: 0.28rem 0.7rem 0.28rem 0.32rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.30);
     color: #ffffff;
-    font-size: 0.85rem;
-    font-weight: 600;
-    background: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,.05));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 2px 8px rgba(0,0,0,.12);
     max-width: 240px;
     min-width: 0;
     white-space: nowrap;
 }
 
-.navbar-tc i {
-    font-size: 0.9rem;
-    opacity: 0.9;
+.navbar-tc .tc-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    color: var(--color-primario);
+    background: #fbbf24;
+    font-size: .82rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.18);
 }
 
 .navbar-tc .tc-text {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.navbar-tc .tc-label,
 .navbar-tc .tc-value {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+.navbar-tc small { font-size: .56rem; font-weight: 700; letter-spacing: .08em; opacity: .78; }
+.navbar-tc .tc-value { font-size: .78rem; font-weight: 700; }
+.navbar-tc .tc-empty { color: #fde68a; }
+
+/* Estado de caja */
+.navbar-caja {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    min-width: 112px;
+    padding: .28rem .7rem .28rem .32rem;
+    border: 1px solid rgba(255,255,255,.30);
+    border-radius: 999px;
+    color: #fff;
+    text-decoration: none;
+    background: linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,.05));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 2px 8px rgba(0,0,0,.12);
+    transition: transform .15s ease, background .15s ease;
+}
+
+.navbar-caja:hover { color: #fff; text-decoration: none; transform: translateY(-1px); background: rgba(255,255,255,.18); }
+.caja-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,.92); color: var(--color-primario); font-size: .8rem; }
+.caja-text { display: flex; flex-direction: column; line-height: 1.05; }
+.caja-text small { font-size: .56rem; letter-spacing: .08em; font-weight: 700; opacity: .78; }
+.caja-estado { display: inline-flex; align-items: center; gap: .3rem; font-size: .78rem; }
+.caja-estado span { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px rgba(255,255,255,.14); }
+.caja-estado.abierta { color: #86efac; }
+.caja-estado.cerrada { color: #fca5a5; }
+.caja-estado.desconocida { color: #d1d5db; }
 
 /* Botón de notificaciones */
 .navbar-notificaciones {
@@ -523,6 +559,9 @@
     .navbar-tc .tc-sep {
         display: none;
     }
+
+    .navbar-caja { min-width: auto; padding-right: .5rem; }
+    .caja-text small { display: none; }
 }
 
 @media (max-width: 576px) {

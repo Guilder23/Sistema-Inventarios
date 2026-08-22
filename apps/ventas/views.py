@@ -18,13 +18,304 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 from datetime import datetime
 
-from apps.ventas.models import Venta, DetalleVenta, AmortizacionCredito, SolicitudAnulacionVenta
+from apps.ventas.models import Venta, DetalleVenta, AmortizacionCredito, SolicitudAnulacionVenta, SesionCaja, MovimientoCaja
 from apps.productos.models import Producto, ProductoContenedor
 from apps.servicios.tipos_cambios import obtener_tipo_cambio_usd
 from apps.inventario.models import Inventario, MovimientoInventario
 from apps.vendedores.models import Vendedor
 from apps.tiendas.models import Tienda
 from apps.usuarios.models import PerfilUsuario
+from .serializers import AperturaCajaSerializer, MovimientoCajaSerializer, CierreCajaSerializer, SesionCajaSerializer
+
+
+def _normalizar_decimal(valor):
+    from decimal import Decimal
+    return Decimal(str(valor or '0.00')).quantize(Decimal('0.01'))
+
+
+def _parse_request_data(request):
+    if request.content_type == 'application/json':
+        try:
+            return json.loads(request.body.decode('utf-8') or '{}')
+        except (TypeError, ValueError):
+            return {}
+    return request.POST or {}
+
+
+@login_required
+def abrir_caja(request):
+    """Crea una nueva sesión en estado ABIERTA para el cajero autenticado."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    payload = _parse_request_data(request)
+    serializer = AperturaCajaSerializer(data=payload, request=request)
+    if not serializer.is_valid():
+        return JsonResponse({'success': False, 'errors': serializer.errors}, status=400)
+
+    sesion = serializer.save()
+    return JsonResponse({
+        'success': True,
+        'message': 'Caja abierta correctamente.',
+        'data': SesionCajaSerializer.serialize(sesion),
+    }, status=201)
+
+
+@login_required
+def registrar_movimiento_caja(request):
+    """Registra ingreso o egreso manual para la sesión abierta del cajero."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    payload = _parse_request_data(request)
+    serializer = MovimientoCajaSerializer(data=payload, request=request)
+    if not serializer.is_valid():
+        return JsonResponse({'success': False, 'errors': serializer.errors}, status=400)
+
+    movimiento = serializer.save()
+    return JsonResponse({
+        'success': True,
+        'message': 'Movimiento registrado correctamente.',
+        'data': {
+            'id': movimiento.id,
+            'tipo': movimiento.tipo,
+            'monto': str(movimiento.monto),
+            'moneda': movimiento.moneda,
+            'concepto': movimiento.concepto,
+            'fecha': movimiento.fecha.isoformat(),
+        },
+    }, status=201)
+
+
+@login_required
+def resumen_caja_actual(request):
+    """Devuelve el resumén calculado de la caja abierta del cajero."""
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    sesion = SesionCaja.objects.filter(cajero=request.user, estado='ABIERTA').first()
+    if not sesion:
+        return JsonResponse({'success': False, 'error': 'No existe una caja abierta para este cajero.'}, status=404)
+
+    resumen = sesion.calcular_resumen()
+    sesion.total_efectivo_sistema = resumen['ventas_efectivo'] + resumen['cobros_efectivo']
+    sesion.monto_esperado_efectivo = resumen['monto_esperado_efectivo']
+    sesion.total_transferencia = resumen['total_transferencia']
+    sesion.total_efectivo_sistema_usd = resumen['ventas_efectivo_usd'] + resumen['cobros_efectivo_usd']
+    sesion.monto_esperado_efectivo_usd = resumen['monto_esperado_efectivo_usd']
+    sesion.save(update_fields=['total_efectivo_sistema', 'monto_esperado_efectivo', 'total_transferencia', 'total_efectivo_sistema_usd', 'monto_esperado_efectivo_usd'])
+
+    payload = {
+        'sesion_id': sesion.id,
+        'estado': sesion.estado,
+        'monto_inicial': str(sesion.monto_inicial),
+        'ventas_efectivo': str(resumen['ventas_efectivo']),
+        'cobros_efectivo': str(resumen['cobros_efectivo']),
+        'ingresos_manuales': str(resumen['ingresos_manuales']),
+        'egresos_manuales': str(resumen['egresos_manuales']),
+        'monto_esperado_efectivo': str(sesion.monto_esperado_efectivo),
+        'total_transferencia': str(sesion.total_transferencia),
+        'monto_inicial_usd': str(sesion.monto_inicial_usd),
+        'ventas_efectivo_usd': str(resumen['ventas_efectivo_usd']),
+        'cobros_efectivo_usd': str(resumen['cobros_efectivo_usd']),
+        'ingresos_manuales_usd': str(resumen['ingresos_manuales_usd']),
+        'egresos_manuales_usd': str(resumen['egresos_manuales_usd']),
+        'monto_esperado_efectivo_usd': str(sesion.monto_esperado_efectivo_usd),
+        'total_qr': str(resumen['total_qr']),
+    }
+    return JsonResponse({'success': True, 'data': payload})
+
+
+@login_required
+def panel_caja(request):
+    """Panel operativo e historial de arqueos del cajero autenticado."""
+    user = request.user
+    sesiones = SesionCaja.objects.filter(cajero=user).select_related('ubicacion').prefetch_related('movimientos')
+    sesion = sesiones.filter(estado='ABIERTA').first() or sesiones.first()
+
+    return render(request, 'ventas/panel_caja.html', {
+        'sesion': sesion,
+        'sesiones': sesiones,
+        'navbar_caja_abierta': sesion and sesion.estado == 'ABIERTA',
+    })
+
+
+@login_required
+def cerrar_caja(request):
+    """Cierra la caja aplicando las fórmulas definidas y guarda el resultado final."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    payload = _parse_request_data(request)
+    serializer = CierreCajaSerializer(data=payload, request=request)
+    if not serializer.is_valid():
+        return JsonResponse({'success': False, 'errors': serializer.errors}, status=400)
+
+    with transaction.atomic():
+        sesion = serializer.save()
+
+    return JsonResponse({
+        'success': True,
+        'message': 'Caja cerrada correctamente.',
+        'data': SesionCajaSerializer.serialize(sesion),
+    })
+
+
+@login_required
+def generar_pdf_arqueo(request, sesion_id):
+    """Genera un PDF del arqueo final de la sesión cerrada."""
+    sesion = get_object_or_404(SesionCaja.objects.select_related('cajero', 'ubicacion'), pk=sesion_id)
+    if sesion.cajero_id != request.user.id and not (request.user.is_superuser or request.user.is_staff):
+        return HttpResponseForbidden('No tiene permiso para descargar este arqueo.')
+    if sesion.estado != 'CERRADA':
+        return HttpResponse('El arqueo solo puede descargarse cuando la caja está cerrada.', status=400)
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=36,
+        leftMargin=36,
+        topMargin=36,
+        bottomMargin=36,
+    )
+    styles = getSampleStyleSheet()
+    story = []
+
+    story.append(Paragraph('ARQUEO DE CAJA', styles['Title']))
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(f'Cajero: {sesion.cajero.get_full_name() or sesion.cajero.username}', styles['Normal']))
+    story.append(Paragraph(f'Ubicación: {sesion.ubicacion}', styles['Normal']))
+    story.append(Paragraph(f'Fecha apertura: {sesion.fecha_apertura:%d/%m/%Y %H:%M}', styles['Normal']))
+    story.append(Paragraph(f'Fecha cierre: {sesion.fecha_cierre:%d/%m/%Y %H:%M}', styles['Normal']))
+    story.append(Spacer(1, 18))
+
+    data = [
+        ['Concepto', 'Monto'],
+        ['Monto inicial', str(sesion.monto_inicial)],
+        ['Ventas + amortizaciones en efectivo', str(sesion.total_efectivo_sistema)],
+        ['Ingresos manuales', str(sesion.movimientos.filter(tipo='INGRESO').aggregate(total=Sum('monto'))['total'] or '0.00')],
+        ['Egresos manuales', str(sesion.movimientos.filter(tipo='EGRESO').aggregate(total=Sum('monto'))['total'] or '0.00')],
+        ['Monto esperado en efectivo', str(sesion.monto_esperado_efectivo)],
+        ['Monto real en efectivo', str(sesion.monto_real_efectivo)],
+        ['Diferencia de efectivo', str(sesion.diferencia_efectivo)],
+        ['Total QR esperado', str(sesion.total_transferencia)],
+        ['Monto real QR', str(sesion.monto_real_qr)],
+        ['Diferencia QR', str(sesion.diferencia_qr)],
+        ['Total general recaudado', str(sesion.total_general_recaudado)],
+        ['--- ARQUEO EN DÓLARES ---', ''],
+        ['Monto inicial USD', f'$ {sesion.monto_inicial_usd}'],
+        ['Ventas en efectivo USD', f'$ {sesion.total_efectivo_sistema_usd}'],
+        ['Monto esperado USD', f'$ {sesion.monto_esperado_efectivo_usd}'],
+        ['Monto real USD', f'$ {sesion.monto_real_efectivo_usd}'],
+        ['Diferencia USD', f'$ {sesion.diferencia_efectivo_usd}'],
+    ]
+    table = Table(data, colWidths=[260, 140])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+    ]))
+    story.append(table)
+
+    ventas_bob = sesion.ventas.filter(moneda='BOB')
+    ventas_usd = sesion.ventas.filter(moneda='USD')
+    amortizaciones_bob = sesion.amortizaciones.filter(moneda='BOB')
+    amortizaciones_usd = sesion.amortizaciones.filter(moneda='USD')
+
+    def total_queryset(queryset, **filters):
+        return queryset.filter(**filters).aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+
+    def total_monto_queryset(queryset, **filters):
+        return queryset.filter(**filters).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+
+    def total_ventas_monto(queryset, campo, **filters):
+        return queryset.filter(**filters).aggregate(total=Sum(campo))['total'] or Decimal('0.00')
+
+    def monto_pdf(valor, simbolo):
+        return f'{simbolo} {valor:,.2f}'
+
+    desglose_pagos = [
+        ['Tipo de pago', 'BOB (Bs.)', 'USD ($)'],
+        [
+            'Contado',
+            monto_pdf(total_queryset(ventas_bob, tipo_pago='contado'), 'Bs.'),
+            monto_pdf(total_queryset(ventas_usd, tipo_pago='contado'), '$'),
+        ],
+        [
+            'QR',
+            monto_pdf(total_ventas_monto(ventas_bob, 'monto_qr', tipo_pago='Qr'), 'Bs.'),
+            monto_pdf(total_ventas_monto(ventas_usd, 'monto_qr', tipo_pago='Qr'), '$'),
+        ],
+        [
+            'Mixto - efectivo',
+            monto_pdf(total_ventas_monto(ventas_bob, 'monto_efectivo', tipo_pago='Mixto'), 'Bs.'),
+            monto_pdf(total_ventas_monto(ventas_usd, 'monto_efectivo', tipo_pago='Mixto'), '$'),
+        ],
+        [
+            'Mixto - QR',
+            monto_pdf(total_ventas_monto(ventas_bob, 'monto_qr', tipo_pago='Mixto'), 'Bs.'),
+            monto_pdf(total_ventas_monto(ventas_usd, 'monto_qr', tipo_pago='Mixto'), '$'),
+        ],
+        [
+            'Crédito (no recaudado)',
+            monto_pdf(total_queryset(ventas_bob, tipo_pago='credito'), 'Bs.'),
+            monto_pdf(total_queryset(ventas_usd, tipo_pago='credito'), '$'),
+        ],
+        [
+            'Amortizaciones cobradas',
+            monto_pdf(total_monto_queryset(amortizaciones_bob), 'Bs.'),
+            monto_pdf(total_monto_queryset(amortizaciones_usd), '$'),
+        ],
+    ]
+    story.append(Spacer(1, 18))
+    story.append(Paragraph('DESGLOSE POR TIPO DE PAGO', styles['Heading2']))
+    pagos_table = Table(desglose_pagos, colWidths=[220, 100, 100])
+    pagos_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#374151')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#9ca3af')),
+        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+    ]))
+    story.append(pagos_table)
+
+    gastos = sesion.movimientos.filter(tipo='EGRESO').order_by('fecha')
+    if gastos.exists():
+        story.append(Spacer(1, 18))
+        story.append(Paragraph('GASTOS DE CAJA', styles['Heading2']))
+        gastos_data = [['Fecha', 'Concepto', 'Moneda', 'Monto']]
+        for gasto in gastos:
+            gastos_data.append([
+                gasto.fecha.strftime('%d/%m/%Y %H:%M'),
+                gasto.concepto,
+                gasto.moneda,
+                f'{"$" if gasto.moneda == "USD" else "Bs"} {gasto.monto:,.2f}',
+            ])
+        gastos_table = Table(gastos_data, colWidths=[120, 240, 60, 80])
+        gastos_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#374151')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#9ca3af')),
+            ('ALIGN', (3, 1), (3, -1), 'RIGHT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ]))
+        story.append(gastos_table)
+
+    if sesion.observaciones:
+        story.append(Spacer(1, 18))
+        story.append(Paragraph('Observaciones:', styles['Heading2']))
+        story.append(Paragraph(sesion.observaciones, styles['Normal']))
+
+    doc.build(story)
+    pdf = buffer.getvalue()
+    buffer.close()
+
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="arqueo_caja_{sesion_id}.pdf"'
+    return response
+
 
 def convertir_monto_para_mostrar(venta, monto):
     """Devuelve el monto tal como fue guardado en la moneda de la venta."""
@@ -203,6 +494,7 @@ def serializar_detalle_venta(venta, detalle):
         'cantidad_cajas': cantidad_cajas,
         'precio_unitario': str(convertir_monto_para_mostrar(venta, detalle.precio_unitario)),
         'subtotal': str(convertir_monto_para_mostrar(venta, detalle.subtotal)),
+        'comision_transporte': str(convertir_monto_para_mostrar(venta, detalle.comision_transporte)),
         'tipo_vendedor': tipo_vendedor,
         'tipo_vendedor_label': obtener_label_tipo_vendedor(tipo_vendedor),
         'modalidad': modalidad,
@@ -543,8 +835,8 @@ def listar_ventas(request):
     ).select_related('ubicacion', 'vendedor').prefetch_related('detalles__producto').order_by('-fecha_elaboracion')
 
     # Filtros GET
-    fecha_desde = request.GET.get('fecha_desde')
-    fecha_hasta = request.GET.get('fecha_hasta')
+    fecha_desde = request.GET.get('fecha_desde') or ''
+    fecha_hasta = request.GET.get('fecha_hasta') or ''
     cliente_filtro = request.GET.get('cliente', '').strip()
 
     if fecha_desde:
@@ -567,14 +859,14 @@ def listar_ventas(request):
         ventas = ventas.filter(cliente__icontains=cliente_filtro)
 
     # Por tipo de pago
-    ventas_contado_qs = ventas.filter(tipo_pago='contado')
+    ventas_contado_qs = ventas.filter(tipo_pago__in=['contado', 'Qr', 'Mixto'])
     ventas_credito_qs = ventas.filter(tipo_pago='credito')
 
     # Verificar si se solicita PDF
     pdf = request.GET.get('pdf')
     if pdf:
         tipo_pago = request.GET.get('tipo_pago', 'contado')
-        if tipo_pago == 'contado':
+        if tipo_pago in ['contado', 'Qr', 'Mixto']:
             ventas_filtradas = ventas_contado_qs
         else:
             ventas_filtradas = ventas_credito_qs
@@ -664,6 +956,12 @@ def guardar_venta(request):
     if not verificar_permiso_ventas(request):
         return JsonResponse({'success': False, 'error': 'Sin permisos.'}, status=403)
 
+    # Verificar que exista una caja abierta para el cajero
+    from .models import SesionCaja
+    sesion_caja = SesionCaja.objects.filter(cajero=request.user, estado='ABIERTA').first()
+    if not sesion_caja:
+        return JsonResponse({'success': False, 'error': 'No existe una caja abierta para este usuario. Abra la caja antes de registrar ventas.'}, status=403)
+
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
@@ -683,7 +981,7 @@ def guardar_venta(request):
 #Validaciones
     if not cliente:
         return JsonResponse({'success': False, 'error': 'El nombre del cliente es obligatorio.'})
-    if tipo_pago not in ['contado', 'credito']:
+    if tipo_pago not in ['contado', 'Qr', 'Mixto', 'credito']:
         return JsonResponse({'success': False, 'error': 'Tipo de pago inválido.'})
     if moneda not in ['BOB', 'USD']:
         return JsonResponse({'success': False, 'error': 'Moneda inválida.'})
@@ -691,6 +989,9 @@ def guardar_venta(request):
         return JsonResponse({'success': False, 'error': 'Tipo de cambio inválido.'})
     if not items:
         return JsonResponse({'success': False, 'error': 'Debe agregar al menos un producto.'})
+
+    monto_efectivo = _normalizar_decimal(data.get('monto_efectivo', 0))
+    monto_qr = _normalizar_decimal(data.get('monto_qr', 0))
 
     try:
         perfil = request.user.perfil
@@ -722,10 +1023,11 @@ def guardar_venta(request):
                 tipo_pago=tipo_pago,
                 moneda=moneda,
                 tipo_cambio=tipo_cambio,
-                estado='completada' if tipo_pago == 'contado' else 'pendiente',
+                estado='completada' if tipo_pago != 'credito' else 'pendiente',
                 vendedor=vendedor_user,
                 subtotal=Decimal('0.00'),
                 total=Decimal('0.00'),
+                sesion_caja=sesion_caja,
             )
             
             # Si se proporcionó vendedor_id, guardar referencia personalizada
@@ -802,6 +1104,14 @@ def guardar_venta(request):
 # Actualizar totales de la venta
             venta.subtotal = total_venta
             venta.total = total_venta
+            if tipo_pago == 'contado':
+                venta.monto_efectivo, venta.monto_qr = total_venta, Decimal('0.00')
+            elif tipo_pago == 'Qr':
+                venta.monto_efectivo, venta.monto_qr = Decimal('0.00'), total_venta
+            elif tipo_pago == 'Mixto':
+                if monto_efectivo < 0 or monto_qr < 0 or monto_efectivo + monto_qr != total_venta:
+                    raise ValueError('En un pago mixto, efectivo + QR debe coincidir con el total de la venta.')
+                venta.monto_efectivo, venta.monto_qr = monto_efectivo, monto_qr
             venta.save()
 
         return JsonResponse({
@@ -991,12 +1301,16 @@ def obtener_detalle_venta(request, id):
             'cliente': venta.cliente,
             'comentario': venta.comentario or '',
             'tipo_pago': venta.tipo_pago,
+            'metodo_pago': venta.tipo_pago.lower(),
             'estado': venta.estado,
             'moneda': venta.moneda,
             'moneda_simbolo': obtener_simbolo_moneda(venta.moneda),
             'moneda_descripcion': obtener_descripcion_moneda(venta.moneda),
             'subtotal': str(convertir_monto_para_mostrar(venta, venta.subtotal)),
             'descuento': str(convertir_monto_para_mostrar(venta, venta.descuento if hasattr(venta, 'descuento') else Decimal('0.00'))),
+            'total_comision_transporte': str(convertir_monto_para_mostrar(
+                venta, venta.total_comision_transporte if hasattr(venta, 'total_comision_transporte') else Decimal('0.00')
+            )),
             'descuento_info': {
                 'aplica': descuento_info['aplica'],
                 'tipo': descuento_info['tipo'],
@@ -1160,7 +1474,7 @@ def generar_pdf_lista(ventas, tipo_pago='contado'):
     )
     
     # Título principal
-    tipo_display = "AL CONTADO" if tipo_pago == 'contado' else "A CRÉDITO"
+    tipo_display = "AL CONTADO" if tipo_pago in ['contado', 'Qr', 'Mixto'] else "A CRÉDITO"
     title = Paragraph(f"<b>LISTADO DE VENTAS - {tipo_display}</b>", styles['Title'])
     elements.append(title)
     elements.append(Spacer(1, 0.2*inch))
@@ -1318,6 +1632,9 @@ def registrar_amortizacion(request, venta_id):
         }, status=403)
 
     venta = get_object_or_404(Venta, id=venta_id)
+    sesion_caja = SesionCaja.objects.filter(cajero=request.user, estado='ABIERTA').first()
+    if not sesion_caja:
+        return JsonResponse({'success': False, 'error': 'Abra una caja antes de registrar un cobro de crédito.'}, status=403)
 
     if venta.tipo_pago != 'credito':
         return JsonResponse({'success': False, 'error': 'Esta venta no es a crédito.'})
@@ -1374,6 +1691,7 @@ def registrar_amortizacion(request, venta_id):
                 venta=venta,
                 monto=monto,
                 moneda=venta.moneda,
+                sesion_caja=sesion_caja,
                 observaciones=observaciones,
                 registrado_por=request.user,
                 comprobante=comprobante,  # Guardar archivo
@@ -1666,8 +1984,8 @@ def listar_ventas_tienda(request):
     ).select_related('ubicacion', 'vendedor').prefetch_related('detalles__producto').order_by('-fecha_elaboracion')
 
     # Filtros GET
-    fecha_desde = request.GET.get('fecha_desde')
-    fecha_hasta = request.GET.get('fecha_hasta')
+    fecha_desde = request.GET.get('fecha_desde') or ''
+    fecha_hasta = request.GET.get('fecha_hasta') or ''
     cliente_filtro = request.GET.get('cliente', '').strip()
 
     if fecha_desde:
@@ -1690,7 +2008,7 @@ def listar_ventas_tienda(request):
         ventas = ventas.filter(cliente__icontains=cliente_filtro)
 
     # Por tipo de pago
-    ventas_contado_qs = ventas.filter(tipo_pago='contado')
+    ventas_contado_qs = ventas.filter(tipo_pago__in=['contado', 'Qr', 'Mixto'])
     ventas_credito_qs = ventas.filter(tipo_pago='credito')
 
     ventas_contado = list(ventas_contado_qs)
@@ -1824,6 +2142,12 @@ def guardar_venta_tienda(request):
     if not hasattr(request.user, 'perfil') or request.user.perfil.rol != 'tienda':
         return JsonResponse({'success': False, 'error': 'Solo tienda puede crear ventas tienda.'}, status=403)
 
+    # Verificar caja abierta (si la tienda requiere caja abierta)
+    from .models import SesionCaja
+    sesion_caja = SesionCaja.objects.filter(cajero=request.user, estado='ABIERTA').first()
+    if not sesion_caja:
+        return JsonResponse({'success': False, 'error': 'No existe una caja abierta para este usuario. Abra la caja antes de registrar ventas.'}, status=403)
+
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
@@ -1845,7 +2169,7 @@ def guardar_venta_tienda(request):
     # Validaciones
     if not cliente:
         return JsonResponse({'success': False, 'error': 'El nombre del cliente es obligatorio.'})
-    if tipo_pago not in ['contado', 'credito']:
+    if tipo_pago not in ['contado', 'Qr', 'Mixto', 'credito']:
         return JsonResponse({'success': False, 'error': 'Tipo de pago inválido.'})
     if moneda not in ['BOB', 'USD']:
         return JsonResponse({'success': False, 'error': 'Moneda inválida.'})
@@ -1867,7 +2191,7 @@ def guardar_venta_tienda(request):
             'error': f'Sucursales y puntos de venta solo pueden hacer ventas al contado. Tipo de tienda: {perfil.tienda.get_tipo_display()}'
         })
 
-    if tipo_pago != 'contado':
+    if tipo_pago == 'credito':
         descuento_tipo = 'ninguno'
         descuento_valor = Decimal('0.00')
     elif not descuento_tipo:
@@ -1875,6 +2199,9 @@ def guardar_venta_tienda(request):
     
     if not items:
         return JsonResponse({'success': False, 'error': 'Debe agregar al menos un producto.'})
+
+    monto_efectivo = _normalizar_decimal(data.get('monto_efectivo', 0))
+    monto_qr = _normalizar_decimal(data.get('monto_qr', 0))
 
     perfil = request.user.perfil
 
@@ -1891,13 +2218,16 @@ def guardar_venta_tienda(request):
                 tipo_pago=tipo_pago,
                 moneda=moneda,
                 tipo_cambio=tipo_cambio,
-                estado='completada' if tipo_pago == 'contado' else 'pendiente',
+                estado='completada' if tipo_pago != 'credito' else 'pendiente',
                 vendedor=request.user,
                 subtotal=Decimal('0.00'),
                 total=Decimal('0.00'),
+                sesion_caja=sesion_caja,
             )
 
             total_venta = Decimal('0.00')
+            total_comision_transporte = Decimal('0.00')
+            es_tienda_principal = es_tienda_principal_usuario(request.user)
 
             for item in items:
                 producto_id = item.get('producto_id')
@@ -1931,6 +2261,14 @@ def guardar_venta_tienda(request):
                     raise ValueError(f'Precio invÃ¡lido para el producto "{producto.nombre}".')
 
                 precio_unitario = precio_unitario_payload.quantize(Decimal('0.01'))
+                comision_payload = Decimal(str(item.get('comision_transporte', '0') or '0'))
+                if comision_payload < 0:
+                    raise ValueError(f'La comision de transporte no puede ser negativa para el producto "{producto.nombre}".')
+
+                if not es_tienda_principal:
+                    comision_payload = Decimal('0.00')
+
+                comision_unitaria = comision_payload.quantize(Decimal('0.01'))
 
                 # VALIDAR MODALIDAD MATEMÁTICAMENTE (solo para tienda)
                 # Para depósito, permitir cualquier cantidad entre 1 y stock disponible
@@ -1979,6 +2317,7 @@ def guardar_venta_tienda(request):
                 producto = Producto.objects.select_for_update().get(id=producto_id)
 
                 subtotal_item = precio_unitario * unidades_a_descontar
+                comision_total_item = comision_unitaria * unidades_a_descontar
                 cantidad_guardada = unidades_a_descontar
                 precio_guardado = precio_unitario
 
@@ -1995,6 +2334,7 @@ def guardar_venta_tienda(request):
                     modalidad=modalidad,
                     precio_unitario=precio_guardado,
                     subtotal=subtotal_item,
+                    comision_transporte=comision_total_item,
                 )
 
                 # Si es venta tienda o deposito, descontar del Inventario según tipo_venta
@@ -2009,12 +2349,13 @@ def guardar_venta_tienda(request):
                # descontar_stock_desde_contenedores(producto, unidades_a_descontar)
 
                 total_venta += subtotal_item
+                total_comision_transporte += comision_total_item
 
             # Aplicar descuento
             actual_descuento = Decimal('0.00')
             descuento_tipo_guardado = 'ninguno'
             descuento_valor_guardado = Decimal('0.00')
-            if tipo_pago == 'contado' and descuento_tipo in ['fijo', 'porcentaje'] and descuento_valor > 0:
+            if tipo_pago != 'credito' and descuento_tipo in ['fijo', 'porcentaje'] and descuento_valor > 0:
                 descuento_valor_guardado = descuento_valor.quantize(Decimal('0.01'))
                 descuento_tipo_guardado = descuento_tipo
                 if descuento_tipo == 'porcentaje':
@@ -2026,13 +2367,22 @@ def guardar_venta_tienda(request):
                     descuento_valor_guardado = actual_descuento
                 actual_descuento = min(actual_descuento, total_venta)
             
-            total_final = total_venta - actual_descuento
+            total_final = (total_venta - actual_descuento) + total_comision_transporte
 
             venta.subtotal = total_venta
             venta.descuento = actual_descuento
             venta.descuento_tipo = descuento_tipo_guardado if actual_descuento > 0 else 'ninguno'
             venta.descuento_valor = descuento_valor_guardado if actual_descuento > 0 else Decimal('0.00')
+            venta.total_comision_transporte = total_comision_transporte
             venta.total = total_final
+            if tipo_pago == 'contado':
+                venta.monto_efectivo, venta.monto_qr = total_final, Decimal('0.00')
+            elif tipo_pago == 'Qr':
+                venta.monto_efectivo, venta.monto_qr = Decimal('0.00'), total_final
+            elif tipo_pago == 'Mixto':
+                if monto_efectivo < 0 or monto_qr < 0 or monto_efectivo + monto_qr != total_final:
+                    raise ValueError('En un pago mixto, efectivo + QR debe coincidir con el total de la venta.')
+                venta.monto_efectivo, venta.monto_qr = monto_efectivo, monto_qr
             venta.save()
 
             return JsonResponse({
@@ -2122,6 +2472,9 @@ def registrar_amortizacion_tienda(request, id):
 
     try:
         venta = Venta.objects.get(id=id)
+        sesion_caja = SesionCaja.objects.filter(cajero=request.user, estado='ABIERTA').first()
+        if not sesion_caja:
+            return JsonResponse({'success': False, 'error': 'Abra una caja antes de registrar un cobro de crédito.'}, status=403)
         
         # Validar que sea del usuario
         if venta.vendedor != request.user:
@@ -2181,6 +2534,7 @@ def registrar_amortizacion_tienda(request, id):
                 venta=venta,
                 monto=monto,
                 moneda=venta.moneda,
+                sesion_caja=sesion_caja,
                 observaciones=observaciones,
                 registrado_por=request.user,
                 comprobante=comprobante,

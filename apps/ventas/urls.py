@@ -19,6 +19,7 @@ urlpatterns = [
     path('tienda/crear/', views.crear_venta_tienda, name='crear_venta_tienda'),
     path('tienda/guardar/', views.guardar_venta_tienda, name='guardar_venta_tienda'),
     path('tienda/listar/', views.listar_ventas_tienda, name='listar_ventas_tienda'),
+    path('caja/panel/', views.panel_caja, name='panel_caja'),
     path('<int:id>/anular/', views.anular_venta, name='anular_venta'),
     path('<int:id>/registrar-amortizacion/', views.registrar_amortizacion_tienda, name='registrar_amortizacion_tienda'),
     

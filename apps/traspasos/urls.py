@@ -6,11 +6,14 @@ urlpatterns = [
     path('', views.listar_traspasos, name='listar_traspasos'),
     path('crear/', views.crear_traspaso, name='crear_traspaso'),
     path('<int:id>/ver/', views.ver_traspaso, name='ver_traspaso'),
+    path('<int:id>/editar-productos/', views.editar_productos_traspaso, name='editar_productos_traspaso'),
     path('<int:id>/cambiar-estado/', views.cambiar_estado_traspaso, name='cambiar_estado_traspaso'),
     path('<int:id>/pdf/', views.generar_pdf_traspaso, name='generar_pdf_traspaso'),
     
     # API endpoints para AJAX
     path('api/productos/', views.obtener_productos_traspaso, name='obtener_productos_traspaso'),
+    path('api/contenedores/', views.obtener_contenedores_traspaso, name='obtener_contenedores_traspaso'),
+    path('api/contenedores/<int:id>/productos/', views.obtener_productos_contenedor_traspaso, name='obtener_productos_contenedor_traspaso'),
     path('api/origenes/', views.obtener_origenes_traspaso, name='obtener_origenes_traspaso'),
     path('api/destinos/', views.obtener_destinos_traspaso, name='obtener_destinos_traspaso'),
     path('api/detalle/<int:id>/', views.obtener_detalle_traspaso, name='obtener_detalle_traspaso'),

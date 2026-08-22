@@ -19,35 +19,40 @@
 
         <!-- DERECHA: Notificaciones y Usuario -->
         <div class="navbar-right">
-            <!-- Moneda actual: -->
-            <div class="navbar-tc">
-                <i class="fas fa-money-bill-wave"></i>
+            <!-- Tipo de cambio actual -->
+            <div class="navbar-tc" title="Tipo de cambio vigente">
+                <span class="tc-icon"><i class="fas fa-dollar-sign"></i></span>
+                <span class="tc-text">
+                    <small>TIPO DE CAMBIO</small>
     {% if user.is_authenticated and user.perfil and user.perfil.tienda and user.perfil.tienda.tipo == 'principal' %}
         {% if navbar_moneda_tienda_principal %}
-            <span class="tc-text">
-                <span class="tc-label">{{ navbar_moneda_tienda_principal.moneda }}</span>
-                <span class="tc-sep">-</span>
-                <span class="tc-value">Bs {{ navbar_moneda_tienda_principal.valor|stringformat:"0.2f" }}</span>
-            </span>
+                <strong class="tc-value">1 USD = Bs {{ navbar_moneda_tienda_principal.valor|stringformat:"0.2f" }}</strong>
         {% else %}
-            <span class="tc-text">
-                <span class="tc-label">Sin tipo de cambio</span>
-            </span>
+                <strong class="tc-value tc-empty">Sin tipo de cambio</strong>
         {% endif %}
     {% else %}
         {% if navbar_moneda_general %}
-            <span class="tc-text">
-                <span class="tc-label">{{ navbar_moneda_general.moneda }}</span>
-                <span class="tc-sep">-</span>
-                <span class="tc-value">Bs {{ navbar_moneda_general.valor|stringformat:"0.2f" }}</span>
-            </span>
+                <strong class="tc-value">1 USD = Bs {{ navbar_moneda_general.valor|stringformat:"0.2f" }}</strong>
         {% else %}
-            <span class="tc-text">
-                <span class="tc-label">Sin tipo de cambio</span>
-            </span>
+                <strong class="tc-value tc-empty">Sin tipo de cambio</strong>
         {% endif %}
     {% endif %}
+                </span>
             </div>
+            <!-- Estado de la caja -->
+            <a class="navbar-caja" href="{% url 'ventas:panel_caja' %}" title="Ir al arqueo de caja">
+                <span class="caja-icon"><i class="fas fa-cash-register"></i></span>
+                <span class="caja-text">
+                    <small>CAJA</small>
+                {% if navbar_caja_abierta %}
+                    <strong class="caja-estado abierta"><span></span>Abierta</strong>
+                {% elif navbar_caja_estado == 'CERRADA' %}
+                    <strong class="caja-estado cerrada"><span></span>Cerrada</strong>
+                {% else %}
+                    <strong class="caja-estado desconocida"><span></span>Sin sesión</strong>
+                {% endif %}
+                </span>
+            </a>
             <!-- Notificaciones -->
             <div class="navbar-notificaciones">
                 <button class="navbar-icon-btn" id="notificacionesBtn" title="Notificaciones">
