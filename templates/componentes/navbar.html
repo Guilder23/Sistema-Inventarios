@@ -40,11 +40,13 @@
                 </span>
             </div>
             <!-- Estado de la caja -->
-            <a class="navbar-caja" href="{% url 'ventas:panel_caja' %}" title="Ir al arqueo de caja">
+            <a class="navbar-caja" href="{% if user.is_superuser or user.perfil.rol == 'administrador' %}{% url 'reporte_auditoria_cajas' %}{% else %}{% url 'ventas:panel_caja' %}{% endif %}" title="{% if user.is_superuser or user.perfil.rol == 'administrador' %}Ir a auditoría de cajas{% else %}Ir al arqueo de caja{% endif %}">
                 <span class="caja-icon"><i class="fas fa-cash-register"></i></span>
                 <span class="caja-text">
-                    <small>CAJA</small>
-                {% if navbar_caja_abierta %}
+                    <small>{% if user.is_superuser or user.perfil.rol == 'administrador' %}AUDITORÍA{% else %}CAJA{% endif %}</small>
+                {% if user.is_superuser or user.perfil.rol == 'administrador' %}
+                    <strong class="caja-estado cerrada"><span></span>Reportes</strong>
+                {% elif navbar_caja_abierta %}
                     <strong class="caja-estado abierta"><span></span>Abierta</strong>
                 {% elif navbar_caja_estado == 'CERRADA' %}
                     <strong class="caja-estado cerrada"><span></span>Cerrada</strong>

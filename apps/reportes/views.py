@@ -1,13 +1,18 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
 from django.db.models import Q, Sum, Count
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from apps.productos.models import Producto, ProductoContenedor, Contenedor, Categoria
-from apps.ventas.models import Venta, DetalleVenta
+from apps.ventas.models import Venta, DetalleVenta, SesionCaja, AmortizacionCredito
 from apps.usuarios.models import PerfilUsuario
 from django.contrib.auth.models import User
 from datetime import datetime
+
+
+def _es_administrador_auditor(user):
+    perfil = getattr(user, 'perfil', None)
+    return bool(user.is_superuser or (perfil and perfil.rol == 'administrador'))
 
 @login_required
 def index_reportes(request):
@@ -16,6 +21,117 @@ def index_reportes(request):
 @login_required
 def reporte_inventario(request):
     return HttpResponse('Reporte de Inventario PDF')
+
+
+@login_required
+def reporte_auditoria_cajas(request):
+    """Auditoría de cajas para administradores con filtros y detalle de sesiones cerradas."""
+    if not _es_administrador_auditor(request.user):
+        return HttpResponseForbidden('No tiene permiso para acceder a la auditoría de cajas.')
+
+    sesiones = SesionCaja.objects.select_related('cajero', 'ubicacion').all()
+
+    caja_id = request.GET.get('caja_id', '').strip()
+    cajero_id = request.GET.get('cajero', '').strip()
+    ubicacion_id = request.GET.get('ubicacion', '').strip()
+    estado = request.GET.get('estado', '').strip()
+    fecha_desde = request.GET.get('fecha_desde', '').strip()
+    fecha_hasta = request.GET.get('fecha_hasta', '').strip()
+    detalle_sesion_id = request.GET.get('detalle_sesion', '').strip()
+
+    if caja_id:
+        if caja_id.isdigit():
+            sesiones = sesiones.filter(id=int(caja_id))
+        else:
+            sesiones = sesiones.none()
+
+    if cajero_id:
+        sesiones = sesiones.filter(cajero_id=cajero_id)
+
+    if ubicacion_id:
+        sesiones = sesiones.filter(ubicacion_id=ubicacion_id)
+
+    if estado:
+        sesiones = sesiones.filter(estado=estado)
+
+    if fecha_desde:
+        try:
+            fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
+            sesiones = sesiones.filter(fecha_apertura__gte=fecha_desde_dt)
+        except ValueError:
+            pass
+
+    if fecha_hasta:
+        try:
+            from datetime import timedelta
+            fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d')
+            fecha_hasta_dt = fecha_hasta_dt + timedelta(days=1) - timedelta(seconds=1)
+            sesiones = sesiones.filter(fecha_apertura__lte=fecha_hasta_dt)
+        except ValueError:
+            pass
+
+    sesiones = sesiones.order_by('-fecha_apertura')
+
+    total_sesiones = sesiones.count()
+    total_abiertas = sesiones.filter(estado='ABIERTA').count()
+    total_cerradas = sesiones.filter(estado='CERRADA').count()
+
+    filtros_activos = sum([
+        bool(caja_id),
+        bool(cajero_id),
+        bool(ubicacion_id),
+        bool(estado),
+        bool(fecha_desde),
+        bool(fecha_hasta),
+    ])
+
+    paginator = Paginator(sesiones, 15)
+    page = request.GET.get('page', 1)
+    try:
+        sesiones_paginadas = paginator.page(page)
+    except PageNotAnInteger:
+        sesiones_paginadas = paginator.page(1)
+    except EmptyPage:
+        sesiones_paginadas = paginator.page(paginator.num_pages)
+
+    sesion_detalle = None
+    ventas_detalle = Venta.objects.none()
+    amortizaciones_detalle = AmortizacionCredito.objects.none()
+
+    if detalle_sesion_id and detalle_sesion_id.isdigit():
+        sesion_detalle = get_object_or_404(
+            SesionCaja.objects.select_related('cajero', 'ubicacion'),
+            pk=int(detalle_sesion_id),
+        )
+        if sesion_detalle.estado == 'CERRADA':
+            ventas_detalle = sesion_detalle.ventas.select_related('vendedor', 'ubicacion').order_by('-fecha_elaboracion')
+            amortizaciones_detalle = sesion_detalle.amortizaciones.select_related('venta', 'registrado_por').order_by('-fecha')
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    querystring = query_params.urlencode()
+
+    context = {
+        'sesiones': sesiones_paginadas,
+        'cajeros': User.objects.filter(sesiones_caja__isnull=False).distinct().order_by('first_name', 'username'),
+        'ubicaciones': PerfilUsuario.objects.filter(sesiones_caja__isnull=False).distinct().order_by('nombre_ubicacion'),
+        'total_sesiones': total_sesiones,
+        'total_abiertas': total_abiertas,
+        'total_cerradas': total_cerradas,
+        'filtros_activos': filtros_activos,
+        'caja_id': caja_id,
+        'cajero_id': cajero_id,
+        'ubicacion_id': ubicacion_id,
+        'estado': estado,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+        'detalle_sesion_id': detalle_sesion_id,
+        'sesion_detalle': sesion_detalle,
+        'ventas_detalle': ventas_detalle,
+        'amortizaciones_detalle': amortizaciones_detalle,
+        'querystring': querystring,
+    }
+    return render(request, 'reportes/cajas/auditoria_cajas.html', context)
 
 @login_required
 def reporte_ventas(request):

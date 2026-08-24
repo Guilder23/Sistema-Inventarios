@@ -97,6 +97,10 @@
     background: linear-gradient(135deg, #e74a3b 0%, #be2617 100%);
 }
 
+.report-icon-cajas {
+    background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+}
+
 .report-info {
     flex: 1;
 }
@@ -184,6 +188,16 @@
 
 .btn-traspasos:hover {
     background: #be2617;
+    color: white;
+}
+
+.btn-cajas {
+    background: #0f766e;
+    color: white;
+}
+
+.btn-cajas:hover {
+    background: #115e59;
     color: white;
 }
 

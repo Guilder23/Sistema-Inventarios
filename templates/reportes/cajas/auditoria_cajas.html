@@ -1,0 +1,284 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Auditoría de Cajas{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/reportes/cajas/auditoria_cajas.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid" style="padding-top: 0;">
+    <div class="page-header" style="margin-top: 0.5rem;">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="fas fa-cash-register"></i>
+                Auditoría de Cajas
+            </h1>
+            <p class="page-subtitle">
+                Revisión de sesiones de caja con trazabilidad de ventas y amortizaciones
+            </p>
+        </div>
+    </div>
+
+    <div class="row resumen-row mb-3">
+        <div class="col-md-4 mb-2">
+            <div class="resumen-card" style="border-left-color: #1e3a8a;">
+                <span class="resumen-label">Sesiones filtradas</span>
+                <strong class="resumen-value">{{ total_sesiones }}</strong>
+            </div>
+        </div>
+        <div class="col-md-4 mb-2">
+            <div class="resumen-card" style="border-left-color: #f59e0b;">
+                <span class="resumen-label">Cajas abiertas</span>
+                <strong class="resumen-value" style="color: #b45309;">{{ total_abiertas }}</strong>
+            </div>
+        </div>
+        <div class="col-md-4 mb-2">
+            <div class="resumen-card" style="border-left-color: #059669;">
+                <span class="resumen-label">Cajas cerradas</span>
+                <strong class="resumen-value" style="color: #047857;">{{ total_cerradas }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-filtros mb-3">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter"></i> Filtros
+                    {% if filtros_activos > 0 %}
+                    <span class="badge-filtros-count">{{ filtros_activos }}</span>
+                    {% endif %}
+                </h5>
+            </div>
+
+            <form method="GET" id="filtrosForm">
+                <div class="row mb-2">
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">Nro Caja</label>
+                        <input type="number" class="form-control form-control-sm" name="caja_id" value="{{ caja_id }}" min="1" placeholder="Ej: 15">
+                    </div>
+
+                    <div class="col-md-3 mb-2">
+                        <label class="small text-muted mb-1">Cajero</label>
+                        <select class="form-control form-control-sm" name="cajero">
+                            <option value="">Todos</option>
+                            {% for cajero in cajeros %}
+                            <option value="{{ cajero.id }}" {% if cajero_id == cajero.id|stringformat:"s" %}selected{% endif %}>
+                                {% if cajero.first_name %}
+                                    {{ cajero.first_name }} {{ cajero.last_name }}
+                                {% else %}
+                                    {{ cajero.username }}
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-2">
+                        <label class="small text-muted mb-1">Ubicación</label>
+                        <select class="form-control form-control-sm" name="ubicacion">
+                            <option value="">Todas</option>
+                            {% for ubicacion in ubicaciones %}
+                            <option value="{{ ubicacion.id }}" {% if ubicacion_id == ubicacion.id|stringformat:"s" %}selected{% endif %}>
+                                {{ ubicacion.nombre_ubicacion|default:'Sin ubicación' }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">Estado</label>
+                        <select class="form-control form-control-sm" name="estado">
+                            <option value="">Todos</option>
+                            <option value="ABIERTA" {% if estado == 'ABIERTA' %}selected{% endif %}>Abierta</option>
+                            <option value="CERRADA" {% if estado == 'CERRADA' %}selected{% endif %}>Cerrada</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">Fecha Desde</label>
+                        <input type="date" class="form-control form-control-sm" name="fecha_desde" value="{{ fecha_desde }}">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-2 mb-2">
+                        <label class="small text-muted mb-1">Fecha Hasta</label>
+                        <input type="date" class="form-control form-control-sm" name="fecha_hasta" value="{{ fecha_hasta }}">
+                    </div>
+                    <div class="col-md-10 mb-2 d-flex align-items-end justify-content-end">
+                        <div class="d-flex" style="gap: 8px;">
+                            <a href="{% url 'reporte_auditoria_cajas' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-eraser"></i> Limpiar
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-search"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card card-tabla mb-3">
+        <div class="table-responsive">
+            <table class="table table-hover tabla-cajas mb-0">
+                <thead>
+                    <tr>
+                        <th># Caja</th>
+                        <th>Cajero</th>
+                        <th>Ubicación</th>
+                        <th>Apertura</th>
+                        <th>Cierre</th>
+                        <th class="text-right">Esperado Bs</th>
+                        <th class="text-right">Real Bs</th>
+                        <th class="text-right">Dif. Bs</th>
+                        <th>Estado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sesion in sesiones %}
+                    <tr>
+                        <td>#{{ sesion.id }}</td>
+                        <td>{{ sesion.cajero.get_full_name|default:sesion.cajero.username }}</td>
+                        <td>{{ sesion.ubicacion.nombre_ubicacion|default:'-' }}</td>
+                        <td>{{ sesion.fecha_apertura|date:"d/m/Y H:i" }}</td>
+                        <td>{{ sesion.fecha_cierre|date:"d/m/Y H:i"|default:'-' }}</td>
+                        <td class="text-right">{{ sesion.monto_esperado_efectivo|floatformat:2 }}</td>
+                        <td class="text-right">{{ sesion.monto_real_efectivo|floatformat:2 }}</td>
+                        <td class="text-right {% if sesion.diferencia_efectivo < 0 %}text-danger{% elif sesion.diferencia_efectivo > 0 %}text-success{% endif %}">
+                            {{ sesion.diferencia_efectivo|floatformat:2 }}
+                        </td>
+                        <td>
+                            <span class="badge badge-{% if sesion.estado == 'ABIERTA' %}warning{% else %}success{% endif %}">
+                                {{ sesion.get_estado_display|upper }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <a href="?{{ querystring }}{% if querystring %}&{% endif %}detalle_sesion={{ sesion.id }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-search-plus"></i> Detalle
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center text-muted py-4">No se encontraron cajas con los filtros seleccionados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if sesiones.has_other_pages %}
+        <div class="card-footer bg-white">
+            <nav>
+                <ul class="pagination pagination-sm mb-0 justify-content-end">
+                    {% if sesiones.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?{{ querystring }}{% if querystring %}&{% endif %}page=1">Primera</a></li>
+                    <li class="page-item"><a class="page-link" href="?{{ querystring }}{% if querystring %}&{% endif %}page={{ sesiones.previous_page_number }}">Anterior</a></li>
+                    {% endif %}
+
+                    <li class="page-item disabled"><span class="page-link">{{ sesiones.number }} / {{ sesiones.paginator.num_pages }}</span></li>
+
+                    {% if sesiones.has_next %}
+                    <li class="page-item"><a class="page-link" href="?{{ querystring }}{% if querystring %}&{% endif %}page={{ sesiones.next_page_number }}">Siguiente</a></li>
+                    <li class="page-item"><a class="page-link" href="?{{ querystring }}{% if querystring %}&{% endif %}page={{ sesiones.paginator.num_pages }}">Última</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if sesion_detalle %}
+    <div class="card card-detalle mb-3">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="fas fa-clipboard-check"></i>
+                Detalle de Caja #{{ sesion_detalle.id }}
+                {% if sesion_detalle.estado != 'CERRADA' %}
+                <small class="text-warning ml-2">(Solo las cajas cerradas muestran ventas y amortizaciones)</small>
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4"><strong>Cajero:</strong> {{ sesion_detalle.cajero.get_full_name|default:sesion_detalle.cajero.username }}</div>
+                <div class="col-md-4"><strong>Ubicación:</strong> {{ sesion_detalle.ubicacion.nombre_ubicacion|default:'-' }}</div>
+                <div class="col-md-4"><strong>Estado:</strong> {{ sesion_detalle.get_estado_display }}</div>
+            </div>
+
+            {% if sesion_detalle.estado == 'CERRADA' %}
+            <div class="row">
+                <div class="col-lg-7 mb-3">
+                    <h6 class="mb-2">Ventas registradas en la caja</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Cliente</th>
+                                    <th>Tipo Pago</th>
+                                    <th>Moneda</th>
+                                    <th class="text-right">Efectivo</th>
+                                    <th class="text-right">QR</th>
+                                    <th class="text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for venta in ventas_detalle %}
+                                <tr>
+                                    <td>{{ venta.codigo }}</td>
+                                    <td>{{ venta.cliente }}</td>
+                                    <td>{{ venta.get_tipo_pago_display }}</td>
+                                    <td>{{ venta.moneda }}</td>
+                                    <td class="text-right">{{ venta.monto_efectivo|floatformat:2 }}</td>
+                                    <td class="text-right">{{ venta.monto_qr|floatformat:2 }}</td>
+                                    <td class="text-right">{{ venta.total|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="7" class="text-center text-muted">Sin ventas registradas en esta caja.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="col-lg-5 mb-3">
+                    <h6 class="mb-2">Amortizaciones registradas</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Venta</th>
+                                    <th>Fecha</th>
+                                    <th>Moneda</th>
+                                    <th class="text-right">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for amortizacion in amortizaciones_detalle %}
+                                <tr>
+                                    <td>{{ amortizacion.venta.codigo }}</td>
+                                    <td>{{ amortizacion.fecha|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ amortizacion.moneda }}</td>
+                                    <td class="text-right">{{ amortizacion.monto|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center text-muted">Sin amortizaciones en esta caja.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

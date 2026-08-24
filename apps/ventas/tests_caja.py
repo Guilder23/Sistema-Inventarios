@@ -137,3 +137,17 @@ class ArqueoCajaTests(TestCase):
         self.assertEqual(sesion.diferencia_qr, Decimal('0.00'))
         self.assertEqual(sesion.monto_esperado_efectivo, Decimal('100.00'))
         self.assertEqual(sesion.total_general_recaudado, Decimal('140.00'))
+
+    def test_administrador_es_redirigido_a_auditoria(self):
+        admin = get_user_model().objects.create_user(username='admin', password='secret123')
+        PerfilUsuario.objects.create(usuario=admin, rol='administrador', nombre_ubicacion='Central')
+
+        logged = self.client.login(username='admin', password='secret123')
+        self.assertTrue(logged)
+
+        from django.urls import reverse
+
+        response = self.client.get(reverse('ventas:panel_caja'))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('reporte_auditoria_cajas'))

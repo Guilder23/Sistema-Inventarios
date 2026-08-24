@@ -39,7 +39,7 @@
 </li>
 {% endif %}
 
-{% if user.is_authenticated %}
+{% if user.is_authenticated and user.perfil and user.perfil.rol != 'administrador' and not user.is_superuser %}
 <li class="sidebar-item">
     <a href="{% url 'ventas:panel_caja' %}" 
        class="sidebar-link {% if request.resolver_match.url_name == 'panel_caja' %}active{% endif %}" 
@@ -307,6 +307,13 @@
                             Inventario General
                         </a>
                     </li>
+                    {% if user.is_superuser or user.perfil.rol == 'administrador' %}
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'reporte_auditoria_cajas' %}" class="sidebar-submenu-link {% if url_actual == 'reporte_auditoria_cajas' %}active{% endif %}">
+                            Auditoría de Cajas
+                        </a>
+                    </li>
+                    {% endif %}
                     <li class="sidebar-submenu-item">
                         <a href="{% url 'reporte_contenedores' %}" class="sidebar-submenu-link {% if url_actual == 'reporte_contenedores' %}active{% endif %}">
                             Reporte de Contenedores

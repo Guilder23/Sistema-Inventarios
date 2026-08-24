@@ -42,11 +42,22 @@ def _parse_request_data(request):
     return request.POST or {}
 
 
+def _usuario_es_administrador_caja(user):
+    """Determina si el usuario solo debe auditar caja y no operarla."""
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    perfil = getattr(user, 'perfil', None)
+    return bool(user.is_superuser or (perfil and perfil.rol == 'administrador'))
+
+
 @login_required
 def abrir_caja(request):
     """Crea una nueva sesión en estado ABIERTA para el cajero autenticado."""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    if _usuario_es_administrador_caja(request.user):
+        return JsonResponse({'success': False, 'error': 'El administrador no puede operar caja, solo auditar.'}, status=403)
 
     payload = _parse_request_data(request)
     serializer = AperturaCajaSerializer(data=payload, request=request)
@@ -66,6 +77,9 @@ def registrar_movimiento_caja(request):
     """Registra ingreso o egreso manual para la sesión abierta del cajero."""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    if _usuario_es_administrador_caja(request.user):
+        return JsonResponse({'success': False, 'error': 'El administrador no puede operar caja, solo auditar.'}, status=403)
 
     payload = _parse_request_data(request)
     serializer = MovimientoCajaSerializer(data=payload, request=request)
@@ -92,6 +106,9 @@ def resumen_caja_actual(request):
     """Devuelve el resumén calculado de la caja abierta del cajero."""
     if request.method != 'GET':
         return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    if _usuario_es_administrador_caja(request.user):
+        return JsonResponse({'success': False, 'error': 'El administrador no puede operar caja, solo auditar.'}, status=403)
 
     sesion = SesionCaja.objects.filter(cajero=request.user, estado='ABIERTA').first()
     if not sesion:
@@ -129,6 +146,10 @@ def resumen_caja_actual(request):
 @login_required
 def panel_caja(request):
     """Panel operativo e historial de arqueos del cajero autenticado."""
+    if _usuario_es_administrador_caja(request.user):
+        messages.info(request, 'Como administrador, la caja se revisa desde el Centro de Reportes.')
+        return redirect('reporte_auditoria_cajas')
+
     user = request.user
     sesiones = SesionCaja.objects.filter(cajero=user).select_related('ubicacion').prefetch_related('movimientos')
     sesion = sesiones.filter(estado='ABIERTA').first() or sesiones.first()
@@ -145,6 +166,9 @@ def cerrar_caja(request):
     """Cierra la caja aplicando las fórmulas definidas y guarda el resultado final."""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    if _usuario_es_administrador_caja(request.user):
+        return JsonResponse({'success': False, 'error': 'El administrador no puede operar caja, solo auditar.'}, status=403)
 
     payload = _parse_request_data(request)
     serializer = CierreCajaSerializer(data=payload, request=request)
