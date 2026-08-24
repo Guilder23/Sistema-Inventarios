@@ -258,6 +258,10 @@ def crear_pedido(request):
             if items_validos == 0:
                 raise ValueError('No se agregaron productos válidos al pedido')
 
+            # Notificar creación de pedido
+            from apps.notificaciones.utils import notificar_creacion_pedido
+            notificar_creacion_pedido(pedido)
+
         messages.success(request, f'Pedido {codigo} creado exitosamente')
     except ValueError as error:
         messages.error(request, str(error))
@@ -342,9 +346,15 @@ def aceptar_pedido(request, id):
             )
             return redirect('ver_pedido', id=id)
 
+    estado_anterior = pedido.estado
     pedido.estado = 'aceptado'
     pedido.fecha_actualizacion = timezone.now()
     pedido.save(update_fields=['estado', 'fecha_actualizacion'])
+    
+    # Notificar cambio de estado
+    from apps.notificaciones.utils import notificar_cambio_estado_pedido
+    notificar_cambio_estado_pedido(pedido, estado_anterior)
+    
     messages.success(request, f'Pedido {pedido.codigo} aceptado')
     return redirect('listar_pedidos')
 
@@ -384,8 +394,13 @@ def enviar_pedido(request, id):
                     comentario=f'Pedido enviado a {pedido.solicitante.nombre_ubicacion}'
                 )
 
+            estado_anterior = pedido.estado
             pedido.estado = 'enviado'
             pedido.save(update_fields=['estado', 'fecha_actualizacion'])
+
+            # Notificar cambio de estado
+            from apps.notificaciones.utils import notificar_cambio_estado_pedido
+            notificar_cambio_estado_pedido(pedido, estado_anterior)
 
         messages.success(request, f'Pedido {pedido.codigo} enviado correctamente')
     except ValueError as error:
@@ -424,8 +439,13 @@ def recibir_pedido(request, id):
                     comentario=f'Pedido recibido desde {pedido.proveedor.nombre_ubicacion}'
                 )
 
+            estado_anterior = pedido.estado
             pedido.estado = 'recibido'
             pedido.save(update_fields=['estado', 'fecha_actualizacion'])
+
+            # Notificar cambio de estado
+            from apps.notificaciones.utils import notificar_cambio_estado_pedido
+            notificar_cambio_estado_pedido(pedido, estado_anterior)
 
         messages.success(request, f'Pedido {pedido.codigo} recibido correctamente')
     except Exception as error:
@@ -456,7 +476,13 @@ def cancelar_pedido(request, id):
         messages.error(request, 'Solo se pueden cancelar pedidos pendientes')
         return redirect('ver_pedido', id=id)
 
+    estado_anterior = pedido.estado
     pedido.estado = 'cancelado'
     pedido.save(update_fields=['estado', 'fecha_actualizacion'])
+    
+    # Notificar cambio de estado
+    from apps.notificaciones.utils import notificar_cambio_estado_pedido
+    notificar_cambio_estado_pedido(pedido, estado_anterior)
+    
     messages.warning(request, f'Pedido {pedido.codigo} cancelado')
     return redirect('listar_pedidos')

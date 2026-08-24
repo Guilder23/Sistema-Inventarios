@@ -170,7 +170,7 @@ function actualizarListaNotificaciones(notificaciones) {
         notifElement.addEventListener('click', function(e) {
             if (!notif.leida) {
                 e.preventDefault();
-                marcarComoLeida(notif.id);
+                marcarComoLeida(notif.id, notif.url);
             }
         });
         
@@ -178,7 +178,7 @@ function actualizarListaNotificaciones(notificaciones) {
     });
 }
 
-function marcarComoLeida(id) {
+function marcarComoLeida(id, url = null) {
     fetch(`/notificaciones/marcar-leida/${id}/`, {
         method: 'POST',
         headers: {
@@ -188,7 +188,11 @@ function marcarComoLeida(id) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            cargarNotificaciones();
+            if (url && url !== '#') {
+                window.location.href = url;
+            } else {
+                cargarNotificaciones();
+            }
         }
     })
     .catch(error => console.error('Error al marcar como leída:', error));

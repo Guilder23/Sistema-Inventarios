@@ -1,6 +1,26 @@
-// Inicializar contador de notificaciones no leídas
+// Inicializar contador de notificaciones no leídas y manejadores de clic
 document.addEventListener('DOMContentLoaded', function() {
     actualizarContadores();
+    
+    // Configurar clic en las tarjetas de notificación
+    document.querySelectorAll('.notificacion-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            // Evitar redirigir si se hace clic en botones, enlaces o área de acciones
+            if (e.target.closest('.notificacion-acciones') || e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
+            
+            const id = this.getAttribute('data-notificacion-id');
+            const leida = this.getAttribute('data-leida') === 'true';
+            const url = this.getAttribute('data-url');
+            
+            if (!leida) {
+                marcarLeidaNotificacion(id, url || null);
+            } else if (url && url !== '#') {
+                window.location.href = url;
+            }
+        });
+    });
 });
 
 function actualizarContadores() {
@@ -13,7 +33,7 @@ function actualizarContadores() {
     }
 }
 
-function marcarLeidaNotificacion(id) {
+function marcarLeidaNotificacion(id, redirigirUrl = null) {
     fetch(`/notificaciones/marcar-leida/${id}/`, {
         method: 'GET',
         headers: {
@@ -24,15 +44,23 @@ function marcarLeidaNotificacion(id) {
     .then(data => {
         if (data.success) {
             const item = document.querySelector(`[data-notificacion-id="${id}"]`);
-            item.classList.remove('no-leida');
-            item.classList.add('notificacion-leida');
-            item.setAttribute('data-leida', 'true');
-            
-            // Remover botón de marcar como leída
-            const btn = item.querySelector(`button[onclick="marcarLeidaNotificacion(${id})"]`);
-            if (btn) btn.remove();
+            if (item) {
+                item.classList.remove('no-leida');
+                item.classList.add('notificacion-leida');
+                item.setAttribute('data-leida', 'true');
+                
+                // Remover botón de marcar como leída
+                const btn = item.querySelector('button[class*="btn-outline-primary"]');
+                if (btn && btn.innerHTML.includes('Marcar como leída')) {
+                    btn.remove();
+                }
+            }
             
             actualizarContadores();
+            
+            if (redirigirUrl) {
+                window.location.href = redirigirUrl;
+            }
         }
     })
     .catch(error => console.error('Error:', error));

@@ -40,3 +40,35 @@ class Notificacion(models.Model):
             self.leida = True
             self.fecha_lectura = timezone.now()
             self.save()
+
+    @property
+    def url_valido(self):
+        """Devuelve una URL corregida para evitar errores 404 o redirigir con búsqueda"""
+        if not self.url or self.url == '#':
+            return '#'
+        
+        import re
+        
+        # Caso 1: /productos/<id>/ que da 404
+        match_prod_id = re.match(r'^/productos/(\d+)/$', self.url)
+        if match_prod_id:
+            from apps.productos.models import Producto
+            try:
+                producto = Producto.objects.get(id=int(match_prod_id.group(1)))
+                return f'/productos/?buscar={producto.codigo}'
+            except Exception:
+                return '/productos/'
+                
+        # Caso 2: /productos/ simple, pero queremos buscar el producto específico si el mensaje tiene el código o el nombre
+        if self.url == '/productos/':
+            # Intentar extraer el código del mensaje: (código: F009)
+            match_codigo = re.search(r'\(código:\s*([^)]+)\)', self.mensaje)
+            if match_codigo:
+                return f'/productos/?buscar={match_codigo.group(1).strip()}'
+                
+            # Intentar extraer el nombre del producto entre comillas dobles: producto "PORT"
+            match_nombre = re.search(r'producto\s+"([^"]+)"', self.mensaje)
+            if match_nombre:
+                return f'/productos/?buscar={match_nombre.group(1).strip()}'
+                
+        return self.url

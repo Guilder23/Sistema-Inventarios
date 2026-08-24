@@ -520,6 +520,10 @@ def crear_traspaso(request):
                         comentario=f'Stock reservado para traspaso hacia {destino.nombre_ubicacion or destino.usuario.username}'
                     )
             
+            # Notificar al destino
+            from apps.notificaciones.utils import notificar_destino_traspaso
+            notificar_destino_traspaso(traspaso)
+            
             return JsonResponse({'status': 'success', 'message': 'Traspaso creado correctamente', 'id': traspaso.id})
             
         except Exception as e:
@@ -619,6 +623,7 @@ def cambiar_estado_traspaso(request, id):
     """Cambiar estado del traspaso"""
     try:
         traspaso = get_object_or_404(Traspaso, id=id)
+        estado_anterior = traspaso.estado
         ubicacion_actual = request.user.perfil if hasattr(request.user, 'perfil') else None
         nuevo_estado = request.POST.get('estado')
         
@@ -701,6 +706,10 @@ def cambiar_estado_traspaso(request, id):
             traspaso.estado = 'cancelado'
         
         traspaso.save()
+        
+        # Notificar cambio de estado
+        from apps.notificaciones.utils import notificar_cambio_estado_traspaso
+        notificar_cambio_estado_traspaso(traspaso, estado_anterior)
         
         return JsonResponse({'success': True, 'nuevo_estado': traspaso.estado})
         

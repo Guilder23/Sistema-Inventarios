@@ -1244,7 +1244,7 @@ def editar_precio_producto(request, id):
             tipo='precio_modificado',
             titulo='Precios Actualizados',
             mensaje=f'Se actualizaron los precios del producto "{producto.nombre}"',
-            url=f'/productos/{id}/'
+            url=f'/productos/?buscar={producto.codigo}'
         )
         
         return JsonResponse({
