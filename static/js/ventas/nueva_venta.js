@@ -401,6 +401,7 @@ function agregarAlCarrito(producto) {
         codigo: producto.codigo,
         nombre: producto.nombre,
         precioCaja: parseFloat(producto.precio_caja),
+        precio_personalizado: false,
         cajas: 1,
         cantidad: unidadesPorCaja,
         stock: producto.stock,
@@ -467,10 +468,15 @@ function renderCarrito() {
                     <small class="text-muted d-block mt-1">Disponibles: ${maximoCajas} caja(s)</small>
                 </td>
                 <td class="text-center">
-                    <div class="precio-dual">
-                        ${moneda === 'BOB' ? `<div>Bs. ${precioEnBolivianos}</div>` : `<div>$ ${item.precioCaja.toFixed(2)}</div>`}
-                        ${moneda === 'USD' ? `<div style="font-size: 0.85rem; color: #666;">Bs. ${precioEnBolivianos}</div>` : `<div style="font-size: 0.85rem; color: #666;">$ ${item.precioCaja.toFixed(2)}</div>`}
-                    </div>
+                    <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        class="form-control form-control-sm text-center carrito-precio-input"
+                        value="${convertirUsdAMoneda(item.precioCaja).toFixed(2)}"
+                        onchange="cambiarPrecioCarrito(${index}, this.value)"
+                    >
+                    <div class="small text-muted mt-1">${moneda}</div>
                 </td>
                 <td class="text-center">
                     <strong>${item.cantidad}</strong>
@@ -580,6 +586,27 @@ function actualizarEtiquetasMoneda() {
     });
     
     // Actualizar resumen
+    actualizarResumen();
+}
+
+function cambiarPrecioCarrito(index, nuevoPrecio) {
+    const item = carrito[index];
+    if (!item) return;
+
+    const precioEnMonedaActual = parseFloat(nuevoPrecio);
+    if (!Number.isFinite(precioEnMonedaActual) || precioEnMonedaActual <= 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Precio inválido',
+            text: 'El precio debe ser mayor a 0.',
+        });
+        renderCarrito();
+        return;
+    }
+
+    item.precioCaja = convertirMonedaAUsd(precioEnMonedaActual);
+    item.precio_personalizado = true;
+    renderCarrito();
     actualizarResumen();
 }
 

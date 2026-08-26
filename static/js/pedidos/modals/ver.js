@@ -35,6 +35,7 @@
         $('#verPedidoTienda').text(data.solicitante);
         $('#verPedidoAlmacen').text(data.proveedor);
         $('#verPedidoComentario').text(data.comentario || 'Sin comentario');
+        $('#btnDescargarPdfPedido').attr('href', `/pedidos/${data.id}/pdf/`);
 
         const rows = (data.detalles || []).map(item => `
             <tr>

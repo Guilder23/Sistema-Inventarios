@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.db.models import Q
 from django.core.paginator import Paginator
 
@@ -274,6 +274,34 @@ def crear_pedido(request):
 def ver_pedido(request, id):
     messages.info(request, 'El detalle del pedido se visualiza en el modal de la lista de pedidos')
     return redirect('listar_pedidos')
+
+
+@login_required
+def generar_pdf_pedido(request, id):
+    pedido = get_object_or_404(Pedido.objects.prefetch_related('detalles__producto', 'solicitante__tienda', 'proveedor__almacen'), id=id)
+    perfil = getattr(request.user, 'perfil', None)
+
+    if not perfil:
+        messages.error(request, 'No tiene permisos para descargar este pedido')
+        return redirect('listar_pedidos')
+
+    es_solicitante = perfil.rol == 'tienda' and perfil.tienda_id and pedido.solicitante.tienda_id == perfil.tienda_id
+    es_proveedor = perfil.rol == 'almacen' and perfil.almacen_id and pedido.proveedor.almacen_id == perfil.almacen_id
+    es_admin = perfil.rol == 'administrador' or request.user.is_superuser
+
+    if not (es_solicitante or es_proveedor or es_admin):
+        messages.error(request, 'No tiene permisos para descargar este pedido')
+        return redirect('listar_pedidos')
+
+    try:
+        from .pdf_generator import generar_pdf_pedido_completo
+        buffer = generar_pdf_pedido_completo(pedido)
+        response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="pedido_{pedido.codigo}.pdf"'
+        return response
+    except Exception as e:
+        messages.error(request, f'Error al generar PDF: {str(e)}')
+        return redirect('listar_pedidos')
 
 
 @login_required

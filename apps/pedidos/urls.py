@@ -7,6 +7,7 @@ urlpatterns = [
     path('crear/', views.crear_pedido, name='crear_pedido'),
     path('<int:id>/obtener/', views.obtener_pedido, name='obtener_pedido'),
     path('<int:id>/ver/', views.ver_pedido, name='ver_pedido'),
+    path('<int:id>/pdf/', views.generar_pdf_pedido, name='generar_pdf_pedido'),
     path('<int:id>/aceptar/', views.aceptar_pedido, name='aceptar_pedido'),
     path('<int:id>/enviar/', views.enviar_pedido, name='enviar_pedido'),
     path('<int:id>/recibir/', views.recibir_pedido, name='recibir_pedido'),
