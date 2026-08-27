@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.db.models import Q
 from django.core.paginator import Paginator
 
@@ -258,6 +258,10 @@ def crear_pedido(request):
             if items_validos == 0:
                 raise ValueError('No se agregaron productos válidos al pedido')
 
+            # Notificar creación de pedido
+            from apps.notificaciones.utils import notificar_creacion_pedido
+            notificar_creacion_pedido(pedido)
+
         messages.success(request, f'Pedido {codigo} creado exitosamente')
     except ValueError as error:
         messages.error(request, str(error))
@@ -270,6 +274,34 @@ def crear_pedido(request):
 def ver_pedido(request, id):
     messages.info(request, 'El detalle del pedido se visualiza en el modal de la lista de pedidos')
     return redirect('listar_pedidos')
+
+
+@login_required
+def generar_pdf_pedido(request, id):
+    pedido = get_object_or_404(Pedido.objects.prefetch_related('detalles__producto', 'solicitante__tienda', 'proveedor__almacen'), id=id)
+    perfil = getattr(request.user, 'perfil', None)
+
+    if not perfil:
+        messages.error(request, 'No tiene permisos para descargar este pedido')
+        return redirect('listar_pedidos')
+
+    es_solicitante = perfil.rol == 'tienda' and perfil.tienda_id and pedido.solicitante.tienda_id == perfil.tienda_id
+    es_proveedor = perfil.rol == 'almacen' and perfil.almacen_id and pedido.proveedor.almacen_id == perfil.almacen_id
+    es_admin = perfil.rol == 'administrador' or request.user.is_superuser
+
+    if not (es_solicitante or es_proveedor or es_admin):
+        messages.error(request, 'No tiene permisos para descargar este pedido')
+        return redirect('listar_pedidos')
+
+    try:
+        from .pdf_generator import generar_pdf_pedido_completo
+        buffer = generar_pdf_pedido_completo(pedido)
+        response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="pedido_{pedido.codigo}.pdf"'
+        return response
+    except Exception as e:
+        messages.error(request, f'Error al generar PDF: {str(e)}')
+        return redirect('listar_pedidos')
 
 
 @login_required
@@ -342,9 +374,15 @@ def aceptar_pedido(request, id):
             )
             return redirect('ver_pedido', id=id)
 
+    estado_anterior = pedido.estado
     pedido.estado = 'aceptado'
     pedido.fecha_actualizacion = timezone.now()
     pedido.save(update_fields=['estado', 'fecha_actualizacion'])
+    
+    # Notificar cambio de estado
+    from apps.notificaciones.utils import notificar_cambio_estado_pedido
+    notificar_cambio_estado_pedido(pedido, estado_anterior)
+    
     messages.success(request, f'Pedido {pedido.codigo} aceptado')
     return redirect('listar_pedidos')
 
@@ -384,8 +422,13 @@ def enviar_pedido(request, id):
                     comentario=f'Pedido enviado a {pedido.solicitante.nombre_ubicacion}'
                 )
 
+            estado_anterior = pedido.estado
             pedido.estado = 'enviado'
             pedido.save(update_fields=['estado', 'fecha_actualizacion'])
+
+            # Notificar cambio de estado
+            from apps.notificaciones.utils import notificar_cambio_estado_pedido
+            notificar_cambio_estado_pedido(pedido, estado_anterior)
 
         messages.success(request, f'Pedido {pedido.codigo} enviado correctamente')
     except ValueError as error:
@@ -424,8 +467,13 @@ def recibir_pedido(request, id):
                     comentario=f'Pedido recibido desde {pedido.proveedor.nombre_ubicacion}'
                 )
 
+            estado_anterior = pedido.estado
             pedido.estado = 'recibido'
             pedido.save(update_fields=['estado', 'fecha_actualizacion'])
+
+            # Notificar cambio de estado
+            from apps.notificaciones.utils import notificar_cambio_estado_pedido
+            notificar_cambio_estado_pedido(pedido, estado_anterior)
 
         messages.success(request, f'Pedido {pedido.codigo} recibido correctamente')
     except Exception as error:
@@ -456,7 +504,13 @@ def cancelar_pedido(request, id):
         messages.error(request, 'Solo se pueden cancelar pedidos pendientes')
         return redirect('ver_pedido', id=id)
 
+    estado_anterior = pedido.estado
     pedido.estado = 'cancelado'
     pedido.save(update_fields=['estado', 'fecha_actualizacion'])
+    
+    # Notificar cambio de estado
+    from apps.notificaciones.utils import notificar_cambio_estado_pedido
+    notificar_cambio_estado_pedido(pedido, estado_anterior)
+    
     messages.warning(request, f'Pedido {pedido.codigo} cancelado')
     return redirect('listar_pedidos')

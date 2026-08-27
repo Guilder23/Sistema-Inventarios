@@ -57,7 +57,9 @@
                 <div class="card notificacion-item {% if not notificacion.leida %}no-leida{% else %}notificacion-leida{% endif %}" 
                      data-notificacion-id="{{ notificacion.id }}"
                      data-leida="{% if notificacion.leida %}true{% else %}false{% endif %}"
-                     data-tipo="{{ notificacion.tipo }}">
+                     data-tipo="{{ notificacion.tipo }}"
+                     data-url="{{ notificacion.url_valido|default:'' }}"
+                     style="cursor: pointer;">
                     
                     <div class="card-body">
                         <div class="notificacion-header">
@@ -91,8 +93,8 @@
                                     Marcar como leída
                                 </button>
                             {% endif %}
-                            {% if notificacion.url %}
-                                <a href="{{ notificacion.url }}" class="btn btn-sm btn-outline-info btn-notificacion">
+                            {% if notificacion.url_valido and notificacion.url_valido != '#' %}
+                                <a href="{{ notificacion.url_valido }}" class="btn btn-sm btn-outline-info btn-notificacion">
                                     <i class="fas fa-external-link-alt"></i>
                                     Ver detalles
                                 </a>

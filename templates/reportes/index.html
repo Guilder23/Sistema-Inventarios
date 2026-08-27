@@ -114,6 +114,30 @@
                 </div>
             </div>
         </div>
+
+        {% if user.is_superuser or user.perfil.rol == 'administrador' %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="report-card">
+                <div class="report-card-body">
+                    <div class="report-card-header">
+                        <div class="report-icon report-icon-cajas">
+                            <i class="fas fa-cash-register"></i>
+                        </div>
+                        <div class="report-info">
+                            <h5 class="report-title">Auditoría de Cajas</h5>
+                            <p class="report-label">Control de cierres y movimientos</p>
+                        </div>
+                    </div>
+                    <p class="report-description">
+                        Audita todas las cajas del sistema, filtra por cajero y ubicación, y revisa ventas y amortizaciones de cajas cerradas.
+                    </p>
+                    <a href="{% url 'reporte_auditoria_cajas' %}" class="report-btn btn-cajas">
+                        <i class="fas fa-eye"></i> Ver Reporte
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Información adicional -->

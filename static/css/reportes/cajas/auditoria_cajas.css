@@ -1,0 +1,79 @@
+/* Estilos para auditoria de cajas */
+
+.page-header {
+    margin-bottom: 1rem;
+    background: #1f2937;
+    border-radius: 10px;
+    color: #fff;
+    padding: 1rem 1.25rem;
+}
+
+.page-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.page-subtitle {
+    margin: 0.35rem 0 0;
+    opacity: 0.92;
+    font-size: 0.9rem;
+}
+
+.resumen-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    border-left: 4px solid #1e3a8a;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.resumen-label {
+    display: block;
+    color: #6b7280;
+    font-size: 0.82rem;
+}
+
+.resumen-value {
+    font-size: 1.35rem;
+    color: #1f2937;
+}
+
+.card-filtros,
+.card-tabla,
+.card-detalle {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+}
+
+.badge-filtros-count {
+    display: inline-block;
+    margin-left: 0.4rem;
+    background: #0ea5e9;
+    color: #fff;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    padding: 0.1rem 0.45rem;
+}
+
+.tabla-cajas th {
+    background: #f3f4f6;
+    color: #374151;
+    font-size: 0.79rem;
+    text-transform: uppercase;
+    border-top: none;
+}
+
+.tabla-cajas td {
+    vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 1.25rem;
+    }
+}

@@ -65,7 +65,7 @@ def obtener_notificaciones(request):
                 'icono': icono,
                 'tiempo': tiempo_text,
                 'leida': notif.leida,
-                'url': notif.url or '#',
+                'url': notif.url_valido or '#',
             })
         
         no_leidas = Notificacion.objects.filter(usuario=request.user, leida=False).count()
