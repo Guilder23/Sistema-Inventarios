@@ -1,0 +1,387 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Seguimiento de Stock — Sistema de Inventario{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/movimientos/movimientos.css' %}">
+{% endblock %}
+
+{% block contenido %}
+
+<!-- Page Header -->
+<div class="page-header mb-4">
+    <div class="page-header-content">
+        <h1 class="page-title">
+            <i class="fas fa-chart-line"></i> Seguimiento de Stock
+        </h1>
+        <p class="page-subtitle">Historial completo de movimientos por almacén, tiendas y depósitos</p>
+    </div>
+</div>
+
+<!-- Tarjetas de Estadísticas -->
+<div class="mov-stats-grid mb-4">
+    <div class="mov-stat-card mov-stat-total">
+        <div class="mov-stat-icon">
+            <i class="fas fa-exchange-alt"></i>
+        </div>
+        <div class="mov-stat-body">
+            <div class="mov-stat-label">Total Movimientos</div>
+            <div class="mov-stat-value">{{ total_movimientos }}</div>
+        </div>
+    </div>
+    <div class="mov-stat-card mov-stat-entrada">
+        <div class="mov-stat-icon">
+            <i class="fas fa-arrow-down"></i>
+        </div>
+        <div class="mov-stat-body">
+            <div class="mov-stat-label">Entradas</div>
+            <div class="mov-stat-value">{{ total_entradas }}</div>
+        </div>
+    </div>
+    <div class="mov-stat-card mov-stat-salida">
+        <div class="mov-stat-icon">
+            <i class="fas fa-arrow-up"></i>
+        </div>
+        <div class="mov-stat-body">
+            <div class="mov-stat-label">Salidas</div>
+            <div class="mov-stat-value">{{ total_salidas }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Panel de Filtros -->
+<div class="mov-filtros-panel mb-4">
+    <form method="GET" action="" id="formFiltros" class="mov-filtros-form">
+        <div class="mov-filtros-grid">
+
+            <!-- Búsqueda de producto -->
+            <div class="mov-filtro-group">
+                <label class="mov-filtro-label" for="buscar">
+                    <i class="fas fa-search"></i> Producto / Ref
+                </label>
+                <input
+                    type="text"
+                    id="buscar"
+                    name="buscar"
+                    class="mov-filtro-input"
+                    placeholder="Nombre, código o referencia..."
+                    value="{{ filtro_buscar }}"
+                >
+            </div>
+
+            <!-- Ubicación / Tienda -->
+            <div class="mov-filtro-group">
+                <label class="mov-filtro-label" for="select_ubicacion">
+                    <i class="fas fa-map-marker-alt"></i> Ubicación
+                </label>
+                <select id="select_ubicacion" class="mov-filtro-select" onchange="cambiarUbicacion(this.value)">
+                    <option value="" {% if not filtro_ubicacion_tipo and not filtro_tienda %}selected{% endif %}>— Todas las ubicaciones —</option>
+                    
+                    {% if almacen %}
+                    <option value="almacen" {% if filtro_ubicacion_tipo == 'almacen' %}selected{% endif %}>
+                        🏢 Almacén: {{ almacen.nombre }}
+                    </option>
+                    {% endif %}
+
+                    {% if tiendas %}
+                    <optgroup label="🏪 Tiendas">
+                        {% for t in tiendas %}
+                        <option value="tienda_{{ t.id }}" {% if filtro_tienda == t.id|stringformat:"s" %}selected{% endif %}>
+                            {{ t.nombre }}
+                        </option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+                </select>
+                <!-- Inputs ocultos para enviar la petición GET correcta -->
+                <input type="hidden" id="ubicacion_tipo" name="ubicacion_tipo" value="{{ filtro_ubicacion_tipo }}">
+                <input type="hidden" id="tienda" name="tienda" value="{{ filtro_tienda }}">
+            </div>
+
+            <!-- Depósito (dinámico) -->
+            <div class="mov-filtro-group" id="grupo_deposito" style="{% if not filtro_tienda %}display:none;{% endif %}">
+                <label class="mov-filtro-label" for="deposito">
+                    <i class="fas fa-boxes-stacked"></i> Depósito
+                </label>
+                <select id="deposito" name="deposito" class="mov-filtro-select">
+                    <option value="">— Todos los depósitos —</option>
+                    {% for d in depositos_select %}
+                    <option value="{{ d.id }}" {% if filtro_deposito == d.id|stringformat:"s" %}selected{% endif %}>
+                        {{ d.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Tipo de movimiento -->
+            <div class="mov-filtro-group">
+                <label class="mov-filtro-label" for="tipo">
+                    <i class="fas fa-tag"></i> Tipo Movimiento
+                </label>
+                <select id="tipo" name="tipo" class="mov-filtro-select">
+                    <option value="">— Todos los tipos —</option>
+                    {% for key, label in tipos %}
+                    <option value="{{ key }}" {% if filtro_tipo == key %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Fecha desde -->
+            <div class="mov-filtro-group">
+                <label class="mov-filtro-label" for="fecha_desde">
+                    <i class="fas fa-calendar-alt"></i> Desde
+                </label>
+                <input
+                    type="date"
+                    id="fecha_desde"
+                    name="fecha_desde"
+                    class="mov-filtro-input"
+                    value="{{ filtro_fecha_desde }}"
+                >
+            </div>
+
+            <!-- Fecha hasta -->
+            <div class="mov-filtro-group">
+                <label class="mov-filtro-label" for="fecha_hasta">
+                    <i class="fas fa-calendar-check"></i> Hasta
+                </label>
+                <input
+                    type="date"
+                    id="fecha_hasta"
+                    name="fecha_hasta"
+                    class="mov-filtro-input"
+                    value="{{ filtro_fecha_hasta }}"
+                >
+            </div>
+
+        </div>
+
+        <div class="mov-filtros-actions">
+            <button type="submit" class="mov-btn-filtrar">
+                <i class="fas fa-filter"></i> Filtrar
+            </button>
+            <a href="{% url 'movimientos:listar' %}" class="mov-btn-limpiar">
+                <i class="fas fa-times"></i> Limpiar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Tabla de Movimientos -->
+<div class="mov-tabla-wrapper">
+    {% if page_obj.object_list %}
+    <div class="mov-tabla-header">
+        <span class="mov-tabla-info">
+            Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ total_movimientos }} movimientos
+        </span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="mov-tabla">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Producto</th>
+                    <th>Ubicación</th>
+                    <th>Tipo</th>
+                    <th class="text-center">Cant.</th>
+                    <th class="text-center">Stock Anterior</th>
+                    <th class="text-center">Stock Actual</th>
+                    <th>Referencia</th>
+                    <th>Usuario</th>
+                    <th class="text-center">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in page_obj %}
+                <tr class="mov-fila {% if mov.cantidad > 0 %}mov-entrada{% elif mov.cantidad < 0 %}mov-salida{% endif %}">
+                    <td class="mov-fecha">
+                        <div class="mov-fecha-dia">{{ mov.fecha|date:"d/m/Y" }}</div>
+                        <div class="mov-fecha-hora">{{ mov.fecha|time:"H:i" }}</div>
+                    </td>
+                    <td class="mov-producto">
+                        <div class="mov-producto-nombre">{{ mov.producto.nombre }}</div>
+                        <div class="mov-producto-codigo">{{ mov.producto.codigo }}</div>
+                    </td>
+                    <td class="mov-ubicacion">
+                        {% if mov.ubicacion.rol == 'tienda' %}
+                            <span class="mov-badge-ubicacion mov-ubicacion-tienda">
+                                <i class="fas fa-store"></i>
+                                {{ mov.ubicacion.nombre_ubicacion|default:mov.ubicacion }}
+                            </span>
+                        {% elif mov.ubicacion.rol == 'deposito' %}
+                            <span class="mov-badge-ubicacion mov-ubicacion-deposito">
+                                <i class="fas fa-boxes-stacked"></i>
+                                {{ mov.ubicacion.nombre_ubicacion|default:mov.ubicacion }}
+                            </span>
+                        {% elif mov.ubicacion.rol == 'almacen' %}
+                            <span class="mov-badge-ubicacion mov-ubicacion-almacen">
+                                <i class="fas fa-warehouse"></i>
+                                {{ mov.ubicacion.nombre_ubicacion|default:mov.ubicacion }}
+                            </span>
+                        {% else %}
+                            <span class="mov-badge-ubicacion">
+                                {{ mov.ubicacion.nombre_ubicacion|default:mov.ubicacion }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="mov-badge-tipo mov-tipo-{{ mov.tipo }}">
+                            {{ mov.get_tipo_display }}
+                        </span>
+                    </td>
+                    <td class="text-center mov-cantidad">
+                        {% if mov.cantidad > 0 %}
+                            <span class="mov-cantidad-positiva">+{{ mov.cantidad }}</span>
+                        {% else %}
+                            <span class="mov-cantidad-negativa">{{ mov.cantidad }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center mov-stock-anterior">{{ mov.stock_anterior }}</td>
+                    <td class="text-center mov-stock-actual">
+                        <strong>{{ mov.stock_actual }}</strong>
+                    </td>
+                    <td class="mov-referencia">
+                        {{ mov.referencia|default:"—" }}
+                    </td>
+                    <td class="mov-usuario">
+                        {% if mov.usuario %}
+                            {{ mov.usuario.get_full_name|default:mov.usuario.username }}
+                        {% else %}
+                            <span class="text-muted">Sistema</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <a href="{% url 'movimientos:detalle' mov.pk %}" class="mov-btn-ver" title="Ver detalle">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if is_paginated %}
+    <div class="mov-paginacion">
+        {% if page_obj.has_previous %}
+        <a href="?page=1{% if filtro_buscar %}&buscar={{ filtro_buscar }}{% endif %}{% if filtro_ubicacion_tipo %}&ubicacion_tipo={{ filtro_ubicacion_tipo }}{% endif %}{% if filtro_tienda %}&tienda={{ filtro_tienda }}{% endif %}{% if filtro_deposito %}&deposito={{ filtro_deposito }}{% endif %}{% if filtro_tipo %}&tipo={{ filtro_tipo }}{% endif %}{% if filtro_fecha_desde %}&fecha_desde={{ filtro_fecha_desde }}{% endif %}{% if filtro_fecha_hasta %}&fecha_hasta={{ filtro_fecha_hasta }}{% endif %}" class="mov-page-btn">
+            <i class="fas fa-angle-double-left"></i>
+        </a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if filtro_buscar %}&buscar={{ filtro_buscar }}{% endif %}{% if filtro_ubicacion_tipo %}&ubicacion_tipo={{ filtro_ubicacion_tipo }}{% endif %}{% if filtro_tienda %}&tienda={{ filtro_tienda }}{% endif %}{% if filtro_deposito %}&deposito={{ filtro_deposito }}{% endif %}{% if filtro_tipo %}&tipo={{ filtro_tipo }}{% endif %}{% if filtro_fecha_desde %}&fecha_desde={{ filtro_fecha_desde }}{% endif %}{% if filtro_fecha_hasta %}&fecha_hasta={{ filtro_fecha_hasta }}{% endif %}" class="mov-page-btn">
+            <i class="fas fa-angle-left"></i>
+        </a>
+        {% endif %}
+
+        <span class="mov-page-info">
+            Página {{ page_obj.number }} de {{ paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if filtro_buscar %}&buscar={{ filtro_buscar }}{% endif %}{% if filtro_ubicacion_tipo %}&ubicacion_tipo={{ filtro_ubicacion_tipo }}{% endif %}{% if filtro_tienda %}&tienda={{ filtro_tienda }}{% endif %}{% if filtro_deposito %}&deposito={{ filtro_deposito }}{% endif %}{% if filtro_tipo %}&tipo={{ filtro_tipo }}{% endif %}{% if filtro_fecha_desde %}&fecha_desde={{ filtro_fecha_desde }}{% endif %}{% if filtro_fecha_hasta %}&fecha_hasta={{ filtro_fecha_hasta }}{% endif %}" class="mov-page-btn">
+            <i class="fas fa-angle-right"></i>
+        </a>
+        <a href="?page={{ paginator.num_pages }}{% if filtro_buscar %}&buscar={{ filtro_buscar }}{% endif %}{% if filtro_ubicacion_tipo %}&ubicacion_tipo={{ filtro_ubicacion_tipo }}{% endif %}{% if filtro_tienda %}&tienda={{ filtro_tienda }}{% endif %}{% if filtro_deposito %}&deposito={{ filtro_deposito }}{% endif %}{% if filtro_tipo %}&tipo={{ filtro_tipo }}{% endif %}{% if filtro_fecha_desde %}&fecha_desde={{ filtro_fecha_desde }}{% endif %}{% if filtro_fecha_hasta %}&fecha_hasta={{ filtro_fecha_hasta }}{% endif %}" class="mov-page-btn">
+            <i class="fas fa-angle-double-right"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Estado vacío -->
+    <div class="mov-empty">
+        <div class="mov-empty-icon">
+            <i class="fas fa-inbox"></i>
+        </div>
+        <h3 class="mov-empty-title">Sin movimientos registrados</h3>
+        <p class="mov-empty-desc">
+            {% if filtro_buscar or filtro_ubicacion_tipo or filtro_tienda or filtro_deposito or filtro_tipo or filtro_fecha_desde or filtro_fecha_hasta %}
+                No se encontraron movimientos con los filtros aplicados.
+                <a href="{% url 'movimientos:listar' %}">Limpiar filtros</a>
+            {% else %}
+                Los movimientos de stock se registrarán automáticamente a medida que se realicen ventas,
+                traspasos, devoluciones y otras operaciones.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+const API_DEPOSITOS_URL = "{% url 'movimientos:api_depositos' 0 %}".replace('/0/', '/');
+const filtroDepositoActual = "{{ filtro_deposito }}";
+
+function cambiarUbicacion(valor) {
+    const inputUbicacionTipo = document.getElementById('ubicacion_tipo');
+    const inputTienda = document.getElementById('tienda');
+    const grupoDeposito = document.getElementById('grupo_deposito');
+    const selectDeposito = document.getElementById('deposito');
+
+    if (valor === 'almacen') {
+        inputUbicacionTipo.value = 'almacen';
+        inputTienda.value = '';
+        grupoDeposito.style.display = 'none';
+        selectDeposito.value = '';
+    } else if (valor.startsWith('tienda_')) {
+        const tiendaId = valor.replace('tienda_', '');
+        inputUbicacionTipo.value = '';
+        inputTienda.value = tiendaId;
+        grupoDeposito.style.display = 'block';
+        cargarDepositos(tiendaId);
+    } else {
+        inputUbicacionTipo.value = '';
+        inputTienda.value = '';
+        grupoDeposito.style.display = 'none';
+        selectDeposito.value = '';
+    }
+}
+
+/**
+ * Carga los depósitos de una tienda de forma dinámica vía AJAX.
+ */
+function cargarDepositos(tiendaId) {
+    const selectDeposito = document.getElementById('deposito');
+    selectDeposito.innerHTML = '<option value="">— Cargando... —</option>';
+
+    if (!tiendaId) {
+        selectDeposito.innerHTML = '<option value="">— Todos los depósitos —</option>';
+        return;
+    }
+
+    fetch(`${API_DEPOSITOS_URL}${tiendaId}/`)
+        .then(r => r.json())
+        .then(data => {
+            selectDeposito.innerHTML = '<option value="">— Todos los depósitos —</option>';
+            if (data.success && data.depositos.length > 0) {
+                data.depositos.forEach(dep => {
+                    const opt = document.createElement('option');
+                    opt.value = dep.id;
+                    opt.textContent = dep.nombre;
+                    if (String(dep.id) === filtroDepositoActual) opt.selected = true;
+                    selectDeposito.appendChild(opt);
+                });
+            } else {
+                selectDeposito.innerHTML += '<option disabled>Sin depósitos</option>';
+            }
+        })
+        .catch(() => {
+            selectDeposito.innerHTML = '<option value="">— Error al cargar —</option>';
+        });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const inputTienda = document.getElementById('tienda');
+    if (inputTienda && inputTienda.value) {
+        cargarDepositos(inputTienda.value);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Detalle de Movimiento — Sistema de Inventario{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/movimientos/movimientos.css' %}">
+{% endblock %}
+
+{% block contenido %}
+
+<!-- Page Header -->
+<div class="page-header mb-4">
+    <div class="page-header-content">
+        <h1 class="page-title">
+            <i class="fas fa-chart-line"></i> Detalle del Movimiento
+        </h1>
+        <p class="page-subtitle">
+            Información completa del movimiento #{{ movimiento.pk }}
+        </p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'movimientos:listar' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Volver al listado
+        </a>
+    </div>
+</div>
+
+<div class="mov-detalle-grid">
+
+    <!-- Tarjeta principal -->
+    <div class="mov-detalle-card">
+        <div class="mov-detalle-header {% if movimiento.cantidad > 0 %}mov-detalle-entrada{% else %}mov-detalle-salida{% endif %}">
+            <div class="mov-detalle-tipo-icon">
+                {% if movimiento.tipo == 'venta' %}
+                    <i class="fas fa-shopping-cart"></i>
+                {% elif movimiento.tipo == 'anulacion_venta' %}
+                    <i class="fas fa-ban"></i>
+                {% elif movimiento.tipo == 'devolucion' %}
+                    <i class="fas fa-undo"></i>
+                {% elif movimiento.tipo == 'traspaso_salida' %}
+                    <i class="fas fa-arrow-right"></i>
+                {% elif movimiento.tipo == 'traspaso_entrada' %}
+                    <i class="fas fa-arrow-left"></i>
+                {% elif movimiento.tipo == 'pedido_recibido' %}
+                    <i class="fas fa-clipboard-check"></i>
+                {% elif movimiento.tipo == 'danado' %}
+                    <i class="fas fa-exclamation-triangle"></i>
+                {% elif movimiento.tipo == 'edicion_manual' %}
+                    <i class="fas fa-edit"></i>
+                {% else %}
+                    <i class="fas fa-exchange-alt"></i>
+                {% endif %}
+            </div>
+            <div>
+                <h2 class="mov-detalle-tipo-label">{{ movimiento.get_tipo_display }}</h2>
+                <p class="mov-detalle-fecha">{{ movimiento.fecha|date:"d/m/Y H:i:s" }}</p>
+            </div>
+        </div>
+
+        <div class="mov-detalle-body">
+            <!-- Stock: anterior → actual -->
+            <div class="mov-stock-flow">
+                <div class="mov-stock-box mov-stock-antes">
+                    <div class="mov-stock-label">Stock Anterior</div>
+                    <div class="mov-stock-num">{{ movimiento.stock_anterior }}</div>
+                </div>
+                <div class="mov-stock-arrow">
+                    {% if movimiento.cantidad > 0 %}
+                        <span class="mov-flecha-entrada">
+                            <i class="fas fa-plus"></i> {{ movimiento.cantidad }}
+                        </span>
+                    {% else %}
+                        <span class="mov-flecha-salida">
+                            <i class="fas fa-minus"></i> {{ movimiento.cantidad|cut:"-" }}
+                        </span>
+                    {% endif %}
+                    <i class="fas fa-long-arrow-alt-right"></i>
+                </div>
+                <div class="mov-stock-box mov-stock-despues">
+                    <div class="mov-stock-label">Stock Actual</div>
+                    <div class="mov-stock-num">{{ movimiento.stock_actual }}</div>
+                </div>
+            </div>
+
+            <!-- Datos -->
+            <table class="mov-detalle-tabla">
+                <tr>
+                    <th><i class="fas fa-box"></i> Producto</th>
+                    <td>
+                        <strong>{{ movimiento.producto.nombre }}</strong>
+                        <small class="d-block text-muted">{{ movimiento.producto.codigo }}</small>
+                    </td>
+                </tr>
+                <tr>
+                    <th><i class="fas fa-map-marker-alt"></i> Ubicación</th>
+                    <td>
+                        {{ movimiento.ubicacion.nombre_ubicacion|default:movimiento.ubicacion }}
+                        <small class="d-block text-muted">{{ movimiento.ubicacion.get_rol_display }}</small>
+                    </td>
+                </tr>
+                <tr>
+                    <th><i class="fas fa-hashtag"></i> Referencia</th>
+                    <td>{{ movimiento.referencia|default:"—" }}</td>
+                </tr>
+                <tr>
+                    <th><i class="fas fa-user"></i> Usuario</th>
+                    <td>
+                        {% if movimiento.usuario %}
+                            {{ movimiento.usuario.get_full_name|default:movimiento.usuario.username }}
+                        {% else %}
+                            <span class="text-muted">Sistema</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if movimiento.notas %}
+                <tr>
+                    <th><i class="fas fa-sticky-note"></i> Notas</th>
+                    <td>{{ movimiento.notas }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

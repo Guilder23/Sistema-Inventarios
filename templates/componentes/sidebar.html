@@ -221,6 +221,71 @@
             </li>
             {% endif %}
 
+            <!-- Seguimiento de Stock - Solo Almacén -->
+            {% if user.perfil.rol == 'almacen' %}
+            {% with url_actual=request.resolver_match.url_name %}
+            <li class="sidebar-item sidebar-item-with-submenu">
+                <a
+                    href="{% url 'movimientos:listar' %}"
+                    class="sidebar-link sidebar-link-toggle {% if 'movimientos' in request.path %}active{% endif %}"
+                    title="Seguimiento de Stock"
+                    data-submenu-toggle="submenuMovimientos"
+                    aria-expanded="{% if 'movimientos' in request.path %}true{% else %}false{% endif %}"
+                >
+                    <i class="fas fa-chart-line"></i>
+                    <span>Seguimiento Stock</span>
+                    <i class="fas fa-chevron-down submenu-chevron"></i>
+                </a>
+                <ul id="submenuMovimientos" class="sidebar-submenu {% if 'movimientos' in request.path %}open{% endif %}">
+                    <!-- Todas las ubicaciones -->
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'movimientos:listar' %}" class="sidebar-submenu-link {% if request.path == '/movimientos/' and not request.GET %}active{% endif %}">
+                            <i class="fas fa-layer-group" style="margin-right:.4rem;font-size:.75rem;"></i>
+                            Todas las ubicaciones
+                        </a>
+                    </li>
+                    <!-- Mi Almacén -->
+                    {% if user.perfil.almacen %}
+                    <li class="sidebar-submenu-item">
+                        <a href="{% url 'movimientos:listar' %}?ubicacion_tipo=almacen" 
+                           class="sidebar-submenu-link {% if request.GET.ubicacion_tipo == 'almacen' %}active{% endif %}">
+                            <i class="fas fa-warehouse" style="margin-right:.4rem;font-size:.75rem;"></i>
+                            {{ user.perfil.almacen.nombre }}
+                        </a>
+                    </li>
+                    {% endif %}
+                    <!-- Tiendas del almacén del usuario logueado -->
+                    {% if user.perfil.almacen %}
+                        {% for tienda in user.perfil.almacen.tiendas.all %}
+                        {% if tienda.estado == 'activo' %}
+                        <li class="sidebar-submenu-item">
+                            <a href="{% url 'movimientos:listar' %}?tienda={{ tienda.id }}"
+                               class="sidebar-submenu-link {% if filtro_tienda == tienda.id|stringformat:'s' %}active{% endif %}">
+                                <i class="fas fa-store" style="margin-right:.4rem;font-size:.75rem;"></i>
+                                {{ tienda.nombre }}
+                            </a>
+                        </li>
+                        <!-- Depósitos de esta tienda -->
+                        {% for deposito in tienda.depositos.all %}
+                        {% if deposito.estado == 'activo' %}
+                        <li class="sidebar-submenu-item" style="padding-left:.5rem;">
+                            <a href="{% url 'movimientos:listar' %}?tienda={{ tienda.id }}&deposito={{ deposito.id }}"
+                               class="sidebar-submenu-link {% if filtro_deposito == deposito.id|stringformat:'s' %}active{% endif %}"
+                               style="padding-left:1.75rem;">
+                                <i class="fas fa-boxes-stacked" style="margin-right:.4rem;font-size:.7rem;"></i>
+                                {{ deposito.nombre }}
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </ul>
+            </li>
+            {% endwith %}
+            {% endif %}
+
             <!-- SECCIÓN: ADMINISTRACIÓN - Solo staff y admin -->
             {% if user.is_staff or user.is_superuser %}
             <li class="sidebar-section">
