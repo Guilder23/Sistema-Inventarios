@@ -2,7 +2,7 @@
 <div class="modal fade" id="modalRegistrarDanado" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <form method="post" enctype="multipart/form-data" action="{% url 'listar_danados' %}">
+            <form id="formRegistrarDanado" method="post" enctype="multipart/form-data" action="{% url 'listar_danados' %}">
                 {% csrf_token %}
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="fas fa-triangle-exclamation text-warning"></i> Registrar Producto Dañado</h5>
@@ -14,7 +14,17 @@
                     <div class="form-row">
                         <div class="form-group col-md-8">
                             <label>Producto <span class="text-danger">*</span></label>
-                            <select class="form-control" name="producto" required>
+                            <div class="position-relative">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control" id="buscarProductoDanado" placeholder="Buscar producto por nombre o código..." autocomplete="off">
+                                </div>
+                                <div id="resultadosProductoDanado" class="list-group position-absolute w-100 shadow" style="z-index:1060; display:none; max-height:180px; overflow-y:auto;"></div>
+                            </div>
+                            <div id="productoSeleccionadoDanado" class="small text-muted mt-2">Ningún producto seleccionado.</div>
+                            <select class="d-none" id="productoDanadoSelect" name="producto" required>
                                 <option value="">Seleccione un producto...</option>
                                 {% for producto in productos %}
                                 <option value="{{ producto.id }}">{{ producto.codigo }} - {{ producto.nombre }} (Stock: {{ producto.stock_disponible }})</option>
@@ -23,12 +33,12 @@
                         </div>
                         <div class="form-group col-md-4">
                             <label>Unidades Dañadas <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" name="cantidad" min="1" required>
+                            <input type="number" id="cantidadDanado" class="form-control" name="cantidad" min="1" required>
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Comentario</label>
-                        <textarea class="form-control" name="comentario" rows="3" placeholder="Detalle del daño, causa o referencia..."></textarea>
+                        <textarea id="comentarioDanado" class="form-control" name="comentario" rows="3" placeholder="Detalle del daño, causa o referencia..."></textarea>
                     </div>
                     <div class="form-row">
                         <div class="form-group col-md-8">

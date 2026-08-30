@@ -79,7 +79,10 @@ def notificar_destino_traspaso(traspaso):
     try:
         from django.urls import reverse
         destino = traspaso.destino
-        url_ver = reverse('ver_traspaso', args=[traspaso.id])
+        # La acción de recepción se gestiona desde la pestaña "Recibidos".
+        # El detalle sigue siendo accesible desde cada tarjeta, pero no debe ser
+        # el destino inicial de una notificación de entrada.
+        url_recibidos = f"{reverse('listar_traspasos')}#recibidos"
         
         usuarios_a_notificar = []
         
@@ -115,7 +118,7 @@ def notificar_destino_traspaso(traspaso):
                 tipo='traspaso',
                 titulo='Nuevo Traspaso Recibido',
                 mensaje=f'Se ha enviado un traspaso ({traspaso.codigo}) desde {traspaso.origen.nombre_ubicacion or "otra ubicación"} hacia tu ubicación.',
-                url=url_ver
+                url=url_recibidos
             )
         return True
     except Exception as e:
@@ -130,6 +133,7 @@ def notificar_cambio_estado_traspaso(traspaso, anterior_estado):
     try:
         from django.urls import reverse
         url_ver = reverse('ver_traspaso', args=[traspaso.id])
+        url_recibidos = f"{reverse('listar_traspasos')}#recibidos"
         
         # Si cambia a tránsito (enviado por el origen)
         if traspaso.estado == 'transito':
@@ -150,7 +154,7 @@ def notificar_cambio_estado_traspaso(traspaso, anterior_estado):
                     tipo='traspaso',
                     titulo='Traspaso en Tránsito',
                     mensaje=f'El traspaso ({traspaso.codigo}) de {traspaso.origen.nombre_ubicacion or "otra ubicación"} ya se encuentra en tránsito.',
-                    url=url_ver
+                    url=url_recibidos
                 )
                 
         # Si cambia a recibido (recibido por el destino)

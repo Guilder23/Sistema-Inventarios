@@ -12,6 +12,7 @@ from apps.productos.models import Producto
 from apps.tiendas.models import Tienda
 from apps.usuarios.models import PerfilUsuario
 from apps.almacenes.models import Almacen
+from apps.inventario.models import Inventario
 from django.utils import timezone
 
 
@@ -310,6 +311,41 @@ class SolicitudesAnulacionTest(TestCase):
         # Verificar venta anulada
         self.venta.refresh_from_db()
         self.assertEqual(self.venta.estado, 'anulada')
+
+    def test_aceptar_solicitud_devuelve_stock_al_deposito(self):
+        """Una venta de depósito debe restituirse al depósito, no a la tienda."""
+        deposito = PerfilUsuario.objects.create(
+            rol='deposito',
+            tienda=self.tienda,
+            nombre_ubicacion='Depósito de prueba',
+        )
+        inventario_deposito = Inventario.objects.create(
+            producto=self.producto,
+            ubicacion=deposito,
+            cantidad=2,
+        )
+        DetalleVenta.objects.create(
+            venta=self.venta,
+            producto=self.producto,
+            cantidad=2,
+            tipo_vendedor='deposito',
+            precio_unitario=Decimal('50.00'),
+            subtotal=Decimal('100.00'),
+        )
+
+        self.client.login(username='almacen2', password='test123')
+        response = self.client.post(
+            reverse('ventas:responder_solicitud_anulacion', args=[self.solicitud.id]),
+            data={'accion': 'aceptar', 'comentario_respuesta': 'Aceptado'},
+        )
+
+        self.assertTrue(response.json()['success'])
+        inventario_deposito.refresh_from_db()
+        self.assertEqual(inventario_deposito.cantidad, 4)
+        self.assertFalse(Inventario.objects.filter(
+            producto=self.producto,
+            ubicacion__rol='tienda',
+        ).exists())
 
     def test_rechazar_solicitud_anulacion(self):
         """Almacén puede rechazar solicitud"""

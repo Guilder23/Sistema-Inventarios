@@ -6,9 +6,104 @@
     'use strict';
 
     function inicializarModalRegistrar() {
-        // Cargar productos al abrir el modal
+        const modal = document.getElementById('modalRegistrarDevolucion');
+        const buscarProducto = document.getElementById('buscarProductoDevolucion');
+        const selectProducto = document.getElementById('productoDevolucionSelect');
+        const resultados = document.getElementById('resultadosProductoDevolucion');
+        const productoSeleccionado = document.getElementById('productoSeleccionadoDevolucion');
+        const productos = Array.from(selectProducto ? selectProducto.options : []).slice(1).map(option => ({
+            id: option.value,
+            codigo: option.textContent.split(' - ')[0],
+            nombre: option.textContent.includes(' - ') ? option.textContent.split(' - ').slice(1).join(' - ').replace(/\s*\(Stock:.*\)$/, '') : option.textContent,
+            label: option.textContent
+        }));
+
+        function renderProductos(busqueda) {
+            if (!resultados) return;
+            const termino = (busqueda || '').trim().toLowerCase();
+
+            const filtrados = productos.filter(producto => {
+                const texto = `${producto.codigo} ${producto.nombre}`.toLowerCase();
+                return !termino || texto.includes(termino);
+            });
+
+            if (!filtrados.length) {
+                resultados.innerHTML = '<div class="list-group-item text-muted">No se encontraron productos</div>';
+                resultados.style.display = '';
+                return;
+            }
+
+            resultados.innerHTML = filtrados.map(producto => `
+                <button type="button" class="list-group-item list-group-item-action seleccionar-producto-devolucion" data-id="${producto.id}">
+                    ${producto.label}
+                </button>
+            `).join('');
+            resultados.style.display = '';
+
+            resultados.querySelectorAll('.seleccionar-producto-devolucion').forEach(opcion => {
+                opcion.onclick = function() {
+                    const producto = productos.find(item => String(item.id) === String(this.dataset.id));
+                    if (!producto || !selectProducto) return;
+
+                    selectProducto.value = producto.id;
+                    if (buscarProducto) {
+                        buscarProducto.value = producto.label;
+                    }
+                    resultados.style.display = 'none';
+                    if (productoSeleccionado) {
+                        productoSeleccionado.textContent = `Seleccionado: ${producto.label}`;
+                    }
+                };
+            });
+        }
+
+        function ocultarResultados() {
+            if (resultados) {
+                resultados.style.display = 'none';
+            }
+        }
+
+        if (buscarProducto) {
+            buscarProducto.addEventListener('input', function() {
+                if (selectProducto) {
+                    selectProducto.value = '';
+                }
+                if (productoSeleccionado) {
+                    productoSeleccionado.textContent = 'Ningún producto seleccionado.';
+                }
+                renderProductos(this.value);
+            });
+
+            buscarProducto.addEventListener('focus', function() {
+                renderProductos(this.value);
+            });
+
+            buscarProducto.addEventListener('blur', function() {
+                setTimeout(ocultarResultados, 150);
+            });
+        }
+
+        $(modal).on('shown.bs.modal', function() {
+            if (buscarProducto) {
+                buscarProducto.focus();
+                renderProductos(buscarProducto.value);
+            }
+        });
+
         $('#modalRegistrarDevolucion').on('show.bs.modal', function() {
-            cargarProductos();
+            if (buscarProducto) {
+                buscarProducto.value = '';
+            }
+            if (selectProducto) {
+                selectProducto.value = '';
+            }
+            if (resultados) {
+                resultados.innerHTML = '';
+                resultados.style.display = 'none';
+            }
+            if (productoSeleccionado) {
+                productoSeleccionado.textContent = 'Ningún producto seleccionado.';
+            }
         });
 
         // Guardar devolución
@@ -18,9 +113,9 @@
             }
 
             const formData = {
-                producto_id: $('#productoId').val(),
-                cantidad: $('#cantidad').val(),
-                comentario: $('#comentario').val()
+                producto_id: $('#productoDevolucionSelect').val(),
+                cantidad: $('#cantidadDevolucion').val(),
+                comentario: $('#comentarioDevolucion').val()
             };
 
             $.ajax({
@@ -49,16 +144,9 @@
         });
     }
 
-    function cargarProductos() {
-        const $select = $('#productoId');
-        
-        // Aquí puedes cargar dinámicamente desde una API
-        // Por ahora, se cargará estáticamente desde el template
-    }
-
     function validarFormulario() {
-        const productoId = $('#productoId').val();
-        const cantidad = $('#cantidad').val();
+        const productoId = $('#productoDevolucionSelect').val();
+        const cantidad = $('#cantidadDevolucion').val();
 
         if (!productoId) {
             return false;
@@ -72,10 +160,14 @@
     }
 
     function limpiarFormulario() {
-        $('#formRegistrarDevolucion')[0].reset();
-        $('#productoId').val('');
-        $('#cantidad').val('');
-        $('#comentario').val('');
+        const form = document.getElementById('formRegistrarDevolucion');
+        if (form) form.reset();
+        $('#productoDevolucionSelect').val('');
+        $('#buscarProductoDevolucion').val('');
+        $('#resultadosProductoDevolucion').html('').hide();
+        $('#productoSeleccionadoDevolucion').text('Ningún producto seleccionado.');
+        $('#cantidadDevolucion').val('');
+        $('#comentarioDevolucion').val('');
     }
 
     window.inicializarModalRegistrar = inicializarModalRegistrar;

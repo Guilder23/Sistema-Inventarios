@@ -802,6 +802,67 @@ def restaurar_stock_a_inventario(producto, cantidad, ubicacion_perfil, referenci
         # No dejar que la creación del movimiento bloquee la restauración
         pass
 
+
+def obtener_ubicacion_restitucion_venta(venta, detalle):
+    """Obtiene la ubicación física a la que debe volver el stock anulado."""
+    ubicacion_venta = venta.ubicacion
+    rol_ubicacion = getattr(ubicacion_venta, 'rol', '')
+    tipo_vendedor = obtener_tipo_vendedor_detalle(detalle)
+
+    # Una venta registrada desde un perfil técnico de depósito debe volver al
+    # mismo depósito, independientemente del tipo guardado en el detalle.
+    if rol_ubicacion == 'deposito':
+        return ubicacion_venta
+
+    # Las ventas de depósito normalmente las registra un usuario de tienda.
+    # En ese caso la venta conserva la ubicación "tienda", pero el detalle
+    # identifica correctamente de dónde se descontó el producto.
+    if tipo_vendedor == 'deposito':
+        tienda_id = getattr(ubicacion_venta, 'tienda_id', None)
+        if not tienda_id:
+            raise ValueError('La venta de depósito no tiene una tienda asociada.')
+
+        # El descuento usa inventarios de depósitos de la misma tienda. Se
+        # reutiliza el registro más recientemente actualizado; así se devuelve
+        # al depósito desde el que se realizó la venta en el caso habitual.
+        inventario_deposito = Inventario.objects.filter(
+            producto=detalle.producto,
+            ubicacion__rol='deposito',
+            ubicacion__tienda_id=tienda_id,
+        ).select_related('ubicacion').order_by('-fecha_actualizacion', '-id').first()
+        if inventario_deposito:
+            return inventario_deposito.ubicacion
+
+        # Si el registro de inventario fue eliminado, conservar la restitución
+        # en una ubicación de depósito válida de la misma tienda.
+        deposito = PerfilUsuario.objects.filter(
+            rol='deposito',
+            tienda_id=tienda_id,
+        ).order_by('id').first()
+        if deposito:
+            return deposito
+
+        raise ValueError('No existe un depósito configurado para esta tienda.')
+
+    if rol_ubicacion == 'tienda' or tipo_vendedor == 'tienda':
+        return ubicacion_venta
+
+    return None
+
+
+def restaurar_stock_por_anulacion(venta, detalle, producto):
+    """Restaura el stock de un detalle en la fuente usada por la venta."""
+    ubicacion = obtener_ubicacion_restitucion_venta(venta, detalle)
+    if ubicacion:
+        restaurar_stock_a_inventario(
+            producto,
+            detalle.cantidad,
+            ubicacion,
+            referencia=venta.codigo,
+        )
+    else:
+        restaurar_stock_a_contenedores(producto, detalle.cantidad)
+
 def generar_codigo_venta():
     """Genera un código único para la venta: VTA-0001, VTA-0002, etc."""
     ultima = Venta.objects.order_by('-id').first()
@@ -1773,16 +1834,7 @@ def anular_venta(request, id):
                 detalles = DetalleVenta.objects.filter(venta=venta).select_related('producto')
                 for detalle in detalles:
                     producto = Producto.objects.select_for_update().get(id=detalle.producto.id)
-                    # Priorizar la ubicación de la venta (venta.ubicacion) cuando exista
-                    if es_ubicacion_tienda(venta.ubicacion) or getattr(venta.ubicacion, 'rol', '') == 'deposito':
-                        restaurar_stock_a_inventario(producto, detalle.cantidad, venta.ubicacion, referencia=venta.codigo)
-                    else:
-                        # Si la venta no provino de una tienda/depósito, usar el tipo registrado en el detalle
-                        tipo_vendedor_det = getattr(detalle, 'tipo_vendedor', '') or obtener_tipo_vendedor_detalle(detalle)
-                        if tipo_vendedor_det in ['tienda', 'deposito']:
-                            restaurar_stock_a_inventario(producto, detalle.cantidad, venta.ubicacion, referencia=venta.codigo)
-                        else:
-                            restaurar_stock_a_contenedores(producto, detalle.cantidad)
+                    restaurar_stock_por_anulacion(venta, detalle, producto)
 
                 venta.estado = 'anulada'
                 venta.save()
@@ -1957,16 +2009,7 @@ def responder_solicitud_anulacion(request, id):
                 detalles = DetalleVenta.objects.filter(venta=venta).select_related('producto')
                 for detalle in detalles:
                     producto = Producto.objects.select_for_update().get(id=detalle.producto.id)
-                    # Priorizar la ubicación de la venta (venta.ubicacion) cuando exista
-                    if es_ubicacion_tienda(venta.ubicacion) or getattr(venta.ubicacion, 'rol', '') == 'deposito':
-                        restaurar_stock_a_inventario(producto, detalle.cantidad, venta.ubicacion, referencia=venta.codigo)
-                    else:
-                        # Si la venta no provino de una tienda/depósito, usar el tipo registrado en el detalle
-                        tipo_vendedor_det = getattr(detalle, 'tipo_vendedor', '') or obtener_tipo_vendedor_detalle(detalle)
-                        if tipo_vendedor_det in ['tienda', 'deposito']:
-                            restaurar_stock_a_inventario(producto, detalle.cantidad, venta.ubicacion, referencia=venta.codigo)
-                        else:
-                            restaurar_stock_a_contenedores(producto, detalle.cantidad)
+                    restaurar_stock_por_anulacion(venta, detalle, producto)
 
                 if venta.estado != 'anulada':
                     venta.estado = 'anulada'

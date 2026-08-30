@@ -215,5 +215,13 @@
 {% block scripts_extra %}
     <script src="{% static 'js/devoluciones/modals/accion_stock.js' %}"></script>
     <script src="{% static 'js/devoluciones/modals/ver_devolucion.js' %}"></script>
+    <script src="{% static 'js/devoluciones/modals/registrar_devolucion.js' %}"></script>
     <script src="{% static 'js/devoluciones/devoluciones.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof window.inicializarModalRegistrar === 'function') {
+                window.inicializarModalRegistrar();
+            }
+        });
+    </script>
 {% endblock %}
