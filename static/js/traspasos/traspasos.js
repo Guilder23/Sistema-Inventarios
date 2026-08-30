@@ -6,7 +6,20 @@ let productosDisponibles = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeCambiarEstado();
+    abrirPestanaIndicadaEnUrl();
 });
+
+function abrirPestanaIndicadaEnUrl() {
+    if (window.location.hash !== '#recibidos') return;
+
+    const pestanaRecibidos = document.getElementById('recibidos-tab');
+    if (!pestanaRecibidos) return;
+
+    // Bootstrap 4 está disponible en esta vista mediante jQuery.
+    if (window.jQuery) {
+        window.jQuery(pestanaRecibidos).tab('show');
+    }
+}
 
 function initializeCambiarEstado() {
     const botonesEstado = document.querySelectorAll('.cambiar-estado');

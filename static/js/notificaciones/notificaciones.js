@@ -15,7 +15,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const url = this.getAttribute('data-url');
             
             if (!leida) {
-                marcarLeidaNotificacion(id, url || null);
+                // La navegación no debe depender de que el marcado como leído
+                // termine correctamente.
+                marcarLeidaNotificacion(id);
+                if (url && url !== '#') {
+                    window.location.href = url;
+                }
             } else if (url && url !== '#') {
                 window.location.href = url;
             }

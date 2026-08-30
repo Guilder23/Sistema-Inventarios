@@ -166,11 +166,11 @@ function actualizarListaNotificaciones(notificaciones) {
             </div>
         `;
         
-        // Click para marcar como leída
+        // El enlace debe navegar siempre. Marcar como leída no puede impedir
+        // que el usuario llegue al destino de la notificación.
         notifElement.addEventListener('click', function(e) {
             if (!notif.leida) {
-                e.preventDefault();
-                marcarComoLeida(notif.id, notif.url);
+                marcarComoLeida(notif.id);
             }
         });
         
