@@ -103,7 +103,10 @@ def _ajustar_stock(*, producto, ubicacion, delta, tipo_movimiento, referencia, c
 
 
 def _obtener_productos_disponibles_para_pedido(proveedor):
-    productos_activos = Producto.objects.filter(activo=True).order_by('nombre')
+    productos_activos = Producto.objects.filter(
+        activo=True,
+        productos_contenedores__contenedor__activo=True,
+    ).distinct().order_by('nombre')
     productos_disponibles = []
     for producto in productos_activos:
         stock = _stock_disponible_almacen(producto, proveedor)

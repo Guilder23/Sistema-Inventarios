@@ -126,7 +126,7 @@ class Producto(models.Model):
     @property
     def stock(self):
         """Calcula el stock total sumando todos los productos en contenedores"""
-        return self.productos_contenedores.aggregate(
+        return self.productos_contenedores.filter(contenedor__activo=True).aggregate(
             total_stock=models.Sum('cantidad')
         )['total_stock'] or 0
     
@@ -151,7 +151,8 @@ class Producto(models.Model):
         # Restar de los contenedores con stock disponible (FIFO - primeros en entrar)
         cantidad_restante = cantidad
         contenedores_con_stock = self.productos_contenedores.filter(
-            cantidad__gt=0
+            cantidad__gt=0,
+            contenedor__activo=True,
         ).order_by('fecha_creacion')
         
         for pc in contenedores_con_stock:
@@ -183,7 +184,9 @@ class Producto(models.Model):
         # Si no se especifica contenedor, usar el más reciente o crear uno genérico
         if contenedor is None:
             # Buscar el contenedor más reciente de este producto
-            ultimo_pc = self.productos_contenedores.order_by('-fecha_creacion').first()
+            ultimo_pc = self.productos_contenedores.filter(
+                contenedor__activo=True
+            ).order_by('-fecha_creacion').first()
             if ultimo_pc:
                 ultimo_pc.cantidad += cantidad
                 ultimo_pc.save(update_fields=['cantidad', 'fecha_actualizacion'])

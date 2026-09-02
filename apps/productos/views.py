@@ -433,7 +433,9 @@ def listar_productos(request):
     contenedor_id = request.GET.get('contenedor_id', '')
     
     # Query base
-    productos_qs = Producto.objects.select_related('categoria').all().order_by('-fecha_creacion')
+    productos_qs = Producto.objects.filter(
+        productos_contenedores__contenedor__activo=True,
+    ).select_related('categoria').distinct().order_by('-fecha_creacion')
     
     # Aplicar filtros
     if buscar:
@@ -452,7 +454,10 @@ def listar_productos(request):
     # Filtrar por contenedor (nuevo filtro)
     if contenedor_id:
         try:
-            productos_qs = productos_qs.filter(productos_contenedores__contenedor_id=int(contenedor_id)).distinct()
+            productos_qs = productos_qs.filter(
+                productos_contenedores__contenedor_id=int(contenedor_id),
+                productos_contenedores__contenedor__activo=True,
+            ).distinct()
         except (ValueError, TypeError):
             pass
     
@@ -1598,7 +1603,8 @@ def json_contenedores_producto(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
     
     contenedores = ProductoContenedor.objects.filter(
-        producto=producto
+        producto=producto,
+        contenedor__activo=True,
     ).select_related('contenedor').values(
         'id', 'contenedor__id', 'contenedor__nombre', 'contenedor__proveedor', 'cantidad'
     ).order_by('-fecha_creacion')
@@ -1653,7 +1659,7 @@ def json_productos_disponibles(request, contenedor_id):
     if not es_almacen(request):
         return JsonResponse({'error': 'No autorizado'}, status=403)
     
-    contenedor = get_object_or_404(Contenedor, id=contenedor_id)
+    contenedor = get_object_or_404(Contenedor, id=contenedor_id, activo=True)
     
     # Productos que ya están en el contenedor
     productos_en_contenedor = ProductoContenedor.objects.filter(

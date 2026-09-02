@@ -458,9 +458,11 @@ def reporte_contenedores(request):
     """Vista para reporte de contenedores y productos"""
     
     # Obtener todos los productos con sus relaciones en contenedores
-    productos_contenedores = ProductoContenedor.objects.select_related(
+    productos_contenedores = ProductoContenedor.objects.filter(
+        contenedor__activo=True,
+    ).select_related(
         'producto', 'producto__categoria', 'contenedor'
-    ).all()
+    )
     
     # Obtener filtros de la petición
     buscar = request.GET.get('buscar', '').strip()

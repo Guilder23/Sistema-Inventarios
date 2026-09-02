@@ -722,7 +722,8 @@ def descontar_stock_desde_contenedores(producto, cantidad):
     # Obtener ProductoContenedor ordenados por fecha (FIFO)
     contenedores = ProductoContenedor.objects.filter(
         producto=producto,
-        cantidad__gt=0
+        cantidad__gt=0,
+        contenedor__activo=True,
     ).order_by('fecha_creacion').select_for_update()
     
     cantidad_a_descontar = cantidad
@@ -754,7 +755,8 @@ def restaurar_stock_a_contenedores(producto, cantidad):
     # Obtener el contenedor más reciente del producto
     # Si no existe, crear uno por defecto
     contenedor_pc = ProductoContenedor.objects.filter(
-        producto=producto
+        producto=producto,
+        contenedor__activo=True,
     ).order_by('-fecha_creacion').first()
     
     if contenedor_pc:
