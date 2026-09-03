@@ -221,6 +221,20 @@
             </li>
             {% endif %}
 
+            <!-- Seguimiento de Stock - Solo Almacén -->
+            {% if user.perfil.rol == 'almacen' %}
+            <li class="sidebar-item">
+                <a
+                    href="{% url 'movimientos:listar' %}"
+                    class="sidebar-link {% if 'movimientos' in request.path %}active{% endif %}"
+                    title="Seguimiento de Stock"
+                >
+                    <i class="fas fa-chart-line"></i>
+                    <span>Seguimiento Stock</span>
+                </a>
+            </li>
+            {% endif %}
+
             <!-- SECCIÓN: ADMINISTRACIÓN - Solo staff y admin -->
             {% if user.is_staff or user.is_superuser %}
             <li class="sidebar-section">

@@ -305,7 +305,10 @@ def _ajustar_stock_ubicacion(*, producto, ubicacion, delta, tipo_movimiento, ref
         if delta < 0:
             # RESTAR stock de contenedores (envío)
             cantidad_a_restar = abs(delta)
-            pcs = ProductoContenedor.objects.filter(producto=producto).order_by('id')
+            pcs = ProductoContenedor.objects.filter(
+                producto=producto,
+                contenedor__activo=True,
+            ).order_by('id')
             
             for pc in pcs:
                 if cantidad_a_restar <= 0:
@@ -321,7 +324,10 @@ def _ajustar_stock_ubicacion(*, producto, ubicacion, delta, tipo_movimiento, ref
         else:
             # SUMAR stock a contenedores (recepción)
             # Buscar un contenedor existente del producto o crear uno genérico
-            productos_contenedores = ProductoContenedor.objects.filter(producto=producto).first()
+            productos_contenedores = ProductoContenedor.objects.filter(
+                producto=producto,
+                contenedor__activo=True,
+            ).first()
             
             if productos_contenedores:
                 contenedor = productos_contenedores.contenedor
@@ -754,6 +760,7 @@ def obtener_productos_traspaso(request):
             # Obtener productos únicos con stock en ProductoContenedor
             productos_ids = ProductoContenedor.objects.filter(
                 cantidad__gt=0,
+                contenedor__activo=True,
                 producto__activo=True
             ).values_list('producto__id', flat=True).distinct()
             
@@ -826,7 +833,12 @@ def obtener_productos_contenedor_traspaso(request, id):
     if not origen or origen.rol != 'almacen':
         return JsonResponse({'error': 'El contenedor solo puede enviarse desde un almacén'}, status=403)
 
-    productos = ProductoContenedor.objects.filter(contenedor_id=id, cantidad__gt=0, producto__activo=True).select_related('producto')
+    productos = ProductoContenedor.objects.filter(
+        contenedor_id=id,
+        contenedor__activo=True,
+        cantidad__gt=0,
+        producto__activo=True,
+    ).select_related('producto')
     resultado = []
     for item in productos:
         # El contenedor puede tener datos históricos inconsistentes con el stock

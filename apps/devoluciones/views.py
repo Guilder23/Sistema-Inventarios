@@ -111,7 +111,10 @@ def listar_devoluciones(request):
     # Obtener productos según el rol
     if perfil.rol == 'almacen':
         # ALMACÉN: mostrar todos los productos activos con stock global
-        productos = Producto.objects.filter(activo=True).order_by('nombre')
+        productos = Producto.objects.filter(
+            activo=True,
+            productos_contenedores__contenedor__activo=True,
+        ).distinct().order_by('nombre')
         # Agregar stock_disponible como atributo
         for p in productos:
             p.stock_disponible = p.stock

@@ -38,7 +38,10 @@ def ver_inventario(request):
 
     # Para almacén: mostrar TODOS los productos activos con stock desde ProductoContenedor
     if perfil.rol == 'almacen':
-        productos_almacen = Producto.objects.filter(activo=True).prefetch_related('productos_contenedores')
+        productos_almacen = Producto.objects.filter(
+            activo=True,
+            productos_contenedores__contenedor__activo=True,
+        ).distinct().prefetch_related('productos_contenedores')
         
         inventarios_lista = []
         for prod in productos_almacen:
@@ -279,6 +282,11 @@ def ver_inventario_general(request):
         'inventario_set__ubicacion__almacen',
         'inventario_set__ubicacion__tienda'
     ).select_related('categoria')
+
+    if perfil.rol == 'almacen':
+        productos = productos.filter(
+            productos_contenedores__contenedor__activo=True
+        ).distinct()
     
     # Aplicar filtro de búsqueda
     if buscar:

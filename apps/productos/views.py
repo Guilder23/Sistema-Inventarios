@@ -22,25 +22,24 @@ from apps.servicios.tipos_cambios import (
     stock_en_cajas,
     stock_cajas_contenedor,
 )
+from apps.movimientos.signals import registrar_movimiento
+
 
 def verificar_permiso_productos(request):
     """Verifica si el usuario tiene permiso para gestionar productos"""
     if not request.user.is_authenticated:
         return False
-    
-    # Administrador tiene acceso total
     if request.user.is_superuser or request.user.is_staff:
         return True
-    
-    # Verificar si es almacén
     if hasattr(request.user, 'perfil') and request.user.perfil.rol == 'almacen':
         return True
-    
     return False
+
 
 def es_administrador(request):
     """Verifica si el usuario es administrador"""
     return request.user.is_superuser or request.user.is_staff
+
 
 def es_almacen(request):
     """Verifica si el usuario es del almacén"""
@@ -434,7 +433,9 @@ def listar_productos(request):
     contenedor_id = request.GET.get('contenedor_id', '')
     
     # Query base
-    productos_qs = Producto.objects.select_related('categoria').all().order_by('-fecha_creacion')
+    productos_qs = Producto.objects.filter(
+        productos_contenedores__contenedor__activo=True,
+    ).select_related('categoria').distinct().order_by('-fecha_creacion')
     
     # Aplicar filtros
     if buscar:
@@ -453,7 +454,10 @@ def listar_productos(request):
     # Filtrar por contenedor (nuevo filtro)
     if contenedor_id:
         try:
-            productos_qs = productos_qs.filter(productos_contenedores__contenedor_id=int(contenedor_id)).distinct()
+            productos_qs = productos_qs.filter(
+                productos_contenedores__contenedor_id=int(contenedor_id),
+                productos_contenedores__contenedor__activo=True,
+            ).distinct()
         except (ValueError, TypeError):
             pass
     
@@ -634,6 +638,7 @@ def obtener_producto(request, id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def editar_producto(request, id):
@@ -675,6 +680,20 @@ def editar_producto(request, id):
                                 # Aumentar stock
                                 if not producto.aumentar_stock(diferencia, request.user):
                                     raise ValueError("No se pudo aumentar el stock.")
+
+                            perfil_user = getattr(request.user, 'perfil', None)
+                            if perfil_user:
+                                registrar_movimiento(
+                                    producto=producto,
+                                    ubicacion=perfil_user,
+                                    tipo='edicion_manual',
+                                    cantidad=diferencia,
+                                    stock_anterior=stock_actual,
+                                    stock_actual=nuevo_stock,
+                                    usuario=request.user,
+                                    referencia=f'EDIT-{producto.codigo}',
+                                    notas=f'Edición manual de stock: {stock_actual} → {nuevo_stock}'
+                                )
                     except ValueError as ve:
                         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                             return JsonResponse({'error': str(ve)}, status=400)
@@ -1332,6 +1351,7 @@ def agregar_producto_contenedor(request, producto_id):
             
             contenedor = get_object_or_404(Contenedor, id=contenedor_id, activo=True)
             
+            stock_antes = producto.stock
             # Verificar si el producto ya existe en este contenedor
             producto_contenedor, creado = ProductoContenedor.objects.get_or_create(
                 producto=producto,
@@ -1347,6 +1367,21 @@ def agregar_producto_contenedor(request, producto_id):
                 mensaje = f'Cantidad de "{producto.nombre}" en "{contenedor.nombre}" actualizada: +{cantidad} unidades'
             else:
                 mensaje = f'"{producto.nombre}" agregado a "{contenedor.nombre}" con {cantidad} unidades'
+            
+            stock_despues = producto.stock
+            perfil_usuario = getattr(request.user, 'perfil', None)
+            if perfil_usuario:
+                registrar_movimiento(
+                    producto=producto,
+                    ubicacion=perfil_usuario,
+                    tipo='entrada_contenedor',
+                    cantidad=cantidad,
+                    stock_anterior=stock_antes,
+                    stock_actual=stock_despues,
+                    usuario=request.user,
+                    referencia=f'CONT-{contenedor.id}',
+                    notas=f'Entrada desde contenedor "{contenedor.nombre}": +{cantidad} unidades'
+                )
             
             messages.success(request, mensaje)
             
@@ -1443,7 +1478,24 @@ def editar_producto_contenedor(request, producto_contenedor_id):
                 cambio_texto = f'-{cantidad_cambio}'
                 operacion_texto = 'Resta'
             
+            stock_antes = producto_contenedor.producto.stock
             producto_contenedor.save(update_fields=['cantidad_recibida', 'cantidad', 'fecha_actualizacion'])
+            stock_despues = producto_contenedor.producto.stock
+            
+            perfil_usuario = getattr(request.user, 'perfil', None)
+            if perfil_usuario:
+                diff = cantidad_cambio if operacion == 'sumar' else -cantidad_cambio
+                registrar_movimiento(
+                    producto=producto_contenedor.producto,
+                    ubicacion=perfil_usuario,
+                    tipo='edicion_manual',
+                    cantidad=diff,
+                    stock_anterior=stock_antes,
+                    stock_actual=stock_despues,
+                    usuario=request.user,
+                    referencia=f'CONT-{producto_contenedor.contenedor.id}',
+                    notas=f'Ajuste en contenedor "{producto_contenedor.contenedor.nombre}": {cambio_texto} unidades'
+                )
             
             mensaje = f'{operacion_texto} aplicada: {cambio_texto} unidades'
             messages.success(request, mensaje)
@@ -1504,7 +1556,26 @@ def eliminar_producto_contenedor(request, producto_contenedor_id):
             detalles=f'Eliminado de contenedor "{contenedor_nombre}": {cantidad} unidades'
         )
         
+        stock_antes = producto_contenedor.producto.stock
+        producto_obj = producto_contenedor.producto
+        contenedor_id_val = producto_contenedor.contenedor_id
         producto_contenedor.delete()
+        stock_despues = producto_obj.stock
+        
+        perfil_usuario = getattr(request.user, 'perfil', None)
+        if perfil_usuario and cantidad > 0:
+            registrar_movimiento(
+                producto=producto_obj,
+                ubicacion=perfil_usuario,
+                tipo='edicion_manual',
+                cantidad=-cantidad,
+                stock_anterior=stock_antes,
+                stock_actual=stock_despues,
+                usuario=request.user,
+                referencia=f'CONT-{contenedor_id_val}',
+                notas=f'Eliminado de contenedor "{contenedor_nombre}": -{cantidad} unidades'
+            )
+        
         mensaje = f'Producto eliminado del contenedor "{contenedor_nombre}"'
         messages.success(request, mensaje)
         
@@ -1532,7 +1603,8 @@ def json_contenedores_producto(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
     
     contenedores = ProductoContenedor.objects.filter(
-        producto=producto
+        producto=producto,
+        contenedor__activo=True,
     ).select_related('contenedor').values(
         'id', 'contenedor__id', 'contenedor__nombre', 'contenedor__proveedor', 'cantidad'
     ).order_by('-fecha_creacion')
@@ -1587,7 +1659,7 @@ def json_productos_disponibles(request, contenedor_id):
     if not es_almacen(request):
         return JsonResponse({'error': 'No autorizado'}, status=403)
     
-    contenedor = get_object_or_404(Contenedor, id=contenedor_id)
+    contenedor = get_object_or_404(Contenedor, id=contenedor_id, activo=True)
     
     # Productos que ya están en el contenedor
     productos_en_contenedor = ProductoContenedor.objects.filter(
