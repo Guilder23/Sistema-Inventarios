@@ -9,6 +9,7 @@ from apps.usuarios.models import PerfilUsuario
 from apps.tiendas.models import Tienda
 from apps.depositos.models import Deposito
 from apps.productos.models import Producto
+from apps.traspasos.views import _asegurar_perfiles_deposito
 from .models import MovimientoStock
 
 
@@ -36,6 +37,7 @@ def listar_movimientos(request):
         return render(request, 'movimientos/sin_acceso.html', status=403)
 
     almacen = perfil.almacen
+    _asegurar_perfiles_deposito(almacen_id=almacen.id if almacen else None)
 
     # ── Tiendas y depósitos del almacén logueado ────────────────────────────
     tiendas = Tienda.objects.filter(

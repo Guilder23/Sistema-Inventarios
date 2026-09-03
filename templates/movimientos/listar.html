@@ -80,12 +80,12 @@
                     
                     {% if almacen %}
                     <option value="almacen" {% if filtro_ubicacion_tipo == 'almacen' %}selected{% endif %}>
-                        🏢 Almacén: {{ almacen.nombre }}
+                        Almacén: {{ almacen.nombre }}
                     </option>
                     {% endif %}
 
                     {% if tiendas %}
-                    <optgroup label="🏪 Tiendas">
+                    <optgroup label="Tiendas">
                         {% for t in tiendas %}
                         <option value="tienda_{{ t.id }}" {% if filtro_tienda == t.id|stringformat:"s" %}selected{% endif %}>
                             {{ t.nombre }}
