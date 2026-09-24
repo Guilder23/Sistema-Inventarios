@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, FileResponse, HttpResponseForbidden
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Case, IntegerField, Q, Sum, Value, When
 from django.utils import timezone
 from django.contrib import messages
 from django.urls import reverse
@@ -1253,7 +1253,14 @@ def buscar_productos(request):
         productos = Producto.objects.filter(
             Q(nombre__icontains=query) | Q(codigo__icontains=query),
             activo=True,
-        ).select_related('categoria')[:20]
+        ).select_related('categoria').annotate(
+            prioridad_codigo=Case(
+                When(codigo__istartswith=query, then=Value(0)),
+                When(codigo__icontains=query, then=Value(1)),
+                default=Value(2),
+                output_field=IntegerField(),
+            )
+        ).order_by('prioridad_codigo', 'codigo', 'nombre')
 
         resultado = []
         
@@ -1304,6 +1311,9 @@ def buscar_productos(request):
                 'poliza': float(p.poliza or 0),
                 'gastos': float(p.gastos or 0),
             })
+
+            if len(resultado) >= 20:
+                break
 
         return JsonResponse({'productos': resultado})
         
