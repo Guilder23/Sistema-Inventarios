@@ -254,7 +254,12 @@
     <!-- Tabla de reporte -->
     <div class="card card-tabla">
         <div class="table-responsive">
-            <table class="table table-hover tabla-ventas mb-0" id="tablaVentas">
+            <table
+                class="table table-hover tabla-ventas mb-0"
+                id="tablaVentas"
+                data-export-url="{% url 'exportar_reporte_ventas' %}"
+                data-datos-url="{% url 'datos_reporte_ventas' %}"
+            >
                 <thead>
                     <tr>
                         <th style="width: 7%;">CÓDIGO</th>
