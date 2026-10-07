@@ -39,7 +39,7 @@ function esHorizontalAutoVentas() {
     return document.querySelectorAll('.columna-imprimir:checked').length > 7;
 }
 
-function inicializarVistaPreviaVentas() {
+async function inicializarVistaPreviaVentas() {
     const tablaOriginal = document.getElementById('tablaVentas');
     const contenedorPreview = document.querySelector('.preview-paper .table-responsive');
     if (!tablaOriginal || !contenedorPreview) return;
@@ -62,6 +62,31 @@ function inicializarVistaPreviaVentas() {
 
     const botones = tablaClonada.querySelectorAll('.btn, button');
     botones.forEach(btn => btn.remove());
+
+    const url = new URL(tablaOriginal.dataset.datosUrl, window.location.origin);
+    const parametros = new URLSearchParams(window.location.search);
+    parametros.delete('page');
+    url.search = parametros.toString();
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('No se pudo cargar el reporte.');
+        const datos = await response.json();
+        const cuerpo = tablaClonada.querySelector('tbody');
+        cuerpo.innerHTML = '';
+        datos.filas.forEach(fila => {
+            const filaHtml = document.createElement('tr');
+            fila.forEach(valor => {
+                const celda = document.createElement('td');
+                celda.textContent = valor;
+                filaHtml.appendChild(celda);
+            });
+            cuerpo.appendChild(filaHtml);
+        });
+    } catch (error) {
+        console.error(error);
+        return;
+    }
 
     contenedorPreview.appendChild(tablaClonada);
 

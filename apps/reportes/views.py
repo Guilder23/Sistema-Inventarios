@@ -7,7 +7,8 @@ from apps.productos.models import Producto, ProductoContenedor, Contenedor, Cate
 from apps.ventas.models import Venta, DetalleVenta, SesionCaja, AmortizacionCredito
 from apps.usuarios.models import PerfilUsuario
 from django.contrib.auth.models import User
-from datetime import datetime
+from datetime import datetime, timedelta
+import csv
 
 
 def _es_administrador_auditor(user):
@@ -133,95 +134,97 @@ def reporte_auditoria_cajas(request):
     }
     return render(request, 'reportes/cajas/auditoria_cajas.html', context)
 
-@login_required
-def reporte_ventas(request):
-    """Vista para reporte de ventas con filtros y análisis"""
-    
-    # Obtener todas las ventas con sus relaciones
+def _obtener_ventas_reporte(request):
     ventas = Venta.objects.select_related(
         'ubicacion', 'vendedor'
     ).prefetch_related('detalles')
-    
-    # Obtener filtros de la petición
-    buscar = request.GET.get('buscar', '').strip()
-    fecha_desde = request.GET.get('fecha_desde', '').strip()
-    fecha_hasta = request.GET.get('fecha_hasta', '').strip()
-    estado = request.GET.get('estado', '').strip()
-    tipo_pago = request.GET.get('tipo_pago', '').strip()
-    vendedor_id = request.GET.get('vendedor', '').strip()
-    moneda = request.GET.get('moneda', '').strip()
-    monto_minimo = request.GET.get('monto_minimo', '').strip()
-    monto_maximo = request.GET.get('monto_maximo', '').strip()
-    ordenar_por = request.GET.get('ordenar', 'fecha_desc').strip()
-    
-    # Aplicar filtros
-    if buscar:
+
+    filtros = {
+        'buscar': request.GET.get('buscar', '').strip(),
+        'fecha_desde': request.GET.get('fecha_desde', '').strip(),
+        'fecha_hasta': request.GET.get('fecha_hasta', '').strip(),
+        'estado': request.GET.get('estado', '').strip(),
+        'tipo_pago': request.GET.get('tipo_pago', '').strip(),
+        'vendedor_id': request.GET.get('vendedor', '').strip(),
+        'moneda': request.GET.get('moneda', '').strip(),
+        'monto_minimo': request.GET.get('monto_minimo', '').strip(),
+        'monto_maximo': request.GET.get('monto_maximo', '').strip(),
+        'ordenar_por': request.GET.get('ordenar', 'fecha_desc').strip(),
+    }
+
+    if filtros['buscar']:
         ventas = ventas.filter(
-            Q(codigo__icontains=buscar) |
-            Q(cliente__icontains=buscar) |
-            Q(razon_social__icontains=buscar) |
-            Q(telefono__icontains=buscar) |
-            Q(comentario__icontains=buscar)
+            Q(codigo__icontains=filtros['buscar']) |
+            Q(cliente__icontains=filtros['buscar']) |
+            Q(razon_social__icontains=filtros['buscar']) |
+            Q(telefono__icontains=filtros['buscar']) |
+            Q(comentario__icontains=filtros['buscar'])
         )
-    
-    if fecha_desde:
+
+    if filtros['fecha_desde']:
         try:
-            fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
+            fecha_desde_dt = datetime.strptime(filtros['fecha_desde'], '%Y-%m-%d')
             ventas = ventas.filter(fecha_elaboracion__gte=fecha_desde_dt)
         except ValueError:
             pass
-    
-    if fecha_hasta:
+
+    if filtros['fecha_hasta']:
         try:
-            from datetime import timedelta
-            fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d')
-            # Incluir todo el día hasta las 23:59:59
-            fecha_hasta_dt = fecha_hasta_dt + timedelta(days=1) - timedelta(seconds=1)
-            ventas = ventas.filter(fecha_elaboracion__lte=fecha_hasta_dt)
+            fecha_hasta_dt = datetime.strptime(filtros['fecha_hasta'], '%Y-%m-%d')
+            ventas = ventas.filter(
+                fecha_elaboracion__lt=fecha_hasta_dt + timedelta(days=1)
+            )
         except ValueError:
             pass
-    
-    if estado:
-        ventas = ventas.filter(estado=estado)
-    
-    if tipo_pago:
-        ventas = ventas.filter(tipo_pago=tipo_pago)
-    
-    if vendedor_id:
-        ventas = ventas.filter(vendedor_id=vendedor_id)
-    
-    if moneda:
-        ventas = ventas.filter(moneda=moneda)
-    
-    if monto_minimo:
+
+    if filtros['estado']:
+        ventas = ventas.filter(estado=filtros['estado'])
+    if filtros['tipo_pago']:
+        ventas = ventas.filter(tipo_pago=filtros['tipo_pago'])
+    if filtros['vendedor_id']:
+        ventas = ventas.filter(vendedor_id=filtros['vendedor_id'])
+    if filtros['moneda']:
+        ventas = ventas.filter(moneda=filtros['moneda'])
+
+    if filtros['monto_minimo']:
         try:
-            monto_min = float(monto_minimo)
-            ventas = ventas.filter(total__gte=monto_min)
+            ventas = ventas.filter(total__gte=float(filtros['monto_minimo']))
         except ValueError:
             pass
-    
-    if monto_maximo:
+    if filtros['monto_maximo']:
         try:
-            monto_max = float(monto_maximo)
-            ventas = ventas.filter(total__lte=monto_max)
+            ventas = ventas.filter(total__lte=float(filtros['monto_maximo']))
         except ValueError:
             pass
-    
-    # Aplicar ordenamiento
-    if ordenar_por == 'fecha_desc':
-        ventas = ventas.order_by('-fecha_elaboracion')
-    elif ordenar_por == 'fecha_asc':
-        ventas = ventas.order_by('fecha_elaboracion')
-    elif ordenar_por == 'codigo':
-        ventas = ventas.order_by('codigo')
-    elif ordenar_por == 'cliente':
-        ventas = ventas.order_by('cliente')
-    elif ordenar_por == 'total_desc':
-        ventas = ventas.order_by('-total')
-    elif ordenar_por == 'total_asc':
-        ventas = ventas.order_by('total')
-    elif ordenar_por == 'estado':
-        ventas = ventas.order_by('estado')
+
+    ordenamientos = {
+        'fecha_desc': '-fecha_elaboracion',
+        'fecha_asc': 'fecha_elaboracion',
+        'codigo': 'codigo',
+        'cliente': 'cliente',
+        'total_desc': '-total',
+        'total_asc': 'total',
+        'estado': 'estado',
+    }
+    ventas = ventas.order_by(ordenamientos.get(filtros['ordenar_por'], '-fecha_elaboracion'))
+    return ventas, filtros
+
+
+@login_required
+def reporte_ventas(request):
+    """Vista para reporte de ventas con filtros y análisis"""
+
+    ventas, filtros = _obtener_ventas_reporte(request)
+    buscar = filtros['buscar']
+    fecha_desde = filtros['fecha_desde']
+    fecha_hasta = filtros['fecha_hasta']
+    estado = filtros['estado']
+    tipo_pago = filtros['tipo_pago']
+    vendedor_id = filtros['vendedor_id']
+    moneda = filtros['moneda']
+    monto_minimo = filtros['monto_minimo']
+    monto_maximo = filtros['monto_maximo']
+    ordenar_por = filtros['ordenar_por']
     
     # Calcular totales antes de paginar
     total_ventas = ventas.count()
@@ -302,6 +305,61 @@ def reporte_ventas(request):
     }
     
     return render(request, 'reportes/ventas/ventas.html', context)
+
+
+def _fila_venta_reporte(venta):
+    vendedor = venta.vendedor.get_full_name() or venta.vendedor.username
+    ubicacion = venta.ubicacion.nombre_ubicacion if venta.ubicacion else '-'
+    ubicacion_tipo = venta.ubicacion.get_rol_display() if venta.ubicacion else '-'
+    moneda = venta.moneda or '-'
+    simbolo = 'Bs.' if moneda == 'BOB' else '$us'
+
+    return [
+        venta.codigo,
+        venta.cliente,
+        venta.razon_social or '-',
+        venta.comentario or '-',
+        vendedor,
+        f'{ubicacion_tipo} - {ubicacion}',
+        venta.fecha_elaboracion.strftime('%d/%m/%Y %H:%M'),
+        venta.get_tipo_pago_display(),
+        venta.get_estado_display(),
+        moneda,
+        f'{simbolo} {venta.descuento:.2f}',
+        f'{simbolo} {venta.total:.2f}',
+    ]
+
+
+@login_required
+def exportar_reporte_ventas(request):
+    ventas, _ = _obtener_ventas_reporte(request)
+    columnas = request.GET.get('columnas', '').strip()
+    try:
+        columnas = [int(columna) for columna in columnas.split(',') if columna.strip()]
+    except ValueError:
+        columnas = list(range(12))
+
+    columnas = [columna for columna in columnas if 0 <= columna < 12]
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="reporte_ventas.csv"'
+    response.write('\ufeff')
+    writer = csv.writer(response, delimiter=';')
+    encabezados = [
+        'Código', 'Cliente', 'Razón Social', 'Comentario', 'Vendedor',
+        'Ubicación', 'Fecha', 'Tipo Pago', 'Estado', 'Moneda',
+        'Descuento', 'Total',
+    ]
+    writer.writerow([encabezados[indice] for indice in columnas])
+    for venta in ventas:
+        fila = _fila_venta_reporte(venta)
+        writer.writerow([fila[indice] for indice in columnas])
+    return response
+
+
+@login_required
+def datos_reporte_ventas(request):
+    ventas, _ = _obtener_ventas_reporte(request)
+    return JsonResponse({'filas': [_fila_venta_reporte(venta) for venta in ventas]})
 
 @login_required
 def reporte_traspasos(request):
