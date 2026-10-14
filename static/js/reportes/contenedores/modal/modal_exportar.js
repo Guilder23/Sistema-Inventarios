@@ -142,6 +142,7 @@ function confirmarExportacion() {
  */
 function exportarTablaContenedores(columnasSeleccionadas = null) {
     const tabla = document.getElementById('tablaContenedores');
+    const tablaCompleta = document.getElementById('tablaContenedoresCompleta');
     
     if (!tabla) {
         return;
@@ -154,7 +155,11 @@ function exportarTablaContenedores(columnasSeleccionadas = null) {
     
     // Obtener los datos de la tabla
     let csvContent = '';
-    const rows = tabla.querySelectorAll('tr');
+    const filasEncabezado = tabla.querySelectorAll('thead tr');
+    const filasCompletas = tablaCompleta
+        ? tablaCompleta.querySelectorAll('tbody tr')
+        : tabla.querySelectorAll('tbody tr');
+    const rows = [...filasEncabezado, ...filasCompletas];
     
     rows.forEach((row, rowIndex) => {
         const cols = row.querySelectorAll('th, td');

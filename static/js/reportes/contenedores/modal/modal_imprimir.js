@@ -46,6 +46,7 @@ function actualizarCheckboxTodasImprimir() {
 function inicializarVistaPrevia() {
     // 1. Clonar la tabla original
     const tablaOriginal = document.getElementById('tablaContenedores');
+    const tablaCompleta = document.getElementById('tablaContenedoresCompleta');
     const contenedorPreview = document.querySelector('.preview-paper .table-responsive');
     
     if (!tablaOriginal || !contenedorPreview) return;
@@ -56,6 +57,13 @@ function inicializarVistaPrevia() {
     // Clonar tabla
     const tablaClonada = tablaOriginal.cloneNode(true);
     tablaClonada.id = 'tablaImpresion';
+    if (tablaCompleta) {
+        const cuerpoCompleto = tablaCompleta.querySelector('tbody');
+        const cuerpoClonado = tablaClonada.querySelector('tbody');
+        if (cuerpoCompleto && cuerpoClonado) {
+            cuerpoClonado.replaceWith(cuerpoCompleto.cloneNode(true));
+        }
+    }
     
     // Remover clases de Bootstrap y atributos inline de ancho
     tablaClonada.classList.remove('table-hover', 'mb-0'); 
