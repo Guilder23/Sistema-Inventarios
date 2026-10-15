@@ -79,7 +79,8 @@ function inicializarVistaPrevia() {
     // Ajustar imágenes para impresión
     const imagenes = tablaClonada.querySelectorAll('img');
     imagenes.forEach(img => {
-        img.style.maxWidth = '25px';
+        img.style.maxWidth = '52px';
+        img.style.width = '52px';
         img.style.height = 'auto';
         img.className = 'img-thumbnail border-0 bg-transparent p-0';
     });

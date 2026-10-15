@@ -243,6 +243,18 @@
     font-size: 1rem;
 }
 
+.descripcion-columna {
+    min-width: 210px;
+}
+
+.descripcion-producto {
+    display: block;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.35;
+    max-width: 220px;
+}
+
 /* ===== BADGES Y ETIQUETAS ===== */
 .codigo-badge {
     background-color: #e9ecef;

@@ -113,6 +113,13 @@
     font-size: 11px;
 }
 
+#tablaVistaPrevia .producto-imagen-tabla {
+    width: 52px !important;
+    max-width: 52px !important;
+    height: auto;
+    object-fit: contain;
+}
+
 #tablaVistaPrevia th, #tablaVistaPrevia td {
     padding: 4px 6px;
     vertical-align: middle;

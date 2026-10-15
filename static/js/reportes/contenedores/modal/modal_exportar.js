@@ -148,11 +148,14 @@ function exportarTablaContenedores(columnasSeleccionadas = null) {
         return;
     }
     
-    // Si no se especifican columnas, exportar todas (excepto foto)
+// Exportación CSV: no se soporta imagen embebida; se omite la columna foto.
     if (!columnasSeleccionadas) {
         columnasSeleccionadas = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     }
-    
+
+    // Asegurar que la columna foto nunca se exporte como link.
+    columnasSeleccionadas = columnasSeleccionadas.filter(col => col !== 0);
+
     // Obtener los datos de la tabla
     let csvContent = '';
     const filasEncabezado = tabla.querySelectorAll('thead tr');
@@ -160,35 +163,35 @@ function exportarTablaContenedores(columnasSeleccionadas = null) {
         ? tablaCompleta.querySelectorAll('tbody tr')
         : tabla.querySelectorAll('tbody tr');
     const rows = [...filasEncabezado, ...filasCompletas];
-    
+
     rows.forEach((row, rowIndex) => {
         const cols = row.querySelectorAll('th, td');
         const rowData = [];
-        
+
         cols.forEach((col, colIndex) => {
-            // Saltar la columna de foto (primera columna - índice 0)
+            // Ignorar la columna foto por completo
             if (colIndex === 0) {
                 return;
             }
-            
+
             // Solo incluir si la columna está en las seleccionadas
             if (!columnasSeleccionadas.includes(colIndex)) {
                 return;
             }
-            
+
             // Obtener el texto limpio
             let text = col.textContent.trim();
-            
+
             // Limpiar espacios en blanco múltiples y saltos de línea
             text = text.replace(/\s+/g, ' ');
             text = text.replace(/\n/g, ' ');
-            
+
             // Escapar comillas dobles
             text = text.replace(/"/g, '""');
-            
+
             // Siempre encerrar en comillas para mayor seguridad
             text = `"${text}"`;
-            
+
             rowData.push(text);
         });
         
