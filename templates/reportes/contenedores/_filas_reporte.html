@@ -14,8 +14,8 @@
     <td>
         <strong>{{ item.producto.nombre }}</strong>
     </td>
-    <td>
-        <small class="text-muted">{{ item.producto.descripcion|default:'Sin descripción'|truncatewords:10 }}</small>
+    <td class="descripcion-columna">
+        <small class="text-muted descripcion-producto">{{ item.producto.descripcion|default:'Sin descripción' }}</small>
     </td>
     <td>
         <div class="contenedor-info">
