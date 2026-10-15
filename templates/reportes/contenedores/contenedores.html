@@ -234,59 +234,7 @@
                 </thead>
                 <tbody>
                     {% for item in items_reporte %}
-                    <tr>
-                        <td class="text-center">
-                            {% if item.producto.foto %}
-                                <img src="{{ item.producto.foto.url }}" alt="{{ item.producto.nombre }}" class="producto-imagen-tabla">
-                            {% else %}
-                                <div class="producto-sin-imagen">
-                                    <i class="fas fa-image"></i>
-                                </div>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="codigo-badge">{{ item.producto.codigo }}</span>
-                        </td>
-                        <td>
-                            <strong>{{ item.producto.nombre }}</strong>
-                        </td>
-                        <td>
-                            <small class="text-muted">{{ item.producto.descripcion|default:'Sin descripción'|truncatewords:10 }}</small>
-                        </td>
-                        <td>
-                            <div class="contenedor-info">
-                                <i class="fas fa-box text-primary"></i>
-                                <span>{{ item.contenedor.nombre }}</span>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="proveedor-tag">
-                                <i class="fas fa-truck"></i>
-                                {{ item.contenedor.proveedor }}
-                            </span>
-                        </td>
-                        <td class="text-center">
-                            <span class="precio-tag">{{ item.producto.precio_unidad|floatformat:2 }}</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="precio-tag">{{ item.producto.precio_caja|floatformat:2 }}</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge-recibido">{{ item.cantidad_recibida }}</span>
-                        </td>
-                        <td class="text-center">
-                            {% if item.estado == 'normal' %}
-                                <span class="badge-estado badge-estado-activo">Normal</span>
-                            {% elif item.estado == 'bajo' %}
-                                <span class="badge-estado badge-estado-bajo">Bajo</span>
-                            {% else %}
-                                <span class="badge-estado badge-estado-inactivo">Crítico</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center text-muted">
-                            <small>{{ item.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
-                        </td>
-                    </tr>
+                    {% include 'reportes/contenedores/_filas_reporte.html' %}
                     {% empty %}
                     <tr>
                         <td colspan="11" class="text-center py-4">
@@ -301,6 +249,13 @@
                             </div>
                         </td>
                     </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <table id="tablaContenedoresCompleta" class="d-none" aria-hidden="true">
+                <tbody>
+                    {% for item in items_reporte_completo %}
+                    {% include 'reportes/contenedores/_filas_reporte.html' %}
                     {% endfor %}
                 </tbody>
             </table>
@@ -369,6 +324,6 @@
 
 {% block scripts_extra %}
 <script src="{% static 'js/reportes/contenedores/contenedores.js' %}"></script>
-<script src="{% static 'js/reportes/contenedores/modal/modal_exportar.js' %}"></script>
-<script src="{% static 'js/reportes/contenedores/modal/modal_imprimir.js' %}"></script>
+<script src="{% static 'js/reportes/contenedores/modal/modal_exportar.js' %}?v=20261014-2"></script>
+<script src="{% static 'js/reportes/contenedores/modal/modal_imprimir.js' %}?v=20261014-2"></script>
 {% endblock %}

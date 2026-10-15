@@ -655,6 +655,7 @@ def reporte_contenedores(request):
     
     context = {
         'items_reporte': items_paginados,
+        'items_reporte_completo': items_reporte,
         'contenedores': contenedores,
         'categorias': categorias,
         'proveedores': proveedores,
